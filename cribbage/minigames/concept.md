@@ -167,6 +167,10 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | The app may send game logs as opt-in data |
 | 2026-11-14 | Stats exist mainly to compare scoring curves between bots, and to measure timing |
 | 2026-11-14 | First mocks are clickable HTML in an iPhone frame, covering pegging on the maze, a match turn and a prize pick |
+| 2026-11-14 | Cards: standard layout (rank in two corners, one large centred suit), rank and suit in the suit's colour, near-white faces only (no dark faces). Built on Scorekeep's card kit; its short form (one rank, one suit) is for documentation. Mock: [design/cards](../../design/cards/index.html) |
+| 2026-11-14 | Card width 64 pt on iPhone; the 5-card match board fits at 340 pt |
+| 2026-11-14 | Four-colour suits at 4.5:1 or better: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D |
+| 2026-11-14 | One back for now (Scorekeep's crosshatch); more backs get their own design phase |
 
 ## Open questions
 
@@ -184,9 +188,11 @@ Two tracks run side by side: design, so we can think about how the game plays an
 |---|---|---|---|
 | 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; kept in step with decisions |
 | 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Ideation done |
-| 3 | Design | First mocks, clickable HTML in an iPhone frame: pegging on the maze, a match turn, a prize pick | Next: plan them |
+| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards first (v2 done), then pegging on the maze, a match turn, a prize pick | In progress |
 | 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
 | 5 | Engine | Python engine, bots, simulator and stats reports; classic cribbage as the baseline | After 4 |
 | 6 | Design | Maze design: door types, branches, traps, wall shifts, fog, generator | Alongside 5 |
 | 7 | Both | Tune with simulation until the numbers hold up | After 5 |
-| 8 | App | Swift app, built from the specs | After 7 |
+| 8 | Design | Face-card art: full graphics for J, Q and K (letters until then) | Not scheduled |
+| 9 | Design | Card backs: design more backs (crosshatch until then) | Not scheduled |
+| 10 | App | Swift app, built from the specs | After 7 |

@@ -9,6 +9,8 @@ Card game prototypes, specifications and tests.
 | Crib Maze (cribbage on a maze, with match turns) | Rules draft 2 | [rules](cribbage/minigames/rules.md), [stats](cribbage/minigames/stats.md), [concept](cribbage/minigames/concept.md), [ideation](cribbage/minigames/ideation.md) |
 | Classic cribbage | Planned | Shares the engine with the variant |
 
+Shared design: [card mock](design/cards/index.html) (renderer in `design/cards/cards.js`).
+
 ## Layout
 
 ```
