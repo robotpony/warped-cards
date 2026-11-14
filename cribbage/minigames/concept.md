@@ -1,6 +1,6 @@
 # Crib Maze: Concept
 
-Status: concept, 2026-11-14. Working title. The match turn has been mocked and bot-tested (match rules r6); nothing else has been playtested or simulated, so most numbers here are starting guesses.
+Status: concept, 2026-11-14. Working title. The match turn has been mocked and bot-tested (match rules r8); nothing else has been playtested or simulated, so most numbers here are starting guesses.
 
 The player-facing rules are in [rules.md](rules.md). How we measure and tune the game is in [stats.md](stats.md).
 
@@ -190,6 +190,8 @@ What the mocks and bot runs have taught us so far. Details and numbers are in [m
 5. The maze can absorb big scores (2026-11-14). Doors that take steps to knock down let a player score very well on the match board without running away in the maze. The match board can stay generous and fun, and the maze sets the pace. This changes the target: we don't need match scores near a classic hand, only a maze that turns them into the right distance. Pegging steps count against doors too, and damage stays, so doors are shared obstacles.
 6. Players need to see why they scored. The score breakdown counts each set aloud, part by part, starting slow and speeding up as they learn.
 7. Bot skill is mostly search depth. Limiting how many cards a bot traces changes its score far more than limiting where it starts (r7: perfect 123 steps per turn, depth 4 about 77, depth 3 about 55).
+8. Playing out the board makes clearing it common for bots (r8). With no timer, a perfect bot cleared the board in 9 of 10 turns, medium in 10 of 10 and weak in 7 of 10, partly by bombing cards left alone. Turns grew by about half (perfect 183 steps, medium 132, weak 79, the 10-step bonus included). A clear-board bonus only feels big if clearing is hard, so the timer or a tighter rule must make it so.
+9. Many sets carry no suit. Ties left 40% of a perfect bot's steps without a suit, 23% of a medium bot's and 52% of a weak bot's (r8). Suit gates will bite hard unless players chase one-suit sets on purpose.
 
 ## Working title
 
@@ -238,7 +240,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Match board: hand, crib and starter can't score on their own; every set needs a grid card. Edge row and column sit apart from the grid with an empty corner; the starter sits beside the step counter (corner and starter superseded by the r6 row below) |
 | 2026-11-14 | Match board sets count like cribbage hands: every fifteen, pair, run, flush and his nobs inside the set scores (8-6-A is a fifteen). Every card must be part of a combo. Scoring levers to follow (see [mocks](mocks/README.md)) |
 | 2026-11-14 | Match board touching: every card, hand and crib included, touches only its real neighbours. The starter sits in the corner where the hand row and crib column meet (match rules r6). Word tags name the hand, crib and starter |
-| 2026-11-14 | Every score plays as an overlay, part by part: set name, each combo with its points and a running total, bonuses, edge power, total. Steps start slow and speed up; the base speed becomes a player setting that quickens as they learn ([score breakdown mock](mocks/score-breakdown.html)) |
+| 2026-11-14 | Every score plays as an overlay, part by part: set name, each combo with its points and a running total, bonuses, edge power, total. Steps start slow and speed up; the base speed becomes a player setting that quickens as they learn (now part of the [match turn mock](mocks/match-turn.html)) |
 | 2026-11-14 | Every set is a single (one combo) or a multi (two or more); both are labelled in scoring and stats. Sets stay at 5 cards for now |
 | 2026-11-14 | Maze doors take steps to knock down, so the maze absorbs big match scores. Match scores can run high; the maze sets the pace |
 | 2026-11-14 | Rules doc draft 3: match turns rewritten for match rules r6 |
@@ -259,6 +261,13 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Each mini game gets transitions between it and the next, and begin, end and bonus effects; the match turn begins with cards falling into place and ends differently when the board is cleared. Future mocks |
 | 2026-11-14 | Suit ties: when two or more suits tie for most common in a set, its steps carry no suit and can't pass suit gates. Rewards one-suit sets |
 | 2026-11-14 | Clearing the board earns a bonus as well as its own ending (size to tune) |
+| 2026-11-14 | When the stock or card budget runs out, the player plays out the grid that's left; nothing refills. Clearing every grid card ends the turn with the clear-board bonus. The turn no longer ends on an empty stock or a used budget (match rules r8) |
+| 2026-11-14 | When no set on the board can score, the game says so and points to special cards or End turn |
+| 2026-11-14 | Every set shows its suit (or "no suit") in the score breakdown, the feed and the turn summary |
+| 2026-11-14 | The score breakdown is merged into the match turn mock; the separate mock is retired |
+| 2026-11-14 | Special cards and pips carry over between match turns all game (specced in rules.md; the mock resets the tray each turn, and a multi-turn mock waits until it's needed) |
+| 2026-11-14 | Clear-board difficulty waits for human playtests: bots clear the board in most turns, but a person under the timer may not |
+| 2026-11-14 | Tied sets keep "no suit" for now; measure how often ties happen in playtests before changing the rule |
 | 2026-11-14 | Special actions come from special cards: smaller cards in a tray at the bottom, stacked by type, in limited supply. First two: the swapper joker (reverses a line of grid cards; swapping is no longer a free action) and the bomb joker (blows up cards) |
 
 ## Open questions
@@ -266,7 +275,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 1. Which prizes go into the shared deck, and which does a player keep? Can you choose to keep a card instead of shuffling it in?
 2. How many power slots, and how do you get more?
 3. Can tokens get in each other's way at a gate or a fork, or only through wall shifts?
-4. Match turn timer and card budget: starting values come from the simulator.
+4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 90-second timer leave a person room to clear the board?
 5. Is +1 pip per power level right? A question for the simulator, once the shop has prices.
 6. Doors: how strong and how many? This decides how much of a match score becomes distance.
 7. With match scores far above pegging, does pegging still matter? Doors treat both the same, so pegging may need its own edge.
@@ -282,7 +291,7 @@ Two tracks run side by side: design, so we can think about how the game plays an
 |---|---|---|---|
 | 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; kept in step with decisions |
 | 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Ideation done |
-| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2 done), match turn (v3, rules r6), score breakdown (v1), then a prize pick, and pegging on the maze once we've gathered maze inspiration | In progress |
+| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2 done), match turn (v4, rules r8, with the score breakdown merged in), then a prize pick, and pegging on the maze once we've gathered maze inspiration | In progress |
 | 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
 | 5 | Engine | Python engine, bots, simulator and stats reports; classic cribbage as the baseline | After 4 |
 | 6 | Design | Maze design: door types, branches, traps, wall shifts, fog, generator | Alongside 5 |

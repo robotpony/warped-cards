@@ -25,10 +25,10 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 ## Phase 3 · Mocks
 
 - [x] Cards: standard layout, four-colour suits, back, jokers (`design/cards/index.html`)
-- [x] Match turn, rules r7, bot skill levels (`cribbage/minigames/mocks/match-turn.html`)
-- [x] Score breakdown v1 (`mocks/score-breakdown.html`)
+- [x] Match turn, rules r8, bot skill levels, play-out and clear-board ending (`cribbage/minigames/mocks/match-turn.html`)
 - [ ] Playtest the match turn and tune it with your runs (`playtests/`)
-- [ ] Score breakdown in the match turn
+- [x] Score breakdown in the match turn (`mocks/match-turn.html`)
+- [ ] Multi-turn match mock: tray and pips carry over (`rules.md` › Special cards); not needed yet
 - [ ] Prize pick: where a prize goes, badges (`concept.md` › Deck building and prizes)
 - [ ] Shop: spending pips between rounds
 - [ ] Maze walk after a match turn (`concept.md` › The maze walk)

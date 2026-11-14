@@ -2,6 +2,23 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.2.0 — 2026-11-14
+
+### Added
+
+- Match turn: every score now plays its full breakdown on the board, combo by combo. Tap to skip it, or replay the last score.
+- Match turn: each set shows its suit, or "no suit" on a tie, and the turn summary shows steps by suit.
+- Match turn: clear every grid card to end the turn with "Board cleared!" and a clear-board bonus.
+- Match turn: when no set can score, the game tells you and points you to a special card or End turn.
+
+### Changed
+
+- Match turn: when the stock or card budget runs out, you play out the cards left on the board instead of the turn ending.
+
+### Removed
+
+- The separate score breakdown mock. It now lives in the match turn.
+
 ## 0.1.0 — 2026-11-14
 
 ### Added

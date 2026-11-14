@@ -6,7 +6,7 @@ Card game prototypes, specifications and tests.
 
 | Game | Status | Docs |
 |---|---|---|
-| Crib Maze (cribbage on a maze, with match turns) | Rules draft 4, match rules r7, mocks | [rules](cribbage/minigames/rules.md), [stats](cribbage/minigames/stats.md), [concept](cribbage/minigames/concept.md), [mocks](cribbage/minigames/mocks/README.md), [ideation](cribbage/minigames/ideation.md) |
+| Crib Maze (cribbage on a maze, with match turns) | Rules draft 4, match rules r8, mocks | [rules](cribbage/minigames/rules.md), [stats](cribbage/minigames/stats.md), [concept](cribbage/minigames/concept.md), [mocks](cribbage/minigames/mocks/README.md), [ideation](cribbage/minigames/ideation.md) |
 | Classic cribbage | Planned | Shares the engine with the variant |
 
 Shared design: [card mock](design/cards/index.html) (renderer in `design/cards/cards.js`).

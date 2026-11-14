@@ -74,6 +74,15 @@
     return { type: items.length === 1 ? "single" : "multi", combos: items.length };
   }
 
-  if (typeof module !== "undefined") module.exports = { val, count, headline, kind };
-  window.WarpedScore = { val, count, headline, kind };
+  // The suit a set's steps carry at suit gates: the suit that appears most often
+  // among its cards. A tie for most means no suit (null). Rules: rules.md › Suit gates.
+  function suitOf(cards) {
+    const n = {};
+    cards.forEach(c => n[c.s] = (n[c.s] || 0) + 1);
+    const most = Math.max(...Object.values(n)), top = Object.keys(n).filter(s => n[s] === most);
+    return top.length === 1 ? top[0] : null;
+  }
+
+  if (typeof module !== "undefined") module.exports = { val, count, headline, kind, suitOf };
+  window.WarpedScore = { val, count, headline, kind, suitOf };
 })();

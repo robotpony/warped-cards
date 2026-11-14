@@ -130,3 +130,12 @@ test("flushes and his nobs", () => {
   const n = S.count(cards("5S JS"), { flushMin: 4, nobs: [0, 1] });
   assert.deepEqual(n.items.map(i => i.name), ["Fifteen", "His nobs"]);
 });
+
+test("a set's suit is its most common suit, and a tie is no suit", () => {
+  // Examples from rules.md › Suit gates.
+  assert.equal(S.suitOf(cards("3H 4H 5H")), "H");
+  assert.equal(S.suitOf(cards("5H 5S JH")), "H"); // 2 hearts, 1 spade
+  assert.equal(S.suitOf(cards("9D 6S 9S 6D")), null); // 2 and 2
+  assert.equal(S.suitOf(cards("7S 8D")), null); // 1 and 1
+  assert.equal(S.suitOf(cards("AC 2C 3D 4D 5C")), "C"); // 3 clubs, 2 diamonds
+});

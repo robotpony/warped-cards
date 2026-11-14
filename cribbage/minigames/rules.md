@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 4, 2026-11-14. Match turns follow match rules r7. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 4, 2026-11-14. Match turns follow match rules r8. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -49,7 +49,7 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead. Turns go in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-These are match rules r7, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r8, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -119,13 +119,17 @@ At the end of your turn, your best score wins one prize: a special card for your
 
 #### The score breakdown
 
-Every score plays out part by part, like counting a hand aloud: the set's name, each combo with its cards lit and a running total, any bonuses, edge power (to pips), the power-up, then the total. The timer pauses while it plays. It starts slow and speeds up with each part; how fast is a player setting, quicker as they learn. See the [score breakdown mock](mocks/score-breakdown.html).
+Every score plays out part by part, like counting a hand aloud: the set's name, each combo with its cards lit and a running total, any bonuses, edge power (to pips), the power-up, then the total. The banner names the set's suit, or "no suit" for a tie (see Suit gates). The timer pauses while it plays, and a tap skips to the end. It starts slow and speeds up with each part; how fast is a player setting, quicker as they learn. It plays in the [match turn mock](mocks/match-turn.html).
 
 #### Ending the turn
 
-Your turn ends when the timer runs out, when you've used your card budget, when the stock is empty, or when you choose to end it. Timer and budget: to tune (the mock uses 90 seconds and the whole stock).
+When the stock is empty or you've used your card budget, nothing refills: gaps stay empty and you play out the cards that are left. Timer and budget: to tune (the mock uses 90 seconds and the whole stock).
 
-If you clear the board (every grid card scored, nothing left), you earn a clear-board bonus. Its size: to tune.
+If you clear the board (every grid card scored or bombed, nothing left), your turn ends and you earn a clear-board bonus. Its size and kind (steps, pips or a prize): to tune; the mock uses 10 steps.
+
+If no set on the board can score, the game says so. Use a special card if you have one, or end your turn.
+
+Your turn ends when the timer runs out, when you clear the board, or when you choose to end it.
 
 Your steps don't move your token during the turn. Each scoring set becomes a bundle of steps that carries a suit (see Suit gates), and after the turn you walk them through the maze, making the choices at forks and gates. How that walk plays: not designed yet.
 

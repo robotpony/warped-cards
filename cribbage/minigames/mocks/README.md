@@ -6,17 +6,40 @@ Every scoring set is a single (exactly one combo, like 7-8) or a multi (two or m
 
 | Mock | What it covers | Status |
 |---|---|---|
-| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, special cards (swapper, bomb), power levels, prizes, timer and card budget | v3, 2026-11-14 |
-| [score-breakdown.html](score-breakdown.html) | The overlay that plays each score part by part: set name, each combo with its cards lit and a running total, bonuses, edge power, then the total flying to the step counter. Kept separate so it can grow with new features | v1, 2026-11-14 |
+| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, special cards (swapper, bomb), power levels, prizes, timer and card budget, play-out and the clear-board ending | v4, 2026-11-14 |
+| Score breakdown | Merged into the match turn in v4. The standalone mock (v1, with presets) is in git history | Retired |
 | Prize pick | Choosing where a prize goes (deck or power slot), badges | Not started |
 | Pegging on the maze | Pegging with live token movement | Waiting on maze inspiration |
 
-## Score breakdown v1 (2026-11-14)
+## Match turn v4: score breakdown, suits, play-out (2026-11-14)
+
+- The score breakdown now plays on every score in the match turn, over the live board. Its settings (speed, tally placement, fifteens, floating points) sit in their own panel and apply at once. "Quick flash only" brings back the old 0.4 s flash. Tap the phone to skip to the end; "Replay the last score" plays it again on the board as it was. Each score's event records `breakdown_ms`, its time on screen.
+- Each set shows its suit (or "no suit" on a tie) in the breakdown banner and total line, the feed and the event log. The turn summary adds steps by suit. The suit rule lives in `scoring.js` (`suitOf`), with a test of the rules doc's examples.
+- Rules r8: when the stock or card budget runs out, nothing refills and you play out the grid. Clearing every grid card ends the turn with the clear-board bonus (setting: none, 5 or 10 steps, or 10 pips) and a "Board cleared!" summary. The turn no longer ends on an empty stock.
+- When no set can score, the message line says so and End turn pulses. The check grows every connected set up to the max size after each action.
+- Special cards and pips carry over between turns in the rules; this mock still resets the tray on New turn.
+- Fixes: the bot bombs the cell with the biggest blast instead of a random centre cell, which could be empty and loop forever once the grid stopped refilling. Removed dead timer code.
+
+### v4 findings, rules r8 (2026-11-14)
+
+Ten bot turns per level, as the dealer, max 5 cards per set, clear-board bonus +10 steps. Bot batches skip the timer, so these are upper bounds for clearing.
+
+| Bot | Mean steps | Range | Boards cleared | Steps with no suit |
+|---|---|---|---|---|
+| Perfect | 183 | 147 to 229 | 9 of 10 | 40% |
+| Medium | 132 | 103 to 179 | 10 of 10 | 23% |
+| Weak | 79 | 59 to 95 | 7 of 10 | 52% |
+
+- Play-out adds about half again to a turn (perfect was 123 on r7), since the last 16 grid cards now score too.
+- Bots clear the board almost every time, using bombs on cards left alone. A clear-board bonus won't feel special until a person under the timer clears it rarely; human playtests will tell us.
+- Ties are common: a quarter to a half of all steps carry no suit, so suit gates will be strict.
+
+## Score breakdown v1 (2026-11-14, now in the match turn)
 
 - Order: the set lifts and the board dims; a banner names the set (its biggest combo); each combo plays one at a time, like counting a hand aloud ("Fifteen +2 → 2, Fifteen +2 → 4, Pair royal +6 → 14"), lighting its cards and floating its points; then bonuses (placeholders for prize cells, gates and badges), then edge power, each powered card lit blue; then power up, where every edge card in the set gains a level and its chip ticks up; then the total flies up to the step counter.
 - Timing: steps start slow and speed up. The first step takes 1.2 s, each later step is 15% quicker, and no step is quicker than 0.4 s. An 8-step score takes about 5.8 s plus about 2.9 s to open and close. These are tuning settings in the mock for now; in the game, the first-step time becomes a player setting that quickens as they learn.
 - The tally panel sits away from the set (over the top of the board when the set is low, over the bottom when it's high). Options: fifteens one line each or grouped, floating points on or off.
-- Presets cover a fifteen, a pair with fifteens, a double double run, a pair royal with his nobs, a bonus and edge power, and a run with a flush. "Random set" deals a random board and picks a scoring set.
+- The standalone mock had presets for a fifteen, a pair with fifteens, a double double run, a pair royal with his nobs, a bonus and edge power, and a run with a flush. They went with it; bonus lines come back when prize cells, gates and badges exist.
 
 ## Match turn rules versions
 
@@ -31,6 +54,7 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r5 | 2026-11-14 | Hand and crib cards touch only their real neighbours, like grid cards |
 | r6 | 2026-11-14 | The starter sits in the corner where the hand row and crib column meet, touching only its real neighbours (last hand card, bottom crib card, grid corner). Tilted, with a light ring and a STARTER tag; the hand and crib get gold HAND and CRIB tags. Setting: keep it apart at the top, touching every hand and crib card (the r5 rule) |
 | r7 | 2026-11-14 | Edge power pays into a separate tally (pips), not steps. One prize per turn, for the best score, at the end of the turn. Special cards are kept all game. The timer pauses while a score plays. Bot skill setting (perfect, strong, medium, weak) |
+| r8 | 2026-11-14 | Play out the grid when the stock or budget runs out (no refills); clearing the board ends the turn with a bonus (setting). Each set's suit is recorded. Score breakdown plays on every score (mock v4) |
 
 ## Match turn v3: automatic scoring and special cards (2026-11-14)
 
