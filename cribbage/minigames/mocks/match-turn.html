@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Match Turn Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+    --felt: #0E3B2E; --felt-text: #F3ECDC; --gold: #E8B84A; --cw: 64px; --gap: 5px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  .side { flex: 1 1 340px; min-width: 0; max-width: 620px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .panel label { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+  .panel select { font: inherit; }
+  .runs { border-collapse: collapse; font-size: 13px; width: 100%; }
+  .runs th, .runs td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .runs td:not(:first-child), .runs th:not(:first-child) { text-align: right; white-space: nowrap; }
+  .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+  ul.tight { margin: 4px 0; padding-left: 18px; }
+  #log { font: 12px/1.4 ui-monospace, Menlo, monospace; max-height: 260px; overflow: auto; white-space: pre-wrap; background: var(--bg); padding: 8px; border-radius: 6px; }
+
+  /* Phone: 393 x 852 pt screen, 1 CSS px = 1 pt */
+  .phone { width: 413px; height: 872px; border-radius: 52px; border: 10px solid #111; background: var(--felt);
+           position: relative; overflow: hidden; flex: none; color: var(--felt-text); user-select: none; -webkit-user-select: none; }
+  .phone::before { content: ""; position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 3; }
+  .screen { position: absolute; inset: 0; padding: 58px 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; opacity: .9; }
+  .steps { display: flex; justify-content: space-between; align-items: baseline; }
+  .steps .big { font-size: 34px; font-weight: 700; line-height: 1; }
+  .steps .sub { font-size: 13px; opacity: .75; text-align: right; }
+  .track { height: 6px; background: rgba(243,236,220,.15); border-radius: 3px; overflow: hidden; }
+  .track i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .4s; }
+
+  .board { display: grid; grid-template-columns: repeat(4, var(--cw)) calc(var(--cw) + var(--edge-gap)); gap: var(--gap); justify-content: center;
+           overflow: hidden; padding: 9px 9px 6px; margin: 0 -9px; flex: none;
+           grid-template-rows: repeat(4, calc(var(--cw) * 1.4)) calc(var(--cw) * 1.4 + var(--edge-gap)); touch-action: none; --edge-gap: 12px; }
+  .cell.crib { justify-self: end; }
+  .cell.hand { align-self: end; }
+  .cell.corner { visibility: hidden; }
+  /* Starter in the corner: where the hand row and crib column meet. Tilted, with a
+     light ring and a tag, so it reads as the cut card rather than one more edge card. */
+  .board .cell.starter { justify-self: end; align-self: end; }
+  .board .cell.starter .card { transform: rotate(-5deg); box-shadow: 0 0 0 2px var(--felt-text), 0 4px 8px rgba(0,0,0,.35); border-radius: 5px; }
+  .board .cell.starter.sel .card { transform: rotate(-5deg) translateY(-5px) scale(1.04); }
+  .cell .tag { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); background: var(--felt-text); color: var(--felt);
+               font-size: 10px; font-weight: 700; letter-spacing: .08em; border-radius: 8px; padding: 0 6px; line-height: 16px; z-index: 2; pointer-events: none; }
+  .cell .tag.gold { background: var(--gold); color: #2B2A26; }
+  .starter-wrap { display: flex; align-items: center; gap: 8px; font-size: 13px; opacity: .95; }
+  .starter-wrap .cell { width: 46px; }
+  .starter-wrap .pile { cursor: default; }
+  .starter-wrap .chip { font-size: 11px; line-height: 16px; }
+  .cell { width: var(--cw); aspect-ratio: 5 / 7; position: relative; cursor: pointer; }
+  .cell .card { width: 100%; height: 100%; transition: transform .12s; }
+  .cell .card svg { width: 100%; height: 100%; display: block; }
+  .cell.empty { border: 1px dashed rgba(243,236,220,.25); border-radius: 5px; }
+  .cell.edge .card { box-shadow: 0 0 0 2px var(--gold); border-radius: 5px; }
+  .cell.sel .card { transform: translateY(-5px) scale(1.04); box-shadow: 0 0 0 3px #fff, 0 6px 10px rgba(0,0,0,.35); border-radius: 5px; }
+  .cell .order { position: absolute; bottom: -4px; left: -4px; background: #fff; color: #0E3B2E; font-weight: 700; font-size: 11px;
+                 border-radius: 9px; width: 18px; line-height: 18px; text-align: center; z-index: 2; }
+  .cell.hit .card { animation: pop .32s ease-out; box-shadow: 0 0 0 3px #fff, 0 0 18px 4px rgba(232,184,74,.9); border-radius: 5px; }
+  .cell.drop .card { animation: drop .26s ease-in both; }
+  .cell.flip .card { animation: flip .3s ease-out; }
+  .cell.shake .card { animation: shake .3s; }
+  .chip { position: absolute; top: -6px; right: -6px; background: var(--gold); color: #2B2A26; font-weight: 700; font-size: 12px;
+          border-radius: 10px; padding: 0 6px; line-height: 18px; z-index: 2; }
+  .slot-label { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; opacity: .5; text-align: center; }
+  @keyframes pop { 50% { transform: scale(1.12); } }
+  @keyframes drop { from { transform: translateY(calc(var(--dy) * -1 * (var(--cw) * 1.4 + var(--gap)))); } to { transform: none; } }
+  @keyframes flip { 0% { transform: scaleX(1); } 50% { transform: scaleX(.1); } 100% { transform: scaleX(1); } }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  .cell.blast .card { animation: blast .38s ease-out forwards; }
+  @keyframes blast { 0% { transform: scale(1); } 40% { transform: scale(1.18); box-shadow: 0 0 22px 8px rgba(224,0,0,.85); } 100% { transform: scale(.2); opacity: 0; } }
+  .board.arm-bomb .cell:not(.edge):not(.empty) { cursor: crosshair; }
+  .bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+  .tray { display: flex; gap: 16px; align-items: flex-end; min-height: 72px; }
+  .special { position: relative; width: 44px; aspect-ratio: 5 / 7; cursor: pointer; }
+  .special .card { width: 100%; height: 100%; border-radius: 4px; transition: transform .12s; }
+  .special .card svg { width: 100%; height: 100%; display: block; }
+  .special.many .card { box-shadow: 3px -3px 0 -1px #cfc6b3, 6px -6px 0 -2px #a99e86; }
+  .special.armed .card { transform: translateY(-10px); box-shadow: 0 0 0 3px #fff, 0 6px 12px rgba(0,0,0,.4); }
+  .special.none { opacity: .3; cursor: default; }
+  .special .count { position: absolute; bottom: -6px; right: -6px; background: #6A1B9A; color: #fff; font-weight: 700; font-size: 12px;
+                    border-radius: 10px; min-width: 20px; line-height: 20px; text-align: center; padding: 0 5px; }
+  .pick { font-size: 14px; min-height: 40px; opacity: .9; }
+  .actions { display: flex; gap: 8px; }
+  .pbtn { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 9px 14px; background: var(--felt-text); color: var(--felt); cursor: pointer; flex: 1; }
+  .pbtn.ghost { background: transparent; color: var(--felt-text); border: 1px solid rgba(243,236,220,.4); flex: none; }
+  .pbtn:disabled { opacity: .35; cursor: default; }
+  .feed { flex: 1; overflow: hidden; font-size: 14px; display: flex; flex-direction: column; gap: 3px; }
+  .feed div:first-child { font-weight: 600; }
+  .feed .prize { color: var(--gold); }
+
+  .toast { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) scale(.9); background: var(--gold); color: #2B2A26;
+           font-weight: 700; font-size: 20px; padding: 10px 18px; border-radius: 12px; opacity: 0; transition: .2s; pointer-events: none; z-index: 4; text-align: center; }
+  .toast.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .overlay { position: absolute; inset: 0; background: rgba(8,30,23,.95); padding: 70px 24px 24px; display: none; flex-direction: column; gap: 10px; z-index: 5; overflow: auto; }
+  .overlay.on { display: flex; }
+  .overlay h3 { margin: 0; font-size: 24px; }
+  .overlay table { border-collapse: collapse; font-size: 15px; }
+  .overlay td { padding: 3px 8px 3px 0; } .overlay td:last-child { text-align: right; font-weight: 600; }
+  .start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,30,23,.6); z-index: 4; }
+  .start.off { display: none; }
+  @media (max-width: 440px) { .phone { transform: scale(.85); transform-origin: top left; margin-bottom: -128px; margin-right: -60px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="top"><span id="who">Your match turn</span><span id="timer">--</span><span id="stock">Stock --</span></div>
+      <div class="steps"><div><div class="big" id="steps">0</div><div style="font-size:13px;opacity:.75">steps this turn · <b id="pips">0</b> <span id="tallyName"></span></div></div>
+        <div class="starter-wrap"><div class="cell pile" id="pile"></div><div id="starter"></div></div></div>
+      <div class="track" title="Progress along a 121-step main route"><i id="trackbar"></i></div>
+      <div class="board" id="board"></div>
+      <div class="pick" id="pick"></div>
+      <div class="feed" id="feed"></div>
+      <div class="bottom"><div class="tray" id="tray"></div><button class="pbtn ghost" id="endBtn">End turn</button></div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="start" id="start"><button class="pbtn" id="startBtn" style="flex:none">Start turn</button></div>
+    <div class="overlay" id="summary"></div>
+  </div>
+
+  <div class="side">
+    <h1>Match turn mock</h1>
+    <p class="muted">Crib Maze, mock v3 (Boggle-style, special cards), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
+
+    <div class="panel">
+      <strong>How to play</strong>
+      <ul class="tight">
+        <li>Drag across up to 5 touching cards (diagonals count), like tracing a word in Boggle, and let go. Hand and crib cards touch only their neighbours, as grid cards do. The starter sits in the corner where your hand and the crib meet, tilted and tagged, and touches its neighbours too: the last hand card, the bottom crib card and the grid corner. Drag back to undo the last card.</li>
+        <li>Every set needs at least one grid card: your hand, crib and starter can't score on their own.</li>
+        <li>The set scores automatically, counted like a cribbage hand: every fifteen (2 each), pair (2), pair royal (6), double pair royal (12), run (1 per card; double runs count twice), flush of 4 or 5, and his nobs (1). 8-6-A is a fifteen, 2. 7-8-8 is two fifteens and a pair, 6. Every card must be part of at least one combo. If a card is left over, or nothing scores, nothing happens.</li>
+        <li>With taps instead of a drag: tap cards to select them, then tap the last one again to submit.</li>
+        <li>Scored grid cards clear, the cards above fall and the stock refills. Edge cards (gold) stay and power up: each level adds 1 to the <b>pips</b> tally on later scores, not steps. Pips buy jokers and special cards between rounds. The same set can't score twice.</li>
+        <li>Special cards wait in the tray at the bottom. Tap one to arm it:
+          <b>Swapper</b> (⇄): then trace a straight line of 2 to 4 grid cards; the line is reversed.
+          <b>Bomb</b>: then tap a grid card; it and its neighbours are cleared and refilled, scoring nothing.</li>
+        <li>At the end of the turn, your best score wins one prize, a special card for your tray. Special cards are kept all game. The timer pauses while a score plays.</li>
+        <li>The turn ends on the timer, the card budget, an empty stock, or End turn.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <strong>Settings</strong> <span class="muted">(apply on New turn)</span>
+      <label><input type="checkbox" id="optDealer" checked> Dealer: crib down the side</label>
+      <label>Hand <select id="optHand"><option value="random">Random</option><option value="good">Strong (4♥ 5♣ 6♦ J♠, starter 5♠)</option></select></label>
+      <label>Timer <select id="optTimer"><option value="0">Off</option><option value="60">60 s</option><option value="90" selected>90 s</option><option value="120">120 s</option></select></label>
+      <label>Card budget <select id="optBudget"><option value="0" selected>Whole stock</option><option value="12">12 cards</option><option value="16">16 cards</option><option value="24">24 cards</option></select></label>
+      <label>Prize tier: rare at <select id="optPrize"><option value="6">6+ steps</option><option value="8" selected>8+ steps</option><option value="10">10+ steps</option><option value="12">12+ steps</option></select> best score, epic at double</label>
+      <label><input type="checkbox" id="optTouch" checked> Selected cards must touch</label>
+      <label>Starter <select id="optStarter"><option value="corner" selected>In the corner (real neighbours)</option><option value="bridge">Apart, touches all hand and crib cards</option></select></label>
+      <label>Max cards per set <select id="optMax"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option></select></label>
+      <label>Start with <select id="optSwaps"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select> swappers and
+        <select id="optBombs"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select> bombs</label>
+      <label>Bomb blast <select id="optBlast"><option value="plus" selected>Plus (card and 4 neighbours)</option><option value="square">Square (card and 8 neighbours)</option></select></label>
+      <label><input type="checkbox" id="optPrizeSpecial" checked> Prizes add a special card</label>
+      <label>Bot skill <select id="optBot"><option value="perfect" selected>Perfect: finds the best set every time</option><option value="strong">Strong</option><option value="medium">Medium</option><option value="weak">Weak</option></select></label>
+      <p style="margin-top:8px"><button class="btn" id="newBtn">New turn</button> <button class="btn" id="autoBtn">Watch a bot play this turn</button></p>
+      <p class="muted" style="margin:0">The bot scores the best set it can find. When nothing scores it uses a swapper (on the swap that opens the best score), then a bomb, then stops.</p>
+    </div>
+
+    <div class="panel">
+      <strong>Playtest runs</strong> <span class="muted">Every finished turn is saved in this browser with its settings, hand, crib, starter, sets and score. "Classic count" is the hand plus crib as plain cribbage would score them.</span>
+      <p style="margin:6px 0"><button class="btn" id="copyBtn">Copy runs to clipboard</button>
+        <button class="btn" id="dlRunsBtn">Download runs</button>
+        <button class="btn" id="batchBtn">Run 10 bot turns (fast)</button>
+        <button class="btn" id="clearBtn">Clear runs</button> <span class="muted" id="runsMsg"></span></p>
+      <div id="runs"></div>
+    </div>
+
+    <div class="panel">
+      <strong>Event log</strong> <span class="muted">Times are ms from the start of the turn; real human timings for the simulator.</span>
+      <p style="margin:6px 0"><button class="btn" id="dlBtn">Download this turn's event log</button></p>
+      <div id="log"></div>
+    </div>
+  </div>
+</main>
+
+<script src="../../../design/cards/cards.js"></script>
+<script src="scoring.js"></script>
+<script>
+const WC = window.WarpedCards;
+const SUITS = ["S", "H", "D", "C"];
+const label = (c) => WC.RANKS[c.r - 1] + WC.SUITS[c.s].glyph;
+const val = (c) => Math.min(c.r, 10);
+// Match turn rules version. Bump it whenever a rule changes, and add a line to
+// the rules history in mocks/README.md, so runs from old rules are never mixed in.
+const RULES = 7;
+// Pips: the bonus tally that edge power pays into (spent between rounds on
+// jokers and special cards). Rename here once it has a name.
+const TALLY = "pips";
+let FAST = false; // batch bot runs skip the animation pauses
+const sleep = (ms) => new Promise(r => setTimeout(r, FAST ? 0 : ms));
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const $ = (id) => document.getElementById(id);
+
+let S;
+
+// ---------- Positions ----------
+// Grid cells g(r,c) r,c in 0..3. Crib i sits at (i,4), hand i at (4,i), starter at (4,4) (the corner)
+// or apart at the top beside the deck (the bridge setting).
+const P = { g: (r, c) => ({ k: "g", r, c }), h: (i) => ({ k: "h", i }), c: (i) => ({ k: "c", i }), s: () => ({ k: "s" }) };
+const key = (p) => p.k === "g" ? `g${p.r}${p.c}` : p.k === "s" ? "s" : p.k + p.i;
+const coord = (p) => p.k === "g" ? [p.r, p.c] : p.k === "c" ? [p.i, 4] : p.k === "h" ? [4, p.i] : [4, 4];
+const isEdge = (p) => p.k !== "g";
+function allPositions() {
+  const out = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) out.push(P.g(r, c));
+  for (let i = 0; i < 4; i++) { out.push(P.h(i)); if (S.crib) out.push(P.c(i)); }
+  out.push(P.s());
+  return out;
+}
+function cardAt(p) {
+  if (p.k === "g") return S.grid[p.r][p.c];
+  if (p.k === "h") return S.hand[p.i];
+  if (p.k === "c") return S.crib ? S.crib[p.i] : null;
+  return S.starter;
+}
+// Every card touches only its real neighbours (diagonals count). In the corner the
+// starter touches the last hand card, the bottom crib card and one grid corner.
+// With the bridge setting it sits apart and touches every hand and crib card.
+function touching(a, b) {
+  if (S.opts.starter === "bridge" && (a.k === "s" || b.k === "s")) return isEdge(a) && isEdge(b);
+  const [r1, c1] = coord(a), [r2, c2] = coord(b);
+  return Math.max(Math.abs(r1 - r2), Math.abs(c1 - c2)) === 1;
+}
+function connected(sel) {
+  if (sel.length <= 1) return true;
+  const seen = new Set([0]), q = [0];
+  while (q.length) { const i = q.pop(); sel.forEach((p, j) => { if (!seen.has(j) && touching(sel[i], p)) { seen.add(j); q.push(j); } }); }
+  return seen.size === sel.length;
+}
+
+// ---------- Combos ----------
+// The selection scores like a classic cribbage hand: every fifteen, pair, run
+// (double runs too), flush and his nobs inside it counts. Every card must be
+// part of at least one combo, so a dead card makes the set not score.
+function combos(sel) {
+  const cards = sel.map(cardAt);
+  if (cards.length < 2 || cards.length > 5 || cards.some(c => !c)) return [];
+  const si = sel.findIndex(p => p.k === "s");
+  const ji = si < 0 ? -1 : sel.findIndex(p => (p.k === "h" || p.k === "c") && cardAt(p).r === 11 && cardAt(p).s === S.starter.s);
+  const { out, used, items } = countCards(cards, { nobs: ji >= 0 ? [si, ji] : null, flushMin: 4 });
+  if (used.size !== cards.length) return [];
+  out.kind = WarpedScore.kind(items); // single (one combo) or multi (two or more)
+  return out;
+}
+// Counts every classic combo in a list of cards (shared code in scoring.js), with
+// fifteens rolled up into one line for the feed. Returns the combos and which cards they used.
+function countCards(cards, o) {
+  const { items, used } = WarpedScore.count(cards, o), out = [];
+  const f = items.filter(i => i.kind === "fifteen").length;
+  if (f) out.push({ name: f === 1 ? "fifteen" : f + " fifteens", pts: 2 * f });
+  items.filter(i => i.kind !== "fifteen").forEach(i => out.push({ name: i.name.toLowerCase(), pts: i.pts }));
+  return { out, used, items };
+}
+// The classic count of 4 cards plus the starter, as a baseline for each playtest.
+function classicCount(four, starter, isCrib) {
+  if (!four) return null;
+  const ji = four.findIndex(c => c.r === 11 && c.s === starter.s);
+  const { out } = countCards([...four, starter], { flushMin: 5, flush4: !isCrib, nobs: ji >= 0 ? [ji, 4] : null });
+  return out.reduce((a, c) => a + c.pts, 0);
+}
+const setKey = (sel) => sel.map(p => cardAt(p).id).sort((a, b) => a - b).join("-");
+function scoreable(sel) {
+  if (sel.length > S.opts.maxSet) return null;
+  if (!sel.some(p => p.k === "g")) return null; // edge cards can't score on their own
+  if (S.opts.touch && !connected(sel)) return null;
+  const cs = combos(sel);
+  if (!cs.length || S.scored.has(setKey(sel))) return null;
+  return { cs, pts: cs.reduce((a, c) => a + c.pts, 0), kind: cs.kind };
+}
+// A straight, gap-free line of 2 to 4 grid cards: returns the cells in line order.
+function mirrorLine(sel) {
+  if (sel.length < 2 || sel.some(p => p.k !== "g" || !cardAt(p))) return null;
+  const cells = [...sel].sort((a, b) => a.r - b.r || a.c - b.c);
+  const dr = cells[1].r - cells[0].r, dc = cells[1].c - cells[0].c;
+  if (Math.max(Math.abs(dr), Math.abs(dc)) !== 1) return null;
+  for (let i = 2; i < cells.length; i++) if (cells[i].r - cells[i - 1].r !== dr || cells[i].c - cells[i - 1].c !== dc) return null;
+  return cells;
+}
+
+// ---------- Setup ----------
+function newTurn() {
+  if (S) clearInterval(S.tick);
+  const opts = {
+    dealer: $("optDealer").checked, hand: $("optHand").value, timer: +$("optTimer").value,
+    budget: +$("optBudget").value, prize: +$("optPrize").value, touch: $("optTouch").checked, starter: $("optStarter").value, maxSet: +$("optMax").value,
+    swaps: +$("optSwaps").value, bombs: +$("optBombs").value, blast: $("optBlast").value, prizeSpecial: $("optPrizeSpecial").checked, bot: $("optBot").value,
+  };
+  const deck = []; let id = 0;
+  for (const s of SUITS) for (let r = 1; r <= 13; r++) deck.push({ id: id++, r, s });
+  shuffle(deck);
+  const take = (r, s) => deck.splice(deck.findIndex(c => c.r === r && c.s === s), 1)[0];
+  let hand, starter;
+  if (opts.hand === "good") { hand = [take(4, "H"), take(5, "C"), take(6, "D"), take(11, "S")]; starter = take(5, "S"); }
+  else { hand = deck.splice(0, 4); starter = deck.splice(0, 1)[0]; }
+  const crib = deck.splice(0, 4);
+  deck.splice(0, 4); // the other player's hand, out of the stock
+  S = {
+    opts, hand, crib: opts.dealer ? crib : null, starter, stock: deck, grid: [[], [], [], []],
+    power: {}, steps: 0, drawn: 0, tally: { grid: 0, edge: 0, power: 0 }, pips: 0, best: null, prizes: [], scored: new Set(),
+    sel: [], busy: false, over: false, started: false, t0: 0, log: [], timeLeft: opts.timer,
+    scores: 0, swaps: 0, rejected: 0, bombs: 0,
+    specials: { swap: opts.swaps, bomb: opts.bombs }, armed: null,
+  };
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) S.grid[r][c] = S.stock.shift();
+  $("summary").classList.remove("on"); $("start").classList.remove("off");
+  $("feed").innerHTML = ""; $("log").textContent = "";
+  render();
+}
+function draw() {
+  if (!S.stock.length || (S.opts.budget && S.drawn >= S.opts.budget)) return null;
+  S.drawn++; return S.stock.shift();
+}
+function stockLeft() { return S.opts.budget ? Math.min(S.stock.length, S.opts.budget - S.drawn) : S.stock.length; }
+
+// ---------- Actions ----------
+// Clear grid cells, drop the cards above, refill from the stock. Returns drop animations.
+function collapse(cleared) {
+  cleared.forEach(p => S.grid[p.r][p.c] = null);
+  const drops = [];
+  for (let c = 0; c < 4; c++) {
+    if (!cleared.some(p => p.c === c)) continue;
+    const kept = [0, 1, 2, 3].map(r => ({ card: S.grid[r][c], r })).filter(x => x.card);
+    const gaps = 4 - kept.length;
+    for (let r = 3, k = kept.length - 1; r >= 0; r--, k--) {
+      if (k >= 0) { S.grid[r][c] = kept[k].card; if (kept[k].r !== r) drops.push({ k: "g", r, c, dy: r - kept[k].r }); }
+      else { const card = draw(); S.grid[r][c] = card; if (card) drops.push({ k: "g", r, c, dy: gaps }); }
+    }
+  }
+  return drops;
+}
+function checkStockOut(usedGrid) {
+  if (!stockLeft() && usedGrid) { endTurn(S.opts.budget && S.drawn >= S.opts.budget ? "card budget used" : "stock empty"); return true; }
+  return false;
+}
+// Called when a trace ends (or the last tapped card is tapped again).
+function submit() {
+  if (S.busy || S.over || !S.sel.length) return;
+  if (S.armed === "swap") {
+    if (mirrorLine(S.sel)) { doSwap(); return; }
+    log("swap_not_a_line", { cards: S.sel.map(cardAt).map(label) });
+    S.sel = []; render(); return;
+  }
+  if (scoreable(S.sel)) { doScore(); return; }
+  S.rejected++;
+  log("trace_no_score", { cards: S.sel.map(cardAt).map(label) });
+  S.sel = []; render(); // nothing happens
+}
+async function doBomb(p) {
+  if (S.busy || S.over || S.armed !== "bomb" || p.k !== "g" || !cardAt(p)) return;
+  S.busy = true; S.specials.bomb--; S.armed = null; S.bombs++;
+  const area = [];
+  for (let r = p.r - 1; r <= p.r + 1; r++) for (let c = p.c - 1; c <= p.c + 1; c++) {
+    if (r < 0 || r > 3 || c < 0 || c > 3 || !S.grid[r][c]) continue;
+    if (S.opts.blast === "plus" && r !== p.r && c !== p.c) continue;
+    area.push(P.g(r, c));
+  }
+  feed(`Bomb: cleared ${area.map(cardAt).map(label).join(" ")}`);
+  log("bomb", { at: label(cardAt(p)), cleared: area.map(cardAt).map(label) });
+  S.sel = [];
+  render(area, "blast"); await sleep(400);
+  render(collapse(area), "drop"); await sleep(280);
+  S.busy = false;
+  if (!checkStockOut(true)) render();
+}
+async function doScore() {
+  if (S.busy || S.over) return;
+  const sc = scoreable(S.sel);
+  if (!sc) return;
+  S.busy = true;
+  const sel = S.sel, cards = sel.map(cardAt), edges = sel.filter(isEdge).map(cardAt);
+  const bonus = edges.reduce((a, c) => a + (S.power[c.id] || 0), 0);
+  edges.forEach(c => S.power[c.id] = (S.power[c.id] || 0) + 1);
+  S.scored.add(setKey(sel));
+  // Edge power pays into the bonus tally, not steps (r7).
+  S.steps += sc.pts; S.pips += bonus; S.tally.power += bonus; S.scores++;
+  if (!S.best || sc.pts > S.best.pts) S.best = { pts: sc.pts, cards: cards.map(label) };
+  if (sel.some(isEdge)) S.tally.edge += sc.pts; else S.tally.grid += sc.pts;
+  const what = (sc.kind.type === "multi" ? `multi ×${sc.kind.combos}: ` : "single: ") + sc.cs.map(c => c.name).join(" + ");
+  feed(`${cards.map(label).join(" ")}  ${what}  +${sc.pts}${bonus ? `, +${bonus} ${TALLY}` : ""}`);
+  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, bonus, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length });
+  S.sel = [];
+  render(sel, "hit"); await sleep(360);
+  const gridSel = sel.filter(p => p.k === "g");
+  render(collapse(gridSel), "drop"); await sleep(280);
+  S.busy = false;
+  if (!checkStockOut(gridSel.length > 0)) render();
+}
+async function doSwap() {
+  if (S.busy || S.over || S.armed !== "swap" || S.specials.swap < 1) return;
+  const line = mirrorLine(S.sel);
+  if (!line) return;
+  S.busy = true; S.specials.swap--; S.armed = null;
+  const cards = line.map(cardAt);
+  line.forEach((p, i) => S.grid[p.r][p.c] = cards[cards.length - 1 - i]);
+  S.swaps++;
+  feed(`Swapped ${cards.map(label).join(" ")}  to  ${[...cards].reverse().map(label).join(" ")}`);
+  log("swap", { before: cards.map(label), length: cards.length });
+  S.sel = [];
+  render(line, "flip"); await sleep(300);
+  S.busy = false; render();
+}
+
+// ---------- Turn flow ----------
+function startTurn() {
+  S.started = true; S.t0 = performance.now();
+  $("start").classList.add("off");
+  log("turn_start", { rules: RULES, dealer: S.opts.dealer, stock: S.stock.length, timer: S.opts.timer, budget: S.opts.budget,
+    hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter) });
+  if (S.opts.timer) S.tick = setInterval(() => {
+    if (S.busy) return; // the timer pauses while a score plays (r7)
+    S.timeLeft--; renderTop();
+    if (S.timeLeft <= 0) { clearInterval(S.tick); if (!S.busy) endTurn("timer"); else S.pendingEnd = true; }
+  }, 1000);
+  render();
+}
+function endTurn(reason) {
+  if (S.over) return;
+  S.over = true; clearInterval(S.tick);
+  // One prize per turn, for the turn's best score (r7). Its tier grows with the score.
+  let prizeText = "none (nothing scored)";
+  if (S.best) {
+    const b = S.best.pts, tier = b >= S.opts.prize * 2 ? "Epic" : b >= S.opts.prize ? "Rare" : "Common";
+    let extra = "";
+    if (S.opts.prizeSpecial) { const t = Math.random() < 0.6 ? "swap" : "bomb"; S.specials[t]++; extra = `, +1 ${WC.SPECIALS[t].name.toLowerCase()}`; }
+    S.prizes.push(tier); prizeText = `${tier} for the best score (${b} steps: ${S.best.cards.join(" ")})${extra}`;
+    log("prize_won", { tier, steps: b, cards: S.best.cards, special: extra.replace(", ", "") || null });
+  }
+  const secs = Math.round((performance.now() - S.t0) / 1000);
+  log("turn_end", { reason, steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
+  saveRun(reason, secs);
+  $("summary").innerHTML = `<h3>Turn over: ${S.steps} steps</h3><div style="opacity:.8">Ended by ${reason} after ${secs} s</div>
+    <table>
+      <tr><td>Sets using your hand, crib or starter</td><td>${S.tally.edge}</td></tr>
+      <tr><td>Sets of grid cards only</td><td>${S.tally.grid}</td></tr>
+      <tr><td>Edge power, paid as ${TALLY}</td><td>${S.pips}</td></tr>
+      <tr><td>Prize</td><td>${prizeText}</td></tr>
+      <tr><td>Scores / traces that didn't score</td><td>${S.scores} / ${S.rejected}</td></tr>
+      <tr><td>Swappers / bombs used</td><td>${S.swaps} / ${S.bombs}</td></tr>
+      <tr><td>Special cards kept for later turns</td><td>${S.specials.swap} swap, ${S.specials.bomb} bomb</td></tr>
+      <tr><td>Cards drawn</td><td>${S.drawn}</td></tr>
+    </table>
+    <div><button class="pbtn" style="flex:none" onclick="newTurn()">New turn</button></div>`;
+  $("summary").classList.add("on");
+}
+
+// ---------- Playtest runs ----------
+// Every finished turn is kept in this browser (a convenience only) and can be
+// copied to the clipboard as one JSON line per run.
+const RUNS_KEY = "crib-maze-match-runs-v1";
+function loadRuns() { try { return JSON.parse(localStorage.getItem(RUNS_KEY) || "[]"); } catch (e) { return []; } }
+let RUNS = loadRuns();
+function storeRuns() { try { localStorage.setItem(RUNS_KEY, JSON.stringify(RUNS)); } catch (e) {} }
+function saveRun(reason, secs) {
+  const o = S.opts;
+  RUNS.push({
+    v: 3, rules: RULES, at: new Date().toISOString(), player: S.bot ? "bot" : "human",
+    settings: { starter: o.starter, dealer: o.dealer, hand: o.hand, timer: o.timer, budget: o.budget, prize: o.prize, touch: o.touch, maxSet: o.maxSet,
+                swaps: o.swaps, bombs: o.bombs, blast: o.blast, prizeSpecial: o.prizeSpecial, bot: o.bot },
+    hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter),
+    classic: { hand: classicCount(S.hand, S.starter, false), crib: classicCount(S.crib, S.starter, true) },
+    steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: { ...S.tally }, scores: S.scores, prizes: S.prizes.length, rejected: S.rejected,
+    swaps: S.swaps, bombs: S.bombs, drawn: S.drawn, seconds: secs, ended: reason,
+    singles: S.log.filter(e => e.type === "score" && e.count === 1).length,
+    multis: S.log.filter(e => e.type === "score" && e.count > 1).length,
+    sets: S.log.filter(e => e.type === "score").map(e => `${e.cards.join(" ")} | ${e.count > 1 ? "multi ×" + e.count : "single"}: ${e.combos.join(" + ")} | ${e.pts}${e.bonus ? "+" + e.bonus : ""} @${(e.t / 1000).toFixed(1)}s`),
+  });
+  storeRuns(); renderRuns();
+}
+const sigOf = (r) => `r${r.rules || "?"} · ${r.player}${r.player === "bot" && r.settings.bot ? " " + BOT_LEVELS[r.settings.bot].name.toLowerCase() : ""}${r.settings.starter === "bridge" ? " · starter apart" : ""} · set ${r.settings.maxSet} · prize ${r.settings.prize} · ${r.settings.timer ? r.settings.timer + " s" : "no timer"}` +
+  `${r.settings.budget ? " · " + r.settings.budget + " cards" : ""}${r.settings.dealer ? " · dealer" : ""}${r.settings.hand === "good" ? " · strong hand" : ""}`;
+function renderRuns() {
+  const groups = {};
+  RUNS.forEach(r => (groups[sigOf(r)] = groups[sigOf(r)] || []).push(r));
+  const rows = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([sig, rs]) => {
+    const st = rs.map(r => r.steps), mean = st.reduce((a, b) => a + b, 0) / st.length;
+    const cl = rs.map(r => r.classic.hand + (r.classic.crib || 0)), clMean = cl.reduce((a, b) => a + b, 0) / cl.length;
+    return `<tr><td>${sig}</td><td>${rs.length}</td><td>${Math.round(mean)}</td><td>${Math.min(...st)} to ${Math.max(...st)}</td><td>${clMean.toFixed(1)}</td></tr>`;
+  }).join("");
+  $("runs").innerHTML = RUNS.length
+    ? `<table class="runs"><tr><th>Settings</th><th>Runs</th><th>Mean steps</th><th>Range</th><th>Classic count</th></tr>${rows}</table>`
+    : `<p class="muted" style="margin:0">No runs yet. Finish a turn, or run a bot batch.</p>`;
+}
+async function copyRuns() {
+  const text = `␣⌘ Copy · in warped-cards\nCrib Maze match-turn playtests, ${RUNS.length} runs (page on rules r${RULES}), copied ${new Date().toISOString()}\n` +
+    RUNS.map(r => JSON.stringify(r)).join("\n");
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+    try { ok = document.execCommand("copy"); } catch (e2) {} t.remove();
+  }
+  $("runsMsg").textContent = ok ? `Copied ${RUNS.length} runs.` : "Copy failed; the browser blocked the clipboard.";
+}
+async function botBatch(n) {
+  FAST = true; $("batchBtn").disabled = true;
+  for (let i = 0; i < n; i++) { $("runsMsg").textContent = `Bot turn ${i + 1} of ${n}...`; newTurn(); await autoPlay(); }
+  FAST = false; $("batchBtn").disabled = false; $("runsMsg").textContent = `Added ${n} bot runs.`;
+}
+
+// ---------- Rendering ----------
+function cellEl(p, fx, cls) {
+  const card = cardAt(p), d = document.createElement("div");
+  d.className = "cell" + (isEdge(p) ? " edge" : "") + (p.k === "c" ? " crib" : p.k === "h" ? " hand" : p.k === "s" ? " starter" : "");
+  d.dataset.p = JSON.stringify(p);
+  if (!card) { d.className = "cell empty" + (p.k === "c" ? " crib" : ""); if (p.k === "c") d.innerHTML = `<div class="slot-label">no crib</div>`; return d; }
+  d.innerHTML = `<div class="card">${WC.front({ rank: WC.RANKS[card.r - 1], suit: card.s, form: "standard" })}</div>`;
+  // Word tags name each group of edge cards: one on the first hand card, the top crib card and the starter.
+  if (p.k === "s" && S.opts.starter !== "bridge") d.insertAdjacentHTML("beforeend", `<span class="tag">STARTER</span>`);
+  if (p.i === 0 && (p.k === "h" || p.k === "c")) d.insertAdjacentHTML("beforeend", `<span class="tag gold">${p.k === "h" ? "HAND" : "CRIB"}</span>`);
+  if (isEdge(p) && S.power[card.id]) d.insertAdjacentHTML("beforeend", `<span class="chip">+${S.power[card.id]}</span>`);
+  const si = S.sel.findIndex(q => key(q) === key(p));
+  if (si >= 0) { d.classList.add("sel"); d.insertAdjacentHTML("beforeend", `<span class="order">${si + 1}</span>`); }
+  if (fx) { const f = fx.find(q => key(q) === key(p)); if (f) { d.classList.add(cls); if (f.dy) d.style.setProperty("--dy", f.dy); } }
+  return d;
+}
+function render(fx, cls) {
+  const b = $("board"); b.innerHTML = "";
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+    if (r === 4 && c === 4) {
+      if (S.opts.starter === "bridge") { const e = document.createElement("div"); e.className = "cell corner"; b.appendChild(e); }
+      else b.appendChild(cellEl(P.s(), fx, cls));
+      continue;
+    }
+    const p = r < 4 && c < 4 ? P.g(r, c) : r < 4 ? P.c(r) : P.h(c);
+    b.appendChild(cellEl(p, fx, cls));
+  }
+  const st = $("starter"); st.innerHTML = "";
+  if (S.opts.starter === "bridge") st.appendChild(cellEl(P.s(), fx, cls));
+  const pile = $("pile"); // the stock, face down; shown empty once it runs out
+  pile.className = "cell pile" + (stockLeft() ? "" : " empty");
+  pile.innerHTML = stockLeft() ? `<div class="card">${WC.back()}</div>` : "";
+  b.classList.toggle("arm-bomb", S.armed === "bomb");
+  renderTop();
+  renderTray();
+  let msg;
+  if (S.armed === "bomb") msg = "Bomb armed: tap a grid card to blow it up. Tap the bomb again to cancel.";
+  else if (S.armed === "swap" && !S.sel.length) msg = "Swapper armed: trace a straight line of 2 to 4 grid cards to reverse it. Tap the swapper again to cancel.";
+  else if (!S.sel.length) msg = "Drag across touching cards and let go. A cribbage combo scores; anything else does nothing.";
+  else {
+    const cards = S.sel.map(cardAt);
+    msg = cards.map(label).join(" ") + `  (sum ${cards.reduce((a, c) => a + val(c), 0)})`;
+    if (S.armed === "swap") msg += mirrorLine(S.sel) ? ": reverse this line" : ": not a straight line";
+    else {
+      const sc = scoreable(S.sel);
+      if (sc) msg += `: ${sc.cs.map(c => c.name).join(" + ")} (+${sc.pts})`;
+      else if (S.sel.length >= 2 && !S.sel.some(p => p.k === "g")) msg += ": needs a grid card";
+      else if (S.sel.length >= 2 && S.scored.has(setKey(S.sel))) msg += ": already scored";
+    }
+  }
+  $("pick").textContent = msg;
+  if (S.pendingEnd && !S.busy) { S.pendingEnd = false; endTurn("timer"); }
+}
+function renderTop() {
+  $("who").textContent = S.opts.dealer ? "Your match turn · dealer" : "Your match turn";
+  $("timer").textContent = S.opts.timer ? `${Math.max(0, S.timeLeft)} s` : "no timer";
+  $("stock").textContent = `Stock ${stockLeft()}`;
+  $("steps").textContent = S.steps;
+  $("pips").textContent = S.pips; $("tallyName").textContent = TALLY;
+  $("trackbar").style.width = Math.min(100, S.steps / 121 * 100) + "%";
+}
+function renderTray() {
+  const t = $("tray"); t.innerHTML = "";
+  for (const type of ["swap", "bomb"]) {
+    const n = S.specials[type], d = document.createElement("div");
+    d.className = "special" + (n > 1 ? " many" : "") + (n < 1 ? " none" : "") + (S.armed === type ? " armed" : "");
+    d.title = `${WC.SPECIALS[type].name}: ${WC.SPECIALS[type].note}`;
+    d.innerHTML = `<div class="card">${WC.special(type)}</div><span class="count">${n}</span>`;
+    d.onclick = () => {
+      if (!S.started || S.over || S.busy || n < 1) return;
+      S.armed = S.armed === type ? null : type; S.sel = [];
+      log(S.armed ? "arm" : "disarm", { special: type }); render();
+    };
+    t.appendChild(d);
+  }
+}
+function feed(t, cls) {
+  const f = $("feed"), d = document.createElement("div");
+  d.textContent = t; if (cls) d.className = cls; f.prepend(d);
+  while (f.children.length > 8) f.lastChild.remove();
+}
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1100); }
+function log(type, data) {
+  const t = S.started ? Math.round(performance.now() - S.t0) : 0;
+  S.log.push({ t, type, ...data });
+  $("log").textContent = `${String(t).padStart(6)}  ${type} ${JSON.stringify(data)}\n` + $("log").textContent;
+}
+
+// ---------- Input: tap to toggle, drag to trace ----------
+let drag = null;
+const posAtPoint = (x, y) => { const el = document.elementFromPoint(x, y)?.closest(".cell"); return el && el.dataset.p && !el.classList.contains("empty") ? JSON.parse(el.dataset.p) : null; };
+$("screen").addEventListener("pointerdown", (e) => {
+  if (!S.started || S.over || S.busy) return;
+  const p = posAtPoint(e.clientX, e.clientY); if (!p) return;
+  drag = { start: p, x: e.clientX, y: e.clientY, tracing: false };
+});
+document.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  if (!drag.tracing && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 10) { drag.tracing = true; S.sel = [drag.start]; render(); }
+  if (!drag.tracing) return;
+  const p = posAtPoint(e.clientX, e.clientY); if (!p) return;
+  const last = S.sel[S.sel.length - 1];
+  if (key(p) === key(last)) return;
+  if (S.sel.length >= 2 && key(S.sel[S.sel.length - 2]) === key(p)) { S.sel.pop(); render(); return; } // trace back to undo
+  if (S.sel.some(q => key(q) === key(p)) || S.sel.length >= S.opts.maxSet) return;
+  if (S.opts.touch && !touching(last, p)) return;
+  S.sel.push(p); render();
+});
+document.addEventListener("pointerup", () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.tracing) { submit(); return; }
+  const p = d.start;
+  if (S.armed === "bomb") { doBomb(p); return; }
+  // Taps: build a selection; tapping the last selected card again submits it.
+  const i = S.sel.findIndex(q => key(q) === key(p));
+  if (i >= 0 && i === S.sel.length - 1 && S.sel.length >= 2) { submit(); return; }
+  if (i >= 0) S.sel.splice(i, 1);
+  else if (S.sel.length < S.opts.maxSet && (!S.opts.touch || !S.sel.length || S.sel.some(q => touching(q, p)))) S.sel.push(p);
+  else S.sel = [p];
+  render();
+});
+$("endBtn").onclick = () => { if (S.started) endTurn("ended by player"); };
+$("startBtn").onclick = startTurn;
+$("newBtn").onclick = newTurn;
+$("autoBtn").onclick = autoPlay;
+$("copyBtn").onclick = copyRuns;
+$("dlRunsBtn").onclick = () => {
+  const blob = new Blob([RUNS.map(r => JSON.stringify(r)).join("\n") + "\n"], { type: "application/x-ndjson" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `match-turn-runs-${new Date().toISOString().slice(0, 10)}.jsonl`; a.click();
+};
+$("batchBtn").onclick = () => botBatch(10);
+$("clearBtn").onclick = () => { RUNS = []; storeRuns(); renderRuns(); $("runsMsg").textContent = "Cleared."; };
+$("dlBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify(S.log, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "match-turn-log.json"; a.click();
+};
+
+// ---------- Bot ----------
+// Skill runs from imperfect to perfect, like a depth-limited search. A perfect bot checks
+// every set. Lower levels trace paths, as a person does: from fewer starting cards, and
+// to a shallower depth (fewer cards per trace). Each takes the best set it found.
+const BOT_LEVELS = {
+  perfect: { name: "Perfect" },
+  strong: { name: "Strong", depth: 5, starts: 0.15 },
+  medium: { name: "Medium", depth: 4, starts: 0.5 },
+  weak: { name: "Weak", depth: 3, starts: 0.25 },
+};
+function bestScore() {
+  const lv = BOT_LEVELS[S.opts.bot || "perfect"];
+  if (lv.depth) return tracedBest(lv);
+  const pos = allPositions().filter(p => cardAt(p));
+  let best = null;
+  const pick = [];
+  (function rec(start) {
+    if (pick.length >= 2) {
+      const sc = scoreable(pick);
+      if (sc && (!best || sc.pts > best.pts || (sc.pts === best.pts && pick.length > best.sel.length))) best = { sel: [...pick], pts: sc.pts };
+    }
+    if (pick.length === S.opts.maxSet) return;
+    for (let i = start; i < pos.length; i++) { pick.push(pos[i]); rec(i + 1); pick.pop(); }
+  })(0);
+  return best;
+}
+function tracedBest(lv) {
+  const pos = shuffle(allPositions().filter(p => cardAt(p)));
+  const starts = pos.slice(0, Math.max(1, Math.round(pos.length * lv.starts)));
+  const depth = Math.min(lv.depth, S.opts.maxSet);
+  let best = null;
+  const path = [];
+  function walk() {
+    if (path.length >= 2) {
+      const sc = scoreable(path);
+      if (sc && (!best || sc.pts > best.pts)) best = { sel: [...path], pts: sc.pts };
+    }
+    if (path.length === depth) return;
+    const last = path[path.length - 1];
+    for (const p of pos) {
+      if (path.some(q => key(q) === key(p)) || !touching(last, p)) continue;
+      path.push(p); walk(); path.pop();
+    }
+  }
+  for (const s0 of starts) { path.push(s0); walk(); path.pop(); }
+  return best;
+}
+function bestSwap() {
+  let best = null;
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) for (const [dr, dc] of [[0, 1], [1, 0], [1, 1], [1, -1]]) {
+    const r2 = r + dr, c2 = c + dc;
+    if (r2 > 3 || c2 < 0 || c2 > 3 || !S.grid[r][c] || !S.grid[r2][c2]) continue;
+    [S.grid[r][c], S.grid[r2][c2]] = [S.grid[r2][c2], S.grid[r][c]];
+    const b = bestScore();
+    [S.grid[r][c], S.grid[r2][c2]] = [S.grid[r2][c2], S.grid[r][c]];
+    if (b && (!best || b.pts > best.pts)) best = { sel: [P.g(r, c), P.g(r2, c2)], pts: b.pts };
+  }
+  return best;
+}
+async function autoPlay() {
+  if (S.over) newTurn();
+  if (!S.started) startTurn();
+  S.bot = true; log("bot_start", {});
+  if (new URLSearchParams(location.search).has("specials")) { // test hook: use one of each special first
+    const s = bestSwap();
+    if (s && S.specials.swap) { S.armed = "swap"; S.sel = s.sel; render(); await sleep(300); await doSwap(); }
+    if (S.specials.bomb) { S.armed = "bomb"; render(); await sleep(300); await doBomb(P.g(1, 1)); }
+  }
+  while (!S.over) {
+    const b = bestScore();
+    if (b) { S.sel = b.sel; render(); await sleep(300); await doScore(); }
+    else if (S.specials.swap > 0 && bestSwap()) {
+      const s = bestSwap();
+      S.armed = "swap"; S.sel = s.sel; render(); await sleep(300); await doSwap();
+    } else if (S.specials.bomb > 0) {
+      S.armed = "bomb"; render(); await sleep(300); await doBomb(P.g(1 + Math.floor(Math.random() * 2), 1 + Math.floor(Math.random() * 2)));
+    } else break;
+    await sleep(200);
+  }
+  if (!S.over) endTurn("bot finished");
+}
+
+$("rulesVer").textContent = "r" + RULES;
+newTurn(); renderRuns();
+if (new URLSearchParams(location.search).has("auto")) setTimeout(autoPlay, 100);
+{ const q = new URLSearchParams(location.search); // test hooks: ?batch=N&max=4
+  if (q.has("max")) { $("optMax").value = q.get("max"); newTurn(); }
+  if (q.has("bot")) { $("optBot").value = q.get("bot"); newTurn(); }
+  if (q.has("batch")) setTimeout(() => botBatch(+q.get("batch") || 10), 100); }
+</script>
+</body>
+</html>

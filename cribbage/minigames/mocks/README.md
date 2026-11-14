@@ -1,0 +1,162 @@
+# Crib Maze mocks
+
+Clickable HTML mocks in an iPhone frame (393 x 852 pt, cards at 64 pt). Open the files straight from disk. Cards come from the shared renderer in `design/cards/cards.js`; scoring comes from `scoring.js`, shared by the mocks, with tests in `scoring.test.js` (run `node --test cribbage/minigames/mocks/` from the repo root).
+
+Every scoring set is a single (exactly one combo, like 7-8) or a multi (two or more, like 4-5-6: a fifteen and a run). Each fifteen counts as its own combo, as when counting aloud, so 5-5-5-J is a multi of 6. The breakdown banner shows SINGLE or MULTI ×N, the match turn feed shows it, and each run records its singles and multis. Scoring works for sets of any size; the tests cover runs and fifteens of 6 and 7 cards, though the match turn still caps sets at 5.
+
+| Mock | What it covers | Status |
+|---|---|---|
+| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, special cards (swapper, bomb), power levels, prizes, timer and card budget | v3, 2026-11-14 |
+| [score-breakdown.html](score-breakdown.html) | The overlay that plays each score part by part: set name, each combo with its cards lit and a running total, bonuses, edge power, then the total flying to the step counter. Kept separate so it can grow with new features | v1, 2026-11-14 |
+| Prize pick | Choosing where a prize goes (deck or power slot), badges | Not started |
+| Pegging on the maze | Pegging with live token movement | Waiting on maze inspiration |
+
+## Score breakdown v1 (2026-11-14)
+
+- Order: the set lifts and the board dims; a banner names the set (its biggest combo); each combo plays one at a time, like counting a hand aloud ("Fifteen +2 → 2, Fifteen +2 → 4, Pair royal +6 → 14"), lighting its cards and floating its points; then bonuses (placeholders for prize cells, gates and badges), then edge power, each powered card lit blue; then power up, where every edge card in the set gains a level and its chip ticks up; then the total flies up to the step counter.
+- Timing: steps start slow and speed up. The first step takes 1.2 s, each later step is 15% quicker, and no step is quicker than 0.4 s. An 8-step score takes about 5.8 s plus about 2.9 s to open and close. These are tuning settings in the mock for now; in the game, the first-step time becomes a player setting that quickens as they learn.
+- The tally panel sits away from the set (over the top of the board when the set is low, over the bottom when it's high). Options: fifteens one line each or grouped, floating points on or off.
+- Presets cover a fifteen, a pair with fifteens, a double double run, a pair royal with his nobs, a bonus and edge power, and a run with a flush. "Random set" deals a random board and picks a scoring set.
+
+## Match turn rules versions
+
+Every playtest run and event log carries `rules`, the match turn rules version, so stats from old rules stay apart from new ones. Bump `RULES` in the mock and add a line here whenever a rule changes. Runs saved before versioning started have no `rules` field and show as `r?`.
+
+| Rules | Date | What changed |
+|---|---|---|
+| r1 | 2026-11-14 | Match-3 style: swap to make lines, cascades, automatic matching (mock v1) |
+| r2 | 2026-11-14 | Boggle style: trace touching cards, Score and Swap buttons, combos must use every card (mock v2) |
+| r3 | 2026-11-14 | Automatic scoring, swapper and bomb special cards, every set needs a grid card, starter apart (mock v3) |
+| r4 | 2026-11-14 | Sets count like cribbage hands (every fifteen, pair, run inside the set); max cards per set setting |
+| r5 | 2026-11-14 | Hand and crib cards touch only their real neighbours, like grid cards |
+| r6 | 2026-11-14 | The starter sits in the corner where the hand row and crib column meet, touching only its real neighbours (last hand card, bottom crib card, grid corner). Tilted, with a light ring and a STARTER tag; the hand and crib get gold HAND and CRIB tags. Setting: keep it apart at the top, touching every hand and crib card (the r5 rule) |
+| r7 | 2026-11-14 | Edge power pays into a separate tally (pips), not steps. One prize per turn, for the best score, at the end of the turn. Special cards are kept all game. The timer pauses while a score plays. Bot skill setting (perfect, strong, medium, weak) |
+
+## Match turn v3: automatic scoring and special cards (2026-11-14)
+
+- Sets are 2 to 5 cards (a setting can cap them at 3 or 4).
+- Trace touching cards (or tap them, then tap the last one again). The set scores at once, counted like a cribbage hand: every fifteen, pair, run (double runs too), flush and his nobs inside it. 8-6-A scores a fifteen; 7-8-8 scores two fifteens and a pair. Every card must be part of at least one combo, or nothing happens. There are no Score or Swap buttons.
+- Swapping is no longer free. It needs a swapper joker (⇄) from the tray at the bottom: tap it to arm it, then trace a straight line of 2 to 4 grid cards to reverse it.
+- The bomb joker: tap it to arm it, then tap a grid card. That card and its neighbours (a plus shape, or a 3 x 3 square in settings) clear and refill, scoring nothing.
+- The tray holds small cards stacked by type, with a count. Start with 2 swappers and 1 bomb (settings). Each prize adds a random special card.
+- Every scoring set needs at least one grid card; the hand, crib and starter can't score on their own.
+- Layout: a wider gap separates the hand row and crib column from the grid, and the corner where they would meet stays empty. The deck (face down) and the starter sit side by side at the top right, unlabelled, and the starter still counts as touching the hand and crib.
+- Hand and crib cards touch only their real neighbours, like grid cards (diagonals count), instead of every other edge card. The last hand card and the last crib card touch diagonally across the empty corner. The starter touches every hand and crib card. The score breakdown under the step counter is gone; the end-of-turn summary keeps it.
+- The bot scores the best set it can; when nothing scores it uses a swapper, then a bomb, then stops. Add `?auto&specials` to the URL to make it use one of each first (a test hook).
+
+### Playtest runs
+
+Every finished turn (yours or the bot's) is saved in the browser with its settings, hand, crib, starter, each set scored (cards, combos, points, time) and the totals. The Playtest runs panel shows mean steps by settings next to the classic count of the same hand and crib, and "Copy runs to clipboard" copies every run as one JSON line, ready to paste into a session. "Run 10 bot turns (fast)" adds a batch of bot runs with the current settings. Pasted runs go in `../playtests/` so the simulator can use them later.
+
+Test hooks: `?batch=10` runs a bot batch on load; `&max=4` sets the max cards per set.
+
+### Bot skill, rules r7 (2026-11-14)
+
+Ten bot turns per level, as the dealer, max 5 cards per set. Edge power no longer adds steps. Lower levels trace paths like a person: from a share of the starting cards, to a set depth.
+
+| Bot | Search | Mean steps | Range |
+|---|---|---|---|
+| Perfect | every set | 123 | 100 to 159 |
+| Strong | depth 5, 15% of starts | 110 | 83 to 122 |
+| Medium | depth 4, 50% of starts | 77 | 64 to 98 |
+| Weak | depth 3, 25% of starts | 55 | 46 to 71 |
+
+Depth matters far more than starts: depth 5 from 40% of starts scored like perfect (120), and depth 4 from 70% scored like medium (80). Test hook: `?batch=10&bot=medium`.
+
+### Max cards per set, bot batches (2026-11-14)
+
+Ten greedy-bot turns per setting, as the dealer, prize at 8, hand-style counting. The classic count is the same hand and crib scored as plain cribbage, for scale.
+
+| Max cards per set | Mean steps | Range | Classic count (mean) |
+|---|---|---|---|
+| 3 | 68 | 39 to 125 | 7.1 |
+| 4 | 93 | 74 to 131 | 9.0 |
+| 5 | 145 | 115 to 184 | 8.8 |
+
+After hand and crib cards switched to real neighbours (another 10 bot turns each):
+
+| Max cards per set | Mean steps | Range | Classic count (mean) |
+|---|---|---|---|
+| 3 | 52 | 36 to 80 | 10.4 |
+| 4 | 85 | 68 to 130 | 10.6 |
+| 5 | 124 | 82 to 216 | 9.8 |
+
+With the starter in the corner (r6, another 10 bot turns each): max 4, mean 73 (60 to 91), classic 9.3; max 5, mean 111 (86 to 119), classic 7.9.
+
+Before the fix, even 3-card sets score about 9 times the classic count. Set size alone won't bring a turn near a classic hand; the grid gives too many chances. Steps per point, or fewer sets per turn, are the next levers.
+
+### v3 findings, hand-style counting
+
+Six greedy-bot turns, as the dealer, no timer, with the grid-card rule and sets counted like cribbage hands. Smoke test only.
+
+| Steps per turn | Scores per turn | Prizes per turn |
+|---|---|---|
+| 111 to 198 | 6 to 9 | 6 to 9 (every score) |
+
+Counting sets like hands roughly triples the score. The bot builds 5-card sets around the hand worth 15 to 25 steps each, so one turn could nearly finish a 121-step game, and every score wins a prize. Hand counting needs a lever before it can work: a cap on set size (3 or 4 cards), steps scaled down, or a prize threshold well above 8.
+
+### v3 findings, combos using every card (before hand-style counting)
+
+Five greedy-bot turns, as the dealer, no timer, with the grid-card rule. Smoke test only.
+
+| Steps per turn | Scores per turn | Steps from sets with hand, crib or starter |
+|---|---|---|
+| 29 to 83 | 5 to 9 | 17% to 92% (varies a lot by hand) |
+
+The hand now matters much more in good hands (a strong hand drives most of the score), but steps per turn are still far too high for a 121-step game.
+
+## Match turn v2: Boggle-style with Score and Swap buttons (2026-11-14, replaced)
+
+v1 matched lines automatically, like a match-3 game. v2 plays like Boggle: nothing clears on its own, and you score only what you find.
+
+- Select up to 5 cards by tapping, or by dragging across them like tracing a Boggle word. Selected cards must touch (diagonals count); the hand, crib and starter all count as touching each other.
+- Score: enabled when the selection is a classic cribbage combo that uses every selected card (fifteen, pair, pair royal, double pair royal, run, flush of 4 or 5, his nobs). Combos add up. Scored grid cards clear and refill from the stock; edge cards stay and power up. The same set can't be scored twice.
+- Swap: enabled when the selection is a straight line of 2 to 4 grid cards (row, column or diagonal). It mirrors the line, reversing its order; 2 cards simply trade places.
+- Prize: one score of 8 or more steps (setting), with rarer tiers at 1.5x and 2x.
+- Settings: dealer, strong preset hand, timer, card budget, prize threshold, and whether selections must touch. A greedy bot can play the turn, and every action is logged with its time.
+
+Known gaps: the hand and crib can double count against classic rules (a pair, then the pair royal that contains it; a run of 3 inside a run of 4).
+
+### v2 findings
+
+Six greedy-bot turns, as the dealer, no timer. The bot always takes the highest-scoring set. A smoke test, not a balance result.
+
+| Swaps per turn | Scores per turn | Steps per turn | Prizes per turn |
+|---|---|---|---|
+| 0 | 7 to 10 | 44 to 81 | 1 to 5 |
+
+- Turns now last 7 to 10 scores instead of 2 or 3 swaps, and nothing happens that the player didn't choose.
+- A perfect bot never needs to swap: on a 4 x 4 grid of open cards there's always a 5 or 6 point set touching. Swap will matter more for people, and less if scoring needs bigger or rarer sets.
+- Steps per turn are still far too high, about 50 against a 121-step game. The bot mostly scores 5-card grid sets, which also use up the stock fastest.
+- A human under a 90-second timer will score much less than this bot; real playthroughs will tell us how much.
+
+## Match turn v1: what the mock had (match-3 style, replaced)
+
+- Tap or swipe to swap. A swap that makes no match bounces back.
+- Settings for dealer or not, a strong preset hand, timer, card budget, and each match type on or off.
+- "Watch a bot play this turn": a greedy bot that marks every pattern, then always makes the highest-scoring swap.
+- An event log with times from the start of the turn, downloadable as JSON, to give the simulator real human timings.
+- Add `?auto` to the URL to run the bot on load, and `&types=kind,run,flush` to choose match types.
+
+### v1 findings (2026-11-14)
+
+Six greedy-bot turns per setting, as the dealer. This is a smoke test, not a balance result; the real numbers come from the simulator.
+
+| Setting | Swaps per turn | Steps per turn | Prizes per turn |
+|---|---|---|---|
+| All match types | 2 to 3 | 39 to 88 | 1 to 3 |
+| No fifteens | 4 to 6 | 37 to 64 | 2 to 4 |
+
+What it suggests:
+
+1. Turns are far too short. Cascades use up the 23-card stock in 2 or 3 swaps, because 3-card fifteens and runs are everywhere in a random grid.
+2. Match turns score far too much. About 50 steps per turn, against a 121-step game; a classic hand is worth about 4 to 8 points.
+3. Prizes come almost every swap, so they won't feel special.
+
+Levers to try, in the mock first and then in the simulator:
+
+- Fifteens need 4 or more cards, or are dropped from grid matches and kept for marking only.
+- Cascades score less (or nothing), and only the first matches of a swap count toward a prize.
+- Fewer refills: a smaller stock, or gaps that stay empty.
+- Scale grid match points down, so marking your hand stays a real share of the turn.
+- Prizes need 3 or more matches from one swap.

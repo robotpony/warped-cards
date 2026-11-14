@@ -1,0 +1,256 @@
+[
+  {
+    "t": 0,
+    "type": "turn_start",
+    "dealer": true,
+    "stock": 23,
+    "timer": 90,
+    "budget": 0,
+    "hand": [
+      "8♣",
+      "K♥",
+      "6♠",
+      "8♠"
+    ],
+    "crib": [
+      "10♥",
+      "8♦",
+      "5♥",
+      "3♠"
+    ],
+    "starter": "K♦"
+  },
+  {
+    "t": 1,
+    "type": "bot_start"
+  },
+  {
+    "t": 24,
+    "type": "score",
+    "cards": [
+      "6♥",
+      "4♠",
+      "5♠",
+      "6♠",
+      "5♥"
+    ],
+    "combos": [
+      "4 fifteens",
+      "pair",
+      "pair",
+      "4 runs of 3"
+    ],
+    "pts": 24,
+    "bonus": 0,
+    "edge": [
+      "6♠",
+      "5♥"
+    ],
+    "grid": 3
+  },
+  {
+    "t": 24,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 24,
+    "special": "+1 bomb"
+  },
+  {
+    "t": 72,
+    "type": "score",
+    "cards": [
+      "Q♣",
+      "K♣",
+      "J♥",
+      "J♣",
+      "K♠"
+    ],
+    "combos": [
+      "pair",
+      "pair",
+      "4 runs of 3"
+    ],
+    "pts": 16,
+    "bonus": 0,
+    "edge": [],
+    "grid": 5
+  },
+  {
+    "t": 72,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 16,
+    "special": "+1 swapper"
+  },
+  {
+    "t": 120,
+    "type": "score",
+    "cards": [
+      "9♥",
+      "9♠",
+      "8♣",
+      "10♥",
+      "8♦"
+    ],
+    "combos": [
+      "pair",
+      "pair",
+      "4 runs of 3"
+    ],
+    "pts": 16,
+    "bonus": 0,
+    "edge": [
+      "8♣",
+      "10♥",
+      "8♦"
+    ],
+    "grid": 2
+  },
+  {
+    "t": 120,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 16,
+    "special": "+1 swapper"
+  },
+  {
+    "t": 168,
+    "type": "score",
+    "cards": [
+      "A♦",
+      "A♥",
+      "2♣",
+      "3♥",
+      "2♠"
+    ],
+    "combos": [
+      "pair",
+      "pair",
+      "4 runs of 3"
+    ],
+    "pts": 16,
+    "bonus": 0,
+    "edge": [],
+    "grid": 5
+  },
+  {
+    "t": 168,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 16,
+    "special": "+1 swapper"
+  },
+  {
+    "t": 219,
+    "type": "score",
+    "cards": [
+      "J♦",
+      "Q♠",
+      "5♣",
+      "10♥",
+      "5♥"
+    ],
+    "combos": [
+      "6 fifteens",
+      "pair",
+      "run of 3"
+    ],
+    "pts": 17,
+    "bonus": 2,
+    "edge": [
+      "10♥",
+      "5♥"
+    ],
+    "grid": 3
+  },
+  {
+    "t": 219,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 19,
+    "special": "+1 swapper"
+  },
+  {
+    "t": 272,
+    "type": "score",
+    "cards": [
+      "9♣",
+      "7♠",
+      "8♥",
+      "8♣",
+      "8♠"
+    ],
+    "combos": [
+      "3 fifteens",
+      "pair royal",
+      "3 runs of 3"
+    ],
+    "pts": 21,
+    "bonus": 1,
+    "edge": [
+      "8♣",
+      "8♠"
+    ],
+    "grid": 3
+  },
+  {
+    "t": 272,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 22,
+    "special": "+1 bomb"
+  },
+  {
+    "t": 320,
+    "type": "score",
+    "cards": [
+      "4♥",
+      "4♣",
+      "5♦",
+      "6♣",
+      "6♦"
+    ],
+    "combos": [
+      "4 fifteens",
+      "pair",
+      "pair",
+      "4 runs of 3"
+    ],
+    "pts": 24,
+    "bonus": 0,
+    "edge": [],
+    "grid": 5
+  },
+  {
+    "t": 320,
+    "type": "prize_won",
+    "tier": "Epic",
+    "steps": 24,
+    "special": "+1 bomb"
+  },
+  {
+    "t": 339,
+    "type": "turn_end",
+    "reason": "stock empty",
+    "steps": 137,
+    "tally": {
+      "grid": 56,
+      "edge": 78,
+      "power": 3
+    },
+    "prizes": [
+      "Epic",
+      "Epic",
+      "Epic",
+      "Epic",
+      "Epic",
+      "Epic",
+      "Epic"
+    ],
+    "scores": 7,
+    "swaps": 0,
+    "rejected": 0,
+    "drawn": 23,
+    "seconds": 0
+  }
+]

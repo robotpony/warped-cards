@@ -26,7 +26,7 @@ A scoring curve is a player's position in the maze (steps from the start along t
 
 What we compare:
 
-- Bot against bot: random, greedy and planning, and the same bot with different skill settings, such as marking skill.
+- Bot against bot: random, greedy and planning, and the same bot with different skill settings, such as how well they find sets.
 - Seat against seat: dealer first or second, and seat order with 3 players.
 - Rules against rules: the same bots under two rule sets (A/B), so a rule change shows its effect directly.
 - Crib Maze against classic: the same bots playing classic cribbage, with points instead of steps.
@@ -35,12 +35,12 @@ What we look for:
 
 - Spread: how far apart the curves end up, and how early a game is decided.
 - Lead changes, and comebacks from behind at the halfway point.
-- Where steps come from: his heels, pegging (by reason), match turns (by match type), marked patterns, power levels, prizes.
-- Flat spots, where a player is stuck at a gate or bounced back, and sudden jumps from cascades or prizes.
+- Where steps come from: his heels, pegging (by reason), match turns (by combo, single or multi), power levels, prizes; and steps spent on doors.
+- Flat spots, where a player is stuck at a gate or bounced back, and sudden jumps from big multis or prizes.
 
 ## Timing
 
-Each action has a modelled duration: playing a card, choosing at a fork, a swap, marking a pattern, choosing a prize, and watching animations. There are two profiles to start with: human speed and bot speed (what a bot turn looks like on screen). The durations are guesses until mocks and playtests give us real ones.
+Each action has a modelled duration: playing a card, choosing at a fork, tracing a set, using a special card, choosing a prize, and watching animations, including the score breakdown (the mock records real tracing times). There are two profiles to start with: human speed and bot speed (what a bot turn looks like on screen). The durations are guesses until mocks and playtests give us real ones.
 
 From the modelled clock we report:
 
@@ -66,8 +66,14 @@ One JSON Lines file per game. Each line is one event, with a sequence number, mo
 | Deal | deal, discard (kept, thrown), cut, heels |
 | Pegging | card_played, peg_score (reason, points, scoring card), go |
 | Maze | step, fork_choice (options, choice), gate (suit, passed, bounced, stopped), prize_cell, wall_shift, fog_reveal |
-| Match | turn_start (stock size), swap, match (type, length, cards, edge card), cascade (depth), mark (pattern, cards), missed_pattern, power_up (card, level), reshuffle, turn_end (reason: timer, budget or empty stock) |
+| Match | turn_start (rules version, hand, crib, starter, stock size), score (cards, single or multi, combos, steps, power bonus), trace_no_score, swap, bomb, arm and disarm, prize_won, best sets left on the board, turn_end (reason: timer, budget, empty stock or player) |
 | Prizes | prize_won (source, tier, kind), prize_placed (deck or player layer), prize_used |
+
+## Mock playtests
+
+The match turn mock saves every finished turn, from people and from its bot, as one JSON line: the rules version, settings, hand, crib, starter, their classic count, every set scored and the totals. Runs are copied or downloaded from the mock and kept in [playtests](playtests/README.md).
+
+The goal is graphs, not just tables: steps per turn for each run over time, grouped by rules version and settings, showing the min, max and spread. That shows whether a rule change narrowed the range or only moved the mean, and how far people sit below the bot. Runs from different rules versions MUST NOT be pooled.
 
 ## Other stats
 
@@ -77,10 +83,10 @@ These back up the curves with specific checks.
 |---|---|
 | Is the game the right length? | Rounds per game; modelled time per game |
 | Is it fair by seat? | Win rate by seat and by first dealer |
-| Is the match turn too strong or weak? | Match steps vs pegging steps per round; matches, cascades and multi-matches per turn |
+| Is the match turn too strong or weak? | Match steps vs pegging steps per round; sets, singles and multis per turn; steps lost to doors |
 | Does the hand still matter? | Link between a hand's classic value and its match-turn steps; how often the best discard differs from classic's |
-| How much does marking matter? | Patterns available vs marked, by marking skill; steps lost to missed patterns |
-| Is the maze working? | Branch choices, gate bounces and steps lost, prize cells reached, wall shifts and who they hurt |
+| How much does finding sets matter? | Best sets available vs found, by player and bot level; steps left on the board |
+| Is the maze working? | Branch choices, gate bounces and steps lost, steps spent on doors, prize cells reached, wall shifts and who they hurt |
 | Are prizes balanced? | Prizes per game by tier and source; win rate by prizes held; how often deck prizes help someone else |
 
 ## Targets

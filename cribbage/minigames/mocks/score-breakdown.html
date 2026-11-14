@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Score Breakdown Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+    --felt: #0E3B2E; --felt-text: #F3ECDC; --gold: #E8B84A; --power: #7FD3FF; --bonus: #C9A0FF; --cw: 64px; --gap: 5px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  .side { flex: 1 1 340px; min-width: 0; max-width: 620px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .panel label { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+  .panel select { font: inherit; }
+  .btn { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 5px 10px; cursor: pointer; margin: 2px 2px 2px 0; }
+  .btn.on { outline: 2px solid var(--gold); }
+  ul.tight { margin: 6px 0 0; padding-left: 18px; } ul.tight li { margin: 3px 0; }
+
+  /* Phone: 393 x 852 pt screen, 1 CSS px = 1 pt */
+  .phone { width: 413px; height: 872px; border-radius: 52px; border: 10px solid #111; background: var(--felt);
+           position: relative; overflow: hidden; flex: none; color: var(--felt-text); user-select: none; -webkit-user-select: none; }
+  .phone::before { content: ""; position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 9; }
+  .screen { position: absolute; inset: 0; padding: 58px 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .steps { display: flex; justify-content: space-between; align-items: center; }
+  .steps .big { font-size: 34px; font-weight: 700; line-height: 1; display: inline-block; transition: transform .2s; }
+  .steps .big.bump { transform: scale(1.25); color: var(--gold); }
+  .steps .lbl { font-size: 13px; opacity: .75; }
+  .pile { width: 46px; aspect-ratio: 5 / 7; }
+  .pile svg, .cell .card svg { width: 100%; height: 100%; display: block; }
+
+  .board { display: grid; grid-template-columns: repeat(4, var(--cw)) calc(var(--cw) + var(--edge-gap)); gap: var(--gap); justify-content: center;
+           grid-template-rows: repeat(4, calc(var(--cw) * 1.4)) calc(var(--cw) * 1.4 + var(--edge-gap));
+           padding: 9px 9px 6px; margin: 0 -9px; flex: none; --edge-gap: 12px; position: relative; }
+  .cell { width: var(--cw); aspect-ratio: 5 / 7; position: relative; transition: opacity .25s, filter .25s; }
+  .cell .card { width: 100%; height: 100%; border-radius: 5px; transition: transform .18s, box-shadow .18s; }
+  .cell.crib { justify-self: end; } .cell.hand { align-self: end; } .cell.starter { justify-self: end; align-self: end; }
+  .cell.edge .card { box-shadow: 0 0 0 2px var(--gold); }
+  .cell.starter .card { transform: rotate(-5deg); box-shadow: 0 0 0 2px var(--felt-text), 0 4px 8px rgba(0,0,0,.35); }
+  .tag { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); background: var(--felt-text); color: var(--felt);
+         font-size: 10px; font-weight: 700; letter-spacing: .08em; border-radius: 8px; padding: 0 6px; line-height: 16px; z-index: 2; }
+  .tag.gold { background: var(--gold); color: #2B2A26; }
+  .chip { position: absolute; top: -6px; right: -6px; background: var(--gold); color: #2B2A26; font-weight: 700; font-size: 12px;
+          border-radius: 10px; padding: 0 6px; line-height: 18px; z-index: 3; transition: transform .2s; }
+  .chip.pulse { transform: scale(1.5); background: var(--power); }
+
+  /* Breakdown states */
+  .board.dim .cell:not(.inset) { opacity: .28; filter: saturate(.4); }
+  .cell.inset .card { box-shadow: 0 0 0 3px #fff, 0 6px 10px rgba(0,0,0,.35); transform: translateY(-4px); }
+  .cell.starter.inset .card { transform: rotate(-5deg) translateY(-4px); }
+  .cell.lit .card { box-shadow: 0 0 0 3px var(--gold), 0 0 18px 6px rgba(232,184,74,.85); transform: translateY(-8px) scale(1.06); }
+  .cell.starter.lit .card { transform: rotate(-5deg) translateY(-8px) scale(1.06); }
+  .cell.lit-power .card { box-shadow: 0 0 0 3px var(--power), 0 0 18px 6px rgba(127,211,255,.8); transform: translateY(-8px) scale(1.06); }
+
+  .fx { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+  .banner { position: absolute; left: 50%; transform: translate(-50%, -8px) scale(.9); opacity: 0; transition: .25s; white-space: nowrap;
+            background: var(--gold); color: #2B2A26; font-weight: 700; font-size: 22px; padding: 6px 16px; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.4); }
+  .banner .kind { font-size: 11px; letter-spacing: .1em; background: #2B2A26; color: var(--gold); border-radius: 6px; padding: 2px 6px; margin-right: 8px; vertical-align: 4px; }
+  .banner.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  .tally { position: absolute; left: 24px; right: 24px; background: rgba(6,24,18,.9); border: 1px solid rgba(243,236,220,.25); border-radius: 12px;
+           padding: 8px 12px; opacity: 0; transition: opacity .2s; box-shadow: 0 8px 20px rgba(0,0,0,.45); }
+  .tally.on { opacity: 1; }
+  .line { display: grid; grid-template-columns: 1fr 48px 40px; gap: 6px; font-size: 16px; line-height: 24px; animation: slide .22s ease-out; }
+  .line .pts { text-align: right; font-weight: 700; color: var(--gold); }
+  .line .run { text-align: right; opacity: .8; font-variant-numeric: tabular-nums; }
+  .line.power .pts { color: var(--power); } .line.bonus .pts { color: var(--bonus); }
+  .line.total { border-top: 1px solid rgba(243,236,220,.3); margin-top: 4px; padding-top: 4px; font-size: 20px; font-weight: 700; }
+  .line.total .run { opacity: 1; color: #fff; }
+  @keyframes slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+  .float { position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 30px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.7);
+           animation: rise .9s ease-out forwards; white-space: nowrap; }
+  .float.power { color: var(--power); } .float.bonus { color: var(--bonus); }
+  .float small { display: block; font-size: 13px; text-align: center; opacity: .9; }
+  @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+                    70% { opacity: 1; transform: translate(-50%, -80%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -110%) scale(1); } }
+  .fly { position: absolute; font-weight: 700; font-size: 34px; color: var(--gold); text-shadow: 0 2px 8px rgba(0,0,0,.7); transition: all .55s cubic-bezier(.5,0,.3,1); z-index: 8; }
+  @media (max-width: 440px) { .phone { transform: scale(.85); transform-origin: top left; margin-bottom: -128px; margin-right: -60px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="steps">
+        <div><span class="big" id="steps">0</span><div class="lbl">steps this turn · <b id="pips">0</b> pips</div></div>
+        <div class="pile" id="pile"></div>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="fx" id="fx"><div class="banner" id="banner"></div><div class="tally" id="tally"></div></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <h1>Score breakdown mock</h1>
+    <p class="muted">Crib Maze, the overlay that plays each score part by part. Separate from the match turn mock so it can grow as features are added. 2026-11-14. Every timing is a starting guess.</p>
+
+    <div class="panel">
+      <strong>What plays, in order</strong>
+      <ul class="tight">
+        <li>The set lifts and the rest of the board dims.</li>
+        <li>The set's name (its biggest combo) shows as a banner, tagged SINGLE (one combo) or MULTI ×N (N combos).</li>
+        <li>Each combo, one at a time, like counting a hand aloud: its cards light up, its points float above them, and a line adds to the tally with the running total. "Fifteen +2 → 2, Fifteen +2 → 4, Pair +2 → 6..."</li>
+        <li>Bonuses, then edge power: each powered edge card lights blue and adds its level to the pips tally, not to steps. Pips buy jokers and special cards between rounds.</li>
+        <li>Power up: every hand, crib or starter card in the set gains a level (its chip ticks up, or appears at +1) for later scores.</li>
+        <li>The step total flies up to the step counter; the pips total is added beside it.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <strong>Sets</strong>
+      <div id="presets" style="margin-top:6px"></div>
+      <p style="margin:6px 0 0"><button class="btn" id="randomBtn">Random set on a random board</button> <button class="btn" id="replayBtn">Replay</button></p>
+    </div>
+
+    <div class="panel">
+      <strong>Options</strong>
+      <label>First step <select id="optBase"><option value="1600">1.6 s</option><option value="1200" selected>1.2 s (default, slow)</option><option value="900">0.9 s</option><option value="600">0.6 s</option><option value="400">0.4 s (a practised player)</option></select></label>
+      <label>Each step after <select id="optAccel"><option value="1">the same</option><option value="0.92">8% quicker</option><option value="0.85" selected>15% quicker (default)</option><option value="0.75">25% quicker</option></select></label>
+      <label>Quickest step <select id="optMin"><option value="250">0.25 s</option><option value="400" selected>0.4 s (default)</option><option value="600">0.6 s</option></select></label>
+      <p class="muted" style="margin:2px 0 6px" id="timingNote"></p>
+      <label>Tally panel <select id="optPlace"><option value="auto" selected>Away from the set</option><option value="top">Always over the top of the board</option><option value="bottom">Always over the bottom</option></select></label>
+      <label>Fifteens <select id="optFifteens"><option value="each" selected>One line each, like counting aloud</option><option value="grouped">Grouped into one line</option></select></label>
+      <label><input type="checkbox" id="optFloat" checked> Float points over the cards</label>
+      <p class="muted" style="margin:6px 0 0">Bonus lines are placeholders for features to come (prize cells, gates, badges). Their names and values are examples only.</p>
+    </div>
+  </div>
+</main>
+
+<script src="../../../design/cards/cards.js"></script>
+<script src="scoring.js"></script>
+<script>
+const WC = window.WarpedCards, WS = window.WarpedScore;
+const $ = (id) => document.getElementById(id);
+const SUITS = ["S", "H", "D", "C"];
+const parse = (t) => ({ r: WC.RANKS.indexOf(t.slice(0, -1)) + 1, s: t.slice(-1) });
+const label = (c) => WC.RANKS[c.r - 1] + WC.SUITS[c.s].glyph;
+
+// Positions, as in the match turn: grid gRC (rows and columns 0..3), crib cI at (I,4),
+// hand hI at (4,I), starter s in the corner at (4,4).
+const coord = (k) => k === "s" ? [4, 4] : k[0] === "g" ? [+k[1], +k[2]] : k[0] === "c" ? [+k[1], 4] : [4, +k[1]];
+const isEdge = (k) => k[0] !== "g";
+const ALL = [];
+for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) ALL.push(`g${r}${c}`);
+for (let i = 0; i < 4; i++) ALL.push(`h${i}`, `c${i}`);
+ALL.push("s");
+
+// Each preset: the cards of the set (by position), edge power levels, and example bonuses.
+const PRESETS = [
+  { name: "8-6-A: a fifteen", cells: { g23: "8H", g33: "6S", h3: "AD" }, power: { h3: 1 } },
+  { name: "7-8: a single fifteen", cells: { g12: "7C", g13: "8D" } },
+  { name: "7-8-8: two fifteens and a pair", cells: { g10: "7C", g11: "8D", g21: "8S" } },
+  { name: "4-5-5-6-6: double double run", cells: { h1: "4C", g30: "5D", g31: "6H", g21: "5S", h2: "6C" }, power: { h1: 2, h2: 1 } },
+  { name: "5-5-5-J: pair royal, his nobs, a bonus and edge power", cells: { s: "5S", h3: "JS", g33: "5D", c3: "5C" },
+    power: { c3: 3, s: 2, h3: 1 }, bonus: [{ name: "Bonus (example)", pts: 4 }] },
+  { name: "3-4-5-6 hearts: run, flush, fifteen", cells: { g00: "3H", g01: "4H", g10: "5H", g11: "6H" } },
+];
+
+let STATE = null, RUN = 0, STEPS = 23, PIPS = 5;
+const TALLY = "pips"; // the bonus tally that edge power pays into
+
+function deal(preset) {
+  const deck = [];
+  for (const s of SUITS) for (let r = 1; r <= 13; r++) deck.push({ r, s });
+  const taken = Object.values(preset.cells).map(parse);
+  const rest = deck.filter(c => !taken.some(t => t.r === c.r && t.s === c.s)).sort(() => Math.random() - .5);
+  const cards = {};
+  for (const k of ALL) cards[k] = preset.cells[k] ? parse(preset.cells[k]) : rest.pop();
+  return { cards, set: Object.keys(preset.cells), power: { ...(preset.power || {}) }, bonus: preset.bonus || [], name: preset.name };
+}
+
+// Random board: pick a random scoring set (connected, 2 to 5 cards, at least one grid card, every card in a combo).
+const touching = (a, b) => { const [r1, c1] = coord(a), [r2, c2] = coord(b); return Math.max(Math.abs(r1 - r2), Math.abs(c1 - c2)) === 1; };
+function connected(sel) {
+  const seen = new Set([0]), q = [0];
+  while (q.length) { const i = q.pop(); sel.forEach((p, j) => { if (!seen.has(j) && touching(sel[i], p)) { seen.add(j); q.push(j); } }); }
+  return seen.size === sel.length;
+}
+function randomSet() {
+  for (let tries = 0; tries < 20; tries++) {
+    const st = deal({ cells: {} }), found = [], pick = [];
+    (function rec(start) {
+      if (pick.length >= 2 && pick.some(k => !isEdge(k)) && connected(pick)) {
+        const cs = pick.map(k => st.cards[k]), { items, used } = WS.count(cs, opts(pick, st.cards));
+        if (items.length && used.size === pick.length) found.push({ sel: [...pick], pts: items.reduce((a, i) => a + i.pts, 0) });
+      }
+      if (pick.length === 5) return;
+      for (let i = start; i < ALL.length; i++) { pick.push(ALL[i]); rec(i + 1); pick.pop(); }
+    })(0);
+    if (!found.length) continue;
+    found.sort((a, b) => b.pts - a.pts);
+    const f = found[Math.floor(Math.random() * Math.min(found.length, 25))];
+    st.set = f.sel; st.name = "Random set";
+    f.sel.filter(isEdge).forEach(k => { const l = Math.floor(Math.random() * 4); if (l) st.power[k] = l; });
+    return st;
+  }
+  return deal(PRESETS[0]);
+}
+function opts(sel, cards) {
+  const si = sel.indexOf("s"), starter = cards.s;
+  const ji = si < 0 ? -1 : sel.findIndex(k => (k[0] === "h" || k[0] === "c") && cards[k].r === 11 && cards[k].s === starter.s);
+  return { flushMin: 4, nobs: ji >= 0 ? [si, ji] : null };
+}
+
+function render() {
+  const b = $("board"); b.innerHTML = "";
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+    const k = r < 4 && c < 4 ? `g${r}${c}` : r === 4 && c === 4 ? "s" : r < 4 ? `c${r}` : `h${c}`;
+    const card = STATE.cards[k], d = document.createElement("div");
+    d.className = "cell" + (isEdge(k) ? " edge" : "") + (k[0] === "c" ? " crib" : k[0] === "h" ? " hand" : k === "s" ? " starter" : "");
+    d.dataset.k = k;
+    d.innerHTML = `<div class="card">${WC.front({ rank: WC.RANKS[card.r - 1], suit: card.s, form: "standard" })}</div>`;
+    if (k === "s") d.insertAdjacentHTML("beforeend", `<span class="tag">STARTER</span>`);
+    if (k === "h0") d.insertAdjacentHTML("beforeend", `<span class="tag gold">HAND</span>`);
+    if (k === "c0") d.insertAdjacentHTML("beforeend", `<span class="tag gold">CRIB</span>`);
+    if (STATE.power[k]) d.insertAdjacentHTML("beforeend", `<span class="chip">+${STATE.power[k]}</span>`);
+    b.appendChild(d);
+  }
+  $("pile").innerHTML = WC.back();
+  $("steps").textContent = STEPS; $("pips").textContent = PIPS;
+}
+
+const cellOf = (k) => document.querySelector(`.cell[data-k="${k}"]`);
+function centre(keys) { // centre of some cards, relative to the screen
+  const s = $("screen").getBoundingClientRect();
+  const rs = keys.map(k => cellOf(k).getBoundingClientRect());
+  const x = rs.reduce((a, r) => a + r.left + r.width / 2, 0) / rs.length - s.left;
+  const y = Math.min(...rs.map(r => r.top)) - s.top + 10;
+  return [x, y];
+}
+function floatAt(keys, text, sub, cls) {
+  if (!$("optFloat").checked) return;
+  const [x, y] = centre(keys), f = document.createElement("div");
+  f.className = "float" + (cls ? " " + cls : ""); f.style.left = x + "px"; f.style.top = y + "px";
+  f.innerHTML = text + (sub ? `<small>${sub}</small>` : "");
+  $("fx").appendChild(f); setTimeout(() => f.remove(), 1000);
+}
+
+async function play() {
+  // Timing: each step (a combo, bonus or power line) takes base * accel^n ms, never less than min.
+  // Starts slow so a new player can follow it; the base can quicken as they learn.
+  const token = ++RUN, T = timing(), scale = T.base / 1200;
+  let n = 0;
+  const stepMs = () => Math.max(T.min, T.base * Math.pow(T.accel, n++));
+  const wait = (ms) => new Promise((res, rej) => setTimeout(() => token === RUN ? res() : rej("stopped"), ms));
+  STATE.power = { ...STATE.power0 };
+  render();
+  const tally = $("tally"), banner = $("banner"), board = $("board");
+  tally.className = "tally"; tally.innerHTML = ""; banner.className = "banner";
+  $("fx").querySelectorAll(".float,.fly").forEach(e => e.remove());
+
+  const sel = STATE.set, cards = sel.map(k => STATE.cards[k]);
+  let { items } = WS.count(cards, opts(sel, STATE.cards));
+  const head = WS.headline(items);
+  if ($("optFifteens").value === "grouped") {
+    const f = items.filter(i => i.kind === "fifteen");
+    if (f.length > 1) items = [{ kind: "fifteen", name: `${f.length} fifteens`, pts: 2 * f.length, idx: [...new Set(f.flatMap(i => i.idx))] },
+      ...items.filter(i => i.kind !== "fifteen")];
+  }
+
+  // Place the banner and tally away from the set.
+  const bRect = board.getBoundingClientRect(), sRect = $("screen").getBoundingClientRect();
+  const rows = sel.map(k => coord(k)[0]), lowSet = rows.reduce((a, r) => a + r, 0) / rows.length >= 2;
+  const place = $("optPlace").value === "auto" ? (lowSet ? "top" : "bottom") : $("optPlace").value;
+  const top = bRect.top - sRect.top, bottom = sRect.bottom - bRect.bottom;
+  if (place === "top") { banner.style.top = (top + 6) + "px"; banner.style.bottom = ""; tally.style.top = (top + 52) + "px"; tally.style.bottom = ""; }
+  else { banner.style.top = ""; banner.style.bottom = (bottom + 6) + "px"; tally.style.top = ""; tally.style.bottom = (bottom + 52) + "px"; }
+
+  try {
+    await wait(300 * scale);
+    sel.forEach(k => cellOf(k).classList.add("inset"));
+    board.classList.add("dim");
+    await wait(350 * scale);
+    const kd = WS.kind(WS.count(cards, opts(sel, STATE.cards)).items);
+    banner.innerHTML = `<span class="kind">${kd.type === "multi" ? "MULTI ×" + kd.combos : "SINGLE"}</span>${head}`; banner.classList.add("on");
+    await wait(900 * scale);
+    tally.classList.add("on");
+    let total = 0;
+    const line = (name, pts, cls) => {
+      total += pts;
+      tally.insertAdjacentHTML("beforeend", `<div class="line ${cls || ""}"><span>${name}</span><span class="pts">+${pts}</span><span class="run">${total}</span></div>`);
+    };
+    for (const it of items) {
+      const keys = it.idx.map(i => sel[i]);
+      keys.forEach(k => cellOf(k).classList.add("lit"));
+      floatAt(keys, "+" + it.pts, it.name);
+      line(it.name, it.pts);
+      const ms = stepMs();
+      await wait(ms * .88);
+      keys.forEach(k => cellOf(k).classList.remove("lit"));
+      await wait(ms * .12);
+    }
+    for (const bn of STATE.bonus) {
+      floatAt(sel, "+" + bn.pts, bn.name, "bonus");
+      line(bn.name, bn.pts, "bonus");
+      await wait(stepMs());
+    }
+    // Edge power pays into the pips tally, not steps (match rules r7).
+    let pips = 0;
+    for (const k of sel.filter(k => STATE.power[k])) {
+      const c = cellOf(k), chip = c.querySelector(".chip");
+      c.classList.add("lit-power"); chip && chip.classList.add("pulse");
+      pips += STATE.power[k];
+      floatAt([k], "+" + STATE.power[k], TALLY, "power");
+      tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Edge power ${label(STATE.cards[k])}</span><span class="pts">+${STATE.power[k]}</span><span class="run">${pips} ${TALLY}</span></div>`);
+      await wait(stepMs());
+      c.classList.remove("lit-power"); chip && chip.classList.remove("pulse");
+    }
+    // Power up: every edge card in the set gains a level for later scores (no steps now).
+    const edges = sel.filter(isEdge);
+    if (edges.length) {
+      tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Power up ${edges.map(k => label(STATE.cards[k])).join(" ")}</span><span class="pts">▲1</span><span class="run"></span></div>`);
+      for (const k of edges) {
+        const c = cellOf(k);
+        STATE.power[k] = (STATE.power[k] || 0) + 1;
+        let chip = c.querySelector(".chip");
+        if (!chip) { c.insertAdjacentHTML("beforeend", `<span class="chip"></span>`); chip = c.querySelector(".chip"); }
+        chip.textContent = "+" + STATE.power[k];
+        c.classList.add("lit-power"); chip.classList.add("pulse");
+        floatAt([k], "▲", "+" + STATE.power[k], "power");
+      }
+      await wait(stepMs());
+      edges.forEach(k => { cellOf(k).classList.remove("lit-power"); const ch = cellOf(k).querySelector(".chip"); ch && ch.classList.remove("pulse"); });
+    }
+    tally.insertAdjacentHTML("beforeend", `<div class="line total"><span>${head}</span><span class="pts"></span><span class="run" id="totalNum">+${total}</span></div>` +
+      (pips ? `<div class="line power"><span>To ${TALLY}</span><span class="pts"></span><span class="run" id="pipsNum">+${pips}</span></div>` : ""));
+    await wait(Math.max(T.min, 800 * scale));
+
+    // The total flies up to the step counter.
+    const from = $("totalNum").getBoundingClientRect(), to = $("steps").getBoundingClientRect();
+    const fly = document.createElement("div"); fly.className = "fly"; fly.textContent = "+" + total;
+    fly.style.left = (from.left - sRect.left) + "px"; fly.style.top = (from.top - sRect.top - 8) + "px";
+    $("fx").appendChild(fly);
+    await wait(30);
+    fly.style.left = (to.right - sRect.left + 8) + "px"; fly.style.top = (to.top - sRect.top - 6) + "px"; fly.style.fontSize = "22px";
+    await wait(560);
+    fly.remove(); STEPS += total; PIPS += pips; $("steps").textContent = STEPS; $("pips").textContent = PIPS; $("steps").classList.add("bump");
+    await wait(260);
+    $("steps").classList.remove("bump");
+    tally.classList.remove("on"); banner.classList.remove("on"); board.classList.remove("dim");
+    sel.forEach(k => cellOf(k).classList.remove("inset"));
+  } catch (e) { if (e !== "stopped") throw e; }
+}
+
+function timing() { return { base: +$("optBase").value, accel: +$("optAccel").value, min: +$("optMin").value }; }
+function showTiming() {
+  const T = timing(), ms = [];
+  for (let i = 0; i < 8; i++) ms.push(Math.max(T.min, T.base * Math.pow(T.accel, i)) / 1000);
+  $("timingNote").textContent = `Steps 1 to 8: ${ms.map(x => x.toFixed(2)).join(", ")} s. ` +
+    `An 8-step score takes ${ms.reduce((a, b) => a + b, 0).toFixed(1)} s plus about ${(2.9 * T.base / 1200).toFixed(1)} s to open and close.`;
+}
+["optBase", "optAccel", "optMin"].forEach(id => $(id).addEventListener("change", showTiming));
+showTiming();
+function choose(i) {
+  document.querySelectorAll("#presets .btn").forEach((b, j) => b.classList.toggle("on", j === i));
+  STATE = i < 0 ? randomSet() : deal(PRESETS[i]);
+  STATE.power0 = { ...STATE.power };
+  play();
+}
+PRESETS.forEach((p, i) => { const b = document.createElement("button"); b.className = "btn"; b.textContent = p.name; b.onclick = () => choose(i); $("presets").appendChild(b); });
+$("randomBtn").onclick = () => choose(-1);
+$("replayBtn").onclick = () => play();
+choose(+(new URLSearchParams(location.search).get("preset") || 4));
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Crib Maze: Concept
 
-Status: concept, 2026-11-14. Working title. Nothing has been playtested or simulated yet, so every number here is a starting guess.
+Status: concept, 2026-11-14. Working title. The match turn has been mocked and bot-tested (match rules r6); nothing else has been playtested or simulated, so most numbers here are starting guesses.
 
 The player-facing rules are in [rules.md](rules.md). How we measure and tune the game is in [stats.md](stats.md).
 
@@ -17,7 +17,7 @@ A logical extension of cribbage, not a different game wearing cribbage's clothes
 Three things change:
 
 1. The pegboard becomes a maze. Points are still steps along a track, but the track forks, has gates and holds prizes.
-2. Counting hands becomes a match game. Your hand and crib sit at the edge of a grid of cards, and you make matches toward them.
+2. Counting hands becomes a match game. Your hand and crib sit at the edge of a grid of cards, and you trace cribbage combos through them, like finding words in Boggle.
 3. The deck grows during the game. Prizes add cards, powers and badges, and they reset when the game ends.
 
 ## Where the fun is
@@ -26,9 +26,11 @@ Three things change:
 - Which card scores matters. A fifteen made with the 5♥ opens heart gates. Holding the right suit for the gate ahead is a new reason to keep or throw a card.
 - A 31 can shift a wall: open a shortcut for yourself, or close the one a bot was heading for.
 - Forks are a gamble: a shorter branch with a gate and a prize, or the long safe way round.
-- The match board rewards both sides of cribbage skill. Making matches is quick pattern play; marking the patterns in your own hand rewards the counting skill cribbage players already have. You score what you find.
-- Edge cards power up as you use them, so a turn builds: a 5 in your hand gets stronger every time it joins a fifteen.
-- Cascades and multi-matches win prizes, which gives every match turn a chance at a big moment.
+- The match board rewards the counting skill cribbage players already have. Every set is counted like a hand, so spotting a double run or a hidden fifteen pays, and you score only what you find.
+- Edge cards power up as you use them, so a turn builds: a 5 in your hand earns more pips every time it joins a fifteen, and pips buy jokers between rounds.
+- Every score plays out like counting a hand aloud ("fifteen 2, fifteen 4, a pair is 6"), so a big multi feels big.
+- Each turn's best score wins a special card, and special cards are kept all game, so a good turn pays off later.
+- Suits matter twice: a set's main suit decides which gates its steps can open, so a one-suit run is worth more than its steps.
 - The shared deck is a gamble. A badge you put on the 5♥ helps whoever is dealt it next, maybe a bot.
 - The race is visible. All tokens share one maze, like pegs on one board, so you always see who's ahead and which way they're going.
 
@@ -73,32 +75,79 @@ Door types, branch rules, traps and the maze generator get their own design phas
 
 ## Match turns
 
-Match turns replace counting hands and the crib. Each player takes one turn, in classic show order.
+Match turns replace counting hands and the crib. Each player takes one turn, in classic show order. The full rules are in [rules.md](rules.md) section 4; this is the shape and the reasons.
 
 ```
 Match board (one player's turn)
 
-  . . . . K      .  grid card, from the stock
-  . . . . K      H  your hand, along the bottom
-  . . . . K      K  the crib, along the side (dealer only)
-  . . . . K      S  the starter, in the corner
-  H H H H S
+  Steps ............................ Deck
+  . . . .   C       .  grid card, from the stock
+  . . . .   C       H  your hand, along the bottom
+  . . . .   C       C  the crib, down the side (dealer only)
+  . . . .   C       S  the starter, in the corner
+  H H H H   S
 ```
 
-- The stock is every card not in a hand, the crib or the starter (39 cards with 2 players, 35 with 3). It's shuffled fresh for each turn, so every player gets the same amount to work with.
-- A 4 x 4 grid is dealt from the stock. Your hand and the crib are edge cards: they don't move and are never used up.
-- Swap two neighbouring grid cards to make a match: a row or column of 3 to 5 cards, which may end in one edge card, forming a cribbage combo (same rank, run, fifteen or flush).
-- Matched grid cards clear, the cards above fall, and the stock refills the grid. New matches from falling cards are cascades and score too.
-- Each time an edge card is used, it powers up and adds steps to later scores. Power lasts for the turn only, like a cribbage hand.
-- Your hand and crib, each with the starter, also score as classic hands, but only for the patterns you mark yourself by tapping each card in a set, as in Boggle.
-- One swap that makes two or more matches wins a prize.
-- The turn ends on a timer, a card budget or an empty stock, whichever comes first. The simulator sets the timer and budget.
+- The stock is every card not in a hand, the crib or the starter (39 cards with 2 players, 35 with 3), shuffled fresh for each turn.
+- You trace sets of 2 to 5 touching cards, like words in Boggle. A set scores at once if every card is part of a cribbage combo, counted like a hand; otherwise nothing happens.
+- Every set needs a grid card, so the hand and crib can't simply be counted. The hand you built is what your sets grow from, and the cards beside it decide how well it does.
+- Scored grid cards clear and the stock refills. Edge cards stay and power up.
+- Special cards (swapper, bomb) are the only way to change the board. They're scarce and kept all game.
+- Edge power pays pips, a separate tally spent between rounds, so the hand you built feeds your deck building rather than your step count.
+- Steps move your token after the turn, in a short walk with choices (see The maze walk).
+- The turn ends on a timer, a card budget, an empty stock, or when you choose.
 
-The hand you built still matters: it's what you match toward and what you mark. Pairs, 5s and runs still pay off.
+Why it works this way, from the mocks:
+
+- Automatic line matching (match-3 style) played itself: cascades used the stock in 2 or 3 swaps. Tracing sets puts every score in the player's hands.
+- Free swaps meant you could always make something. Making swaps cost a special card keeps the board a puzzle.
+- When hand cards could score alone, or touched every other edge card, the hand was either everything or nothing. Real neighbours and the grid-card rule make position matter.
+
+## The maze walk
+
+Notes for a mini game not designed yet (2026-11-14). After a match turn, your scored sets become steps in the maze, and you walk them with choices where there are any.
+
+- Each scoring set is a bundle of steps with a suit (the set's most common suit). Pegging steps already carry the suit of the card that scored them.
+- You choose which bundle to spend next (decided 2026-11-14), so a heart bundle can be saved for the heart gate. The mechanics need thinking.
+- It should feel like a party board game: each bundle is like a dice roll you already hold, and the fun is choosing where it takes you. Choices at forks, cells that do something when you land on or pass them (prizes, gates, doors), and maybe special cards played on the board.
+- Doors absorb steps. A big bundle can knock down a door; the steps spent on it don't move you.
+- If there are no choices to make, the walk plays itself, quickly.
+- Open: can you hold steps back for a later round? Must you land exactly on a cell to trigger it? How long can the walk take before it drags?
+
+## Transitions and effects
+
+Each part of a round is its own mini game, so moving between them, and starting and ending each one, needs its own moment. These are concepts to mock later; nothing here is designed yet (2026-11-14).
+
+```
+A round, as the player sees it
+
+  Deal and discard
+    > transition: the crib slides to the dealer, the starter is cut
+  Pegging on the maze
+    > transition: the maze pulls back, the match board deals in
+  Match turn
+    begin ... cards fall into place
+    end ..... board cleared, or not
+    > transition: the step total carries over to the maze
+  Maze walk
+    > transition: the shop, then the deal passes left
+```
+
+Transitions:
+
+- Every change of mini game gets a short transition that carries something across, so the player sees what links them: the step and pips totals flying from the match board to the maze, for example.
+- Transitions are skippable and speed up as the player learns, like the score breakdown.
+
+Begin, end and bonus effects:
+
+- Match turn begins: the grid deals in from the deck, cards falling into place column by column, then the hand, crib and starter slide to the edges.
+- Match turn ends: it looks and feels different if you cleared the board (every grid card scored, nothing left) than if time, the budget or the stock ran out. Clearing the board is a big moment and earns a clear-board bonus (size to tune); running out is a quiet wrap-up.
+- Bonus effects mark the high points: a big multi, the turn's best score, a prize, a door knocked down, a gate opened.
+- The score breakdown is the bonus effect for every score.
 
 ## Deck building and prizes
 
-Prizes come from prize cells in the maze and from multi-matches on the match board. They last for one game.
+Prizes come from prize cells in the maze and from the match board (a special card for each turn's best score). Between rounds, pips buy more jokers and special cards in the shop. Everything lasts for one game.
 
 | Prize | Example |
 |---|---|
@@ -116,17 +165,31 @@ Which prizes go to which layer, and how they balance, is open.
 
 ## Bots
 
-Bots are full players. They win prizes, fill power slots and add to the deck exactly as the human does. Each bot decides its discard, pegging, forks, match swaps, marking and prize use.
+Bots are full players. They win prizes, fill power slots, earn pips and add to the deck exactly as the human does. Their match turns aren't played out on screen; the player sees each result. Each bot decides its discard, pegging, forks, which sets to trace, when to use special cards, and prize use.
 
-We plan three levels: random legal moves (for testing), greedy (best result now) and planning (looks ahead). In the simulator the human seat is just another bot.
+Bot skill runs on a gradient from imperfect to perfect, like a depth-limited search. On the match board a perfect bot checks every set; lower levels trace paths from fewer starting cards and to a shallower depth, as a person does. We tune the levels so a medium bot scores about what a person does, from playtest runs. Other limits may come later. For the whole game we also plan random legal moves (for testing) and planning (looks ahead). In the simulator the human seat is just another bot.
 
 ## Later ideas
 
 These are parked, not dropped:
 
 - Endless mode: the maze keeps growing and the score is how far you get. It needs a way to end.
-- Claiming missed patterns: other players score patterns you didn't mark, like muggins. The engine logs missed patterns from the start so this can be added later.
+- Claiming missed sets: other players score sets you didn't find, like muggins. The engine logs the best sets left on the board so this can be added later.
+- Sets longer than 5 cards (long runs and big fifteens from small cards). Scoring already handles them; the match turn caps sets at 5 until scores are tuned.
+- More special cards beyond the swapper and bomb.
 - Other mini-games from the first round of ideas, in [ideation.md](ideation.md).
+
+## Learnings
+
+What the mocks and bot runs have taught us so far. Details and numbers are in [mocks/README.md](mocks/README.md).
+
+1. The match board makes far more points than a cribbage hand. A greedy bot scores 70 to 110 steps per match turn (r6), against a classic count of about 8 to 10 for the same hand and crib. A person will score less than the bot, but probably still several times a classic hand.
+2. Capping set size helps less than expected. Even 3-card sets score 5 to 9 times the classic count, because the grid offers so many chances.
+3. Each touching rule we tightened (every set needs a grid card, real neighbours for hand and crib, the starter in the corner) cut scores by 10% to 25% and made the hand matter more.
+4. Prizes for "a score of 8 or more" come on almost every score once sets are counted like hands, so they don't feel special yet.
+5. The maze can absorb big scores (2026-11-14). Doors that take steps to knock down let a player score very well on the match board without running away in the maze. The match board can stay generous and fun, and the maze sets the pace. This changes the target: we don't need match scores near a classic hand, only a maze that turns them into the right distance. Pegging steps count against doors too, and damage stays, so doors are shared obstacles.
+6. Players need to see why they scored. The score breakdown counts each set aloud, part by part, starting slow and speeding up as they learn.
+7. Bot skill is mostly search depth. Limiting how many cards a bot traces changes its score far more than limiting where it starts (r7: perfect 123 steps per turn, depth 4 about 77, depth 3 about 55).
 
 ## Working title
 
@@ -161,16 +224,42 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-13 | Wrong-suit gates bounce you back; special doors stop you instead |
 | 2026-11-13 | Match turns: hand along the bottom, crib along the side, grid from the stock |
 | 2026-11-14 | Edge cards are never used up; they power up, and power lasts the turn |
-| 2026-11-14 | Hand and crib score as classic patterns only when the player marks them |
-| 2026-11-14 | Match turns run until the stock is used; a timer and card budget cap them, set by simulation |
+| 2026-11-14 | Hand and crib score as classic patterns only when the player marks them (superseded the same day: there is no marking; sets are traced and every set needs a grid card) |
+| 2026-11-14 | Match turns run until the stock is used; a timer and card budget cap them, set by simulation. The player may also end the turn |
 | 2026-11-14 | Claiming missed patterns is parked for later |
 | 2026-11-14 | The app may send game logs as opt-in data |
 | 2026-11-14 | Stats exist mainly to compare scoring curves between bots, and to measure timing |
 | 2026-11-14 | First mocks are clickable HTML in an iPhone frame, covering pegging on the maze, a match turn and a prize pick |
 | 2026-11-14 | Cards: standard layout (rank in two corners, one large centred suit), rank and suit in the suit's colour, near-white faces only (no dark faces). Built on Scorekeep's card kit; its short form (one rank, one suit) is for documentation. Mock: [design/cards](../../design/cards/index.html) |
-| 2026-11-14 | Card width 64 pt on iPhone; the 5-card match board fits at 340 pt |
+| 2026-11-14 | Card size will adapt to the screen in the app (tuned later); mocks use 64 pt |
 | 2026-11-14 | Four-colour suits at 4.5:1 or better: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D |
 | 2026-11-14 | One back for now (Scorekeep's crosshatch); more backs get their own design phase |
+| 2026-11-14 | Match turn plays like Boggle: trace touching cards; a valid cribbage combo scores automatically, anything else does nothing. Replaces automatic line matching (see [mocks](mocks/README.md)); rules.md section 4 gets rewritten once the mock settles |
+| 2026-11-14 | Match board: hand, crib and starter can't score on their own; every set needs a grid card. Edge row and column sit apart from the grid with an empty corner; the starter sits beside the step counter (corner and starter superseded by the r6 row below) |
+| 2026-11-14 | Match board sets count like cribbage hands: every fifteen, pair, run, flush and his nobs inside the set scores (8-6-A is a fifteen). Every card must be part of a combo. Scoring levers to follow (see [mocks](mocks/README.md)) |
+| 2026-11-14 | Match board touching: every card, hand and crib included, touches only its real neighbours. The starter sits in the corner where the hand row and crib column meet (match rules r6). Word tags name the hand, crib and starter |
+| 2026-11-14 | Every score plays as an overlay, part by part: set name, each combo with its points and a running total, bonuses, edge power, total. Steps start slow and speed up; the base speed becomes a player setting that quickens as they learn ([score breakdown mock](mocks/score-breakdown.html)) |
+| 2026-11-14 | Every set is a single (one combo) or a multi (two or more); both are labelled in scoring and stats. Sets stay at 5 cards for now |
+| 2026-11-14 | Maze doors take steps to knock down, so the maze absorbs big match scores. Match scores can run high; the maze sets the pace |
+| 2026-11-14 | Rules doc draft 3: match turns rewritten for match rules r6 |
+| 2026-11-14 | Licence: MIT |
+| 2026-11-14 | Edge power pays into a separate tally ("pips", name confirmed the same day), not steps. Pips buy jokers and special cards between rounds (match rules r7) |
+| 2026-11-14 | One prize per match turn, for the turn's best score (r7) |
+| 2026-11-14 | Special cards are kept all game; more can be bought between rounds with pips |
+| 2026-11-14 | A non-dealer's crib column stays empty: the crib is the dealer's advantage |
+| 2026-11-14 | The timer pauses while a score breakdown plays (r7) |
+| 2026-11-14 | Bot match turns show only their result |
+| 2026-11-14 | Match-turn steps carry the set's most common suit at suit gates (ties: see below) |
+| 2026-11-14 | Door damage stays between turns; a broken door is open for everyone; pegging steps count against doors |
+| 2026-11-14 | Steps move the token after the match turn, in a maze walk with choices (a mini game, not designed yet) |
+| 2026-11-14 | Prize cards and badges in the shared deck can turn up in any player's match grid |
+| 2026-11-14 | Bot skill is a gradient from imperfect to perfect, like a depth-limited search; other limits may follow |
+| 2026-11-14 | The bonus tally is called pips |
+| 2026-11-14 | In the maze walk, the player chooses which set's steps to spend next; it plays like a party board game, with choices (mechanics to come) |
+| 2026-11-14 | Each mini game gets transitions between it and the next, and begin, end and bonus effects; the match turn begins with cards falling into place and ends differently when the board is cleared. Future mocks |
+| 2026-11-14 | Suit ties: when two or more suits tie for most common in a set, its steps carry no suit and can't pass suit gates. Rewards one-suit sets |
+| 2026-11-14 | Clearing the board earns a bonus as well as its own ending (size to tune) |
+| 2026-11-14 | Special actions come from special cards: smaller cards in a tray at the bottom, stacked by type, in limited supply. First two: the swapper joker (reverses a line of grid cards; swapping is no longer a free action) and the bomb joker (blows up cards) |
 
 ## Open questions
 
@@ -178,7 +267,12 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 2. How many power slots, and how do you get more?
 3. Can tokens get in each other's way at a gate or a fork, or only through wall shifts?
 4. Match turn timer and card budget: starting values come from the simulator.
-5. Is +1 step per power level right, or too swingy? A question for the simulator.
+5. Is +1 pip per power level right? A question for the simulator, once the shop has prices.
+6. Doors: how strong and how many? This decides how much of a match score becomes distance.
+7. With match scores far above pegging, does pegging still matter? Doors treat both the same, so pegging may need its own edge.
+8. The maze walk: how choosing bundle order plays, holding steps back, and how long it can take.
+9. The shop: what's for sale, prices, and whether bots shop the same way.
+10. Clear-board bonus: steps, pips or a prize, and how big?
 
 ## Plan
 
@@ -188,7 +282,7 @@ Two tracks run side by side: design, so we can think about how the game plays an
 |---|---|---|---|
 | 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; kept in step with decisions |
 | 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Ideation done |
-| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards first (v2 done), then pegging on the maze, a match turn, a prize pick | In progress |
+| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2 done), match turn (v3, rules r6), score breakdown (v1), then a prize pick, and pegging on the maze once we've gathered maze inspiration | In progress |
 | 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
 | 5 | Engine | Python engine, bots, simulator and stats reports; classic cribbage as the baseline | After 4 |
 | 6 | Design | Maze design: door types, branches, traps, wall shifts, fog, generator | Alongside 5 |

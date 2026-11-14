@@ -1,10 +1,10 @@
 # Crib Maze: Rules
 
-Status: draft 2, 2026-11-14. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 4, 2026-11-14. Match turns follow match rules r7. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
-Crib Maze is cribbage on a maze. You build a hand, throw to the crib and peg to 31 as in cribbage, but every point you score moves your token through a maze instead of along a pegboard. Then, instead of counting your hand, you play it in a quick match game on a grid of cards. Prizes along the way add cards and powers to the game.
+Crib Maze is cribbage on a maze. You build a hand, throw to the crib and peg to 31 as in cribbage, but every point you score moves your token through a maze instead of along a pegboard. Then, instead of counting your hand, you play it in a quick match game: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Prizes along the way add cards and powers to the game.
 
 The first token to reach the goal wins.
 
@@ -49,45 +49,91 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead. Turns go in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
+These are match rules r7, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+
 ```
 Match board (one player's turn)
 
-  . . . . K      .  grid card, from the stock
-  . . . . K      H  your hand, along the bottom
-  . . . . K      K  the crib, along the side (dealer only)
-  . . . . K      S  the starter, in the corner
-  H H H H S
+  Steps ............................ Deck
+                                     (face down)
+  . . . .   C       .  grid card, from the stock
+  . . . .   C       H  your hand, along the bottom
+  . . . .   C       C  the crib, down the side (dealer only)
+  . . . .   C       S  the starter, in the corner
+  H H H H   S
+
+  Special cards: [swapper x2] [bomb x1] ........ End turn
 ```
 
 Setting up your turn:
 
-1. Shuffle every card that isn't in a hand, the crib or the starter. This is the stock.
-2. Deal a 4 x 4 grid face up from the stock. If any matches are already showing, redeal those cards.
-3. Lay your 4 hand cards along the bottom edge and the starter in the corner. If you're the dealer, lay the 4 crib cards along the side.
+1. Shuffle every card that isn't in a hand, the crib or the starter. This is the stock, shown face down at the top.
+2. Deal a 4 x 4 grid face up from the stock.
+3. Lay your 4 hand cards along the bottom and the starter in the corner. If you're the dealer, lay the 4 crib cards down the side; if not, the side stays empty, so the crib is the dealer's advantage. A small gap separates the hand and crib from the grid. Word tags name the hand, the crib and the starter.
 
-On your turn, do two things as often as you like.
+#### Scoring sets
 
-Make matches. Swap two neighbouring grid cards. A match is a row or column of 3 to 5 cards that makes one of these combos. It can include one edge card, at the end of the line.
+Find a set and trace it, like tracing a word in Boggle: drag across the cards and let go, or tap them one by one and tap the last one again.
 
-| Match | Steps (to tune) |
-|---|---|
-| 3, 4 or 5 of the same rank | 6, 12 or 20 |
-| Run of 3, 4 or 5 (any order) | 3, 4 or 5 |
-| Fifteen, using 3 or more cards | 2 |
-| Flush of 4 or 5 | 4 or 5 |
-
-Matched grid cards clear. The cards above them fall toward your hand, and the stock fills the gaps from the top. If falling cards make a new match, that's a cascade, and it scores for you too.
-
-Mark your hand. Your hand with the starter, and the crib with the starter, score like classic cribbage hands: fifteens, pairs, runs, flushes and his nobs. But they only score the patterns you find. Tap each card in a pattern to mark it. Each pattern can be marked once per turn, and marked cards stay put. A pattern you don't mark doesn't score.
-
-Also during your turn:
-
-- Edge cards are never used up. Each time one is part of a match or a marked pattern, it powers up. Each power level adds 1 step to every later score the card is part of (to tune). Power lasts until the end of your turn.
-- One swap that makes two or more matches, at once or through cascades, wins a prize.
-- If no swap can make a match, reshuffle the grid with the rest of the stock.
+- A set is 2 to 5 touching cards. Cards touch their 8 neighbours, diagonals included. This holds for every card: hand and crib cards touch only the cards next to them, and the starter touches the last hand card, the bottom crib card and the grid card beside it.
+- Every set MUST include at least one grid card. Your hand, the crib and the starter can't score on their own.
+- A set scores as a classic cribbage hand: every fifteen (2 each), pair (2), pair royal (6), double pair royal (12), run (1 per card; double runs count each run), flush of 4 or 5, and his nobs (1).
+- Every card in the set MUST be part of at least one combo. If a card is left over, or nothing scores, nothing happens. There's no penalty.
+- A set worth one combo is a single (7-8: a fifteen). A set worth two or more is a multi (4-5-6: a fifteen and a run). Each fifteen counts as its own combo.
+- The same set of cards can't score twice in a turn.
 - Every step you score is moved right away.
 
-Your turn ends when the timer runs out, when you've used your card budget, or when the stock is empty, whichever comes first. Timer and budget: to tune.
+| Set | Combos | Steps |
+|---|---|---|
+| 7-8 | Fifteen | 2 (single) |
+| 8-6-A | Fifteen | 2 (single) |
+| 4-5-6 | Fifteen, run of 3 | 5 (multi) |
+| 7-8-8 | Two fifteens, pair | 6 (multi) |
+| A-2-2-3-3 | Double double run of 3, two pairs | 16 (multi) |
+
+When a set scores, its grid cards clear, the cards above them fall, and the stock fills the gaps from the top. Edge cards stay.
+
+#### Edge power and pips
+
+Your hand, crib and starter cards are edge cards. They're never used up.
+
+- Each edge card has a power level, starting at 0 each turn.
+- When a set scores, each edge card in it adds its power level to your pips. Then each of those edge cards goes up one level.
+- Pips are a separate tally, not steps. They don't move you; you spend them between rounds on jokers and special cards (see The shop).
+- Power lasts until the end of your turn; pips last the game. Values: to tune.
+
+#### Special cards
+
+Special cards are jokers you hold in a tray at the bottom of the screen, stacked by type. Tap one to arm it; tap it again to cancel.
+
+| Card | What it does |
+|---|---|
+| Swapper (⇄) | Trace a straight line of 2 to 4 grid cards (a row, column or diagonal). The line reverses; 2 cards trade places |
+| Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill from the stock, scoring nothing |
+
+Special cards are kept all game: what you don't use carries over to your next turn. You start the game with 2 swappers and 1 bomb (to tune), and get more from prizes and the shop. Swapping is never free: it always costs a swapper.
+
+#### Prizes
+
+At the end of your turn, your best score wins one prize: a special card for your tray. A bigger best score wins a better tier (common, rare or epic; to tune). How match prizes relate to maze prizes: not designed yet.
+
+#### The score breakdown
+
+Every score plays out part by part, like counting a hand aloud: the set's name, each combo with its cards lit and a running total, any bonuses, edge power (to pips), the power-up, then the total. The timer pauses while it plays. It starts slow and speeds up with each part; how fast is a player setting, quicker as they learn. See the [score breakdown mock](mocks/score-breakdown.html).
+
+#### Ending the turn
+
+Your turn ends when the timer runs out, when you've used your card budget, when the stock is empty, or when you choose to end it. Timer and budget: to tune (the mock uses 90 seconds and the whole stock).
+
+If you clear the board (every grid card scored, nothing left), you earn a clear-board bonus. Its size: to tune.
+
+Your steps don't move your token during the turn. Each scoring set becomes a bundle of steps that carries a suit (see Suit gates), and after the turn you walk them through the maze, making the choices at forks and gates. How that walk plays: not designed yet.
+
+Computer players' match turns aren't played out on screen: you see each one's result (its steps, best set and prize).
+
+#### The shop
+
+Between rounds, you can spend pips on jokers and special cards. What's for sale and the prices: not designed yet.
 
 ### 5. Next round
 
@@ -102,9 +148,32 @@ All cards, including any prize cards added to the deck, go back into the deck, a
 
 ### Suit gates
 
-A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps scored by a card of that suit. The card that completes a score is the one that scored it: a fifteen made by playing the 5♥ gives 2 heart steps.
+A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps of that suit.
 
-If your steps reach a gate of the wrong suit, you bounce: the rest of your steps take you back the way you came. A special door stops you instead, and the rest of your steps are lost. Door types: not designed yet.
+- Pegging: the card that completes a score gives its suit. A fifteen made by playing the 5♥ gives 2 heart steps.
+- Match turns: each set's steps carry the suit that appears most often among its cards, hand, crib and starter included. If two or more suits tie for most, the steps carry no suit: they walk open paths but can't pass a suit gate.
+
+| Set | Suits | Its steps carry |
+|---|---|---|
+| 7♥ 8♥ | 2 hearts | ♥ |
+| 4♣ 5♥ 6♥ | 2 hearts, 1 club | ♥ |
+| 5♠ 5♦ 5♣ J♣ | 2 clubs, 1 spade, 1 diamond | ♣ |
+| 9♦ 6♠ 9♠ 6♦ | 2 diamonds, 2 spades | no suit (a tie) |
+| 7♠ 8♦ | 1 spade, 1 diamond | no suit (a tie) |
+
+So a set built around one suit is worth more than its steps: a run of 3 hearts walks through a heart gate that a mixed run of 3 can't, and a 2-card set of two suits never passes a gate.
+
+If your steps reach a gate of the wrong suit, you bounce: the rest of your steps take you back the way you came. A special door stops you instead, and the rest of your steps are lost.
+
+### Doors
+
+Some doors must be knocked down. A door has a strength, and the steps you spend on it break it down instead of moving you. A big score can still break through, but it doesn't carry you as far.
+
+- Pegging steps and match steps both count against a door.
+- Damage stays on a door between turns, whoever did it.
+- Once a door is down, it's open for every player.
+
+Door strengths and where doors go: not designed yet.
 
 ### Shifting walls
 
@@ -147,8 +216,13 @@ The first token to reach the goal wins at once. With three players, the other tw
 | Main route | The path from start to goal that is always open. Its length sets the game length |
 | Branch | A route that leaves the main route at a fork |
 | Stock | The cards used to fill the match grid on a turn |
-| Edge cards | Your hand, the crib and the starter, laid along the edges of the match grid |
-| Marking | Tapping the cards of a pattern in your hand or crib to score it |
-| Power level | How often an edge card has been used this turn; adds steps to its later scores |
+| Edge cards | Your hand, the crib and the starter, laid along the edges of the match grid. They're never used up |
+| Set | 2 to 5 touching cards traced on the match board. It scores if every card is part of a cribbage combo |
+| Single | A set worth exactly one combo |
+| Multi | A set worth two or more combos |
+| Power level | How often an edge card has scored this turn; adds pips to its later scores |
+| Pips | A tally, separate from steps, earned from edge power and spent in the shop between rounds |
+| Special card | A joker kept in the tray for one action: the swapper reverses a line, the bomb clears cards |
+| Door | A barrier in the maze that takes steps to knock down |
 | Power slot | A place where you keep a power for the rest of the game |
 | Badge | A bonus attached to one card in the deck |

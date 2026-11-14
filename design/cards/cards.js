@@ -81,6 +81,32 @@
       `<rect x="9" y="9" width="32" height="52" rx="1.8" fill="url(#${id})"/>`);
   }
 
+  // ---- Special cards (jokers that carry an action) -----------------------
+  // Placeholder art until the face-art phase. Purple marks a joker.
+
+  const JOKER = "#6A1B9A";
+  const SPECIALS = {
+    swap: { name: "Swapper", word: "SWAP", note: "Reverses a straight line of 2 to 4 grid cards" },
+    bomb: { name: "Bomb",    word: "BOMB", note: "Clears a card and its neighbours, without scoring" },
+  };
+
+  function special(type) {
+    const s = SPECIALS[type];
+    const head = `<text x="${W / 2}" y="12" text-anchor="middle" font-family='${FONT}' font-weight="700" font-size="8" fill="${JOKER}" letter-spacing="1">JOKER</text>` +
+      `<text x="${W / 2}" y="64" text-anchor="middle" font-family='${FONT}' font-weight="700" font-size="8" fill="${JOKER}" letter-spacing="1">${s.word}</text>`;
+    let icon = "";
+    if (type === "swap") {
+      icon = `<path d="M13 30h22l-5-5M37 42H15l5 5" stroke="${JOKER}" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    } else if (type === "bomb") {
+      icon = `<circle cx="23" cy="40" r="11" fill="${FACE.ink}"/>` +
+        `<rect x="27" y="25" width="6" height="5" rx="1" fill="${FACE.ink}" transform="rotate(35 30 27.5)"/>` +
+        `<path d="M32 25c2-4 5-5 8-4" stroke="${FACE.soft}" stroke-width="1.4" fill="none"/>` +
+        `<path d="M41 17l1.2 2.6 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z" fill="#E00000"/>` +
+        `<circle cx="19" cy="36" r="2.4" fill="#ffffff" opacity=".35"/>`;
+    }
+    return frame(`<rect x="3.5" y="3.5" width="43" height="63" rx="3" fill="none" stroke="${JOKER}" stroke-width="1" opacity=".5"/>` + head + icon);
+  }
+
   // ---- Contrast (WCAG 2) -------------------------------------------------
 
   function luminance(hex) {
@@ -93,5 +119,5 @@
     return (hi + 0.05) / (lo + 0.05);
   }
 
-  window.WarpedCards = { W, H, FACE, SUITS, RANKS, BACKS, front, back, contrast };
+  window.WarpedCards = { W, H, FACE, SUITS, RANKS, BACKS, SPECIALS, front, back, special, contrast };
 })();
