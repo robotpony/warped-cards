@@ -6,7 +6,7 @@
 //
 //   Amber joker: 90% a card, 9% a scoring card, 1% an item
 //   Teal joker:  80% a card, 15% a scoring card, 5% a special joker for the stock
-//   Title card, blank card: a third each a 5 for the board, a special joker, +5 pips
+//   Title card, blank card: a third each a 5 for the board, a special joker, +5 steps
 //                           (placeholders until their prizes are designed)
 //
 // Tests: jokers.test.js. Plain script (no modules) so the mocks open from disk.
@@ -16,7 +16,7 @@
 
   // Players never see these names, notes or chances; they're for the game maker.
   // tier sets how big the reveal is (quiet, glint, burst), so rarity is felt, not read.
-  // goes says where the prize lands: the card's spot on the board, the stock, the tray or pips.
+  // goes says where the prize lands: the card's spot on the board, the stock, the tray or the step counter.
   const OUTCOMES = {
     card:    { name: "A card",         tier: "quiet", goes: "board", note: "A new card of any rank and suit, kept in the deck for the rest of the game" },
     scoring: { name: "A scoring card", tier: "glint", goes: "board", note: "A new 5 or 10-value card (10, J, Q, K), kept in the deck for the rest of the game" },
@@ -24,7 +24,7 @@
     power:   { name: "A special joker", tier: "burst", goes: "stock", note: "A special joker, picked from every known one, is shuffled into this turn's stock" },
     five:    { name: "A 5",            tier: "glint", goes: "board", note: "A new 5, kept in the deck for the rest of the game (placeholder)" },
     named:   { name: "A special joker", tier: "burst", goes: "tray",  note: "A swapper or bomb joins the tray (placeholder)" },
-    pips:    { name: "+5 pips",        tier: "glint", goes: "pips",  note: "5 pips (placeholder)" },
+    steps:   { name: "+5 steps",       tier: "glint", goes: "steps", note: "5 steps this turn (placeholder; pips were removed in r15)" },
   };
 
   // The extra cards. joker: true for the two jokers (drawn with WarpedCards.joker);
@@ -41,8 +41,8 @@
   const TABLES = {
     amber: [{ id: "card", pct: 90 }, { id: "scoring", pct: 9 }, { id: "item", pct: 1 }],
     teal:  [{ id: "card", pct: 80 }, { id: "scoring", pct: 15 }, { id: "power", pct: 5 }],
-    title: [{ id: "five", pct: 34 }, { id: "named", pct: 33 }, { id: "pips", pct: 33 }],
-    blank: [{ id: "five", pct: 34 }, { id: "named", pct: 33 }, { id: "pips", pct: 33 }],
+    title: [{ id: "five", pct: 34 }, { id: "named", pct: 33 }, { id: "steps", pct: 33 }],
+    blank: [{ id: "five", pct: 34 }, { id: "named", pct: 33 }, { id: "steps", pct: 33 }],
   };
 
   const total = (table) => table.reduce((a, o) => a + o.pct, 0);

@@ -2,6 +2,23 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.5.0 — 2026-11-14
+
+### Changed
+
+- Match turn: there's one score, steps. Your hand, crib and starter cards still power up, but now their power multiplies the sets they're in (×1.5 a level, levels added, up to ×2) instead of earning pips. Cards left over still cost their steps, unmultiplied.
+- Match turn: edge cards show their multiplier (×1.5, ×2), and the score breakdown shows each powered card and the multiplier it gives the set.
+- Jokers: the title and blank cards' +5 pips prize is now +5 steps.
+- Match turn settings: the multiplier per level, whether several edge cards add or multiply, and the cap.
+
+### Fixed
+
+- Match turn: a set with five or more cards of one rank (possible once a joker makes extra cards) stopped the game with an error. It now scores 2 for every pair in it, so five of a kind is 20.
+
+### Removed
+
+- Pips. What the shop takes instead is still to be designed.
+
 ## 0.4.1 — 2026-11-14
 
 ### Added

@@ -34,8 +34,10 @@
     // Pairs, grouped by rank.
     const byRank = {};
     cards.forEach((c, i) => (byRank[c.r] = byRank[c.r] || []).push(i));
+    // A group of n of one rank scores every pair in it: 2 points × n(n−1)/2. Cards a joker
+    // makes can give 5 or more of a rank (five 5s is 20).
     for (const idx of Object.values(byRank)) if (idx.length >= 2)
-      add("pair", PAIR_NAMES[idx.length], [0, 0, 2, 6, 12][idx.length], idx);
+      add("pair", PAIR_NAMES[idx.length] || `${idx.length} of a kind`, idx.length * (idx.length - 1), idx);
     // Runs of 3 or more distinct ranks; repeated ranks make double runs.
     const ranks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
     let run = null;

@@ -74,7 +74,7 @@
 <main>
   <div class="phone" id="phone">
     <div class="screen">
-      <div class="top"><span>Joker draws · <b id="pips">0</b> pips</span><span id="stockN">Stock --</span><div class="pile" id="pile"></div></div>
+      <div class="top"><span>Joker draws · <b id="steps">0</b> steps</span><span id="stockN">Stock --</span><div class="pile" id="pile"></div></div>
       <div class="board" id="board"></div>
       <div class="strip">Tray<div class="row" id="tray"></div></div>
       <div class="strip">Shuffled into the stock<div class="row" id="deckAdds"></div></div>
@@ -89,7 +89,7 @@
 
     <div class="panel">
       <h3>What the player sees</h3>
-      <p>A joker or extra card lands on the board and play pauses. Something random happens (a shuffle, a wheel or a die), the prize is revealed, and it flies to where it goes: the card's spot on the board, the stock, the tray or the pips counter. The rarer the prize, the bigger the reveal: a card flips quietly, a scoring card glints, an item or special joker bursts. The first time a player meets each kind, it's named with a one-line hint. Tap to skip.</p>
+      <p>A joker or extra card lands on the board and play pauses. Something random happens (a shuffle, a wheel or a die), the prize is revealed, and it flies to where it goes: the card's spot on the board, the stock, the tray or the step counter. The rarer the prize, the bigger the reveal: a card flips quietly, a scoring card glints, an item or special joker bursts. The first time a player meets each kind, it's named with a one-line hint. Tap to skip.</p>
       <p style="margin-bottom:6px"><button class="btn amber" data-draw="amber">Amber joker</button><button class="btn teal" data-draw="teal">Teal joker</button><button class="btn" data-draw="title">Title card</button><button class="btn" data-draw="blank">Blank card</button><button class="btn" data-draw="any">Any of them</button></p>
       <label>Animation <select id="optAnim"><option value="random" selected>A different one each draw</option><option value="shuffle">Shuffle</option><option value="wheel">Wheel</option><option value="die">Die</option></select></label>
       <label>Speed <select id="optSpeed"><option value="1.4">slow</option><option value="1" selected>normal</option><option value="0.6">quick</option></select></label>
@@ -136,7 +136,7 @@ function newBoard() {
   const deck = [];
   for (const s of SUITS) for (let r = 1; r <= 13; r++) deck.push({ r, s });
   shuffle(deck);
-  B = { stock: deck, grid: deck.splice(0, 16), tray: [], deckAdds: {}, pips: 0, busy: false, hole: -1 };
+  B = { stock: deck, grid: deck.splice(0, 16), tray: [], deckAdds: {}, steps: 0, busy: false, hole: -1 };
   $("feed").innerHTML = "";
   render();
 }
@@ -151,7 +151,7 @@ function render(fx) {
   const adds = Object.values(B.deckAdds).reduce((a, n) => a + n, 0);
   $("pile").innerHTML = WC.back() + (adds ? `<span class="count">+${adds}</span>` : "");
   $("stockN").textContent = `Stock ${B.stock.length}`;
-  $("pips").textContent = B.pips;
+  $("steps").textContent = B.steps;
   $("tray").innerHTML = B.tray.length ? B.tray.map(t => t === "item" ? `<div class="item">ITEM<br>?</div>` : `<div class="mini">${WC.special(t)}</div>`).join("") : `<span class="empty-note">empty</span>`;
   const list = Object.entries(B.deckAdds);
   $("deckAdds").innerHTML = list.length ? list.map(([t, n]) => `<div class="mini">${WC.special(t)}<span class="count">${n}</span></div>`).join("") : `<span class="empty-note">none yet</span>`;
@@ -183,10 +183,10 @@ async function draw(kind) {
   else if (outcome === "power" || outcome === "named") special = POWER[Math.floor(Math.random() * POWER.length)];
   if (card) { prizeHtml = face(card); prizeName = `A new ${label(card)}`; }
   else if (special) { prizeHtml = WC.special(special); prizeName = outcome === "power" ? `${WC.SPECIALS[special].name}, into the stock` : `${WC.SPECIALS[special].name}, for your tray`; }
-  else if (outcome === "pips") { prizeHtml = `<div class="item-face">+5<small>pips</small></div>`; prizeName = "+5 pips"; }
+  else if (outcome === "steps") { prizeHtml = `<div class="item-face">+5<small>steps</small></div>`; prizeName = "+5 steps"; }
   else { prizeHtml = `<div class="item-face">ITEM<small>?</small></div>`; prizeName = "An item, for your tray"; }
 
-  const target = { board: () => document.querySelectorAll("#board .cell")[i], stock: $("pile"), tray: $("tray"), pips: $("pips") }[oc.goes];
+  const target = { board: () => document.querySelectorAll("#board .cell")[i], stock: $("pile"), tray: $("tray"), steps: $("steps") }[oc.goes];
   const first = !met(kind); markMet(kind);
   B.hole = i; render();
   await RV.play({ stage: $("stage"), art: kindArt(kind), colour: kindColour(kind), prizeHtml, prizeName, tier: oc.tier, target,
@@ -196,9 +196,9 @@ async function draw(kind) {
   B.grid[i] = oc.goes === "board" ? card : B.stock.shift(); // otherwise the stock fills the spot
   if (oc.goes === "stock") { B.deckAdds[special] = (B.deckAdds[special] || 0) + 1; B.stock.splice(Math.floor(Math.random() * (B.stock.length + 1)), 0, { r: 0, s: "S", sj: special }); }
   if (oc.goes === "tray") B.tray.push(special || "item");
-  if (oc.goes === "pips") B.pips += 5;
+  if (oc.goes === "steps") B.steps += 5;
   B.hole = -1; render({ i, cls: "land" });
-  const pulse = { stock: "pile", tray: "tray", pips: "pips" }[oc.goes];
+  const pulse = { stock: "pile", tray: "tray", steps: "steps" }[oc.goes];
   if (pulse) { $(pulse).classList.add("pulse"); setTimeout(() => $(pulse).classList.remove("pulse"), 520); }
   feed(`${kindName(kind)}: ${prizeName}`);
   await sleep(300);

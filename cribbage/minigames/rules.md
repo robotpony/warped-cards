@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 4, 2026-11-14. Match turns follow match rules r14. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 4, 2026-11-14. Match turns follow match rules r15. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -23,7 +23,7 @@ Game ............................ until a token reaches the goal
 
 | Term | Meaning |
 |---|---|
-| Game | From setup until a token reaches the goal. Pips, special jokers won as prizes, power slots, cards a joker made, and prizes in the deck last the whole game |
+| Game | From setup until a token reaches the goal. Special jokers won as prizes, power slots, cards a joker made, and prizes in the deck last the whole game |
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
 | Stage | One part of a round. In order: deal and discard, cut the starter, pegging, match turns, the shop |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
@@ -67,12 +67,12 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-These are match rules r14, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r15, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
 
-  Steps 12 · pips 3 .................... Stock (face down)
+  Steps 12 ............................ Stock (face down)
 
   . . . .   C        .  grid card, from the stock
   . . . .   C        H  your hand
@@ -128,6 +128,7 @@ A set is counted like a cribbage hand. Every combo inside it scores.
 | Pair | 2 |
 | Pair royal (3 of a kind) | 6 |
 | Double pair royal (4 of a kind) | 12 |
+| 5 or more of a kind (cards a joker made) | 2 for every pair in it: 5 of a kind is 20 |
 | Run of 3 or more | 1 per card; in a double run, each run counts |
 | Flush: 4 or 5 cards of one suit | 1 per card |
 | His nobs: the jack of the starter's suit, with the starter | 1 |
@@ -160,11 +161,20 @@ A card that isn't part of any combo is left over. Each one costs 2 steps (to tun
 
 The set's grid cards clear, the cards above them fall, and the stock fills the gaps from the top.
 
-Your hand, crib and starter are edge cards. They stay, and they power up:
+Your hand, crib and starter are edge cards. They stay, and they power up. Power multiplies the sets they're in, so there's one score: steps.
 
 - Each edge card starts the turn at power 0.
-- When a set scores, each edge card in it adds its power to your pips, then goes up one level.
-- Pips don't move you. You spend them between rounds in the shop. Power lasts the turn; pips last the game. Values: to tune.
+- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.5 for each level (level 1 is ×1.5, level 2 is ×2), up to ×2. Round to the nearest step. Cards left over aren't multiplied.
+- After a set scores, each edge card in it goes up one level.
+- Power lasts the turn. Values: to tune (the mock has settings for the step per level, adding or multiplying levels, and the cap).
+
+| Set | Edge power | Combos | Multiplier | Steps |
+|---|---|---|---|---|
+| 7-8, grid only | none | Fifteen, 2 | ×1 | 2 |
+| 5 from your hand, 10 from the grid | the 5 at level 1 | Fifteen, 2 | ×1.5 | 3 |
+| 5 and 5 from your hand, 5 from the grid | levels 1 + 1 = 2 | Pair royal and fifteen, 8 | ×2 | 16 |
+| The same, a turn later | levels 2 + 2 = 4 | 8 | ×3, capped at ×2 | 16 |
+| 7-8 from the grid, K from your hand | the K at level 1 | Fifteen, 2; K left over, −2 | ×1.5 on the 2 | 1 |
 
 Each set's steps carry its most common suit, for suit gates in the maze. A tie carries no suit (see Suit gates).
 
@@ -196,7 +206,7 @@ When an extra card lands on the board, play and the timer pause and it turns int
 1. The card lifts off the board and the screen dims.
 2. Something random happens: a shuffle, a wheel or a die of that card's face.
 3. The prize is revealed. The rarer the prize, the bigger the reveal: a plain card flips quietly, a scoring card glints, and the rarest prizes swell, glow and throw rays.
-4. The prize flies to where it goes: the card's spot on the board, the stock, your tray or your pips.
+4. The prize flies to where it goes: the card's spot on the board, the stock, your tray or your step count.
 
 The first time you meet each kind, it's named with a one-line hint. A tap skips the rest of the reveal. Computer players' reveals aren't shown.
 
@@ -206,7 +216,7 @@ Players never see the chances or the list of possible prizes. Each kind rolls on
 |---|---|
 | Amber joker | 90% a card, 9% a scoring card, 1% an item for your tray |
 | Teal joker | 80% a card, 15% a scoring card, 5% a special joker shuffled into this turn's stock |
-| Title card, blank card | A third each: a new 5, a special joker for your tray, or 5 pips (placeholders) |
+| Title card, blank card | A third each: a new 5, a special joker for your tray, or 5 steps (placeholders) |
 
 - A card is a new card of any rank and suit, made by the joker and placed in its spot. A scoring card is a new 5 or 10-value card (10, J, Q, K). Cards a joker makes are marked ★ and stay in the deck for the rest of the game.
 - The teal joker's special joker is picked from every known special joker (the swapper and bomb so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your tray.
@@ -232,7 +242,7 @@ Computer players' match turns aren't played out on screen: you see each result (
 
 ### 5. The shop
 
-Between rounds, you can spend pips. The shop sells jokers, and any card you've discovered in any game you've played, such as a special joker you've won or seen in a reveal. The game reveals itself over hundreds of games. What's for sale and the prices: not designed yet.
+Between rounds, you can shop. What you pay with isn't designed yet (pips, the old currency, were removed in match rules r15). The shop sells jokers, and any card you've discovered in any game you've played, such as a special joker you've won or seen in a reveal. The game reveals itself over hundreds of games. What's for sale and the prices: not designed yet.
 
 ### 6. Next round
 
@@ -321,8 +331,7 @@ Game, round, stage, turn, minigame and match turn are defined in How a game fits
 | Set | 2 to 5 touching cards traced on the match board. It scores if every card is part of a cribbage combo |
 | Single | A set worth exactly one combo |
 | Multi | A set worth two or more combos |
-| Power level | How often an edge card has scored this turn; adds pips to its later scores |
-| Pips | A tally, separate from steps, earned from edge power and spent in the shop between rounds |
+| Power level | How often an edge card has scored this turn; multiplies the sets it's in later |
 | Joker | A card outside the standard 52 that does something. Each joker is one kind: the amber and teal jokers turn into a prize when drawn; special jokers carry an action |
 | Special joker | A joker kept in the tray for one action: the swapper reverses a line, the bomb clears cards |
 | Extra cards | The 4 cards beyond the standard 52: the amber and teal jokers, the title card and the blank card |

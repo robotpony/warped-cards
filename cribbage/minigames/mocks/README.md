@@ -6,11 +6,38 @@ Every scoring set is a single (exactly one combo, like 7-8) or a multi (two or m
 
 | Mock | What it covers | Status |
 |---|---|---|
-| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, cards left over (warning and cost), lit combos while tracing, joker reveals, special jokers (swapper, bomb), power levels, prizes, timer and card budget, play-out, and begin and end effects (deal-in, board cleared, wrap-up) | v8, 2026-11-14 |
+| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, cards left over (warning and cost), lit combos while tracing, joker reveals, special jokers (swapper, bomb), edge power multipliers, prizes, timer and card budget, play-out, and begin and end effects (deal-in, board cleared, wrap-up) | v9, 2026-11-14 |
 | [jokers.html](jokers.html) | Joker mechanics on their own: the amber and teal jokers and the title and blank cards, each rolling on a hidden table of chances. Players see a shuffle, wheel or die, the prize revealed (bigger for rarer prizes) and flown to where it goes. Game-maker panels edit the chances and simulate 10,000 games. Outcome logic in `jokers.js`, tests in `jokers.test.js`; the reveal in `reveal.js` and `reveal.css`, shared with the match turn | v3, 2026-11-14 |
 | Score breakdown | Merged into the match turn in v4. The standalone mock (v1, with presets) is in git history | Retired |
 | Prize pick | Choosing where a prize goes (deck or power slot), badges | After the engine (PLAN.md Phase 6), with the prize rules |
 | Pegging on the maze | Pegging with live token movement | After the engine (PLAN.md Phase 6), with maze design |
+
+## Match turn v9: one score, edge power multiplies (2026-11-14)
+
+Rules r15, from Bruce's playtest: pips are gone, and the power levels on the hand, crib and starter multiply instead of adding.
+
+- A set's multiplier: add the levels of its edge cards; ×1.5 a level (1 + 0.5 each), capped at ×2, rounded to the nearest step. Cards left over are taken off after, unmultiplied.
+- Edge cards show their own multiplier (×1.5, ×2) instead of +1, +2. The breakdown lights each powered edge card, then a Multiplier line takes the running total up.
+- The title and blank cards' +5 pips is now +5 steps. The clear-board bonus no longer offers pips.
+- Fixed: a set with 5 or more of a kind (possible with cards a joker made) crashed the counter; it now scores every pair in it (five of a kind is 20). Bot batches hit it.
+- Settings (Settings tab): the step per level (off, ×1.25, ×1.5, ×2), whether two or more edge cards add their levels or multiply their own multipliers, and the cap (none, ×2, ×3, ×5). Runs record them.
+
+### v9 findings: the cap matters most (2026-11-14)
+
+Bot batches, dealer, whole stock, mean steps per turn (min to max). Small samples: 15 turns for medium, 5 for perfect.
+
+| Edge power | Medium bot | Perfect bot |
+|---|---|---|
+| Off (×1, what r14 scored in steps) | 151 (113 to 207) | 188 |
+| ×1.5 a level, no cap | 1,049 (334 to 3,989) | 3,963 (564 to 9,422) |
+| ×1.25 a level, cap ×3 | 322 | |
+| ×1.5 a level, cap ×3 | 364 | 496 |
+| ×2 a level, cap ×3 | 416 | |
+| ×1.5 a level, cap ×2 (default) | 243 (147 to 414) | 353 |
+| ×1.5 each card, multiplied, cap ×3 | 381 | |
+
+- Uncapped, levels pile up all turn and scores run away. The step per level matters much less than the cap.
+- With the ×2 cap, edge power adds about 60% for a medium bot and 90% for a perfect one. A person's numbers come from playtests on r15.
 
 ## Match turn v8: begin and end effects (2026-11-14)
 
@@ -30,7 +57,7 @@ No rules change (still r14). First mock of `concept.md` › Transitions and effe
 - Prizes land where they go: a new card in the card's spot, marked ★; a special joker from the teal joker on the stock pile, shuffled into this turn's stock (drawn onto the board later, it waits there until tapped; rules r14); a special joker from the title or blank card in the tray; pips on the pips counter; an item in the tray as an ITEM placeholder that does nothing yet.
 - Cards a joker makes are new cards (r14), so a joker can no longer turn into another extra card. Each turn's run records how many jokers it had and the cards they made.
 - A special joker on the board: tap it to arm it (it lifts and rings), tap again to cancel. Used, it leaves the board and the stock fills its spot. Bots use board special jokers before the tray's, since those only last the round.
-- The title and blank cards now roll on hidden tables too, in `jokers.js` (a third each: a 5, a special joker for the tray, 5 pips; placeholders). The joker mock can draw them.
+- The title and blank cards now roll on hidden tables too, in `jokers.js` (a third each: a 5, a special joker for the tray, 5 pips; placeholders, 5 steps from r15). The joker mock can draw them.
 - Shared code: `reveal.js` and `reveal.css` hold the stage, the three animations, the tiered reveal and the fly. Both mocks use them, so a change to the reveal shows in both.
 - Bot batches skip the reveal and apply the prize.
 - Card art: the plain joker is removed from `cards.js`; the deck's jokers are the amber and teal ones.
@@ -175,6 +202,7 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r12 | 2026-11-14 | The amber and teal jokers replace the placeholder joker. Each extra card plays the hidden-table reveal (shuffle, wheel or die; prize; fly to its place) instead of explaining its outcomes. A teal special card joins the deck for the next round (mock v7) |
 | r13 | 2026-11-14 | A special joker from the teal joker is shuffled into this turn's stock; drawn onto the board, it joins the tray (mock v7) |
 | r14 | 2026-11-14 | 0 to n jokers a round, decided at the shuffle (setting; 0 to 2 by default), each amber or teal. Cards a joker makes are new cards, marked ★, kept for the game. A special joker drawn onto the board waits until tapped, can't be part of a set, and is used up where it lies (mock v7) |
+| r15 | 2026-11-14 | One score: no pips. Edge power multiplies a set's combos (levels added, ×1.5 a level, capped at ×2; settings). The title and blank cards' pips prize is 5 steps (mock v9) |
 
 ## Match turn v3: automatic scoring and special cards (2026-11-14)
 

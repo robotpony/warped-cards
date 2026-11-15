@@ -13,7 +13,7 @@ test("every table adds up to 100, and every kind and outcome is defined", () => 
       const oc = J.OUTCOMES[o.id];
       assert.ok(oc, `${kind} ${o.id}`);
       assert.ok(["quiet", "glint", "burst"].includes(oc.tier), `${o.id} tier`);
-      assert.ok(["board", "stock", "tray", "pips"].includes(oc.goes), `${o.id} goes`);
+      assert.ok(["board", "stock", "tray", "steps"].includes(oc.goes), `${o.id} goes`);
     }
   }
 });

@@ -1,6 +1,6 @@
 # Crib Maze: Engine Spec
 
-Status: draft 1, 2026-11-14. Covers the match turn at match rules r14. Deal, discard, cut, pegging, the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 2, 2026-11-14. Covers the match turn at match rules r15. Deal, discard, cut, pegging, the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -65,7 +65,7 @@ Each position has board coordinates: grid `g(r,c)` is (r, c), crib `c(i)` is (i,
 | stock | Cards in order; the top is the next card drawn |
 | drawn | Cards drawn from the stock this turn (for the card budget) |
 | power | Power level per edge card ID, all 0 at the start |
-| steps, pips | This turn's steps (can go below 0) and pips earned this turn |
+| steps | This turn's steps (can go below 0). There are no pips (r15) |
 | tray | Special jokers the player holds, by kind, plus items |
 | scoredSets | Each scored set, as its sorted card IDs |
 | best | The turn's best score so far (points and card IDs) |
@@ -129,9 +129,9 @@ Then count the set (see Counting a set). Each card in no combo is left over.
 
 A score, in order:
 
-1. Points: combo points minus `leftOverCost` × left-over cards. This MAY be 0 or less; the set still scores and clears.
-2. Pips: add the current power of every edge card in the set. Then each of those edge cards goes up `edgePower.step` levels.
-3. Steps: add the points.
+1. Multiplier: add up the current power levels of the edge cards in the set. The multiplier, in percent, is 100 + `edgePower.percentPerLevel` × levels, no more than `edgePower.capPercent` (0 means no cap). With `edgePower.combine` set to `each`, every edge card's own multiplier is multiplied together instead, then capped.
+2. Points: combo points × multiplier, rounded half up (in integers: (combo × percent + 50) div 100), minus `leftOverCost` × left-over cards. This MAY be 0 or less; the set still scores and clears.
+3. Steps: add the points. Then each edge card in the set goes up `edgePower.step` levels.
 4. Suit: the suit most cards in the set share. A tie for most is no suit.
 5. Mark the set's card IDs as scored. If the points beat the best so far (strictly), it becomes the best.
 6. Emit `score`.
@@ -177,12 +177,12 @@ For each extra card:
 2. Make the prize, from the outcome's `makes` or `special`:
    - A card: build the pool of 52 rank and suit pairs in ID order, filtered by the outcome (any card; a scoring card, which is a rank in `scoringRanks`; or a 5). Pick one (stream `reveal`, purpose `made_card`). It gets the next made-card ID.
    - A special joker: pick one from `specials.known`, in order (stream `reveal`, purpose `special_kind`).
-   - Pips or an item: nothing to draw.
+   - Steps or an item: nothing to draw.
 3. Place it, by the outcome's `goes`:
    - `board`: the made card takes the extra card's cell.
    - `stock`: the special joker goes into the stock at a position from 0 to the cards still drawable (inclusive), drawn from stream `board`, purpose `stock_insert`, so it stays within reach of the card budget. If nothing is drawable, it goes to the tray instead. The extra card's cell refills.
    - `tray`: the special joker or item goes to the tray. The cell refills.
-   - `pips`: add the outcome's amount to pips. The cell refills.
+   - `steps`: add the outcome's amount to this turn's steps. The cell refills.
 4. Emit `extra_drawn` (the card, its outcome, the prize, where it went), then the `board_changed` from any refill.
 
 A refill here draws one card for one cell, at the extra card's position, with no falling.
@@ -197,7 +197,7 @@ Run after setup and after every action that changed the board, in this order:
 
 ## Ending the turn
 
-1. If the reason is `board_cleared`, add the clear-board bonus (`clearBonus`: steps, pips or none) and emit `board_cleared`.
+1. If the reason is `board_cleared`, add the clear-board bonus (`clearBonus`: steps or none) and emit `board_cleared`.
 2. If a best score exists, award the prize: rare at `prize.rareAt` points or more, epic at `prize.epicAt` or more, common below. The prize is a special joker for the tray, picked by `prize.special` weights (stream `prize`, purpose `prize_special`). Emit `prize_won`.
 3. Emit `turn_end` with the reason (`board_cleared`, `timer`, `player`) and the turn's totals.
 
@@ -210,7 +210,7 @@ Counting is shared with classic cribbage (CribbageKit). It takes a list of cards
 | Order | Combo | How it's found | Points (config `scoring`) |
 |---|---|---|---|
 | 1 | Fifteens | Every subset of 2 or more cards whose values add to 15, each one a combo. Subsets in increasing bitmask order of card index | `fifteen` each |
-| 2 | Pairs | Group by rank, ranks ascending. A group of 2, 3 or 4 is one combo | `pair`, `pairRoyal`, `doublePairRoyal` |
+| 2 | Pairs | Group by rank, ranks ascending. A group of 2 or more is one combo, scoring every pair in it: n cards give n(n−1)/2 pairs (made cards can give 5 or more) | `pair` × pairs |
 | 3 | Runs | Each maximal stretch of 3 or more consecutive distinct ranks, ascending. Multiplier = product of each rank's count. One combo per stretch, using every card of those ranks | `runPerCard` × length × multiplier |
 | 4 | Flush | All cards one suit, and at least `flushMin` cards. Classic hands also allow a 4-card flush of the hand's cards without the starter (option `handFlush4`) | `flushPerCard` × cards |
 | 5 | His nobs | A jack from the hand or crib, of the starter's suit, in the same set as the starter (option: the two indexes) | `nobs` |
@@ -233,7 +233,7 @@ Every event names its type and carries the fields below. Cards appear as `{id, c
 | `trace_rejected` | positions, reason |
 | `leftover_warning` | positions, leftOver |
 | `leftover_penalty` | positions, leftOver, cost |
-| `score` | positions, cards, combos (kind, size or multiplier, points, card indexes), comboPoints, leftOver, cost, points, single or multi, suit, pips (power paid), powerAfter |
+| `score` | positions, cards, combos (kind, size or multiplier, points, card indexes), comboPoints, multiplierPercent, multipliedPoints, leftOver, cost, points, single or multi, suit, powerAfter |
 | `board_changed` | cleared, fell (card, from, to), drawn (card, cell) |
 | `extra_drawn` | card, outcome, prize, goes, cell |
 | `swap` | line, before, after, source |
@@ -242,7 +242,7 @@ Every event names its type and carries the fields below. Cards appear as `{id, c
 | `no_sets_left` | stockLeft, tray |
 | `board_cleared` | bonus kind and amount |
 | `prize_won` | tier, bestPoints, bestCards, special |
-| `turn_end` | reason, steps, pips, best, scores, rejected, swaps, bombs, drawn, penalty total, left-over total, steps by suit, steps from sets with and without edge cards |
+| `turn_end` | reason, steps, steps from edge power, best, scores, rejected, swaps, bombs, drawn, penalty total, left-over total, steps by suit, steps from sets with and without edge cards |
 
 These names follow `stats.md` › Event log, with the turn's details added. `stats.md` will be brought in step once the Swift engine settles them.
 
@@ -292,21 +292,20 @@ Finding the best set, by level (`bots.json`):
 
 ## Config
 
-All files live in `cribbage/minigames/config/` and carry a `version`. Values below are rules r14 as the mock plays them by default. The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in `cribbage/minigames/config/` and carry a `version`. Values below are rules r15 as the mock plays them by default. The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r14",
-  "scoring": { "fifteen": 2, "pair": 2, "pairRoyal": 6, "doublePairRoyal": 12,
-               "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
+  "rulesVersion": "match-r15",
+  "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 5, "flushMin": 4, "timerSeconds": 90, "cardBudget": 0,
     "leftOverCost": 2,
     "clearBonus": { "kind": "steps", "amount": 10 },
-    "edgePower": { "start": 0, "step": 1 },
+    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 200 },
     "prize": { "rareAt": 8, "epicAt": 16, "special": [["swapper", 60], ["bomb", 40]] }
   },
   "specials": {
@@ -317,7 +316,7 @@ All files live in `cribbage/minigames/config/` and carry a `version`. Values bel
 }
 ```
 
-A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer.
+A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 
@@ -335,13 +334,13 @@ A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer.
     "item":    { "goes": "tray",  "tier": "burst" },
     "power":   { "goes": "stock", "tier": "burst", "special": "any" },
     "named":   { "goes": "tray",  "tier": "burst", "special": "any" },
-    "pips":    { "goes": "pips",  "tier": "glint", "amount": 5 }
+    "steps":   { "goes": "steps", "tier": "glint", "amount": 5 }
   },
   "tables": {
     "amber": [["card", 90], ["scoring", 9], ["item", 1]],
     "teal":  [["card", 80], ["scoring", 15], ["power", 5]],
-    "title": [["five", 34], ["named", 33], ["pips", 33]],
-    "blank": [["five", 34], ["named", 33], ["pips", 33]]
+    "title": [["five", 34], ["named", 33], ["steps", 33]],
+    "blank": [["five", 34], ["named", 33], ["steps", 33]]
   }
 }
 ```
@@ -407,6 +406,7 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 |---|---|
 | `Math.random`, no seed | Seeded named streams; every draw recorded |
 | Logs outcomes (cards scored) | Records actions, rolls and events, so turns replay |
+| Crashed on 5 or more of a kind (fixed in the mock too) | Scores every pair in the group |
 | Picks only the last run in a set | Counts every run of 3 or more (no 5-card set can hold two, so scores don't change) |
 | The traced bots' starting cards can include special jokers | Starting cards hold no special jokers (bot results shift a little) |
 | Starter "apart" and "touching off" settings | Not in the engine; r14 has the starter in the corner and touching on |

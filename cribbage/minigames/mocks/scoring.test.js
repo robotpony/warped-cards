@@ -139,3 +139,11 @@ test("a set's suit is its most common suit, and a tie is no suit", () => {
   assert.equal(S.suitOf(cards("7S 8D")), null); // 1 and 1
   assert.equal(S.suitOf(cards("AC 2C 3D 4D 5C")), "C"); // 3 clubs, 2 diamonds
 });
+
+test("five or more of a kind, from cards a joker made", () => {
+  // 5-5-5-5-5 (one made): 10 pairs (20) + ten fifteens of three 5s (20) = 40.
+  const t = score("5S 5H 5D 5C 5H");
+  assert.deepEqual([t.pairs, t.fifteens, t.total], [["5 of a kind"], 10, 40]);
+  // K-K-K-K-K: 10 pairs = 20, no fifteens.
+  assert.equal(score("KS KH KD KC KS").total, 20);
+});

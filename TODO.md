@@ -5,14 +5,14 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 ## Crib Maze
 
 - [x] Fold Bruce's answers to the 13 match turn and maze questions into the docs (`cribbage/minigames/concept.md` › Decisions)
-- [ ] Playtest the match turn on rules r14 and save the runs (`cribbage/minigames/playtests/`)
+- [ ] Playtest the match turn on rules r15 (edge power multipliers) and save the runs (`cribbage/minigames/playtests/`)
 - [ ] Clear runs saved before rules versioning (they show as `r?`)
 - [x] Wire the score breakdown into the match turn (`mocks/match-turn.html`)
 - [x] Pause the timer during the score breakdown
 - [x] Name the bonus tally: pips
 - [x] Decide suit ties for match-turn steps (`rules.md` › Suit gates)
 - [ ] Notes toward the maze walk mini game (`concept.md` › The maze walk)
-- [ ] Shop mock: spending pips on jokers and special jokers between rounds
+- [ ] Shop mock: what you pay with now that pips are gone, and selling jokers and special jokers between rounds
 - [ ] Tune bot levels so medium scores like a person, from playtest runs
 - [x] Match turn begin effect: cards fall into place from the deck (`concept.md` › Transitions and effects)
 - [x] Match turn end effects: board cleared (with its bonus) vs not (`concept.md` › Transitions and effects)

@@ -219,7 +219,7 @@
   <div class="phone">
     <div class="screen" id="screen">
       <div class="top"><span id="who">Your match turn</span><span id="timer">--</span><span id="stock">Stock --</span></div>
-      <div class="steps"><div><div class="big" id="steps">0</div><div style="font-size:13px;opacity:.75">steps this turn · <b id="pips">0</b> <span id="tallyName"></span></div></div>
+      <div class="steps"><div><div class="big" id="steps">0</div><div style="font-size:13px;opacity:.75">steps this turn</div></div>
         <div class="starter-wrap"><div class="cell pile" id="pile"></div><div id="starter"></div></div></div>
       <div class="track" title="Progress along a 121-step main route"><i id="trackbar"></i></div>
       <div class="board" id="board"></div>
@@ -237,7 +237,7 @@
 
   <div class="side">
     <h1>Match turn mock</h1>
-    <p class="muted">Crib Maze, mock v8 (Boggle-style, special jokers, score breakdown, left-over cost, lit combos, joker reveals, begin and end effects), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
+    <p class="muted">Crib Maze, mock v9 (Boggle-style, special jokers, score breakdown, left-over cost, lit combos, joker reveals, begin and end effects, edge power multipliers), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
     <div class="toolbar"><button class="btn" id="newBtn">New turn</button> <button class="btn" id="autoBtn">Watch a bot play this turn</button></div>
     <div class="tabs" role="tablist" aria-label="Mock panels">
       <button class="tab" role="tab" id="tab-how" aria-controls="pane-how">How to play</button>
@@ -252,7 +252,7 @@
       <ol class="tight">
         <li>Drag across 2 to 5 touching cards (diagonals count) and let go. Or tap cards, then tap the last one again.</li>
         <li>The set scores at once, counted like a cribbage hand. Every set needs a grid card.</li>
-        <li>Scored grid cards clear and the stock refills. Your hand, crib and starter (gold) stay and power up, paying <b>pips</b> on later scores.</li>
+        <li>Scored grid cards clear and the stock refills. Your hand, crib and starter (gold) stay and power up: each level multiplies the later sets they're in.</li>
         <li>When the stock runs out, play out what's left.</li>
         <li>The turn ends on the timer, a cleared board, or End turn. Your best score wins a special joker.</li>
       </ol>
@@ -281,7 +281,7 @@
       <table class="howto">
         <tr><td><b>Swapper</b> (tray)</td><td>Tap it, then trace a straight line of 2 to 4 grid cards to reverse it</td></tr>
         <tr><td><b>Bomb</b> (tray)</td><td>Tap it, then tap a grid card: it and its neighbours clear</td></tr>
-        <tr><td><b>Jokers, title, blank</b> (stock)</td><td>Play pauses, something random happens, and the card becomes a prize: a new card (★, kept for the game), a special joker, pips or more</td></tr>
+        <tr><td><b>Jokers, title, blank</b> (stock)</td><td>Play pauses, something random happens, and the card becomes a prize: a new card (★, kept for the game), a special joker, steps or more</td></tr>
         <tr><td><b>Special joker</b> (on the board)</td><td>Waits there until you tap it to use it. It can't be part of a set</td></tr>
       </table>
 
@@ -313,8 +313,11 @@
         <select id="optRevealSpeed"><option value="1.4">slow</option><option value="1" selected>normal</option><option value="0.6">quick</option></select> <span class="muted">(applies at once)</span></label>
       <label>Swipe picks a card <select id="optHit"><option value="1">anywhere on it (old)</option><option value="0.85">near its centre (85%)</option><option value="0.7" selected>at its centre (70%, default)</option><option value="0.55">only dead centre (55%)</option></select> <span class="muted">(applies at once)</span></label>
       <label>Each card left over costs <select id="optPenalty"><option value="0">nothing</option><option value="1">1 step</option><option value="2" selected>2 steps</option><option value="3">3 steps</option></select></label>
+      <label>Edge power multiplier <select id="optMult"><option value="0">Off (×1: no edge power)</option><option value="0.25">×1.25 a level (soft)</option><option value="0.5" selected>×1.5 a level (default)</option><option value="1">×2 a level (full)</option></select></label>
+      <label>Two or more powered edge cards <select id="optMultMode"><option value="add" selected>Add their levels (default)</option><option value="each">Multiply each card's (steeper)</option></select></label>
+      <label>Multiplier cap <select id="optMultCap"><option value="0">No cap</option><option value="2" selected>×2 (default)</option><option value="3">×3</option><option value="5">×5</option></select></label>
       <label><input type="checkbox" id="optPrizeSpecial" checked> Prizes add a special joker</label>
-      <label>Clear-board bonus <select id="optClear"><option value="none">None</option><option value="steps:5">+5 steps</option><option value="steps:10" selected>+10 steps</option><option value="pips:10">+10 pips</option></select></label>
+      <label>Clear-board bonus <select id="optClear"><option value="none">None</option><option value="steps:5">+5 steps</option><option value="steps:10" selected>+10 steps</option></select></label>
       <label>Bot skill <select id="optBot"><option value="perfect" selected>Perfect: finds the best set every time</option><option value="strong">Strong</option><option value="medium">Medium</option><option value="weak">Weak</option></select></label>
       <p style="margin-top:8px"><button class="btn" id="newBtn2">New turn with these settings</button> <button class="btn" id="rewarnBtn">Show the left-over warning again</button></p>
       <p class="muted" style="margin:0">The bot scores the best set it can find. When nothing scores it uses a swapper (on the swap that opens the best score), then a bomb, then stops.</p>
@@ -370,10 +373,22 @@ const label = (c) => c.sj ? WC.SPECIALS[c.sj].name : c.x ? kindName(c.x) : WC.RA
 const val = (c) => Math.min(c.r, 10);
 // Match turn rules version. Bump it whenever a rule changes, and add a line to
 // the rules history in mocks/README.md, so runs from old rules are never mixed in.
-const RULES = 14;
-// Pips: the bonus tally that edge power pays into (spent between rounds on
+const RULES = 15;
+// Edge power (r15): each edge card's power level multiplies the sets it's in. One score:
+// there is no separate pips tally any more.
 // jokers and special jokers).
-const TALLY = "pips";
+// The multiplier a set gets from the power of its edge cards. Soften scales each level
+// (0.5: level 1 is ×1.5, level 2 is ×2). "add" sums the levels into one multiplier;
+// "each" multiplies every edge card's own multiplier together (steeper).
+const cardMult = (lv) => 1 + +$("optMult").value * lv;
+function edgeMult(sel) {
+  const lvs = sel.filter(p => p.k !== "g" && cardAt(p)).map(p => S.power[cardAt(p).id] || 0).filter(Boolean);
+  if (!lvs.length) return 1;
+  const m = $("optMultMode").value === "each" ? lvs.reduce((a, lv) => a * cardMult(lv), 1) : cardMult(lvs.reduce((a, b) => a + b, 0));
+  const cap = +$("optMultCap").value;
+  return cap ? Math.min(cap, m) : m;
+}
+const fmtMult = (m) => "×" + (Math.round(m * 100) / 100);
 const WS = window.WarpedScore;
 const signed = (n) => n < 0 ? "−" + (-n) : "+" + n;
 const suitText = (s) => s ? WC.SUITS[s].glyph : "no suit";
@@ -478,8 +493,10 @@ function scoreable(sel, allowLeft) {
   const cs = combos(sel);
   if (!cs.length || S.scored.has(setKey(sel))) return null;
   if (cs.left.length && !allowLeft) return null;
+  // r15: edge power multiplies the combos (rounded); the left-over cost isn't multiplied.
   const combo = cs.reduce((a, c) => a + c.pts, 0), pen = cs.left.length * S.opts.penalty;
-  return { cs, combo, pen, left: cs.left, pts: combo - pen, kind: cs.kind, items: cs.items };
+  const mult = edgeMult(sel), boosted = Math.round(combo * mult);
+  return { cs, combo, mult, boosted, pen, left: cs.left, pts: boosted - pen, kind: cs.kind, items: cs.items };
 }
 // Bots and the dead-board check count a set only if it nets more than 0 steps.
 const netScore = (sel) => { const sc = scoreable(sel, true); return sc && sc.pts > 0 ? sc : null; };
@@ -539,7 +556,7 @@ function newTurn() {
   shuffle(deck);
   S = {
     opts, hand, crib: opts.dealer ? crib : null, starter, stock: deck, grid: [[], [], [], []],
-    power: {}, steps: 0, drawn: 0, tally: { grid: 0, edge: 0, power: 0 }, pips: 0, best: null, prizes: [], scored: new Set(),
+    power: {}, steps: 0, drawn: 0, tally: { grid: 0, edge: 0, power: 0 }, best: null, prizes: [], scored: new Set(),
     sel: [], busy: false, over: false, started: false, t0: 0, log: [], timeLeft: opts.timer,
     scores: 0, swaps: 0, rejected: 0, bombs: 0,
     specials: { swap: opts.swaps, bomb: opts.bombs }, armed: null,
@@ -729,25 +746,23 @@ async function doScore() {
   if (!sc) return;
   S.busy = true;
   const sel = S.sel, cards = sel.map(cardAt), edges = sel.filter(isEdge).map(cardAt);
-  const bonus = edges.reduce((a, c) => a + (S.power[c.id] || 0), 0);
   const suit = WS.suitOf(cards);
   S.scored.add(setKey(sel)); S.sel = [];
   // Keep what's needed to replay this score on the board as it was.
-  S.last = { sel, sc, suit, grid: S.grid.map(r => [...r]), power: { ...S.power }, steps: S.steps, pips: S.pips };
+  S.last = { sel, sc, suit, grid: S.grid.map(r => [...r]), power: { ...S.power }, steps: S.steps };
   const t0 = performance.now();
   if (!FAST && $("optBreak").value === "full") await playBreakdown(sel, sc, suit);
   else { render(sel, "hit"); await sleep(360); }
   const ms = Math.round(performance.now() - t0);
   edges.forEach(c => S.power[c.id] = (S.power[c.id] || 0) + 1);
-  // Edge power pays into the bonus tally, not steps (r7).
-  S.steps += sc.pts; S.pips += bonus; S.tally.power += bonus; S.scores++;
+  S.steps += sc.pts; S.tally.power += sc.boosted - sc.combo; S.scores++; // tally.power: steps added by edge power
   if (sc.left.length) { S.penalty += sc.pen; S.leftovers += sc.left.length; }
   S.bySuit[suit || "none"] = (S.bySuit[suit || "none"] || 0) + sc.pts;
   if (!S.best || sc.pts > S.best.pts) S.best = { pts: sc.pts, cards: cards.map(label) };
   if (sel.some(isEdge)) S.tally.edge += sc.pts; else S.tally.grid += sc.pts;
   const what = (sc.kind.type === "multi" ? `multi ×${sc.kind.combos}: ` : "single: ") + sc.cs.map(c => c.name).join(" + ");
-  feed(`${cards.map(label).join(" ")}  ${what}  ${sc.left.length ? `+${sc.combo} −${sc.pen} (${sc.left.map(cardAt).map(label).join(" ")} left over) = ${sc.pts}` : "+" + sc.pts} ${suitText(suit)}${bonus ? `, +${bonus} ${TALLY}` : ""}`);
-  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, combo_pts: sc.combo, left_over: sc.left.map(cardAt).map(label), penalty: sc.pen, suit, bonus, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length, breakdown_ms: ms });
+  feed(`${cards.map(label).join(" ")}  ${what}  ${sc.left.length ? `+${sc.combo} −${sc.pen} (${sc.left.map(cardAt).map(label).join(" ")} left over) = ${sc.pts}` : "+" + sc.pts} ${suitText(suit)}${sc.mult > 1 ? ` (${sc.combo} ${fmtMult(sc.mult)} edge power)` : ""}`);
+  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, combo_pts: sc.combo, left_over: sc.left.map(cardAt).map(label), penalty: sc.pen, suit, mult: sc.mult, boosted: sc.boosted, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length, breakdown_ms: ms });
   const gridSel = sel.filter(p => p.k === "g");
   render(collapse(gridSel), "drop"); await sleep(280);
   await resolveExtras();
@@ -787,7 +802,7 @@ async function resolveExtras() {
     let goes = oc.goes;
     if (goes === "stock" && !stockLeft()) goes = "tray"; // nothing left to shuffle it into
     if (special) { prize = `${WC.SPECIALS[special].name}, ${goes === "stock" ? "shuffled into the stock" : "for your tray"}`; prizeHtml = WC.special(special); }
-    else if (outcome === "pips") { prize = `+5 ${TALLY}`; prizeHtml = `<div class="item-face">+5<small>${TALLY}</small></div>`; }
+    else if (outcome === "steps") { prize = "+5 steps"; prizeHtml = `<div class="item-face">+5<small>steps</small></div>`; }
     else { prize = "an item, for your tray"; prizeHtml = `<div class="item-face">ITEM<small>?</small></div>`; }
     S.extras.push({ card: kind, outcome, prize });
     log("extra_drawn", { card: kind, outcome, prize });
@@ -797,7 +812,7 @@ async function resolveExtras() {
       render();
       const first = !met(kind); markMet(kind);
       await RV.play({ stage: $("stage"), art: kindArt(kind), colour: kindColour(kind), prizeHtml, prizeName: prize[0].toUpperCase() + prize.slice(1), tier: oc.tier,
-        target: { board: () => cellOf(p), stock: $("pile"), tray: $("tray"), pips: $("pips") }[goes],
+        target: { board: () => cellOf(p), stock: $("pile"), tray: $("tray"), steps: $("steps") }[goes],
         intro: first ? { name: kindName(kind), hint: J.KINDS[kind].hint, colour: INTRO_COLOUR[kind] } : null,
         anim: $("optAnim").value, speed: +$("optRevealSpeed").value });
     }
@@ -809,7 +824,7 @@ async function resolveExtras() {
       }
       S.grid[p.r][p.c] = draw(); // the stock fills the spot
       if (goes === "tray") { if (special) S.specials[special]++; else S.items++; }
-      if (goes === "pips") S.pips += 5;
+      if (goes === "steps") { S.steps += 5; S.tally.joker = (S.tally.joker || 0) + 5; }
     }
     feed(`${kindName(kind)}: ${prize}`, "prize");
     if (!FAST) { render([p], "flip"); await sleep(320); }
@@ -819,7 +834,7 @@ async function resolveExtras() {
 // ---------- Score breakdown ----------
 // Plays one score part by part over the board: the set lifts and the board dims, a banner
 // names the set (SINGLE or MULTI xN, with its suit), each combo lights its cards and adds a
-// line with a running total, then bonuses, edge power (to pips), the power-up, and the
+// line with a running total, then edge power multiplies it (r15), cards left over, bonuses, the power-up, and the
 // total flies to the step counter. Each step takes base * accel^n ms, never less than min.
 // Tapping the phone skips to the end. Game state changes after it, in doScore.
 const cellOf = (p) => document.querySelector(`#board .cell[data-k="${key(p)}"]`);
@@ -882,7 +897,24 @@ async function playBreakdown(sel, sc, suit, extra) {
     ps.forEach(p => cellOf(p).classList.remove("lit"));
     await wait(ms * .12);
   }
-  // Cards left over cost steps (r10), one line each.
+  // Edge power multiplies the combos (r15): each powered edge card lights with its own
+  // multiplier, then the set's multiplier applies to the running total.
+  const powered = sel.filter(p => isEdge(p) && S.power[cardAt(p).id]);
+  for (const p of powered) {
+    const c = cellOf(p), chip = c.querySelector(".chip"), lv = S.power[cardAt(p).id];
+    c.classList.add("lit-power"); chip && chip.classList.add("pulse");
+    floatAt([p], fmtMult(cardMult(lv)), "edge power", "power");
+    tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Edge power ${label(cardAt(p))}</span><span class="pts">${fmtMult(cardMult(lv))}</span><span class="run"></span></div>`);
+    await wait(stepMs());
+    c.classList.remove("lit-power"); chip && chip.classList.remove("pulse");
+  }
+  if (powered.length) {
+    const gain = sc.boosted - total; total = sc.boosted;
+    floatAt(sel, fmtMult(sc.mult), "+" + gain, "power");
+    tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Multiplier${powered.length > 1 ? ($("optMultMode").value === "each" ? " (each card's, multiplied)" : " (levels added)") : ""}</span><span class="pts">${fmtMult(sc.mult)}</span><span class="run">${total}</span></div>`);
+    await wait(stepMs());
+  }
+  // Cards left over cost steps (r10), one line each. Not multiplied.
   for (const p of (sc.left || [])) {
     cellOf(p).classList.add("leftover");
     floatAt([p], "−" + S.opts.penalty, "left over", "penalty");
@@ -890,34 +922,22 @@ async function playBreakdown(sel, sc, suit, extra) {
     await wait(stepMs());
   }
   for (const bn of (extra || [])) { floatAt(sel, "+" + bn.pts, bn.name, "bonus"); line(bn.name, bn.pts, "bonus"); await wait(stepMs()); }
-  // Edge power pays into the pips tally, not steps (r7).
-  let pips = 0;
-  for (const p of sel.filter(p => isEdge(p) && S.power[cardAt(p).id])) {
-    const c = cellOf(p), chip = c.querySelector(".chip"), lv = S.power[cardAt(p).id];
-    c.classList.add("lit-power"); chip && chip.classList.add("pulse");
-    pips += lv;
-    floatAt([p], "+" + lv, TALLY, "power");
-    tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Edge power ${label(cardAt(p))}</span><span class="pts">+${lv}</span><span class="run">${pips} ${TALLY}</span></div>`);
-    await wait(stepMs());
-    c.classList.remove("lit-power"); chip && chip.classList.remove("pulse");
-  }
   // Power up: every edge card in the set gains a level for later scores (shown here; set in doScore).
   const edges = sel.filter(isEdge);
   if (edges.length) {
-    tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Power up ${edges.map(p => label(cardAt(p))).join(" ")}</span><span class="pts">▲1</span><span class="run"></span></div>`);
+    tally.insertAdjacentHTML("beforeend", `<div class="line power"><span>Power up ${edges.map(p => label(cardAt(p))).join(" ")}</span><span class="pts">▲</span><span class="run"></span></div>`);
     for (const p of edges) {
       const c = cellOf(p), lv = (S.power[cardAt(p).id] || 0) + 1;
       let chip = c.querySelector(".chip");
       if (!chip) { c.insertAdjacentHTML("beforeend", `<span class="chip"></span>`); chip = c.querySelector(".chip"); }
-      chip.textContent = "+" + lv;
+      chip.textContent = fmtMult(cardMult(lv));
       c.classList.add("lit-power"); chip.classList.add("pulse");
-      floatAt([p], "▲", "+" + lv, "power");
+      floatAt([p], "▲", fmtMult(cardMult(lv)), "power");
     }
     await wait(stepMs());
     edges.forEach(p => { cellOf(p).classList.remove("lit-power"); const ch = cellOf(p).querySelector(".chip"); ch && ch.classList.remove("pulse"); });
   }
-  tally.insertAdjacentHTML("beforeend", `<div class="line total"><span>${head} · ${suitText(suit)}</span><span class="pts"></span><span class="run" id="totalNum">${signed(total)}</span></div>` +
-    (pips ? `<div class="line power"><span>To ${TALLY}</span><span class="pts"></span><span class="run">+${pips}</span></div>` : ""));
+  tally.insertAdjacentHTML("beforeend", `<div class="line total"><span>${head} · ${suitText(suit)}</span><span class="pts"></span><span class="run" id="totalNum">${signed(total)}</span></div>`);
   await wait(Math.max(T.min, 800 * scale));
   // The total flies up to the step counter.
   if (!S.skip) {
@@ -930,7 +950,7 @@ async function playBreakdown(sel, sc, suit, extra) {
     await wait(560);
     fly.remove();
   }
-  $("steps").textContent = S.steps + total; $("pips").textContent = S.pips + pips; $("steps").classList.add("bump");
+  $("steps").textContent = S.steps + total; $("steps").classList.add("bump");
   await wait(260);
   $("steps").classList.remove("bump");
   tally.classList.remove("on"); banner.classList.remove("on"); board.classList.remove("dim");
@@ -939,9 +959,9 @@ async function playBreakdown(sel, sc, suit, extra) {
 // Replays the last score on the board as it was, then puts the board back.
 async function replayLast() {
   if (!S.last || S.busy || $("optBreak").value !== "full") return;
-  const now = { grid: S.grid, power: S.power, steps: S.steps, pips: S.pips };
+  const now = { grid: S.grid, power: S.power, steps: S.steps };
   S.busy = true;
-  Object.assign(S, { grid: S.last.grid, power: S.last.power, steps: S.last.steps, pips: S.last.pips });
+  Object.assign(S, { grid: S.last.grid, power: S.last.power, steps: S.last.steps });
   await playBreakdown(S.last.sel, S.last.sc, S.last.suit);
   Object.assign(S, now);
   S.busy = false; render();
@@ -989,7 +1009,7 @@ async function endTurn(reason) {
   if (reason === "board cleared") {
     S.cleared = true;
     const [kind, n] = S.opts.clearBonus.split(":");
-    if (kind === "steps") S.steps += +n; else if (kind === "pips") S.pips += +n;
+    if (kind === "steps") S.steps += +n;
     clearText = kind === "none" ? "no bonus (setting)" : `+${n} ${kind}`;
     if (!fxSpeed()) toast(`Board cleared! ${kind === "none" ? "" : clearText}`);
     log("board_cleared", { bonus: S.opts.clearBonus });
@@ -1004,7 +1024,7 @@ async function endTurn(reason) {
     log("prize_won", { tier, steps: b, cards: S.best.cards, special: extra.replace(", ", "") || null });
   }
   const secs = Math.round((performance.now() - S.t0) / 1000);
-  log("turn_end", { reason, penalty: S.penalty, leftovers: S.leftovers, steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
+  log("turn_end", { reason, penalty: S.penalty, leftovers: S.leftovers, steps: S.steps, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
   saveRun(reason, secs);
   await playEnding(reason, S.cleared && !S.opts.clearBonus.startsWith("none") ? clearText : "");
   const suits = Object.entries(S.bySuit).map(([s, n]) => `${s === "none" ? "no suit" : WC.SUITS[s].glyph} ${n}`).join(", ") || "none";
@@ -1017,7 +1037,7 @@ async function endTurn(reason) {
       ${S.cleared ? `<tr><td>Clear-board bonus</td><td>${clearText}</td></tr>` : ""}
       <tr><td>Sets using your hand, crib or starter</td><td>${S.tally.edge}</td></tr>
       <tr><td>Sets of grid cards only</td><td>${S.tally.grid}</td></tr>
-      <tr><td>Edge power, paid as ${TALLY}</td><td>${S.pips}</td></tr>
+      <tr><td>Steps added by edge power</td><td>${S.tally.power}</td></tr>
       <tr><td>Prize</td><td>${prizeText}</td></tr>
       <tr><td>Scores / traces that didn't score</td><td>${S.scores} / ${S.rejected}</td></tr>
       <tr><td>Swappers / bombs used</td><td>${S.swaps} / ${S.bombs}</td></tr>
@@ -1043,16 +1063,16 @@ function saveRun(reason, secs) {
                 swaps: o.swaps, bombs: o.bombs, blast: o.blast, prizeSpecial: o.prizeSpecial, bot: o.bot, clearBonus: o.clearBonus, penalty: o.penalty, jokers: o.jokers, titleBlank: o.titleBlank },
     hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter),
     classic: { hand: classicCount(S.hand, S.starter, false), crib: classicCount(S.crib, S.starter, true) },
-    steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: { ...S.tally }, scores: S.scores, prizes: S.prizes.length, rejected: S.rejected,
+    steps: S.steps, best: S.best ? S.best.pts : 0, tally: { ...S.tally }, mult: { soften: +$("optMult").value, mode: $("optMultMode").value, cap: +$("optMultCap").value }, scores: S.scores, prizes: S.prizes.length, rejected: S.rejected,
     swaps: S.swaps, bombs: S.bombs, drawn: S.drawn, seconds: secs, ended: reason, cleared: S.cleared, bySuit: { ...S.bySuit }, penalty: S.penalty, leftovers: S.leftovers, extras: S.extras.map(e => e.card + ":" + e.outcome), items: S.items, stockAdds: { ...S.stockAdds }, jokers: S.jokers, made: S.made,
     singles: S.log.filter(e => e.type === "score" && e.count === 1).length,
     multis: S.log.filter(e => e.type === "score" && e.count > 1).length,
-    sets: S.log.filter(e => e.type === "score").map(e => `${e.cards.join(" ")} | ${e.count > 1 ? "multi ×" + e.count : "single"}: ${e.combos.join(" + ")} | ${e.pts} ${suitText(e.suit)}${e.bonus ? "+" + e.bonus : ""} @${(e.t / 1000).toFixed(1)}s`),
+    sets: S.log.filter(e => e.type === "score").map(e => `${e.cards.join(" ")} | ${e.count > 1 ? "multi ×" + e.count : "single"}: ${e.combos.join(" + ")} | ${e.pts} ${suitText(e.suit)}${e.mult > 1 ? " " + fmtMult(e.mult) : ""} @${(e.t / 1000).toFixed(1)}s`),
   });
   storeRuns(); renderRuns();
 }
 const sigOf = (r) => `r${r.rules || "?"} · ${r.player}${r.player === "bot" && r.settings.bot ? " " + BOT_LEVELS[r.settings.bot].name.toLowerCase() : ""}${r.settings.starter === "bridge" ? " · starter apart" : ""} · set ${r.settings.maxSet} · prize ${r.settings.prize} · ${r.settings.timer ? r.settings.timer + " s" : "no timer"}` +
-  `${r.settings.budget ? " · " + r.settings.budget + " cards" : ""}${r.settings.dealer ? " · dealer" : ""}${r.settings.hand === "good" ? " · strong hand" : ""}`;
+  `${r.settings.budget ? " · " + r.settings.budget + " cards" : ""}${r.settings.dealer ? " · dealer" : ""}${r.settings.hand === "good" ? " · strong hand" : ""}${r.mult ? " · power ×" + (1 + r.mult.soften) + (r.mult.mode === "each" ? " each" : "") + (r.mult.cap ? " cap ×" + r.mult.cap : "") : ""}`;
 function renderRuns() {
   const groups = {};
   RUNS.forEach(r => (groups[sigOf(r)] = groups[sigOf(r)] || []).push(r));
@@ -1093,7 +1113,7 @@ function cellEl(p, fx, cls) {
   // Word tags name each group of edge cards: one on the first hand card, the top crib card and the starter.
   if (p.k === "s" && S.opts.starter !== "bridge") d.insertAdjacentHTML("beforeend", `<span class="tag">STARTER</span>`);
   if (p.i === 0 && (p.k === "h" || p.k === "c")) d.insertAdjacentHTML("beforeend", `<span class="tag gold">${p.k === "h" ? "HAND" : "CRIB"}</span>`);
-  if (isEdge(p) && S.power[card.id]) d.insertAdjacentHTML("beforeend", `<span class="chip">+${S.power[card.id]}</span>`);
+  if (isEdge(p) && S.power[card.id]) d.insertAdjacentHTML("beforeend", `<span class="chip">${fmtMult(cardMult(S.power[card.id]))}</span>`);
   const si = S.sel.findIndex(q => key(q) === key(p));
   if (si >= 0 && S.selUsed && S.selUsed.has(si)) d.classList.add("used");
   if (si >= 0) { d.classList.add("sel"); d.insertAdjacentHTML("beforeend", `<span class="order">${si + 1}</span>`); }
@@ -1154,7 +1174,6 @@ function renderTop() {
   $("timer").textContent = S.opts.timer ? `${Math.max(0, S.timeLeft)} s` : "no timer";
   $("stock").textContent = `Stock ${stockLeft()}`;
   $("steps").textContent = S.steps;
-  $("pips").textContent = S.pips; $("tallyName").textContent = TALLY;
   $("trackbar").style.width = Math.max(0, Math.min(100, S.steps / 121 * 100)) + "%";
 }
 function renderTray() {
