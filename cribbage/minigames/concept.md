@@ -300,6 +300,9 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | Crib Maze Beta is the match turn mock; `match-turn.html` is frozen at r16 and gets no more changes. New match turn work goes into the beta only |
 | 2026-11-15 | A set still needs 2 picked cards: one card plus the starter isn't a set |
 | 2026-11-15 | Tuned for r16: edge power capped at ×1.5 (was ×2), prizes rare from 25 steps and epic from 31 (were 8 and 16). Medium bot, 1,000 dealer turns: 284 steps a turn (r15 was 251, r16 at ×2 was 361), prizes 59% common, 27% rare, 14% epic (was 100% epic). Non-dealer medium: 235 steps, 69/19/12. Weak dealer: 183 steps, all common. Strong dealer: 358 steps, 98% epic. With no edge power at all, 197 steps. The starter is in 84% of scored sets |
+| 2026-11-15 | The match turn timer defaults to 180 seconds (was 90) |
+| 2026-11-15 | The tray's on-screen tag is POWER JOKERS |
+| 2026-11-15 | Releases: Crib Maze for Mac, signed with Developer ID and notarized, posted as free pre-release demos on GitHub releases ([RELEASING.md](../../RELEASING.md)) |
 | 2026-11-15 | A card counter shows how many cards a set can pick (the pick limit, `maxSet` for now). Some combos, jokers and prizes will raise it for a while; not designed yet |
 | 2026-11-15 | A score's breakdown plays over a row of its cards, flown up from the board with the starter on the right, so it always sits in the same place instead of away from the set. It waits for a tap at the end, and each line shows its cards. The mock still plays over the board |
 
@@ -308,7 +311,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 1. Which prizes go into the shared deck, and which does a player keep? Can you choose to keep a card instead of shuffling it in?
 2. How many power slots, and how do you get more?
 3. Can tokens get in each other's way at a gate or a fork?
-4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 90-second timer leave a person room to clear the board?
+4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 180-second timer (raised from 90 on 2026-11-15) leave a person room to clear the board?
 5. Edge power: is ×1.5 a level, levels added, capped at ×2 right? Bot tests so far (mocks/README.md › Match turn v9) say the cap matters most; the simulator should settle it.
 6. Doors: how strong and how many? This decides how much of a match score becomes distance.
 7. With match scores far above pegging, does pegging still matter? Doors treat both the same, so pegging may need its own edge.

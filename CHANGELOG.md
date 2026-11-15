@@ -2,6 +2,13 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.8.2 — 2026-11-15
+
+### Changed
+- A match turn's timer starts at 180 seconds (was 90).
+- The tray's tag reads POWER JOKERS.
+- Crib Maze (the version for players) no longer shows the animation diagnostics, which are for testing.
+
 ## 0.8.1 — 2026-11-15
 
 ### Changed
@@ -16,13 +23,13 @@ warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 ### Added
 - The starter counts with every set you score, as in a cribbage hand (rules r16). You don't trace it and it doesn't use up a card. When it's part of a combo, it lights up, its power multiplies the set and it powers up. It's never left over.
 - A card counter beside the help line shows how many cards you've picked and how many a set can take. The starter is free.
-- Tap the HAND, CRIB, STARTER or TRAY tag, or the card counter, to read what it does.
+- Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the card counter, to read what it does.
 
 ### Changed
 - The starter sits on a lighter bed of its own, so it reads as special.
 - A score's breakdown waits for a tap or click at the end before the board moves on. Tapping earlier skips to the end.
 - A score's cards fly up from the board into a row, with the starter on the right, and the breakdown plays over that row. Each line of the breakdown shows its cards: the combo's cards, the powered card, or the card left over.
-- The tray is bigger and sits on its own panel with a TRAY tag.
+- The tray is bigger and sits on its own panel, tagged POWER JOKERS.
 - The match turn mock now plays r16, with a setting to turn the starter rule off. It's frozen there: Crib Maze Beta is the match turn mock from now on.
 
 ### Fixed

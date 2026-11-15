@@ -124,7 +124,7 @@ struct PhoneView: View {
 
     private var bottom: some View {
         HStack(alignment: .bottom, spacing: 16) {
-            // The tray: special jokers on a bed of their own, with a TRAY tag like the hand's.
+            // The tray: special jokers on a bed of their own, tagged POWER JOKERS like the hand's tag.
             HStack(spacing: 22) {
                 TrayCard(kind: "swapper", count: session.state?.tray["swapper"] ?? 0, armed: session.mode == .swap && session.armedSource == nil) { tapTray("swapper", .swap) }
                 TrayCard(kind: "bomb", count: session.state?.tray["bomb"] ?? 0, armed: session.mode == .bomb && session.armedSource == nil) { tapTray("bomb", .bomb) }
@@ -133,7 +133,7 @@ struct PhoneView: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.panel))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.violet.opacity(0.5), lineWidth: 1))
             .overlay(alignment: .top) {
-                Text("TRAY").font(Theme.font(10, .bold)).tracking(0.8).padding(.horizontal, 6).frame(height: 16)
+                Text("POWER JOKERS").font(Theme.font(10, .bold)).tracking(0.8).padding(.horizontal, 6).frame(height: 16)
                     .background(Capsule().fill(Theme.violet)).foregroundStyle(Theme.felt).offset(y: -8)
                     .onTapGesture { if !session.blocked { session.info = .tray } }
             }
@@ -306,7 +306,7 @@ struct SidePanel: View {
                 GroupBox("Next turn") {
                     VStack(alignment: .leading, spacing: 6) {
                         Toggle("Dealer: crib down the side", isOn: $session.settings.dealer)
-                        Toggle("90 s timer", isOn: $session.settings.timer)
+                        Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
                         Toggle("Play each score's breakdown (tap to skip)", isOn: $session.settings.breakdown)
                         Picker("Breakdown speed", selection: $session.timing.base) {
                             Text("Slow (1.2 s)").tag(1200.0); Text("Medium (0.9 s)").tag(900.0); Text("Quick (0.6 s)").tag(600.0); Text("Practised (0.4 s)").tag(400.0)
@@ -342,7 +342,7 @@ struct SidePanel: View {
                         if session.feed.isEmpty { Text("Drag across 2 to 5 touching cards.").foregroundStyle(.secondary) }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
-                GroupBox("Animation diagnostics") {
+                if Edition.isBeta { GroupBox("Animation diagnostics") {
                     VStack(alignment: .leading, spacing: 6) {
                         Toggle("Slow motion (5× slower)", isOn: $session.slowMotion)
                         TimelineView(.periodic(from: .now, by: 1)) { _ in
@@ -351,7 +351,7 @@ struct SidePanel: View {
                         }
                         Button("Reset count") { session.meter.reset() }
                     }.frame(maxWidth: .infinity, alignment: .leading)
-                }
+                } }
                 if let url = session.savedRecord {
                     Button("Show the turn record") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.link)
                 }
@@ -441,7 +441,7 @@ struct InfoCard: View {
                                     "When it's part of a combo it lights up and scores, and it's never left over when it isn't.",
                                     power])
         case .tray:
-            return ("Your tray", ["Special jokers you've won. They're kept all game.",
+            return ("Power jokers", ["Special jokers you've won, kept all game.",
                                   "Swapper: tap it, then trace a straight line of 2 to 4 grid cards to reverse it.",
                                   "Bomb: tap it, then tap a grid card. It clears that card and its neighbours, without scoring.",
                                   "Tap an armed joker again to put it back."])

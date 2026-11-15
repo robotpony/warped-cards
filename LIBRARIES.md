@@ -11,6 +11,8 @@ The rule: Apple's own frameworks first, no third-party packages by default. A ne
 | Xcode | 27 | Build, debug, Instruments, signing | The standard; installed |
 | Swift | 6.4, Swift 6 language mode | Everything | Strict concurrency catches threading bugs at compile time |
 | Swift Package Manager | With Swift | Engine, GameRecord, GameFX, stats and the CLI as one local package | Builds and tests without Xcode; `swift test` runs in a terminal |
+| notarytool, stapler | With Xcode | Notarize and staple the Developer ID build (`scripts/release.sh`) | Required for a downloaded Mac app to open without warnings |
+| GitHub CLI (`gh`) | Homebrew | Post release builds and notes to GitHub releases | The repo is on GitHub; already signed in |
 | XcodeGen | Homebrew | Generates the app project from `project.yml` | Same as Scorekeep; no hand-merged `.xcodeproj` |
 | swift-format | Bundled with the toolchain (`swift format`) | Formatting and lint | No extra install; one style for the repo |
 | Swift Testing | With Swift | Unit, fixture and replay tests | Apple's current test framework; parameterized tests suit fixture files (Scorekeep still uses XCTest) |

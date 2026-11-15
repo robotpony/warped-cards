@@ -243,7 +243,7 @@ Not designed yet: items; the title and blank card prizes; how many jokers a roun
 | The timer runs out | The turn ends |
 | You choose End turn | The turn ends |
 
-At the end, your best score wins one prize: a special joker for your tray. A bigger best score wins a better tier: common below 25 steps, rare from 25, epic from 31 (to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (the mock uses 90 seconds and the whole stock).
+At the end, your best score wins one prize: a special joker for your tray. A bigger best score wins a better tier: common below 25 steps, rare from 25, epic from 31 (to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
 
 Your token doesn't move during the turn. Each scoring set becomes a bundle of steps with a suit, and after the turn you walk them through the maze (not designed yet).
 

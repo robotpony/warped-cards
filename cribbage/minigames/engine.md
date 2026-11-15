@@ -440,7 +440,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
   "rulesVersion": "match-r16",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
-    "maxSet": 5, "flushMin": 4, "timerSeconds": 90, "cardBudget": 0,
+    "maxSet": 5, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 150 },

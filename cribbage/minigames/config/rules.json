@@ -5,7 +5,7 @@
   "match": {
     "maxSet": 5,
     "flushMin": 4,
-    "timerSeconds": 90,
+    "timerSeconds": 180,
     "cardBudget": 0,
     "leftOverCost": 2,
     "starterJoins": true,
