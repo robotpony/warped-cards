@@ -2,6 +2,15 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.8.1 — 2026-11-15
+
+### Changed
+- Edge power multiplies a set by at most ×1.5 (was ×2), so the starter joining every set doesn't run scores away.
+- Prizes are rarer: a best score of 25 wins a rare prize and 31 an epic one (were 8 and 16). A medium bot now wins about 60% common, 25% rare and 15% epic.
+
+### Fixed
+- The score breakdown's background covers the whole board, so no stray borders show through it.
+
 ## 0.8.0 — 2026-11-15
 
 ### Added

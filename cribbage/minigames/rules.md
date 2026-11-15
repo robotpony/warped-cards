@@ -174,7 +174,7 @@ The set's grid cards clear, the cards above them fall, and the stock fills the g
 Your hand, crib and starter are edge cards. They stay, and they power up. Power multiplies the sets they're in, so there's one score: steps.
 
 - Each edge card starts the turn at power 0.
-- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.5 for each level (level 1 is ×1.5, level 2 is ×2), up to ×2. Round to the nearest step. Cards left over aren't multiplied.
+- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.5 for each level (level 1 is ×1.5), up to ×1.5 (to tune). Round to the nearest step. Cards left over aren't multiplied.
 - After a set scores, each edge card in it goes up one level. The starter is in a set only when it's part of a combo.
 - Power lasts the turn. Values: to tune (the mock has settings for the step per level, adding or multiplying levels, and the cap).
 
@@ -182,8 +182,7 @@ Your hand, crib and starter are edge cards. They stay, and they power up. Power 
 |---|---|---|---|---|
 | 7-8, grid only | none | Fifteen, 2 | ×1 | 2 |
 | 5 from your hand, 10 from the grid | the 5 at level 1 | Fifteen, 2 | ×1.5 | 3 |
-| 5 and 5 from your hand, 5 from the grid | levels 1 + 1 = 2 | Pair royal and fifteen, 8 | ×2 | 16 |
-| The same, a turn later | levels 2 + 2 = 4 | 8 | ×3, capped at ×2 | 16 |
+| 5 and 5 from your hand, 5 from the grid | levels 1 + 1 = 2 | Pair royal and fifteen, 8 | ×2, capped at ×1.5 | 12 |
 | 7-8 from the grid, K from your hand | the K at level 1 | Fifteen, 2; K left over, −2 | ×1.5 on the 2 | 1 |
 
 Each set's steps carry its most common suit, for suit gates in the maze. A tie carries no suit (see Suit gates).
@@ -244,7 +243,7 @@ Not designed yet: items; the title and blank card prizes; how many jokers a roun
 | The timer runs out | The turn ends |
 | You choose End turn | The turn ends |
 
-At the end, your best score wins one prize: a special joker for your tray. A bigger best score wins a better tier (common, rare or epic; to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (the mock uses 90 seconds and the whole stock).
+At the end, your best score wins one prize: a special joker for your tray. A bigger best score wins a better tier: common below 25 steps, rare from 25, epic from 31 (to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (the mock uses 90 seconds and the whole stock).
 
 Your token doesn't move during the turn. Each scoring set becomes a bundle of steps with a suit, and after the turn you walk them through the maze (not designed yet).
 

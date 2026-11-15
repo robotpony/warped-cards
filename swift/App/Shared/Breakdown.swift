@@ -268,7 +268,8 @@ struct BreakdownOverlay: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             // The board fades back under the breakdown, so nothing behind it competes.
-            RoundedRectangle(cornerRadius: 12).fill(Theme.felt.opacity(0.9)).padding(-6)
+            // It reaches past the edge background's outline and glow, so no stray borders show through.
+            RoundedRectangle(cornerRadius: 16).fill(Theme.felt.opacity(0.94)).padding(-(Theme.edgePadOuter + 8))
                 .opacity(pb.active ? 1 : 0)
                 .animation(.easeOut(duration: Motion.t(0.3)), value: pb.active)
             VStack {

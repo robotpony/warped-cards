@@ -67,7 +67,7 @@ Build plan phases A to D in `ARCHITECTURE.md`.
 ## Phase 7 · Tuning
 
 - [ ] Tune with simulation until the numbers hold up (`stats.md` › Targets)
-- [ ] Retune prizes and edge power for r16, where the starter joins every set (`concept.md` › Decisions, 2026-11-15)
+- [x] Retune prizes and edge power for r16, where the starter joins every set (`concept.md` › Decisions, 2026-11-15)
 - [ ] Design what raises the pick limit for a while: combos, jokers, prizes (`engine.md` › Pick limit)
 
 ## Phase 8 · Face-card art

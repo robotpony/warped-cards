@@ -430,7 +430,7 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r15 as the mock plays them by default. The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r16 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
@@ -443,8 +443,8 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
     "maxSet": 5, "flushMin": 4, "timerSeconds": 90, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
-    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 200 },
-    "prize": { "rareAt": 8, "epicAt": 16, "special": [["swapper", 60], ["bomb", 40]] }
+    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 150 },
+    "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 60], ["bomb", 40]] }
   },
   "specials": {
     "known": ["swapper", "bomb"],
@@ -586,7 +586,7 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 | The traced bots' starting cards and paths can include special jokers | The shuffled list holds playing cards only, so special jokers are never starting cards or on a path (bot results shift a little) |
 | Starter "apart" and "touching off" settings | Not in the engine; r14 has the starter in the corner and touching on |
 | "Good hand" setting | Fixed cards in a standalone turn |
-| Epic at double the rare threshold | `epicAt` set in config (16) |
+| Epic at double the rare threshold | `epicAt` set in config (31) |
 | Warning state kept in browser storage | A player profile input (see Left-over warning) |
 
 ## Open questions
