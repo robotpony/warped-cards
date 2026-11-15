@@ -1,6 +1,6 @@
 # Crib Maze: Concept
 
-Status: concept, 2026-11-14. Working title. The match turn has been mocked and bot-tested (match rules r8); nothing else has been playtested or simulated, so most numbers here are starting guesses.
+Status: concept, 2026-11-14. Working title. The match turn has been mocked and bot-tested (match rules r14); nothing else has been playtested or simulated, so most numbers here are starting guesses.
 
 The player-facing rules are in [rules.md](rules.md). How we measure and tune the game is in [stats.md](stats.md).
 
@@ -29,7 +29,7 @@ Three things change:
 - The match board rewards the counting skill cribbage players already have. Every set is counted like a hand, so spotting a double run or a hidden fifteen pays, and you score only what you find.
 - Edge cards power up as you use them, so a turn builds: a 5 in your hand earns more pips every time it joins a fifteen, and pips buy jokers between rounds.
 - Every score plays out like counting a hand aloud ("fifteen 2, fifteen 4, a pair is 6"), so a big multi feels big.
-- Each turn's best score wins a special card, and special cards are kept all game, so a good turn pays off later.
+- Each turn's best score wins a special joker, and special jokers are kept all game, so a good turn pays off later.
 - Suits matter twice: a set's main suit decides which gates its steps can open, so a one-suit run is worth more than its steps.
 - The shared deck is a gamble. A badge you put on the 5♥ helps whoever is dealt it next, maybe a bot.
 - The race is visible. All tokens share one maze, like pegs on one board, so you always see who's ahead and which way they're going.
@@ -89,10 +89,10 @@ Match board (one player's turn)
 ```
 
 - The stock is every card not in a hand, the crib or the starter (39 cards with 2 players, 35 with 3), shuffled fresh for each turn.
-- You trace sets of 2 to 5 touching cards, like words in Boggle. A set scores at once if every card is part of a cribbage combo, counted like a hand; otherwise nothing happens.
+- You trace sets of 2 to 5 touching cards, like words in Boggle. A set scores at once if every card is part of a cribbage combo, counted like a hand. A card left over costs steps, after a one-time warning, so guessing has a price.
 - Every set needs a grid card, so the hand and crib can't simply be counted. The hand you built is what your sets grow from, and the cards beside it decide how well it does.
 - Scored grid cards clear and the stock refills. Edge cards stay and power up.
-- Special cards (swapper, bomb) are the only way to change the board. They're scarce and kept all game.
+- Special jokers (swapper, bomb) are the only way to change the board. They're scarce and kept all game.
 - Edge power pays pips, a separate tally spent between rounds, so the hand you built feeds your deck building rather than your step count.
 - Steps move your token after the turn, in a short walk with choices (see The maze walk).
 - The turn ends on a timer, a card budget, an empty stock, or when you choose.
@@ -100,7 +100,7 @@ Match board (one player's turn)
 Why it works this way, from the mocks:
 
 - Automatic line matching (match-3 style) played itself: cascades used the stock in 2 or 3 swaps. Tracing sets puts every score in the player's hands.
-- Free swaps meant you could always make something. Making swaps cost a special card keeps the board a puzzle.
+- Free swaps meant you could always make something. Making swaps cost a special joker keeps the board a puzzle.
 - When hand cards could score alone, or touched every other edge card, the hand was either everything or nothing. Real neighbours and the grid-card rule make position matter.
 
 ## The maze walk
@@ -109,7 +109,7 @@ Notes for a mini game not designed yet (2026-11-14). After a match turn, your sc
 
 - Each scoring set is a bundle of steps with a suit (the set's most common suit). Pegging steps already carry the suit of the card that scored them.
 - You choose which bundle to spend next (decided 2026-11-14), so a heart bundle can be saved for the heart gate. The mechanics need thinking.
-- It should feel like a party board game: each bundle is like a dice roll you already hold, and the fun is choosing where it takes you. Choices at forks, cells that do something when you land on or pass them (prizes, gates, doors), and maybe special cards played on the board.
+- It should feel like a party board game: each bundle is like a dice roll you already hold, and the fun is choosing where it takes you. Choices at forks, cells that do something when you land on or pass them (prizes, gates, doors), and maybe special jokers played on the board.
 - Doors absorb steps. A big bundle can knock down a door; the steps spent on it don't move you.
 - If there are no choices to make, the walk plays itself, quickly.
 - Open: can you hold steps back for a later round? Must you land exactly on a cell to trigger it? How long can the walk take before it drags?
@@ -147,12 +147,12 @@ Begin, end and bonus effects:
 
 ## Deck building and prizes
 
-Prizes come from prize cells in the maze and from the match board (a special card for each turn's best score). Between rounds, pips buy more jokers and special cards in the shop. Everything lasts for one game.
+Prizes come from prize cells in the maze and from the match board (a special joker for each turn's best score). Between rounds, pips buy jokers in the shop, and any card the player has discovered in any game. Everything lasts for one game.
 
 | Prize | Example |
 |---|---|
 | Card | An extra standard card, like a third 5♥ |
-| Special card | A joker (any rank and suit); a skeleton key (any suit at a gate) |
+| Special joker | A wild joker (any rank and suit); a skeleton key (any suit at a gate) |
 | Power | Kept in a power slot: re-cut the starter, shift a wall, peek at a crib card |
 | Addition | A badge on one card: +1 step whenever it's part of a fifteen |
 
@@ -165,7 +165,7 @@ Which prizes go to which layer, and how they balance, is open.
 
 ## Bots
 
-Bots are full players. They win prizes, fill power slots, earn pips and add to the deck exactly as the human does. Their match turns aren't played out on screen; the player sees each result. Each bot decides its discard, pegging, forks, which sets to trace, when to use special cards, and prize use.
+Bots are full players. They win prizes, fill power slots, earn pips and add to the deck exactly as the human does. Their match turns aren't played out on screen; the player sees each result. Each bot decides its discard, pegging, forks, which sets to trace, when to use special jokers, and prize use.
 
 Bot skill runs on a gradient from imperfect to perfect, like a depth-limited search. On the match board a perfect bot checks every set; lower levels trace paths from fewer starting cards and to a shallower depth, as a person does. We tune the levels so a medium bot scores about what a person does, from playtest runs. Other limits may come later. For the whole game we also plan random legal moves (for testing) and planning (looks ahead). In the simulator the human seat is just another bot.
 
@@ -176,7 +176,7 @@ These are parked, not dropped:
 - Endless mode: the maze keeps growing and the score is how far you get. It needs a way to end.
 - Claiming missed sets: other players score sets you didn't find, like muggins. The engine logs the best sets left on the board so this can be added later.
 - Sets longer than 5 cards (long runs and big fifteens from small cards). Scoring already handles them; the match turn caps sets at 5 until scores are tuned.
-- More special cards beyond the swapper and bomb.
+- More special jokers beyond the swapper and bomb.
 - Other mini-games from the first round of ideas, in [ideation.md](ideation.md).
 
 ## Learnings
@@ -245,9 +245,9 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Maze doors take steps to knock down, so the maze absorbs big match scores. Match scores can run high; the maze sets the pace |
 | 2026-11-14 | Rules doc draft 3: match turns rewritten for match rules r6 |
 | 2026-11-14 | Licence: MIT |
-| 2026-11-14 | Edge power pays into a separate tally ("pips", name confirmed the same day), not steps. Pips buy jokers and special cards between rounds (match rules r7) |
+| 2026-11-14 | Edge power pays into a separate tally ("pips", name confirmed the same day), not steps. Pips buy jokers and special jokers between rounds (match rules r7) |
 | 2026-11-14 | One prize per match turn, for the turn's best score (r7) |
-| 2026-11-14 | Special cards are kept all game; more can be bought between rounds with pips |
+| 2026-11-14 | Special jokers are kept all game; more can be bought between rounds with pips |
 | 2026-11-14 | A non-dealer's crib column stays empty: the crib is the dealer's advantage |
 | 2026-11-14 | The timer pauses while a score breakdown plays (r7) |
 | 2026-11-14 | Bot match turns show only their result |
@@ -262,13 +262,27 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Suit ties: when two or more suits tie for most common in a set, its steps carry no suit and can't pass suit gates. Rewards one-suit sets |
 | 2026-11-14 | Clearing the board earns a bonus as well as its own ending (size to tune) |
 | 2026-11-14 | When the stock or card budget runs out, the player plays out the grid that's left; nothing refills. Clearing every grid card ends the turn with the clear-board bonus. The turn no longer ends on an empty stock or a used budget (match rules r8) |
-| 2026-11-14 | When no set on the board can score, the game says so and points to special cards or End turn |
+| 2026-11-14 | When no set on the board can score, the game says so and points to special jokers or End turn |
 | 2026-11-14 | Every set shows its suit (or "no suit") in the score breakdown, the feed and the turn summary |
 | 2026-11-14 | The score breakdown is merged into the match turn mock; the separate mock is retired |
-| 2026-11-14 | Special cards and pips carry over between match turns all game (specced in rules.md; the mock resets the tray each turn, and a multi-turn mock waits until it's needed) |
+| 2026-11-14 | Special jokers and pips carry over between match turns all game (specced in rules.md; the mock resets the tray each turn, and a multi-turn mock waits until it's needed) |
 | 2026-11-14 | Clear-board difficulty waits for human playtests: bots clear the board in most turns, but a person under the timer may not |
 | 2026-11-14 | Tied sets keep "no suit" for now; measure how often ties happen in playtests before changing the rule |
-| 2026-11-14 | Special actions come from special cards: smaller cards in a tray at the bottom, stacked by type, in limited supply. First two: the swapper joker (reverses a line of grid cards; swapping is no longer a free action) and the bomb joker (blows up cards) |
+| 2026-11-14 | A set with a card left over doesn't score. The first one brings a one-time warning that explains valid sets; after that, each card left over costs 2 steps (to tune), and the turn's steps never go below 0 (match rules r9) |
+| 2026-11-14 | Cards left over score against you: a set scores its combos minus 2 steps per card left over, after a one-time warning, and a turn's steps can go below 0 (match rules r10, replacing the r9 rule that left-over sets score nothing) |
+| 2026-11-14 | While tracing, every selected card looks selected; cards in a combo light up more (bigger, brighter), so a dim card is one that would be left over |
+| 2026-11-14 | Swiping picks a card only near its centre, so diagonals are easier; how near is a setting (70% by default) |
+| 2026-11-14 | The deck holds 2 jokers plus the title card and a blank card. Drawing one pauses play and explains it: a joker becomes a special joker for the tray; the title and blank cards roll for an outcome (a card for the board, a special joker, another prize). Prizes to come (match rules r11) |
+| 2026-11-14 | Jokers get their own mock until they feel right. Two joker types, amber and teal, each with a small table of chances to become one of its kind: amber 90% a card, 9% a scoring card, 1% an item; teal 80% a card, 15% a scoring card, 5% a special joker for the deck (all to tune) |
+| 2026-11-14 | Joker chance is felt, not read: players never see the tables, the odds or the list of outcomes. They see randomness (shuffle, wheel or die), the prize, and the prize landing where it goes (board, deck or tray). Reveals grow with rarity. Jokers are named with a hint the first time only. Reveals are skippable. No record of found prizes. The fun is discovering the balance as a player, and making it as the game maker |
+| 2026-11-14 | Joker reveals join the match turn (match rules r12). The amber and teal jokers replace the placeholder joker, and the title and blank cards use the same hidden-table reveal with placeholder prizes. A joker that becomes another extra card chains into its next reveal. The reveal code is shared by both mocks (`mocks/reveal.js`) |
+| 2026-11-14 | "Joker" is a concept: a card outside the standard 52 that does something. Each joker is one kind. The swapper and bomb are special jokers (they were "special cards"); the amber and teal jokers turn into prizes; the any-rank prize is a wild joker |
+| 2026-11-14 | The shop sells jokers, and any card the player has discovered in any game they've played (won, or seen in a reveal). The game reveals itself over hundreds of full games. There's still no collection screen; what a player has discovered shows up as shop stock |
+| 2026-11-14 | A special joker from the teal joker is shuffled into the current turn's stock, not saved for the next round (match rules r13). Drawn onto the board, it waits there until the player taps it to use it, and it can't be part of a set (r14) |
+| 2026-11-14 | How many jokers a round has is decided when the deck is shuffled: 0 to n (n to tune). Jokers never expire, and each player uses each joker once a round, since each player plays their own match turn (match rules r14) |
+| 2026-11-14 | What a joker makes lasts by kind: cards it makes (a card, a scoring card, a 5) are new cards kept in the deck for the rest of the game; special jokers made by a reveal last only for that round. Each special joker type gets its own rules, balanced from stats later (r14) |
+| 2026-11-14 | The game's structure has names: a game is made of rounds, a round of stages (deal and discard, cut, pegging, match turns, shop), a stage of turns. A minigame replaces a classic cribbage step; the match game is the first (rules.md › How a game fits together) |
+| 2026-11-14 | Special actions come from special jokers: smaller cards in a tray at the bottom, stacked by type, in limited supply. First two: the swapper joker (reverses a line of grid cards; swapping is no longer a free action) and the bomb joker (blows up cards) |
 
 ## Open questions
 
@@ -282,6 +296,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 8. The maze walk: how choosing bundle order plays, holding steps back, and how long it can take.
 9. The shop: what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps, pips or a prize, and how big?
+11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.
 
 ## Plan
 
@@ -291,7 +306,7 @@ Two tracks run side by side: design, so we can think about how the game plays an
 |---|---|---|---|
 | 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; kept in step with decisions |
 | 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Ideation done |
-| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2 done), match turn (v4, rules r8, with the score breakdown merged in), then a prize pick, and pegging on the maze once we've gathered maze inspiration | In progress |
+| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2 done), match turn (v7, rules r14, with the score breakdown and joker reveals merged in), jokers (v3), then a prize pick, and pegging on the maze once we've gathered maze inspiration | In progress |
 | 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
 | 5 | Engine | Python engine, bots, simulator and stats reports; classic cribbage as the baseline | After 4 |
 | 6 | Design | Maze design: door types, branches, traps, wall shifts, fog, generator | Alongside 5 |

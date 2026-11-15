@@ -40,7 +40,7 @@ What we look for:
 
 ## Timing
 
-Each action has a modelled duration: playing a card, choosing at a fork, tracing a set, using a special card, choosing a prize, and watching animations, including the score breakdown (the mock records real tracing times). There are two profiles to start with: human speed and bot speed (what a bot turn looks like on screen). The durations are guesses until mocks and playtests give us real ones.
+Each action has a modelled duration: playing a card, choosing at a fork, tracing a set, using a special joker, choosing a prize, and watching animations, including the score breakdown (the mock records real tracing times). There are two profiles to start with: human speed and bot speed (what a bot turn looks like on screen). The durations are guesses until mocks and playtests give us real ones.
 
 From the modelled clock we report:
 

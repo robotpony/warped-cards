@@ -2,6 +2,30 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.3.0 — 2026-11-14
+
+### Added
+
+- Match turn: a card that isn't part of any combo in your set is left over. The first time, a warning explains this; after that, the set still scores its combos, minus 2 steps for each card left over. Your steps can go below 0.
+- Match turn: while you trace, cards in a combo light up bigger and brighter, so a dimmer card is one that would be left over.
+- Match turn: each round's deck holds 0 to 2 jokers, amber or teal, plus the title card and a blank card. When one lands on the board, play pauses, a shuffle, wheel or die decides what it becomes, and the prize is revealed (bigger for rarer prizes) and flies to the board, the stock, your tray or your pips. Tap to skip. The chances stay hidden.
+- Match turn: a card a joker makes is a new card, marked with a star, and stays in the deck for the game.
+- Match turn: a special joker shuffled into the stock waits on the board until you tap it to use it.
+- Card designs: the title card and a blank card, plus an amber joker (star) and a teal joker (moon).
+- Joker mock: draw any of the four extra cards and watch the same reveal as the match turn. Game-maker panels edit the hidden chances and simulate 10,000 games.
+
+### Changed
+
+- Swappers and bombs are now called special jokers. A joker is any card outside the standard 52 that does something.
+- Rules: a new section names the parts of a game: rounds, stages, turns and minigames. The shop is its own stage, and sells jokers and any card you've discovered in any game.
+- Match turn rules and the mock's How to play are shorter, with tables for what scores, cards left over, special jokers and how a turn ends, and a diagram of what touches the starter.
+- Match turn mock: the panels beside the phone are now tabs, so you can switch between how to play, settings, the breakdown, runs and the log while looking at the board.
+- Match turn: swiping picks a card only near its centre, so diagonal swipes no longer catch the cards beside them. A setting changes how near.
+
+### Fixed
+
+- Match turn: watching a bot below perfect could stop with an error when it went to use a swapper.
+
 ## 0.2.0 — 2026-11-14
 
 ### Added

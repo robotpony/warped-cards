@@ -6,6 +6,7 @@
 <title>Match Turn Mock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="reveal.css">
 <style>
   :root {
     --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
@@ -20,7 +21,18 @@
   main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
   h1 { font-size: 26px; margin: 0 0 4px; }
   p { margin: 0 0 10px; } .muted { color: var(--muted); }
-  .side { flex: 1 1 340px; min-width: 0; max-width: 620px; }
+  .side { flex: 1 1 340px; min-width: 0; max-width: 620px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 12px; position: sticky; top: 0; background: var(--bg); z-index: 1; }
+  .tab { font: inherit; font-weight: 600; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); padding: 6px 12px; cursor: pointer; margin-bottom: -1px; }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--gold); }
+  .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .side [role="tabpanel"][hidden] { display: none; }
+  .howto-h { font-size: 15px; margin: 12px 0 4px; } .howto-h:first-child { margin-top: 0; }
+  table.howto { border-collapse: collapse; width: 100%; font-size: 14px; }
+  table.howto td, table.howto th { text-align: left; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.howto th { font-weight: 600; color: var(--muted); }
+  table.howto.pts td:last-child { white-space: nowrap; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
   .panel label { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
   .panel select { font: inherit; }
@@ -53,7 +65,7 @@
      light ring and a tag, so it reads as the cut card rather than one more edge card. */
   .board .cell.starter { justify-self: end; align-self: end; }
   .board .cell.starter .card { transform: rotate(-5deg); box-shadow: 0 0 0 2px var(--felt-text), 0 4px 8px rgba(0,0,0,.35); border-radius: 5px; }
-  .board .cell.starter.sel .card { transform: rotate(-5deg) translateY(-5px) scale(1.04); }
+  .board .cell.starter.sel.used .card { transform: rotate(-5deg) translateY(-4px) scale(1.1); }
   .cell .tag { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); background: var(--felt-text); color: var(--felt);
                font-size: 10px; font-weight: 700; letter-spacing: .08em; border-radius: 8px; padding: 0 6px; line-height: 16px; z-index: 2; pointer-events: none; }
   .cell .tag.gold { background: var(--gold); color: #2B2A26; }
@@ -66,7 +78,16 @@
   .cell .card svg { width: 100%; height: 100%; display: block; }
   .cell.empty { border: 1px dashed rgba(243,236,220,.25); border-radius: 5px; }
   .cell.edge .card { box-shadow: 0 0 0 2px var(--gold); border-radius: 5px; }
-  .cell.sel .card { transform: translateY(-5px) scale(1.04); box-shadow: 0 0 0 3px #fff, 0 6px 10px rgba(0,0,0,.35); border-radius: 5px; }
+  /* Selected cards: every selected card looks selected (white ring, small lift). Cards that
+     are part of a combo in the trace light up more: bigger, brighter and glowing. */
+  .cell .card { transition: transform .12s, filter .12s, box-shadow .12s; }
+  .cell.sel .card { transform: translateY(-2px) scale(1.04); box-shadow: 0 0 0 2px #fff, 0 4px 8px rgba(0,0,0,.3); border-radius: 5px; }
+  .board .cell.starter.sel .card { transform: rotate(-5deg) translateY(-2px) scale(1.04); }
+  .cell.sel.used { z-index: 1; }
+  .cell .made { position: absolute; top: -5px; left: -5px; width: 16px; line-height: 16px; border-radius: 8px; text-align: center; font-size: 10px; background: #E8B84A; color: #2B2A26; pointer-events: none; }
+  .cell.armed-src .card { transform: translateY(-6px); box-shadow: 0 0 0 3px #fff, 0 6px 12px rgba(0,0,0,.4); }
+  .cell.sel.used .card { transform: translateY(-4px) scale(1.1); filter: brightness(1.12) saturate(1.1);
+                         box-shadow: 0 0 0 3px #fff, 0 0 16px 5px rgba(255,255,255,.55), 0 8px 12px rgba(0,0,0,.35); }
   .cell .order { position: absolute; bottom: -4px; left: -4px; background: #fff; color: #0E3B2E; font-weight: 700; font-size: 11px;
                  border-radius: 9px; width: 18px; line-height: 18px; text-align: center; z-index: 2; }
   .cell.hit .card { animation: pop .32s ease-out; box-shadow: 0 0 0 3px #fff, 0 0 18px 4px rgba(232,184,74,.9); border-radius: 5px; }
@@ -149,6 +170,16 @@
   @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
                     70% { opacity: 1; transform: translate(-50%, -80%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -110%) scale(1); } }
   .fly { position: absolute; font-weight: 700; font-size: 34px; color: var(--gold); text-shadow: 0 2px 8px rgba(0,0,0,.7); transition: all .55s cubic-bezier(.5,0,.3,1); z-index: 8; }
+  .float.penalty { color: #FF7A7A; }
+  .line.penalty .pts { color: #FF7A7A; }
+  .cell.leftover .card { box-shadow: 0 0 0 3px #FF5A5A, 0 0 16px 4px rgba(255,90,90,.7); border-radius: 5px; }
+  .warn { position: absolute; left: 20px; right: 20px; top: 50%; transform: translateY(-50%); z-index: 7; display: none;
+          background: #FFFDF7; color: #2B2A26; border-radius: 16px; padding: 18px 18px 14px; box-shadow: 0 12px 32px rgba(0,0,0,.55); }
+  .warn.on { display: block; }
+  .warn h3 { margin: 0 0 6px; font-size: 22px; }
+  .warn p { margin: 0 0 8px; font-size: 15px; line-height: 1.4; }
+  .warn .bad { color: #C00000; font-weight: 700; }
+  .warn .pbtn { width: 100%; background: #0E3B2E; color: #F3ECDC; margin-top: 4px; }
   .overlay h3.cleared { color: var(--gold); font-size: 30px; }
   .start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,30,23,.6); z-index: 4; }
   .start.off { display: none; }
@@ -170,34 +201,72 @@
     </div>
     <div class="fx" id="fx"><div class="banner" id="banner"></div><div class="tally" id="tally"></div></div>
     <div class="toast" id="toast"></div>
+    <div class="warn" id="warn"></div>
+    <div class="stage" id="stage"><div class="rays"></div><div class="caption"></div><div class="tapnote">Tap to skip</div></div>
     <div class="start" id="start"><button class="pbtn" id="startBtn" style="flex:none">Start turn</button></div>
     <div class="overlay" id="summary"></div>
   </div>
 
   <div class="side">
     <h1>Match turn mock</h1>
-    <p class="muted">Crib Maze, mock v4 (Boggle-style, special cards, score breakdown), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
+    <p class="muted">Crib Maze, mock v7 (Boggle-style, special jokers, score breakdown, left-over cost, lit combos, joker reveals), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
+    <div class="toolbar"><button class="btn" id="newBtn">New turn</button> <button class="btn" id="autoBtn">Watch a bot play this turn</button></div>
+    <div class="tabs" role="tablist" aria-label="Mock panels">
+      <button class="tab" role="tab" id="tab-how" aria-controls="pane-how">How to play</button>
+      <button class="tab" role="tab" id="tab-settings" aria-controls="pane-settings">Settings</button>
+      <button class="tab" role="tab" id="tab-breakdown" aria-controls="pane-breakdown">Breakdown</button>
+      <button class="tab" role="tab" id="tab-runs" aria-controls="pane-runs">Runs</button>
+      <button class="tab" role="tab" id="tab-log" aria-controls="pane-log">Log</button>
+    </div>
 
-    <div class="panel">
-      <strong>How to play</strong>
-      <ul class="tight">
-        <li>Drag across up to 5 touching cards (diagonals count), like tracing a word in Boggle, and let go. Hand and crib cards touch only their neighbours, as grid cards do. The starter sits in the corner where your hand and the crib meet, tilted and tagged, and touches its neighbours too: the last hand card, the bottom crib card and the grid corner. Drag back to undo the last card.</li>
-        <li>Every set needs at least one grid card: your hand, crib and starter can't score on their own.</li>
-        <li>The set scores automatically, counted like a cribbage hand: every fifteen (2 each), pair (2), pair royal (6), double pair royal (12), run (1 per card; double runs count twice), flush of 4 or 5, and his nobs (1). 8-6-A is a fifteen, 2. 7-8-8 is two fifteens and a pair, 6. Every card must be part of at least one combo. If a card is left over, or nothing scores, nothing happens.</li>
-        <li>With taps instead of a drag: tap cards to select them, then tap the last one again to submit.</li>
-        <li>Scored grid cards clear, the cards above fall and the stock refills. Edge cards (gold) stay and power up: each level adds 1 to the <b>pips</b> tally on later scores, not steps. Pips buy jokers and special cards between rounds. The same set can't score twice.</li>
-        <li>Special cards wait in the tray at the bottom. Tap one to arm it:
-          <b>Swapper</b> (⇄): then trace a straight line of 2 to 4 grid cards; the line is reversed.
-          <b>Bomb</b>: then tap a grid card; it and its neighbours are cleared and refilled, scoring nothing.</li>
-        <li>Every score plays out part by part, like counting a hand aloud: the set's name and suit, each combo with its cards lit and a running total, edge power to pips, the power-up, then the total flying to the step counter. It starts slow and speeds up. Tap the phone to skip to the end. The timer pauses while it plays.</li>
-        <li>Each set's steps carry its most common suit, for suit gates in the maze. A tie carries no suit.</li>
-        <li>At the end of the turn, your best score wins one prize, a special card for your tray. Special cards are kept all game (this mock resets the tray on each New turn).</li>
-        <li>When the stock or card budget runs out, nothing refills: play out the cards that are left. Clear every grid card for the clear-board bonus. If no set can score, the mock says so; use a special card or end the turn.</li>
-        <li>The turn ends on the timer, End turn, or a cleared board.</li>
+    <div class="panel" role="tabpanel" id="pane-how" aria-labelledby="tab-how">
+      <h3 class="howto-h">The turn</h3>
+      <ol class="tight">
+        <li>Drag across 2 to 5 touching cards (diagonals count) and let go. Or tap cards, then tap the last one again.</li>
+        <li>The set scores at once, counted like a cribbage hand. Every set needs a grid card.</li>
+        <li>Scored grid cards clear and the stock refills. Your hand, crib and starter (gold) stay and power up, paying <b>pips</b> on later scores.</li>
+        <li>When the stock runs out, play out what's left.</li>
+        <li>The turn ends on the timer, a cleared board, or End turn. Your best score wins a special joker.</li>
+      </ol>
+
+      <h3 class="howto-h">What scores</h3>
+      <table class="howto pts">
+        <tr><td>Fifteen (cards adding to 15)</td><td>2 each</td></tr>
+        <tr><td>Pair · pair royal · double pair royal</td><td>2 · 6 · 12</td></tr>
+        <tr><td>Run of 3 or more</td><td>1 a card, each run</td></tr>
+        <tr><td>Flush of 4 or 5</td><td>1 a card</td></tr>
+        <tr><td>His nobs (jack of the starter's suit)</td><td>1</td></tr>
+      </table>
+      <p class="muted" style="margin:4px 0 0">8-6-A is a fifteen, 2. 7-8-8 is two fifteens and a pair, 6.</p>
+
+      <h3 class="howto-h">Cards left over</h3>
+      <p>A card in no combo is left over and costs 2 steps. Cards in a combo light up as you trace; a dimmer card would be left over.</p>
+      <table class="howto">
+        <tr><th>Set</th><th>Combos</th><th>Steps</th></tr>
+        <tr><td>7-8</td><td>fifteen</td><td>2</td></tr>
+        <tr><td>7-8-K</td><td>fifteen, K left over</td><td>0</td></tr>
+        <tr><td>K-9</td><td>none</td><td>−4, nothing clears</td></tr>
+      </table>
+      <p class="muted" style="margin:4px 0 0">The first time, a warning explains this instead. Steps can go below 0.</p>
+
+      <h3 class="howto-h">Special and extra cards</h3>
+      <table class="howto">
+        <tr><td><b>Swapper</b> (tray)</td><td>Tap it, then trace a straight line of 2 to 4 grid cards to reverse it</td></tr>
+        <tr><td><b>Bomb</b> (tray)</td><td>Tap it, then tap a grid card: it and its neighbours clear</td></tr>
+        <tr><td><b>Jokers, title, blank</b> (stock)</td><td>Play pauses, something random happens, and the card becomes a prize: a new card (★, kept for the game), a special joker, pips or more</td></tr>
+        <tr><td><b>Special joker</b> (on the board)</td><td>Waits there until you tap it to use it. It can't be part of a set</td></tr>
+      </table>
+
+      <h3 class="howto-h">In this mock</h3>
+      <ul class="tight muted">
+        <li>Every score plays its breakdown; tap the phone to skip. The timer pauses while it plays.</li>
+        <li>Joker and extra-card prizes come from hidden tables in <code>jokers.js</code>, tuned in the <a href="jokers.html">joker mock</a>. Items and some prizes are placeholders.</li>
+        <li>The tray resets on New turn; in the game it lasts all game.</li>
+        <li>Full rules: <code>rules.md</code> › Match turns.</li>
       </ul>
     </div>
 
-    <div class="panel">
+    <div class="panel" role="tabpanel" id="pane-settings" aria-labelledby="tab-settings">
       <strong>Settings</strong> <span class="muted">(apply on New turn)</span>
       <label><input type="checkbox" id="optDealer" checked> Dealer: crib down the side</label>
       <label>Hand <select id="optHand"><option value="random">Random</option><option value="good">Strong (4♥ 5♣ 6♦ J♠, starter 5♠)</option></select></label>
@@ -210,14 +279,20 @@
       <label>Start with <select id="optSwaps"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select> swappers and
         <select id="optBombs"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select> bombs</label>
       <label>Bomb blast <select id="optBlast"><option value="plus" selected>Plus (card and 4 neighbours)</option><option value="square">Square (card and 8 neighbours)</option></select></label>
-      <label><input type="checkbox" id="optPrizeSpecial" checked> Prizes add a special card</label>
+      <label>Jokers each round <select id="optJokers"><option value="0-2" selected>0 to 2, at random</option><option value="0-4">0 to 4, at random</option><option value="2-2">always 2</option><option value="0-0">none</option></select></label>
+      <label><input type="checkbox" id="optTitleBlank" checked> Title and blank cards in the stock</label>
+      <label>Joker reveal <select id="optAnim"><option value="random" selected>A different one each draw</option><option value="shuffle">Shuffle</option><option value="wheel">Wheel</option><option value="die">Die</option></select>
+        <select id="optRevealSpeed"><option value="1.4">slow</option><option value="1" selected>normal</option><option value="0.6">quick</option></select> <span class="muted">(applies at once)</span></label>
+      <label>Swipe picks a card <select id="optHit"><option value="1">anywhere on it (old)</option><option value="0.85">near its centre (85%)</option><option value="0.7" selected>at its centre (70%, default)</option><option value="0.55">only dead centre (55%)</option></select> <span class="muted">(applies at once)</span></label>
+      <label>Each card left over costs <select id="optPenalty"><option value="0">nothing</option><option value="1">1 step</option><option value="2" selected>2 steps</option><option value="3">3 steps</option></select></label>
+      <label><input type="checkbox" id="optPrizeSpecial" checked> Prizes add a special joker</label>
       <label>Clear-board bonus <select id="optClear"><option value="none">None</option><option value="steps:5">+5 steps</option><option value="steps:10" selected>+10 steps</option><option value="pips:10">+10 pips</option></select></label>
       <label>Bot skill <select id="optBot"><option value="perfect" selected>Perfect: finds the best set every time</option><option value="strong">Strong</option><option value="medium">Medium</option><option value="weak">Weak</option></select></label>
-      <p style="margin-top:8px"><button class="btn" id="newBtn">New turn</button> <button class="btn" id="autoBtn">Watch a bot play this turn</button></p>
+      <p style="margin-top:8px"><button class="btn" id="newBtn2">New turn with these settings</button> <button class="btn" id="rewarnBtn">Show the left-over warning again</button></p>
       <p class="muted" style="margin:0">The bot scores the best set it can find. When nothing scores it uses a swapper (on the swap that opens the best score), then a bomb, then stops.</p>
     </div>
 
-    <div class="panel">
+    <div class="panel" role="tabpanel" id="pane-breakdown" aria-labelledby="tab-breakdown">
       <strong>Score breakdown</strong> <span class="muted">(applies at once)</span>
       <label>Play <select id="optBreak"><option value="full" selected>Full breakdown</option><option value="quick">Quick flash only</option></select></label>
       <label>First step <select id="optBase"><option value="1600">1.6 s</option><option value="1200" selected>1.2 s (default, slow)</option><option value="900">0.9 s</option><option value="600">0.6 s</option><option value="400">0.4 s (a practised player)</option></select></label>
@@ -230,7 +305,7 @@
       <p style="margin:6px 0 0"><button class="btn" id="replayBtn">Replay the last score</button></p>
     </div>
 
-    <div class="panel">
+    <div class="panel" role="tabpanel" id="pane-runs" aria-labelledby="tab-runs">
       <strong>Playtest runs</strong> <span class="muted">Every finished turn is saved in this browser with its settings, hand, crib, starter, sets and score. "Classic count" is the hand plus crib as plain cribbage would score them.</span>
       <p style="margin:6px 0"><button class="btn" id="copyBtn">Copy runs to clipboard</button>
         <button class="btn" id="dlRunsBtn">Download runs</button>
@@ -239,7 +314,7 @@
       <div id="runs"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" role="tabpanel" id="pane-log" aria-labelledby="tab-log">
       <strong>Event log</strong> <span class="muted">Times are ms from the start of the turn; real human timings for the simulator.</span>
       <p style="margin:6px 0"><button class="btn" id="dlBtn">Download this turn's event log</button></p>
       <div id="log"></div>
@@ -249,18 +324,27 @@
 
 <script src="../../../design/cards/cards.js"></script>
 <script src="scoring.js"></script>
+<script src="jokers.js"></script>
+<script src="reveal.js"></script>
 <script>
 const WC = window.WarpedCards;
 const SUITS = ["S", "H", "D", "C"];
-const label = (c) => WC.RANKS[c.r - 1] + WC.SUITS[c.s].glyph;
+const J = window.WarpedJokers, RV = window.WarpedReveal;
+// The deck's extra cards: amber and teal jokers (WarpedCards.joker), the title and blank cards (WarpedCards.extra).
+const kindName = (k) => J.KINDS[k].joker ? WC.JOKERS[k].name : WC.EXTRAS[k].name;
+const kindArt = (k) => J.KINDS[k].joker ? WC.joker(k) : WC.extra(k);
+const kindColour = (k) => J.KINDS[k].joker ? WC.JOKERS[k].colour : "#7C6C48";
+const face = (c) => c.sj ? WC.special(c.sj) : c.x ? kindArt(c.x) : WC.front({ rank: WC.RANKS[c.r - 1], suit: c.s, form: "standard" });
+const label = (c) => c.sj ? WC.SPECIALS[c.sj].name : c.x ? kindName(c.x) : WC.RANKS[c.r - 1] + WC.SUITS[c.s].glyph;
 const val = (c) => Math.min(c.r, 10);
 // Match turn rules version. Bump it whenever a rule changes, and add a line to
 // the rules history in mocks/README.md, so runs from old rules are never mixed in.
-const RULES = 8;
+const RULES = 14;
 // Pips: the bonus tally that edge power pays into (spent between rounds on
-// jokers and special cards).
+// jokers and special jokers).
 const TALLY = "pips";
 const WS = window.WarpedScore;
+const signed = (n) => n < 0 ? "−" + (-n) : "+" + n;
 const suitText = (s) => s ? WC.SUITS[s].glyph : "no suit";
 let FAST = false; // batch bot runs skip the animation pauses
 const sleep = (ms) => new Promise(r => setTimeout(r, FAST ? 0 : ms));
@@ -306,15 +390,16 @@ function connected(sel) {
 
 // ---------- Combos ----------
 // The selection scores like a classic cribbage hand: every fifteen, pair, run
-// (double runs too), flush and his nobs inside it counts. Every card must be
-// part of at least one combo, so a dead card makes the set not score.
+// (double runs too), flush and his nobs inside it counts. Cards in no combo are
+// left over; they cost steps (r10).
 function combos(sel) {
   const cards = sel.map(cardAt);
   if (cards.length < 2 || cards.length > 5 || cards.some(c => !c)) return [];
   const si = sel.findIndex(p => p.k === "s");
   const ji = si < 0 ? -1 : sel.findIndex(p => (p.k === "h" || p.k === "c") && cardAt(p).r === 11 && cardAt(p).s === S.starter.s);
   const { out, used, items } = countCards(cards, { nobs: ji >= 0 ? [si, ji] : null, flushMin: 4 });
-  if (used.size !== cards.length) return [];
+  out.left = sel.filter((_, i) => !used.has(i)); // cards in no combo (r10: they cost steps)
+  out.used = used;
   out.kind = WS.kind(items); // single (one combo) or multi (two or more)
   out.items = items; // each combo with the cards it uses, for the score breakdown
   out.opts = { nobs: ji >= 0 ? [si, ji] : null };
@@ -336,31 +421,55 @@ function classicCount(four, starter, isCrib) {
   const { out } = countCards([...four, starter], { flushMin: 5, flush4: !isCrib, nobs: ji >= 0 ? [ji, 4] : null });
   return out.reduce((a, c) => a + c.pts, 0);
 }
+// Cards in a set that aren't part of any combo (r9): returns their positions, or null when
+// the set can't be judged that way (too small, no grid card, already scored, not touching).
+function leftOver(sel) {
+  if (sel.length < 2 || sel.length > S.opts.maxSet || !sel.some(p => p.k === "g") || S.scored.has(setKey(sel))) return null;
+  if (S.opts.touch && !connected(sel)) return null;
+  const cards = sel.map(cardAt), si = sel.findIndex(p => p.k === "s");
+  const ji = si < 0 ? -1 : sel.findIndex(p => (p.k === "h" || p.k === "c") && cardAt(p).r === 11 && cardAt(p).s === S.starter.s);
+  const { used } = WS.count(cards, { nobs: ji >= 0 ? [si, ji] : null, flushMin: 4 });
+  const out = sel.filter((_, i) => !used.has(i));
+  return out.length ? out : null;
+}
+// The left-over warning shows once per player (kept in this browser), before any penalty.
+const WARN_KEY = "crib-maze-leftover-warned";
+const warned = () => { try { return localStorage.getItem(WARN_KEY) === "1"; } catch (e) { return S.warnedHere; } };
+const setWarned = (v) => { S.warnedHere = v; try { v ? localStorage.setItem(WARN_KEY, "1") : localStorage.removeItem(WARN_KEY); } catch (e) {} };
 const setKey = (sel) => sel.map(p => cardAt(p).id).sort((a, b) => a - b).join("-");
-function scoreable(sel) {
+// A set that scores: at least one combo. With allowLeft, cards left over are allowed and
+// cost the penalty each (r10); pts is the net. Without it, every card must be in a combo.
+function scoreable(sel, allowLeft) {
   if (sel.length > S.opts.maxSet) return null;
+  if (sel.some(p => cardAt(p) && cardAt(p).sj)) return null; // a special joker on the board isn't a scoring card
   if (!sel.some(p => p.k === "g")) return null; // edge cards can't score on their own
   if (S.opts.touch && !connected(sel)) return null;
   const cs = combos(sel);
   if (!cs.length || S.scored.has(setKey(sel))) return null;
-  return { cs, pts: cs.reduce((a, c) => a + c.pts, 0), kind: cs.kind, items: cs.items };
+  if (cs.left.length && !allowLeft) return null;
+  const combo = cs.reduce((a, c) => a + c.pts, 0), pen = cs.left.length * S.opts.penalty;
+  return { cs, combo, pen, left: cs.left, pts: combo - pen, kind: cs.kind, items: cs.items };
 }
+// Bots and the dead-board check count a set only if it nets more than 0 steps.
+const netScore = (sel) => { const sc = scoreable(sel, true); return sc && sc.pts > 0 ? sc : null; };
 // Is there any set left that would score? Grows every connected set up to the max size,
 // stopping at the first that scores. Used to tell the player the board is dead.
 function anySet() {
   if (!S.opts.touch) return !!bestScore();
-  const pos = allPositions().filter(p => cardAt(p)), seen = new Set();
+  const pos = allPositions().filter(p => cardAt(p) && !cardAt(p).sj), seen = new Set();
   const grow = (set) => {
     const id = set.map(key).sort().join();
     if (seen.has(id)) return false;
     seen.add(id);
-    if (set.length >= 2 && scoreable(set)) return true;
+    if (set.length >= 2 && netScore(set)) return true;
     if (set.length >= S.opts.maxSet) return false;
     for (const p of pos) if (!set.some(q => key(q) === key(p)) && set.some(q => touching(q, p)) && grow([...set, p])) return true;
     return false;
   };
   return pos.some(p => grow([p]));
 }
+const posOfId = (id) => { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (S.grid[r][c] && S.grid[r][c].id === id) return P.g(r, c); return null; };
+const boardSpecial = (type) => { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (S.grid[r][c] && S.grid[r][c].sj === type) return P.g(r, c); return null; };
 const gridEmpty = () => S.grid.every(row => row.every(c => !c));
 // A straight, gap-free line of 2 to 4 grid cards: returns the cells in line order.
 function mirrorLine(sel) {
@@ -377,7 +486,7 @@ function newTurn() {
   if (S) clearInterval(S.tick);
   const opts = {
     dealer: $("optDealer").checked, hand: $("optHand").value, timer: +$("optTimer").value,
-    budget: +$("optBudget").value, prize: +$("optPrize").value, clearBonus: $("optClear").value, touch: $("optTouch").checked, starter: $("optStarter").value, maxSet: +$("optMax").value,
+    budget: +$("optBudget").value, prize: +$("optPrize").value, clearBonus: $("optClear").value, penalty: +$("optPenalty").value, jokers: $("optJokers").value, titleBlank: $("optTitleBlank").checked, touch: $("optTouch").checked, starter: $("optStarter").value, maxSet: +$("optMax").value,
     swaps: +$("optSwaps").value, bombs: +$("optBombs").value, blast: $("optBlast").value, prizeSpecial: $("optPrizeSpecial").checked, bot: $("optBot").value,
   };
   const deck = []; let id = 0;
@@ -389,13 +498,21 @@ function newTurn() {
   else { hand = deck.splice(0, 4); starter = deck.splice(0, 1)[0]; }
   const crib = deck.splice(0, 4);
   deck.splice(0, 4); // the other player's hand, out of the stock
+  // How many jokers a round has is decided when the deck is shuffled: 0 to n, each amber or
+  // teal at random (r14; n to tune). In this mock they go into the stock only. Where they go
+  // when dealt or cut as the starter: not designed yet.
+  const [jLo, jHi] = opts.jokers.split("-").map(Number), nJokers = jLo + Math.floor(Math.random() * (jHi - jLo + 1));
+  const extras = Array.from({ length: nJokers }, () => Math.random() < 0.5 ? "amber" : "teal");
+  if (opts.titleBlank) extras.push("title", "blank");
+  extras.forEach(x => deck.push({ id: id++, x }));
+  shuffle(deck);
   S = {
     opts, hand, crib: opts.dealer ? crib : null, starter, stock: deck, grid: [[], [], [], []],
     power: {}, steps: 0, drawn: 0, tally: { grid: 0, edge: 0, power: 0 }, pips: 0, best: null, prizes: [], scored: new Set(),
     sel: [], busy: false, over: false, started: false, t0: 0, log: [], timeLeft: opts.timer,
     scores: 0, swaps: 0, rejected: 0, bombs: 0,
     specials: { swap: opts.swaps, bomb: opts.bombs }, armed: null,
-    bySuit: {}, dead: false, stockOut: false, cleared: false, last: null, skip: false,
+    penalty: 0, leftovers: 0, extras: [], items: 0, stockAdds: {}, made: [], jokers: nJokers, armedFrom: null, bySuit: {}, dead: false, stockOut: false, cleared: false, last: null, skip: false,
   };
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) S.grid[r][c] = S.stock.shift();
   $("summary").classList.remove("on"); $("start").classList.remove("off");
@@ -448,20 +565,55 @@ function submit() {
     log("swap_not_a_line", { cards: S.sel.map(cardAt).map(label) });
     S.sel = []; render(); return;
   }
-  if (scoreable(S.sel)) { doScore(); return; }
+  if (scoreable(S.sel)) { doScore(); return; } // every card in a combo
+  const left = leftOver(S.sel);
+  if (left && warned() && scoreable(S.sel, true)) { doScore(); return; } // combos minus the left-over cost
   S.rejected++;
-  log("trace_no_score", { cards: S.sel.map(cardAt).map(label) });
+  log("trace_no_score", { cards: S.sel.map(cardAt).map(label), left_over: left ? left.map(cardAt).map(label) : [] });
+  if (left) { leftOverSet(S.sel, left); return; }
   S.sel = []; render(); // nothing happens
+}
+// The first set with cards left over brings a warning that explains valid sets, and
+// nothing happens. After that, a set with no combo at all costs the left-over cost for
+// every card, and nothing clears (sets with combos go through doScore instead, r10).
+async function leftOverSet(sel, left) {
+  S.busy = true; S.sel = [];
+  render(left, "leftover");
+  const names = left.map(cardAt).map(label).join(" "), n = left.length, cost = n * S.opts.penalty;
+  if (!warned()) {
+    setWarned(true);
+    log("leftover_warning", { cards: sel.map(cardAt).map(label), left_over: left.map(cardAt).map(label) });
+    const w = $("warn");
+    w.innerHTML = `<h3>Every card must score</h3>
+      <p>A set can hold one combo or several (7-8-8 is two fifteens and a pair), but every card you trace must be part of at least one: a fifteen, pair, run, flush or his nobs.</p>
+      <p>Here, <span class="bad">${names}</span> ${n === 1 ? "isn't" : "aren't"} part of any combo. While you trace, only cards in a combo light up.</p>
+      <p><b>From now on, a set still scores its combos, but each card left over costs ${S.opts.penalty} step${S.opts.penalty === 1 ? "" : "s"}.</b> Your steps can go below 0. This time nothing happens.</p>
+      <button class="pbtn" id="warnOk">Got it</button>`;
+    w.classList.add("on");
+    await new Promise(r => $("warnOk").onclick = r);
+    w.classList.remove("on");
+  } else if (cost) {
+    S.steps -= cost; // steps can go below 0 (r10)
+    S.penalty += cost; S.leftovers += n;
+    left.forEach(p => floatAt([p], "−" + S.opts.penalty, "left over", "penalty"));
+    feed(`${sel.map(cardAt).map(label).join(" ")}  no combo: ${names} left over  −${cost}`);
+    log("leftover_penalty", { cards: sel.map(cardAt).map(label), left_over: left.map(cardAt).map(label), cost });
+    await sleep(700);
+  } else await sleep(400);
+  S.busy = false; render();
 }
 async function doBomb(p) {
   if (S.busy || S.over || S.armed !== "bomb" || p.k !== "g" || !cardAt(p)) return;
-  S.busy = true; S.specials.bomb--; S.armed = null; S.bombs++;
+  const from = S.armedFrom != null ? posOfId(S.armedFrom) : null; // a bomb used from the board is used up there
+  S.busy = true; if (!from) S.specials.bomb--; S.armed = null; S.armedFrom = null; S.bombs++;
   const area = blastArea(p);
+  if (from && !area.some(q => key(q) === key(from))) area.push(from);
   feed(`Bomb: cleared ${area.map(cardAt).map(label).join(" ")}`);
   log("bomb", { at: label(cardAt(p)), cleared: area.map(cardAt).map(label) });
   S.sel = [];
   render(area, "blast"); await sleep(400);
   render(collapse(area), "drop"); await sleep(280);
+  await resolveExtras();
   S.busy = false;
   afterAction();
 }
@@ -477,7 +629,7 @@ function blastArea(p) {
 }
 async function doScore() {
   if (S.busy || S.over) return;
-  const sc = scoreable(S.sel);
+  const sc = scoreable(S.sel, true);
   if (!sc) return;
   S.busy = true;
   const sel = S.sel, cards = sel.map(cardAt), edges = sel.filter(isEdge).map(cardAt);
@@ -493,16 +645,79 @@ async function doScore() {
   edges.forEach(c => S.power[c.id] = (S.power[c.id] || 0) + 1);
   // Edge power pays into the bonus tally, not steps (r7).
   S.steps += sc.pts; S.pips += bonus; S.tally.power += bonus; S.scores++;
+  if (sc.left.length) { S.penalty += sc.pen; S.leftovers += sc.left.length; }
   S.bySuit[suit || "none"] = (S.bySuit[suit || "none"] || 0) + sc.pts;
   if (!S.best || sc.pts > S.best.pts) S.best = { pts: sc.pts, cards: cards.map(label) };
   if (sel.some(isEdge)) S.tally.edge += sc.pts; else S.tally.grid += sc.pts;
   const what = (sc.kind.type === "multi" ? `multi ×${sc.kind.combos}: ` : "single: ") + sc.cs.map(c => c.name).join(" + ");
-  feed(`${cards.map(label).join(" ")}  ${what}  +${sc.pts} ${suitText(suit)}${bonus ? `, +${bonus} ${TALLY}` : ""}`);
-  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, suit, bonus, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length, breakdown_ms: ms });
+  feed(`${cards.map(label).join(" ")}  ${what}  ${sc.left.length ? `+${sc.combo} −${sc.pen} (${sc.left.map(cardAt).map(label).join(" ")} left over) = ${sc.pts}` : "+" + sc.pts} ${suitText(suit)}${bonus ? `, +${bonus} ${TALLY}` : ""}`);
+  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, combo_pts: sc.combo, left_over: sc.left.map(cardAt).map(label), penalty: sc.pen, suit, bonus, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length, breakdown_ms: ms });
   const gridSel = sel.filter(p => p.k === "g");
   render(collapse(gridSel), "drop"); await sleep(280);
+  await resolveExtras();
   S.busy = false;
   afterAction();
+}
+
+// ---------- Jokers and extra cards (r12) ----------
+// The deck holds the amber and teal jokers, the title card and the blank card. When one
+// lands on the board, play pauses (the timer too) and the shared reveal plays (reveal.js):
+// a shuffle, wheel or die, the prize revealed (bigger for rarer prizes), and the prize
+// flown to where it goes. Each card rolls on its own hidden table (jokers.js); players
+// never see the tables. Bot batches (FAST) skip the show and apply the outcome.
+const SPECIAL_JOKERS = Object.keys(WC.SPECIALS); // every known special joker
+const INTRO_COLOUR = { amber: "#F2B266", teal: "#5FD3D6" };
+const metKey = (k) => "crib-maze-joker-met-" + k;
+const met = (k) => { try { return localStorage.getItem(metKey(k)) === "1"; } catch (e) { return !!S["met" + k]; } };
+const markMet = (k) => { S["met" + k] = true; try { localStorage.setItem(metKey(k), "1"); } catch (e) {} };
+async function resolveExtras() {
+  for (;;) {
+    let p = null;
+    for (let r = 0; r < 4 && !p; r++) for (let c = 0; c < 4 && !p; c++) if (S.grid[r][c] && S.grid[r][c].x) p = P.g(r, c);
+    if (!p) return;
+    const kind = cardAt(p).x, outcome = J.roll(J.TABLES[kind]), oc = J.OUTCOMES[outcome];
+    // Work out the prize now; the player sees only the animation and the prize.
+    // Cards a joker makes are new cards, kept in the deck for the rest of the game (r14).
+    const make = (test) => { const pool = []; for (const su of SUITS) for (let r = 1; r <= 13; r++) if (!test || test({ r })) pool.push({ r, s: su });
+      const c = pool[Math.floor(Math.random() * pool.length)]; return { id: 8000 + S.made.length, r: c.r, s: c.s, made: true }; };
+    let card = null, special = null, prizeHtml, prize;
+    if (outcome === "card") card = make();
+    else if (outcome === "scoring") card = make(J.isScoring);
+    else if (outcome === "five") card = make(c => c.r === 5);
+    if (card) S.made.push(label(card));
+    else if (outcome === "power" || outcome === "named") special = SPECIAL_JOKERS[Math.floor(Math.random() * SPECIAL_JOKERS.length)];
+    if (oc.goes === "board" && !card) { prize = "nothing (the stock is empty)"; prizeHtml = `<div class="item-face">none</div>`; }
+    else if (card) { prize = `a new ${label(card)}`; prizeHtml = face(card); }
+    let goes = oc.goes;
+    if (goes === "stock" && !stockLeft()) goes = "tray"; // nothing left to shuffle it into
+    if (special) { prize = `${WC.SPECIALS[special].name}, ${goes === "stock" ? "shuffled into the stock" : "for your tray"}`; prizeHtml = WC.special(special); }
+    else if (outcome === "pips") { prize = `+5 ${TALLY}`; prizeHtml = `<div class="item-face">+5<small>${TALLY}</small></div>`; }
+    else { prize = "an item, for your tray"; prizeHtml = `<div class="item-face">ITEM<small>?</small></div>`; }
+    S.extras.push({ card: kind, outcome, prize });
+    log("extra_drawn", { card: kind, outcome, prize });
+
+    S.grid[p.r][p.c] = null; // the card lifts off the board onto the stage
+    if (!FAST) {
+      render();
+      const first = !met(kind); markMet(kind);
+      await RV.play({ stage: $("stage"), art: kindArt(kind), colour: kindColour(kind), prizeHtml, prizeName: prize[0].toUpperCase() + prize.slice(1), tier: oc.tier,
+        target: { board: () => cellOf(p), stock: $("pile"), tray: $("tray"), pips: $("pips") }[goes],
+        intro: first ? { name: kindName(kind), hint: J.KINDS[kind].hint, colour: INTRO_COLOUR[kind] } : null,
+        anim: $("optAnim").value, speed: +$("optRevealSpeed").value });
+    }
+    if (goes === "board") S.grid[p.r][p.c] = card;
+    else {
+      if (goes === "stock") { // shuffled into this turn's stock, within reach of the card budget
+        S.stock.splice(Math.floor(Math.random() * (stockLeft() + 1)), 0, { id: 9000 + S.extras.length, sj: special });
+        S.stockAdds[special] = (S.stockAdds[special] || 0) + 1;
+      }
+      S.grid[p.r][p.c] = draw(); // the stock fills the spot
+      if (goes === "tray") { if (special) S.specials[special]++; else S.items++; }
+      if (goes === "pips") S.pips += 5;
+    }
+    feed(`${kindName(kind)}: ${prize}`, "prize");
+    if (!FAST) { render([p], "flip"); await sleep(320); }
+  }
 }
 
 // ---------- Score breakdown ----------
@@ -559,7 +774,7 @@ async function playBreakdown(sel, sc, suit, extra) {
   let total = 0;
   const line = (name, pts, cls) => {
     total += pts;
-    tally.insertAdjacentHTML("beforeend", `<div class="line ${cls || ""}"><span>${name}</span><span class="pts">+${pts}</span><span class="run">${total}</span></div>`);
+    tally.insertAdjacentHTML("beforeend", `<div class="line ${cls || ""}"><span>${name}</span><span class="pts">${signed(pts)}</span><span class="run">${total}</span></div>`);
   };
   for (const it of items) {
     const ps = it.idx.map(i => sel[i]);
@@ -570,6 +785,13 @@ async function playBreakdown(sel, sc, suit, extra) {
     await wait(ms * .88);
     ps.forEach(p => cellOf(p).classList.remove("lit"));
     await wait(ms * .12);
+  }
+  // Cards left over cost steps (r10), one line each.
+  for (const p of (sc.left || [])) {
+    cellOf(p).classList.add("leftover");
+    floatAt([p], "−" + S.opts.penalty, "left over", "penalty");
+    line(`Left over ${label(cardAt(p))}`, -S.opts.penalty, "penalty");
+    await wait(stepMs());
   }
   for (const bn of (extra || [])) { floatAt(sel, "+" + bn.pts, bn.name, "bonus"); line(bn.name, bn.pts, "bonus"); await wait(stepMs()); }
   // Edge power pays into the pips tally, not steps (r7).
@@ -598,13 +820,13 @@ async function playBreakdown(sel, sc, suit, extra) {
     await wait(stepMs());
     edges.forEach(p => { cellOf(p).classList.remove("lit-power"); const ch = cellOf(p).querySelector(".chip"); ch && ch.classList.remove("pulse"); });
   }
-  tally.insertAdjacentHTML("beforeend", `<div class="line total"><span>${head} · ${suitText(suit)}</span><span class="pts"></span><span class="run" id="totalNum">+${total}</span></div>` +
+  tally.insertAdjacentHTML("beforeend", `<div class="line total"><span>${head} · ${suitText(suit)}</span><span class="pts"></span><span class="run" id="totalNum">${signed(total)}</span></div>` +
     (pips ? `<div class="line power"><span>To ${TALLY}</span><span class="pts"></span><span class="run">+${pips}</span></div>` : ""));
   await wait(Math.max(T.min, 800 * scale));
   // The total flies up to the step counter.
   if (!S.skip) {
     const from = $("totalNum").getBoundingClientRect(), to = $("steps").getBoundingClientRect();
-    const fly = document.createElement("div"); fly.className = "fly"; fly.textContent = "+" + total;
+    const fly = document.createElement("div"); fly.className = "fly"; fly.textContent = signed(total);
     fly.style.left = (from.left - sRect.left) + "px"; fly.style.top = (from.top - sRect.top - 8) + "px";
     $("fx").appendChild(fly);
     await wait(30);
@@ -630,10 +852,11 @@ async function replayLast() {
 }
 
 async function doSwap() {
-  if (S.busy || S.over || S.armed !== "swap" || S.specials.swap < 1) return;
+  if (S.busy || S.over || S.armed !== "swap" || (S.specials.swap < 1 && S.armedFrom == null)) return;
   const line = mirrorLine(S.sel);
   if (!line) return;
-  S.busy = true; S.specials.swap--; S.armed = null;
+  const fromId = S.armedFrom;
+  S.busy = true; if (fromId == null) S.specials.swap--; S.armed = null; S.armedFrom = null;
   const cards = line.map(cardAt);
   line.forEach((p, i) => S.grid[p.r][p.c] = cards[cards.length - 1 - i]);
   S.swaps++;
@@ -641,11 +864,13 @@ async function doSwap() {
   log("swap", { before: cards.map(label), length: cards.length });
   S.sel = [];
   render(line, "flip"); await sleep(300);
+  const from = fromId != null ? posOfId(fromId) : null; // a swapper used from the board is used up there
+  if (from) { render(collapse([from]), "drop"); await sleep(280); await resolveExtras(); }
   S.busy = false; afterAction();
 }
 
 // ---------- Turn flow ----------
-function startTurn() {
+async function startTurn() {
   S.started = true; S.t0 = performance.now();
   $("start").classList.add("off");
   log("turn_start", { rules: RULES, dealer: S.opts.dealer, stock: S.stock.length, timer: S.opts.timer, budget: S.opts.budget,
@@ -655,6 +880,7 @@ function startTurn() {
     S.timeLeft--; renderTop();
     if (S.timeLeft <= 0) endTurn("timer");
   }, 1000);
+  S.busy = true; await resolveExtras(); S.busy = false; // extras dealt into the grid
   afterAction(); // a dealt board can already be dead
 }
 function endTurn(reason) {
@@ -680,13 +906,15 @@ function endTurn(reason) {
     log("prize_won", { tier, steps: b, cards: S.best.cards, special: extra.replace(", ", "") || null });
   }
   const secs = Math.round((performance.now() - S.t0) / 1000);
-  log("turn_end", { reason, steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
+  log("turn_end", { reason, penalty: S.penalty, leftovers: S.leftovers, steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
   saveRun(reason, secs);
   const suits = Object.entries(S.bySuit).map(([s, n]) => `${s === "none" ? "no suit" : WC.SUITS[s].glyph} ${n}`).join(", ") || "none";
   $("summary").innerHTML = (S.cleared ? `<h3 class="cleared">Board cleared! ${S.steps} steps</h3>` : `<h3>Turn over: ${S.steps} steps</h3>`) +
     `<div style="opacity:.8">Ended by ${reason} after ${secs} s</div>
     <table>
       <tr><td>Steps by suit</td><td>${suits}</td></tr>
+      ${S.extras.length ? `<tr><td>Jokers and extra cards drawn</td><td>${S.extras.map(e => kindName(e.card) + ": " + e.prize).join("; ")}</td></tr>` : ""}
+      ${S.leftovers ? `<tr><td>Cards left over (penalty)</td><td>${S.leftovers} (−${S.penalty} steps)</td></tr>` : ""}
       ${S.cleared ? `<tr><td>Clear-board bonus</td><td>${clearText}</td></tr>` : ""}
       <tr><td>Sets using your hand, crib or starter</td><td>${S.tally.edge}</td></tr>
       <tr><td>Sets of grid cards only</td><td>${S.tally.grid}</td></tr>
@@ -694,7 +922,7 @@ function endTurn(reason) {
       <tr><td>Prize</td><td>${prizeText}</td></tr>
       <tr><td>Scores / traces that didn't score</td><td>${S.scores} / ${S.rejected}</td></tr>
       <tr><td>Swappers / bombs used</td><td>${S.swaps} / ${S.bombs}</td></tr>
-      <tr><td>Special cards kept for later turns</td><td>${S.specials.swap} swap, ${S.specials.bomb} bomb</td></tr>
+      <tr><td>Special jokers kept for later turns</td><td>${S.specials.swap} swap, ${S.specials.bomb} bomb</td></tr>
       <tr><td>Cards drawn</td><td>${S.drawn}</td></tr>
     </table>
     <div><button class="pbtn" style="flex:none" onclick="newTurn()">New turn</button></div>`;
@@ -713,11 +941,11 @@ function saveRun(reason, secs) {
   RUNS.push({
     v: 4, rules: RULES, at: new Date().toISOString(), player: S.bot ? "bot" : "human",
     settings: { starter: o.starter, dealer: o.dealer, hand: o.hand, timer: o.timer, budget: o.budget, prize: o.prize, touch: o.touch, maxSet: o.maxSet,
-                swaps: o.swaps, bombs: o.bombs, blast: o.blast, prizeSpecial: o.prizeSpecial, bot: o.bot, clearBonus: o.clearBonus },
+                swaps: o.swaps, bombs: o.bombs, blast: o.blast, prizeSpecial: o.prizeSpecial, bot: o.bot, clearBonus: o.clearBonus, penalty: o.penalty, jokers: o.jokers, titleBlank: o.titleBlank },
     hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter),
     classic: { hand: classicCount(S.hand, S.starter, false), crib: classicCount(S.crib, S.starter, true) },
     steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: { ...S.tally }, scores: S.scores, prizes: S.prizes.length, rejected: S.rejected,
-    swaps: S.swaps, bombs: S.bombs, drawn: S.drawn, seconds: secs, ended: reason, cleared: S.cleared, bySuit: { ...S.bySuit },
+    swaps: S.swaps, bombs: S.bombs, drawn: S.drawn, seconds: secs, ended: reason, cleared: S.cleared, bySuit: { ...S.bySuit }, penalty: S.penalty, leftovers: S.leftovers, extras: S.extras.map(e => e.card + ":" + e.outcome), items: S.items, stockAdds: { ...S.stockAdds }, jokers: S.jokers, made: S.made,
     singles: S.log.filter(e => e.type === "score" && e.count === 1).length,
     multis: S.log.filter(e => e.type === "score" && e.count > 1).length,
     sets: S.log.filter(e => e.type === "score").map(e => `${e.cards.join(" ")} | ${e.count > 1 ? "multi ×" + e.count : "single"}: ${e.combos.join(" + ")} | ${e.pts} ${suitText(e.suit)}${e.bonus ? "+" + e.bonus : ""} @${(e.t / 1000).toFixed(1)}s`),
@@ -760,17 +988,28 @@ function cellEl(p, fx, cls) {
   d.className = "cell" + (isEdge(p) ? " edge" : "") + (p.k === "c" ? " crib" : p.k === "h" ? " hand" : p.k === "s" ? " starter" : "");
   d.dataset.p = JSON.stringify(p); d.dataset.k = key(p);
   if (!card) { d.className = "cell empty" + (p.k === "c" ? " crib" : ""); if (p.k === "c") d.innerHTML = `<div class="slot-label">no crib</div>`; return d; }
-  d.innerHTML = `<div class="card">${WC.front({ rank: WC.RANKS[card.r - 1], suit: card.s, form: "standard" })}</div>`;
+  d.innerHTML = `<div class="card">${face(card)}</div>`;
+  if (card.made) d.insertAdjacentHTML("beforeend", `<span class="made" title="Made by a joker; stays in the deck for the game">★</span>`);
+  if (card.sj && S.armedFrom === card.id) d.classList.add("armed-src");
   // Word tags name each group of edge cards: one on the first hand card, the top crib card and the starter.
   if (p.k === "s" && S.opts.starter !== "bridge") d.insertAdjacentHTML("beforeend", `<span class="tag">STARTER</span>`);
   if (p.i === 0 && (p.k === "h" || p.k === "c")) d.insertAdjacentHTML("beforeend", `<span class="tag gold">${p.k === "h" ? "HAND" : "CRIB"}</span>`);
   if (isEdge(p) && S.power[card.id]) d.insertAdjacentHTML("beforeend", `<span class="chip">+${S.power[card.id]}</span>`);
   const si = S.sel.findIndex(q => key(q) === key(p));
+  if (si >= 0 && S.selUsed && S.selUsed.has(si)) d.classList.add("used");
   if (si >= 0) { d.classList.add("sel"); d.insertAdjacentHTML("beforeend", `<span class="order">${si + 1}</span>`); }
   if (fx) { const f = fx.find(q => key(q) === key(p)); if (f) { d.classList.add(cls); if (f.dy) d.style.setProperty("--dy", f.dy); } }
   return d;
 }
+// Which selected cards are part of a combo in the current trace (they light up). With a
+// swapper armed, the whole line lights up.
+function selUsed() {
+  if (S.armed === "swap") return new Set(S.sel.map((_, i) => i));
+  if (S.sel.length < 2 || S.sel.some(p => !cardAt(p))) return new Set();
+  return combos(S.sel).used || new Set();
+}
 function render(fx, cls) {
+  S.selUsed = selUsed();
   const b = $("board"); b.innerHTML = "";
   for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
     if (r === 4 && c === 4) {
@@ -793,16 +1032,18 @@ function render(fx, cls) {
   if (S.armed === "bomb") msg = "Bomb armed: tap a grid card to blow it up. Tap the bomb again to cancel.";
   else if (S.armed === "swap" && !S.sel.length) msg = "Swapper armed: trace a straight line of 2 to 4 grid cards to reverse it. Tap the swapper again to cancel.";
   else if (!S.sel.length && S.dead) msg = "No sets left on the board. " + (S.specials.swap || S.specials.bomb ? "Use a swapper or bomb, or end the turn." : "End the turn to finish.");
-  else if (!S.sel.length) msg = "Drag across touching cards and let go. A cribbage combo scores; anything else does nothing.";
+  else if (!S.sel.length) msg = "Drag across touching cards and let go. Cards in a combo light up; cards left over cost steps.";
   else {
     const cards = S.sel.map(cardAt);
     msg = cards.map(label).join(" ") + `  (sum ${cards.reduce((a, c) => a + val(c), 0)})`;
     if (S.armed === "swap") msg += mirrorLine(S.sel) ? ": reverse this line" : ": not a straight line";
     else {
-      const sc = scoreable(S.sel);
-      if (sc) msg += `: ${sc.cs.map(c => c.name).join(" + ")} (+${sc.pts})`;
+      const sc = scoreable(S.sel, true);
+      if (sc && !sc.left.length) msg += `: ${sc.cs.map(c => c.name).join(" + ")} (+${sc.pts})`;
+      else if (sc && warned()) msg += `: ${sc.cs.map(c => c.name).join(" + ")} (+${sc.combo}), ${sc.left.map(cardAt).map(label).join(" ")} left over (−${sc.pen}) = ${signed(sc.pts)}`;
       else if (S.sel.length >= 2 && !S.sel.some(p => p.k === "g")) msg += ": needs a grid card";
       else if (S.sel.length >= 2 && S.scored.has(setKey(S.sel))) msg += ": already scored";
+      else { const left = leftOver(S.sel); if (left) msg += `: ${left.map(cardAt).map(label).join(" ")} left over` + (warned() && S.opts.penalty ? ` (−${left.length * S.opts.penalty})` : ""); }
     }
   }
   $("pick").textContent = msg;
@@ -815,20 +1056,25 @@ function renderTop() {
   $("stock").textContent = `Stock ${stockLeft()}`;
   $("steps").textContent = S.steps;
   $("pips").textContent = S.pips; $("tallyName").textContent = TALLY;
-  $("trackbar").style.width = Math.min(100, S.steps / 121 * 100) + "%";
+  $("trackbar").style.width = Math.max(0, Math.min(100, S.steps / 121 * 100)) + "%";
 }
 function renderTray() {
   const t = $("tray"); t.innerHTML = "";
   for (const type of ["swap", "bomb"]) {
     const n = S.specials[type], d = document.createElement("div");
-    d.className = "special" + (n > 1 ? " many" : "") + (n < 1 ? " none" : "") + (S.armed === type ? " armed" : "");
+    d.className = "special" + (n > 1 ? " many" : "") + (n < 1 ? " none" : "") + (S.armed === type && S.armedFrom == null ? " armed" : "");
     d.title = `${WC.SPECIALS[type].name}: ${WC.SPECIALS[type].note}`;
     d.innerHTML = `<div class="card">${WC.special(type)}</div><span class="count">${n}</span>`;
     d.onclick = () => {
       if (!S.started || S.over || S.busy || n < 1) return;
-      S.armed = S.armed === type ? null : type; S.sel = [];
+      S.armed = S.armed === type && S.armedFrom == null ? null : type; S.armedFrom = null; S.sel = [];
       log(S.armed ? "arm" : "disarm", { special: type }); render();
     };
+    t.appendChild(d);
+  }
+  if (S.items) { // items from the amber joker; not designed yet, so they do nothing
+    const d = document.createElement("div"); d.className = "special"; d.title = "An item (not designed yet)";
+    d.innerHTML = `<div class="card"><div class="item-face" style="font-size:12px">ITEM<small>?</small></div></div><span class="count">${S.items}</span>`;
     t.appendChild(d);
   }
 }
@@ -847,29 +1093,57 @@ function log(type, data) {
 // ---------- Input: tap to toggle, drag to trace ----------
 let drag = null;
 const posAtPoint = (x, y) => { const el = document.elementFromPoint(x, y)?.closest(".cell"); return el && el.dataset.p && !el.classList.contains("empty") ? JSON.parse(el.dataset.p) : null; };
+$("stage").addEventListener("pointerdown", () => RV.skip()); // tap to skip a joker reveal
 $("screen").addEventListener("pointerdown", (e) => {
   if (S.breaking) { S.skip = true; return; } // tap to skip the score breakdown
   if (!S.started || S.over || S.busy) return;
   const p = posAtPoint(e.clientX, e.clientY); if (!p) return;
   drag = { start: p, x: e.clientX, y: e.clientY, tracing: false };
 });
+// Swiping picks up a card only when the finger is inside an oval at its centre (the
+// "Swipe picks a card" setting), so a diagonal swipe through the corners between
+// cards doesn't catch the cards beside them. Points between pointer events are filled
+// in, so a fast swipe doesn't skip a card.
+function swipePos(x, y) {
+  const el = document.elementFromPoint(x, y)?.closest(".cell");
+  if (!el || !el.dataset.p || el.classList.contains("empty")) return null;
+  const zone = +$("optHit").value;
+  if (zone < 1) {
+    const r = el.getBoundingClientRect(), dx = (x - r.left - r.width / 2) / (r.width / 2), dy = (y - r.top - r.height / 2) / (r.height / 2);
+    if (dx * dx + dy * dy > zone * zone) return null;
+  }
+  return JSON.parse(el.dataset.p);
+}
+function swipeTo(x, y) {
+  const p = swipePos(x, y); if (!p) return false;
+  const last = S.sel[S.sel.length - 1];
+  if (key(p) === key(last)) return false;
+  if (S.sel.length >= 2 && key(S.sel[S.sel.length - 2]) === key(p)) { S.sel.pop(); return true; } // trace back to undo
+  if (S.sel.some(q => key(q) === key(p)) || S.sel.length >= S.opts.maxSet) return false;
+  if (S.opts.touch && !touching(last, p)) return false;
+  S.sel.push(p); return true;
+}
 document.addEventListener("pointermove", (e) => {
   if (!drag) return;
-  if (!drag.tracing && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 10) { drag.tracing = true; S.sel = [drag.start]; render(); }
+  if (!drag.tracing && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 10) { drag.tracing = true; S.sel = [drag.start]; drag.lx = e.clientX; drag.ly = e.clientY; render(); }
   if (!drag.tracing) return;
-  const p = posAtPoint(e.clientX, e.clientY); if (!p) return;
-  const last = S.sel[S.sel.length - 1];
-  if (key(p) === key(last)) return;
-  if (S.sel.length >= 2 && key(S.sel[S.sel.length - 2]) === key(p)) { S.sel.pop(); render(); return; } // trace back to undo
-  if (S.sel.some(q => key(q) === key(p)) || S.sel.length >= S.opts.maxSet) return;
-  if (S.opts.touch && !touching(last, p)) return;
-  S.sel.push(p); render();
+  const n = Math.max(1, Math.ceil(Math.hypot(e.clientX - drag.lx, e.clientY - drag.ly) / 6));
+  let changed = false;
+  for (let i = 1; i <= n; i++) changed = swipeTo(drag.lx + (e.clientX - drag.lx) * i / n, drag.ly + (e.clientY - drag.ly) * i / n) || changed;
+  drag.lx = e.clientX; drag.ly = e.clientY;
+  if (changed) render();
 });
 document.addEventListener("pointerup", () => {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.tracing) { submit(); return; }
-  const p = d.start;
+  const p = d.start, tc = cardAt(p);
+  if (tc && tc.sj && p.k === "g" && !S.sel.length && !S.busy && !S.over && S.started) {
+    // A special joker on the board waits until you tap it to use it (r14). Tap again to cancel.
+    if (S.armedFrom === tc.id) { S.armed = null; S.armedFrom = null; log("disarm", { special: tc.sj, from: "board" }); }
+    else { S.armed = tc.sj; S.armedFrom = tc.id; log("arm", { special: tc.sj, from: "board" }); }
+    render(); return;
+  }
   if (S.armed === "bomb") { doBomb(p); return; }
   // Taps: build a selection; tapping the last selected card again submits it.
   const i = S.sel.findIndex(q => key(q) === key(p));
@@ -882,6 +1156,23 @@ document.addEventListener("pointerup", () => {
 $("endBtn").onclick = () => { if (S.started) endTurn("ended by player"); };
 $("startBtn").onclick = startTurn;
 $("newBtn").onclick = newTurn;
+$("newBtn2").onclick = newTurn;
+// ---------- Side panel tabs ----------
+// One panel shows at a time, so the board stays in view. The last tab is remembered
+// in this browser (a convenience only). Arrow keys move between tabs.
+const TABS = [...document.querySelectorAll('.tabs [role="tab"]')];
+function showTab(id) {
+  TABS.forEach(t => { const on = t.id === id; t.setAttribute("aria-selected", on); t.tabIndex = on ? 0 : -1; $(t.getAttribute("aria-controls")).hidden = !on; });
+  try { localStorage.setItem("crib-maze-mock-tab", id); } catch (e) {}
+}
+TABS.forEach((t, i) => {
+  t.onclick = () => showTab(t.id);
+  t.onkeydown = (e) => {
+    const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (d) { const n = TABS[(i + d + TABS.length) % TABS.length]; showTab(n.id); n.focus(); }
+  };
+});
+{ let t = null; try { t = localStorage.getItem("crib-maze-mock-tab"); } catch (e) {} showTab(TABS.some(x => x.id === t) ? t : "tab-how"); }
 $("autoBtn").onclick = autoPlay;
 $("copyBtn").onclick = copyRuns;
 $("dlRunsBtn").onclick = () => {
@@ -891,6 +1182,7 @@ $("dlRunsBtn").onclick = () => {
 };
 $("batchBtn").onclick = () => botBatch(10);
 $("replayBtn").onclick = replayLast;
+$("rewarnBtn").onclick = () => { setWarned(false); $("runsMsg").textContent = ""; };
 function showTiming() {
   const T = bdTiming(), ms = [];
   for (let i = 0; i < 8; i++) ms.push(Math.max(T.min, T.base * Math.pow(T.accel, i)) / 1000);
@@ -918,12 +1210,12 @@ const BOT_LEVELS = {
 function bestScore() {
   const lv = BOT_LEVELS[S.opts.bot || "perfect"];
   if (lv.depth) return tracedBest(lv);
-  const pos = allPositions().filter(p => cardAt(p));
+  const pos = allPositions().filter(p => cardAt(p) && !cardAt(p).sj);
   let best = null;
   const pick = [];
   (function rec(start) {
     if (pick.length >= 2) {
-      const sc = scoreable(pick);
+      const sc = netScore(pick);
       if (sc && (!best || sc.pts > best.pts || (sc.pts === best.pts && pick.length > best.sel.length))) best = { sel: [...pick], pts: sc.pts };
     }
     if (pick.length === S.opts.maxSet) return;
@@ -939,7 +1231,7 @@ function tracedBest(lv) {
   const path = [];
   function walk() {
     if (path.length >= 2) {
-      const sc = scoreable(path);
+      const sc = netScore(path);
       if (sc && (!best || sc.pts > best.pts)) best = { sel: [...path], pts: sc.pts };
     }
     if (path.length === depth) return;
@@ -966,7 +1258,7 @@ function bestSwap() {
 }
 async function autoPlay() {
   if (S.over) newTurn();
-  if (!S.started) startTurn();
+  if (!S.started) await startTurn();
   S.bot = true; log("bot_start", {});
   if (new URLSearchParams(location.search).has("specials")) { // test hook: use one of each special first
     const s = bestSwap();
@@ -975,15 +1267,19 @@ async function autoPlay() {
   }
   while (!S.over) {
     const b = bestScore();
+    // Lower bot levels search from random starts, so a search is run once and kept.
+    // Special jokers on the board are used before the tray's: they only last the round.
+    const bSwap = boardSpecial("swap"), bBomb = boardSpecial("bomb");
+    const arm = (t, at) => { S.armed = t; S.armedFrom = at ? cardAt(at).id : null; };
+    const s = !b && (S.specials.swap > 0 || bSwap) ? bestSwap() : null;
     if (b) { S.sel = b.sel; render(); await sleep(300); await doScore(); }
-    else if (S.specials.swap > 0 && bestSwap()) {
-      const s = bestSwap();
-      S.armed = "swap"; S.sel = s.sel; render(); await sleep(300); await doSwap();
-    } else if (S.specials.bomb > 0 && !gridEmpty()) {
+    else if (s) {
+      arm("swap", bSwap); S.sel = s.sel; render(); await sleep(300); await doSwap();
+    } else if ((S.specials.bomb > 0 || bBomb) && !gridEmpty()) {
       // Bomb the cell whose blast clears the most cards (never an empty cell).
       let at = null;
       for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (S.grid[r][c] && (!at || blastArea(P.g(r, c)).length > blastArea(at).length)) at = P.g(r, c);
-      S.armed = "bomb"; render(); await sleep(300); await doBomb(at);
+      arm("bomb", bBomb); render(); await sleep(300); await doBomb(at);
     } else break;
     await sleep(200);
   }

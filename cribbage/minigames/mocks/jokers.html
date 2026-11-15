@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joker Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="reveal.css">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+    --felt: #0E3B2E; --felt-text: #F3ECDC; --gold: #E8B84A; --amber: #A85A00; --teal: #007C80; --cw: 64px; --gap: 5px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  .side { flex: 1 1 340px; min-width: 0; max-width: 620px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .panel h3 { font-size: 16px; margin: 0 0 6px; }
+  .panel.maker { border-style: dashed; }
+  .panel label { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+  .panel select, .panel input { font: inherit; }
+  .btn { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; margin: 2px 4px 2px 0; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.amber { border-color: var(--amber); color: var(--amber); font-weight: 700; }
+  .btn.teal { border-color: var(--teal); color: var(--teal); font-weight: 700; }
+  table.t { border-collapse: collapse; width: 100%; font-size: 14px; }
+  table.t th, table.t td { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.t th { color: var(--muted); font-weight: 600; }
+  table.t td.n, table.t th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.t input { width: 4.5em; text-align: right; }
+  .kind { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .kind .art { width: 52px; flex: none; } .kind .art svg { width: 100%; display: block; }
+  .warn-sum { color: #C00000; font-weight: 600; }
+
+  /* Phone: 393 x 852 pt screen, 1 CSS px = 1 pt */
+  .phone { width: 413px; height: 872px; border-radius: 52px; border: 10px solid #111; background: var(--felt);
+           position: relative; overflow: hidden; flex: none; color: var(--felt-text); user-select: none; }
+  .phone::before { content: ""; position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 9; }
+  .screen { position: absolute; inset: 0; padding: 58px 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .pile { width: 46px; position: relative; } .pile svg { width: 100%; display: block; }
+  .pulse { animation: pulse .5s ease-out; }
+  .count { position: absolute; bottom: -6px; right: -6px; background: #6A1B9A; color: #fff; font-weight: 700; font-size: 11px; border-radius: 9px; min-width: 18px; line-height: 18px; text-align: center; padding: 0 4px; }
+  @keyframes pulse { 40% { transform: scale(1.2) rotate(4deg); } }
+  .board { display: grid; grid-template-columns: repeat(4, var(--cw)); gap: var(--gap); justify-content: center; }
+  .cell { width: var(--cw); aspect-ratio: 5 / 7; position: relative; }
+  .cell .card { width: 100%; height: 100%; border-radius: 5px; transition: transform .2s, box-shadow .2s; }
+  .cell .card svg { width: 100%; height: 100%; display: block; }
+  .cell.drop .card { animation: drop .45s cubic-bezier(.3,1.4,.6,1) both; }
+  .cell.joker .card { box-shadow: 0 0 0 3px #fff, 0 0 20px 6px rgba(255,255,255,.5); transform: scale(1.08); }
+  .cell.hole { border: 1px dashed rgba(243,236,220,.3); border-radius: 5px; } .cell.hole .card { visibility: hidden; }
+  .cell.land .card { animation: land .35s ease-out; box-shadow: 0 0 0 3px var(--gold), 0 0 16px 5px rgba(232,184,74,.7); }
+  @keyframes drop { from { transform: translateY(-260px) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes land { 0% { transform: scale(1.25); } 100% { transform: none; } }
+  .strip { font-size: 13px; opacity: .9; }
+  .strip .row { display: flex; gap: 10px; align-items: flex-end; min-height: 66px; margin-top: 4px; }
+  .mini { width: 42px; position: relative; } .mini svg { width: 100%; display: block; border-radius: 4px; }
+  .item { width: 42px; aspect-ratio: 5 / 7; border-radius: 5px; border: 2px dashed var(--gold); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--gold); text-align: center; line-height: 1.1; background: rgba(0,0,0,.15); }
+  .empty-note { opacity: .5; font-size: 12px; align-self: center; }
+  .feed { font-size: 14px; display: flex; flex-direction: column; gap: 3px; flex: 1; overflow: hidden; }
+  .feed div:first-child { font-weight: 600; }
+  @media (max-width: 440px) { .phone { transform: scale(.85); transform-origin: top left; margin-bottom: -128px; margin-right: -60px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="phone" id="phone">
+    <div class="screen">
+      <div class="top"><span>Joker draws · <b id="pips">0</b> pips</span><span id="stockN">Stock --</span><div class="pile" id="pile"></div></div>
+      <div class="board" id="board"></div>
+      <div class="strip">Tray<div class="row" id="tray"></div></div>
+      <div class="strip">Shuffled into the stock<div class="row" id="deckAdds"></div></div>
+      <div class="feed" id="feed"></div>
+    </div>
+    <div class="stage" id="stage"><div class="rays"></div><div class="caption"></div><div class="tapnote">Tap to skip</div></div>
+  </div>
+
+  <div class="side">
+    <h1>Joker mock</h1>
+    <p class="muted">Crib Maze, joker mechanics, v3, 2026-11-14. Players feel the chance; they never see the tables. The match turn uses the same reveal (<code>reveal.js</code>) and tables (<code>jokers.js</code>). Every chance and timing is a starting guess.</p>
+
+    <div class="panel">
+      <h3>What the player sees</h3>
+      <p>A joker or extra card lands on the board and play pauses. Something random happens (a shuffle, a wheel or a die), the prize is revealed, and it flies to where it goes: the card's spot on the board, the stock, the tray or the pips counter. The rarer the prize, the bigger the reveal: a card flips quietly, a scoring card glints, an item or special joker bursts. The first time a player meets each kind, it's named with a one-line hint. Tap to skip.</p>
+      <p style="margin-bottom:6px"><button class="btn amber" data-draw="amber">Amber joker</button><button class="btn teal" data-draw="teal">Teal joker</button><button class="btn" data-draw="title">Title card</button><button class="btn" data-draw="blank">Blank card</button><button class="btn" data-draw="any">Any of them</button></p>
+      <label>Animation <select id="optAnim"><option value="random" selected>A different one each draw</option><option value="shuffle">Shuffle</option><option value="wheel">Wheel</option><option value="die">Die</option></select></label>
+      <label>Speed <select id="optSpeed"><option value="1.4">slow</option><option value="1" selected>normal</option><option value="0.6">quick</option></select></label>
+      <p style="margin:6px 0 0"><button class="btn" id="resetBoard">New board</button><button class="btn" id="resetSeen">Meet them all again</button></p>
+    </div>
+
+    <div class="panel maker">
+      <h3>Game maker: chances</h3>
+      <p class="muted">Never shown to players. Each card rolls once on its table. Each table must add up to 100.</p>
+      <div id="tables"></div>
+      <p style="margin:0"><button class="btn" id="resetOdds">Reset chances</button></p>
+    </div>
+
+    <div class="panel maker">
+      <h3>Game maker: simulate</h3>
+      <label>Draws of each card in a game <input type="number" id="perGame" value="16" min="1" max="200" style="width:5em"> <span class="muted">(a guess: about 8 rounds, 2 players)</span></label>
+      <p style="margin:6px 0"><button class="btn" id="simBtn">Roll 10,000 games</button></p>
+      <div id="sim"><p class="muted" style="margin:0">Rolls every draw for 10,000 games with a seeded generator, and shows how often each outcome turns up.</p></div>
+    </div>
+  </div>
+</main>
+
+<script src="../../../design/cards/cards.js"></script>
+<script src="jokers.js"></script>
+<script src="reveal.js"></script>
+<script>
+const WC = window.WarpedCards, J = window.WarpedJokers, RV = window.WarpedReveal;
+const $ = (id) => document.getElementById(id);
+const SUITS = ["S", "H", "D", "C"];
+const KINDS = Object.keys(J.KINDS);
+const label = (c) => c.sj ? WC.SPECIALS[c.sj].name : WC.RANKS[c.r - 1] + WC.SUITS[c.s].glyph;
+const kindName = (k) => J.KINDS[k].joker ? WC.JOKERS[k].name : WC.EXTRAS[k].name;
+const kindArt = (k) => J.KINDS[k].joker ? WC.joker(k) : WC.extra(k);
+const kindColour = (k) => J.KINDS[k].joker ? WC.JOKERS[k].colour : "#7C6C48";
+const INTRO_COLOUR = { amber: "#F2B266", teal: "#5FD3D6" }; // light versions for the dark stage
+const face = (c) => c.sj ? WC.special(c.sj) : c.x ? kindArt(c.x) : WC.front({ rank: WC.RANKS[c.r - 1], suit: c.s, form: "standard" });
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const START = JSON.parse(JSON.stringify(J.TABLES));
+const POWER = Object.keys(WC.SPECIALS); // every known special joker
+
+let B;
+function newBoard() {
+  const deck = [];
+  for (const s of SUITS) for (let r = 1; r <= 13; r++) deck.push({ r, s });
+  shuffle(deck);
+  B = { stock: deck, grid: deck.splice(0, 16), tray: [], deckAdds: {}, pips: 0, busy: false, hole: -1 };
+  $("feed").innerHTML = "";
+  render();
+}
+function render(fx) {
+  const b = $("board"); b.innerHTML = "";
+  B.grid.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "cell" + (i === B.hole ? " hole" : "") + (fx && fx.i === i ? " " + fx.cls : "");
+    d.innerHTML = `<div class="card">${face(c)}</div>`;
+    b.appendChild(d);
+  });
+  const adds = Object.values(B.deckAdds).reduce((a, n) => a + n, 0);
+  $("pile").innerHTML = WC.back() + (adds ? `<span class="count">+${adds}</span>` : "");
+  $("stockN").textContent = `Stock ${B.stock.length}`;
+  $("pips").textContent = B.pips;
+  $("tray").innerHTML = B.tray.length ? B.tray.map(t => t === "item" ? `<div class="item">ITEM<br>?</div>` : `<div class="mini">${WC.special(t)}</div>`).join("") : `<span class="empty-note">empty</span>`;
+  const list = Object.entries(B.deckAdds);
+  $("deckAdds").innerHTML = list.length ? list.map(([t, n]) => `<div class="mini">${WC.special(t)}<span class="count">${n}</span></div>`).join("") : `<span class="empty-note">none yet</span>`;
+  document.querySelectorAll("[data-draw], #resetBoard").forEach(btn => btn.disabled = B.busy || !tablesOk());
+}
+function feed(t) { const f = $("feed"), d = document.createElement("div"); d.textContent = t; f.prepend(d); while (f.children.length > 6) f.lastChild.remove(); }
+const metKey = (k) => "crib-maze-joker-met-" + k;
+const met = (k) => { try { return localStorage.getItem(metKey(k)) === "1"; } catch (e) { return !!B["met" + k]; } };
+const markMet = (k) => { B["met" + k] = true; try { localStorage.setItem(metKey(k), "1"); } catch (e) {} };
+
+// ---------- Drawing ----------
+async function draw(kind) {
+  if (B.busy || !tablesOk()) return;
+  B.busy = true;
+  const i = Math.floor(Math.random() * 16);
+  B.stock.push(B.grid[i]); // the card it lands on goes back under the stock
+  B.grid[i] = { x: kind };
+  render({ i, cls: "drop" }); await sleep(500);
+  render({ i, cls: "joker" }); await sleep(300);
+
+  // Roll now; the player only sees the animation and the prize.
+  const outcome = J.roll(J.TABLES[kind]), oc = J.OUTCOMES[outcome];
+  let card = null, special = null, prizeHtml, prizeName;
+  // Cards a joker makes are new cards, kept in the deck for the rest of the game.
+  const make = (test) => { const pool = []; for (const s of SUITS) for (let r = 1; r <= 13; r++) if (!test || test({ r })) pool.push({ r, s }); return pool[Math.floor(Math.random() * pool.length)]; };
+  if (outcome === "card") card = make();
+  else if (outcome === "scoring") card = make(J.isScoring);
+  else if (outcome === "five") card = make(c => c.r === 5);
+  else if (outcome === "power" || outcome === "named") special = POWER[Math.floor(Math.random() * POWER.length)];
+  if (card) { prizeHtml = face(card); prizeName = `A new ${label(card)}`; }
+  else if (special) { prizeHtml = WC.special(special); prizeName = outcome === "power" ? `${WC.SPECIALS[special].name}, into the stock` : `${WC.SPECIALS[special].name}, for your tray`; }
+  else if (outcome === "pips") { prizeHtml = `<div class="item-face">+5<small>pips</small></div>`; prizeName = "+5 pips"; }
+  else { prizeHtml = `<div class="item-face">ITEM<small>?</small></div>`; prizeName = "An item, for your tray"; }
+
+  const target = { board: () => document.querySelectorAll("#board .cell")[i], stock: $("pile"), tray: $("tray"), pips: $("pips") }[oc.goes];
+  const first = !met(kind); markMet(kind);
+  B.hole = i; render();
+  await RV.play({ stage: $("stage"), art: kindArt(kind), colour: kindColour(kind), prizeHtml, prizeName, tier: oc.tier, target,
+    intro: first ? { name: kindName(kind), hint: J.KINDS[kind].hint, colour: INTRO_COLOUR[kind] } : null,
+    anim: $("optAnim").value, speed: +$("optSpeed").value });
+
+  B.grid[i] = oc.goes === "board" ? card : B.stock.shift(); // otherwise the stock fills the spot
+  if (oc.goes === "stock") { B.deckAdds[special] = (B.deckAdds[special] || 0) + 1; B.stock.splice(Math.floor(Math.random() * (B.stock.length + 1)), 0, { r: 0, s: "S", sj: special }); }
+  if (oc.goes === "tray") B.tray.push(special || "item");
+  if (oc.goes === "pips") B.pips += 5;
+  B.hole = -1; render({ i, cls: "land" });
+  const pulse = { stock: "pile", tray: "tray", pips: "pips" }[oc.goes];
+  if (pulse) { $(pulse).classList.add("pulse"); setTimeout(() => $(pulse).classList.remove("pulse"), 520); }
+  feed(`${kindName(kind)}: ${prizeName}`);
+  await sleep(300);
+  B.busy = false; render();
+}
+$("phone").addEventListener("pointerdown", () => { if (B.busy) RV.skip(); });
+
+// ---------- Game maker: chances (editable) ----------
+function tablesOk() { return Object.values(J.TABLES).every(t => J.total(t) === 100); }
+function renderTables() {
+  $("tables").innerHTML = KINDS.map(kind => {
+    const table = J.TABLES[kind], sum = J.total(table);
+    return `<div class="kind"><div class="art">${kindArt(kind)}</div><div style="flex:1">
+      <b style="color:${kindColour(kind)}">${kindName(kind)}</b>
+      <table class="t"><tr><th>Becomes</th><th>Reveal</th><th>Goes to</th><th class="n">Chance</th></tr>
+      ${table.map((o, k) => { const oc = J.OUTCOMES[o.id]; return `<tr><td>${oc.name}<br><span class="muted" style="font-size:12px">${oc.note}</span></td><td>${oc.tier}</td><td>${oc.goes}</td>
+        <td class="n"><input type="number" min="0" max="100" step="0.5" value="${o.pct}" data-kind="${kind}" data-k="${k}"> %</td></tr>`; }).join("")}
+      <tr><td colspan="3">Total</td><td class="n ${sum === 100 ? "" : "warn-sum"}">${sum}%${sum === 100 ? "" : " (must be 100)"}</td></tr></table></div></div>`;
+  }).join("");
+  $("tables").querySelectorAll("input").forEach(inp => inp.onchange = () => {
+    J.TABLES[inp.dataset.kind][+inp.dataset.k].pct = Math.max(0, +inp.value || 0);
+    renderTables(); render();
+  });
+}
+
+// ---------- Game maker: simulation ----------
+function simulate() {
+  const n = Math.max(1, +$("perGame").value || 16), games = 10000, r = J.rng(2026);
+  let rows = "";
+  for (const kind of KINDS) {
+    const table = J.TABLES[kind], count = {}, gamesWith = {};
+    for (let g = 0; g < games; g++) {
+      const got = new Set();
+      for (let d = 0; d < n; d++) { const o = J.roll(table, r()); count[o] = (count[o] || 0) + 1; got.add(o); }
+      got.forEach(o => gamesWith[o] = (gamesWith[o] || 0) + 1);
+    }
+    table.forEach(o => {
+      rows += `<tr><td><span style="color:${kindColour(kind)};font-weight:700">${kindName(kind)}</span>, ${J.OUTCOMES[o.id].name.toLowerCase()}</td>
+        <td class="n">${o.pct}%</td><td class="n">${((count[o.id] || 0) / (games * n) * 100).toFixed(2)}%</td>
+        <td class="n">${((gamesWith[o.id] || 0) / games * 100).toFixed(1)}%</td><td class="n">${(J.atLeastOnce(o.pct, n) * 100).toFixed(1)}%</td></tr>`;
+    });
+  }
+  $("sim").innerHTML = `<table class="t"><tr><th>Outcome</th><th class="n">Chance</th><th class="n">Share of rolls</th><th class="n">Games with one</th><th class="n">Expected</th></tr>${rows}</table>
+    <p class="muted" style="margin:6px 0 0">${n} draws of each card per game, 10,000 games. "Games with one" is how many games see that outcome at least once; "Expected" is the same worked out exactly.</p>`;
+}
+
+document.querySelectorAll("[data-draw]").forEach(btn => btn.onclick = () => draw(btn.dataset.draw === "any" ? KINDS[Math.floor(Math.random() * KINDS.length)] : btn.dataset.draw));
+$("resetBoard").onclick = newBoard;
+$("resetSeen").onclick = () => { KINDS.forEach(k => { B["met" + k] = false; try { localStorage.removeItem(metKey(k)); } catch (e) {} }); feed("Each card will introduce itself again."); };
+$("resetOdds").onclick = () => { Object.keys(START).forEach(k => J.TABLES[k] = JSON.parse(JSON.stringify(START[k]))); renderTables(); render(); };
+$("simBtn").onclick = simulate;
+renderTables(); newBoard();
+</script>
+</body>
+</html>

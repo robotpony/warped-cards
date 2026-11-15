@@ -6,10 +6,113 @@ Every scoring set is a single (exactly one combo, like 7-8) or a multi (two or m
 
 | Mock | What it covers | Status |
 |---|---|---|
-| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, special cards (swapper, bomb), power levels, prizes, timer and card budget, play-out and the clear-board ending | v4, 2026-11-14 |
+| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, cards left over (warning and cost), lit combos while tracing, joker reveals, special jokers (swapper, bomb), power levels, prizes, timer and card budget, play-out and the clear-board ending | v7, 2026-11-14 |
+| [jokers.html](jokers.html) | Joker mechanics on their own: the amber and teal jokers and the title and blank cards, each rolling on a hidden table of chances. Players see a shuffle, wheel or die, the prize revealed (bigger for rarer prizes) and flown to where it goes. Game-maker panels edit the chances and simulate 10,000 games. Outcome logic in `jokers.js`, tests in `jokers.test.js`; the reveal in `reveal.js` and `reveal.css`, shared with the match turn | v3, 2026-11-14 |
 | Score breakdown | Merged into the match turn in v4. The standalone mock (v1, with presets) is in git history | Retired |
 | Prize pick | Choosing where a prize goes (deck or power slot), badges | Not started |
 | Pegging on the maze | Pegging with live token movement | Waiting on maze inspiration |
+
+## Match turn v7 and jokers v3: joker reveals in the match (2026-11-14)
+
+- Rules r12 to r14: the match turn's stock holds 0 to 2 jokers (setting: 0 to 2, 0 to 4, always 2, none), each amber or teal at random, plus the title and blank cards (setting). The plain placeholder joker and the outcome list that explained each card are gone.
+- When an extra card lands on the board, play and the timer pause, the card lifts onto the stage and the joker v2 reveal plays. Settings: which animation (or a different one each draw) and reveal speed. Tap the stage to skip.
+- Prizes land where they go: a new card in the card's spot, marked ★; a special joker from the teal joker on the stock pile, shuffled into this turn's stock (drawn onto the board later, it waits there until tapped; rules r14); a special joker from the title or blank card in the tray; pips on the pips counter; an item in the tray as an ITEM placeholder that does nothing yet.
+- Cards a joker makes are new cards (r14), so a joker can no longer turn into another extra card. Each turn's run records how many jokers it had and the cards they made.
+- A special joker on the board: tap it to arm it (it lifts and rings), tap again to cancel. Used, it leaves the board and the stock fills its spot. Bots use board special jokers before the tray's, since those only last the round.
+- The title and blank cards now roll on hidden tables too, in `jokers.js` (a third each: a 5, a special joker for the tray, 5 pips; placeholders). The joker mock can draw them.
+- Shared code: `reveal.js` and `reveal.css` hold the stage, the three animations, the tiered reveal and the fly. Both mocks use them, so a change to the reveal shows in both.
+- Bot batches skip the reveal and apply the prize.
+- Card art: the plain joker is removed from `cards.js`; the deck's jokers are the amber and teal ones.
+
+### v7 findings, rules r12 (2026-11-14)
+
+Ten bot turns per level, as the dealer, all four extra cards in the stock (rules r12).
+
+| Bot | Mean steps | Boards cleared |
+|---|---|---|
+| Perfect | 187 | 10 of 10 |
+| Medium | 139 | 9 of 10 |
+| Weak | 83 | 5 of 10 |
+
+- With r11's placeholder (every joker a swapper or bomb), the weak bot cleared 10 of 10. Now most jokers become plain cards, special jokers come only from the title and blank cards, and the weak bot clears half as often. The extras were what made clearing easy.
+- In 20 turns, the teal joker became a special joker once and the amber joker never became an item, as the chances say.
+- Rules r14, medium bot, 10 turns with 0 to 4 jokers and every teal joker forced to a special joker: 133 mean steps, 9 of 10 boards cleared, 0 to 4 jokers a turn, up to 3 cards made and 3 special jokers shuffled in. The forced rolls make this a stress test, not a balance number.
+
+## Jokers v2: chance is felt, not read (2026-11-14)
+
+The chances tables are the game maker's tuning tool. Players never see them, or the list of possible outcomes; they discover the balance by playing.
+
+- Draw: the joker lands on the board and play pauses. It lifts onto a dimmed stage, an animation shows the randomness, the prize is revealed, then it flies to where it goes and lands.
+- Three animations, picked at random each draw or fixed in the settings: a shuffle (five jokers swap places and one steps forward), a wheel (eight jokers spin and slow, and the top one comes forward), a die (a cube of joker faces tumbles and lands). More can be added for other cases.
+- Reveal size follows rarity (`tier` in `jokers.js`): a card flips quietly, a scoring card flips with a glint, an item or power card swells, flips, glows and throws rays.
+- Destinations (`goes`): a card or scoring card lands in the joker's spot on the board; a power card flies to the deck pile, which pulses and counts it; an item flies to the tray. New prize types will say where they go when they're added.
+- The first time a player meets each joker type, it's named with a one-line hint that says nothing about odds. After that, animation only. "Meet the jokers again" resets this.
+- Tap the phone to skip: a 6-second draw finishes about 1 second after the tap.
+- No record of found prizes for players (decided 2026-11-14).
+
+## Jokers v1 (2026-11-14, replaced by v2)
+
+Jokers get their own mock until they feel right; the match turn keeps its placeholder jokers until then.
+
+- Two joker types, told apart by colour and symbol: amber with a star (#A85A00, 4.96:1 on the card face) and teal with a moon (#007C80, 4.88:1). Neither matches a suit colour or the named-joker purple.
+- Each type rolls once on its own table when drawn. Starting chances:
+
+| Joker | A card | A scoring card | Rare outcome |
+|---|---|---|---|
+| Amber | 90% | 9% | 1%: an item for the tray (items not designed yet) |
+| Teal | 80% | 15% | 5%: a power card shuffled into the deck, picked from every known power card |
+
+- A card is the next card in the stock. A scoring card is a 5 or a 10-value card (10, J, Q, K). Power cards are the named jokers so far (swapper, bomb).
+- Drawing: the joker drops onto a random grid card, play pauses, a card names the joker and lists its outcomes with their chances, the highlight cycles and slows, and lands on the roll. The outcome shows with its card, then the board carries on. Roll speed: slow, normal or quick.
+- The chances are editable on the page; draws are disabled until each table adds up to 100.
+
+### Jokers v1 findings (2026-11-14)
+
+10,000 simulated games, 16 draws of each joker per game (a guess: about 8 rounds, 2 players, each match turn drawing the whole stock).
+
+| Outcome | Chance | Share of rolls | Games with at least one |
+|---|---|---|---|
+| Amber, a card | 90% | 90.07% | 100% |
+| Amber, a scoring card | 9% | 8.96% | 77.9% |
+| Amber, an item | 1% | 0.97% | 14.5% |
+| Teal, a card | 80% | 80.04% | 100% |
+| Teal, a scoring card | 15% | 14.96% | 92.6% |
+| Teal, a power card | 5% | 5.00% | 55.8% |
+
+- The amber item is rare: about 1 game in 7 sees one. The teal power card turns up in just over half of games.
+- How often jokers are drawn matters as much as the chances. If each match turn draws the whole stock, every player draws both jokers every turn, and 16 draws a game is low.
+
+## Match turn v6: left-over cards score against you, lit combos, jokers and extra cards (2026-11-14)
+
+- Rules r10: a set with cards left over scores its combos minus 2 steps per card left over (setting: 0 to 3). The breakdown adds a red "Left over" line per card. A set with no combo at all costs the steps and clears nothing. Steps can go below 0. The first such set still brings the one-time warning, and nothing happens.
+- Tracing: every selected card gets a white ring and a small lift; cards in a combo light up more (bigger, brighter, a glow). The message line shows combos, cards left over and the net.
+- Swiping: a card is picked only when the finger is inside an oval at its centre (setting: whole card, 85%, 70% by default, 55%), and points between pointer events are filled in so a fast swipe doesn't skip a card. In a test swipe from one card to its diagonal neighbour, the old whole-card target caught the card beside the path with an 8 px wobble; the 70% oval held up to 16 px.
+- Rules r11: the stock holds 2 jokers, a title card and a blank card (setting: all four, jokers only, none). When one lands on the board, play pauses with a card that explains it. A joker becomes a swapper or bomb in the tray; the title and blank cards cycle through three outcomes and land on one: a 5 from the stock takes its place, a named joker, or +5 pips. All placeholders. In this mock the extra cards go only into the stock, never the deal.
+- How to play is rewritten to match the rules doc: the turn in five steps, then tables for what scores, cards left over, and special and extra cards, with mock-only notes kept apart at the end.
+- Page layout: the panels beside the phone sit on tabs (How to play, Settings, Breakdown, Runs, Log), so one shows at a time next to the board. New turn and Watch a bot stay above the tabs. The last tab is remembered in the browser; arrow keys move between tabs.
+- Card art: `design/cards/cards.js` draws the plain joker, the title card and the blank card (`extra()`), placeholder art like the swapper and bomb.
+- Fix: the bot ran its swap search twice, and lower levels search from random starts, so the second search could come back empty and crash a batch.
+
+### v6 findings, rules r11 (2026-11-14)
+
+Ten bot turns per level, as the dealer, 90-second timer (bot batches skip it), all four extra cards in the stock.
+
+| Bot | Mean steps | Range | Boards cleared | Extra cards per turn | Left-over cost per turn |
+|---|---|---|---|---|---|
+| Perfect | 182 | 159 to 218 | 10 of 10 | 4 | 0.4 |
+| Medium | 136 | 119 to 150 | 10 of 10 | 4 | 1.2 |
+| Weak | 86 | 69 to 97 | 10 of 10 | 4 | 0 |
+
+- Every turn draws the whole stock, so all four extra cards turn up every turn, adding 2 to 3 jokers to the tray each time. Even the weak bot now clears the board every turn, with the extra bombs.
+- Bots rarely take a set with a card left over (rules r10 alone: perfect 191, medium 139, weak 80 mean steps, with 0 to 1.6 steps of left-over cost per turn). The rule matters for people, who guess.
+
+## Match turn v5: left-over cards cost steps (2026-11-14, replaced by r10)
+
+- A set with a card left over (not part of any combo) doesn't score. The first time, a card on the phone explains what a valid set is, rings the left-over cards in red and charges nothing. After that, each card left over costs 2 steps (setting: nothing, 1, 2 or 3), with a red float over each one. A turn's steps never go below 0.
+- The warning shows once per player, remembered in the browser. "Show the left-over warning again" resets it.
+- While tracing, the message line names the cards left over and the cost.
+- Sets rejected for other reasons (one card, no grid card, already scored) cost nothing.
+- Runs record `penalty` (steps taken) and `leftovers` (cards); the summary shows both. Bots never trace a set with a card left over, so bot numbers don't change.
 
 ## Match turn v4: score breakdown, suits, play-out (2026-11-14)
 
@@ -55,6 +158,12 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r6 | 2026-11-14 | The starter sits in the corner where the hand row and crib column meet, touching only its real neighbours (last hand card, bottom crib card, grid corner). Tilted, with a light ring and a STARTER tag; the hand and crib get gold HAND and CRIB tags. Setting: keep it apart at the top, touching every hand and crib card (the r5 rule) |
 | r7 | 2026-11-14 | Edge power pays into a separate tally (pips), not steps. One prize per turn, for the best score, at the end of the turn. Special cards are kept all game. The timer pauses while a score plays. Bot skill setting (perfect, strong, medium, weak) |
 | r8 | 2026-11-14 | Play out the grid when the stock or budget runs out (no refills); clearing the board ends the turn with a bonus (setting). Each set's suit is recorded. Score breakdown plays on every score (mock v4) |
+| r9 | 2026-11-14 | A set with a card left over doesn't score; after a one-time warning, each card left over costs 2 steps (mock v5) |
+| r10 | 2026-11-14 | A set with cards left over scores its combos minus 2 steps per card left over; a set with no combo costs the steps; steps can go below 0 (mock v6) |
+| r11 | 2026-11-14 | 2 jokers, a title card and a blank card in the stock; drawing one pauses play and explains its outcome (placeholders) (mock v6) |
+| r12 | 2026-11-14 | The amber and teal jokers replace the placeholder joker. Each extra card plays the hidden-table reveal (shuffle, wheel or die; prize; fly to its place) instead of explaining its outcomes. A teal special card joins the deck for the next round (mock v7) |
+| r13 | 2026-11-14 | A special joker from the teal joker is shuffled into this turn's stock; drawn onto the board, it joins the tray (mock v7) |
+| r14 | 2026-11-14 | 0 to n jokers a round, decided at the shuffle (setting; 0 to 2 by default), each amber or teal. Cards a joker makes are new cards, marked ★, kept for the game. A special joker drawn onto the board waits until tapped, can't be part of a set, and is used up where it lies (mock v7) |
 
 ## Match turn v3: automatic scoring and special cards (2026-11-14)
 

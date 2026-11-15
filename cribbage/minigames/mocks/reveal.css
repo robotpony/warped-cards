@@ -1,0 +1,31 @@
+/* Crib Maze: the reveal stage, shared by the joker mock and the match turn (2026-11-14).
+   A scrim over the phone screen; an animation shows the randomness; the prize is
+   revealed, bigger for rarer prizes; then it flies to where it goes. Players never
+   see outcome lists or chances. The host page places .stage inside .phone. */
+
+.stage { position: absolute; inset: 0; z-index: 8; display: none; background: rgba(5,22,16,0); transition: background .25s; perspective: 900px; color: #F3ECDC; }
+.stage.on { display: block; background: rgba(5,22,16,.72); }
+.stage .caption { position: absolute; left: 24px; right: 24px; top: 92px; text-align: center; opacity: 0; transition: opacity .25s; }
+.stage .caption.on { opacity: 1; }
+.stage .caption b { display: block; font-size: 26px; } .stage .caption span { font-size: 15px; opacity: .85; }
+.stage .tapnote { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; font-size: 13px; opacity: .55; }
+.stage .sc { position: absolute; width: 84px; aspect-ratio: 5 / 7; left: 50%; top: 50%; margin: -59px 0 0 -42px; transform-style: preserve-3d; }
+.stage .sc .f, .stage .sc .b { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 6px; overflow: hidden; box-shadow: 0 8px 18px rgba(0,0,0,.45); }
+.stage .sc .b { transform: rotateY(180deg); }
+.stage .sc svg { width: 100%; height: 100%; display: block; }
+.stage .rays { position: absolute; left: 50%; top: 50%; width: 360px; height: 360px; margin: -180px; border-radius: 50%; pointer-events: none; opacity: 0;
+               background: repeating-conic-gradient(from 0deg, rgba(232,184,74,.55) 0 10deg, transparent 10deg 30deg);
+               -webkit-mask: radial-gradient(circle, #000 20%, transparent 70%); mask: radial-gradient(circle, #000 20%, transparent 70%); }
+.stage .rays.on { animation: reveal-rays 1.6s ease-out forwards; }
+@keyframes reveal-rays { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2) rotate(60deg); } }
+.stage .sc.glint .b::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%);
+                             background-size: 250% 100%; animation: reveal-glint .9s ease-out .1s both; }
+@keyframes reveal-glint { from { background-position: 120% 0; } to { background-position: -40% 0; } }
+/* The glow sits on the prize face: a filter on .sc would flatten the 3D flip. */
+.stage .sc.burst .b { box-shadow: 0 0 0 3px #E8B84A, 0 0 30px 12px rgba(232,184,74,.9); }
+.stage .cube { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px; transform-style: preserve-3d; }
+.stage .cube .face { position: absolute; inset: 0; background: #FDFCF8; border-radius: 12px; border: 2px solid #ccc; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.stage .cube .face svg { width: 58px; }
+.stage .item-face { width: 100%; height: 100%; display: grid; place-items: center; text-align: center; font: 700 16px/1.1 "Saira Semi Condensed", system-ui, sans-serif;
+                    background: #FFFDF7; color: #A85A00; border: 2px dashed #A85A00; border-radius: 6px; }
+.stage .item-face small { display: block; font-size: 11px; font-weight: 600; }
