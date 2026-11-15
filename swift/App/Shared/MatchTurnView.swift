@@ -10,16 +10,14 @@ struct MatchTurnView: View {
         if let err = session.loadError {
             ContentUnavailableView("Config didn't load", systemImage: "exclamationmark.triangle", description: Text(err))
         } else {
-            HStack(spacing: 0) {
-                // The phone is a fixed size (the mock's 872 pt, or less in a short window), so nothing reflows as you play.
-                GeometryReader { g in
-                    PhoneView(session: session, height: min(872, g.size.height - 48))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                Divider()
-                SidePanel(session: session).frame(width: 320)
-            }
-            .background(Theme.page)
+            // The phone is always drawn at its full size, so nothing reflows or gets cut off; on a
+            // screen too short for it, the whole phone scales down. The window fits it exactly.
+            let s = PhoneView.fitScale
+            PhoneView(session: session)
+                .scaleEffect(s, anchor: .topLeading)
+                .frame(width: PhoneView.width * s, height: PhoneView.height * s, alignment: .topLeading)
+                .padding(PhoneView.margin)
+                .background(Theme.page)
             .background(FrameMeterHost(meter: session.meter))
         }
     }
@@ -29,7 +27,18 @@ struct MatchTurnView: View {
 /// 121-step track, the board, the help line, the feed, then the tray and End turn.
 struct PhoneView: View {
     let session: GameSession
-    var height: CGFloat = 872
+    var height: CGFloat = PhoneView.height
+    @State private var showSettings = false
+
+    static let width: CGFloat = BoardLayout.width + 2 * 16 + 18
+    static let height: CGFloat = 872
+    static let margin: CGFloat = 20
+
+    /// 1, or less when the screen can't fit the phone plus the window's title bar and margins.
+    @MainActor static var fitScale: CGFloat {
+        guard let screen = NSScreen.main?.visibleFrame.height else { return 1 }
+        return min(1, (screen - 32 - 2 * margin) / height)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -49,7 +58,7 @@ struct PhoneView: View {
             bottom
         }
         .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 20)
-        .frame(width: BoardLayout.width + 2 * 16 + 18, height: height)
+        .frame(width: Self.width, height: height)
         .foregroundStyle(Theme.feltText)
         .background(Theme.felt)
         .overlay {   // tap anywhere to skip the breakdown
@@ -73,6 +82,14 @@ struct PhoneView: View {
             Text(session.settings.timer ? "\(max(0, session.secondsLeft)) s" : "no timer").monospacedDigit()
             Spacer()
             Text("Stock \(session.turn?.drawable ?? 0)").monospacedDigit()
+            // Settings, the last score, this turn's feed and (in the beta) diagnostics, out of the way.
+            Image(systemName: "gearshape.fill").font(.system(size: 15)).padding(.leading, 10)
+                .contentShape(Rectangle())
+                .onTapGesture { showSettings.toggle() }
+                .help("Settings")
+                .popover(isPresented: $showSettings, arrowEdge: .bottom) {
+                    SidePanel(session: session).frame(width: 340, height: 620)
+                }
         }
         .font(Theme.font(14, .medium)).opacity(0.9)
     }
@@ -339,7 +356,7 @@ struct SidePanel: View {
                                 if let p = l.points { Text(p >= 0 ? "+\(p)" : "\(p)").monospacedDigit().foregroundStyle(p >= 0 ? Color.primary : Color.red) }
                             }
                         }
-                        if session.feed.isEmpty { Text("Drag across 2 to 5 touching cards.").foregroundStyle(.secondary) }
+                        if session.feed.isEmpty { Text("Drag across 2 to \(session.pickLimit) touching cards.").foregroundStyle(.secondary) }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if Edition.isBeta { GroupBox("Animation diagnostics") {

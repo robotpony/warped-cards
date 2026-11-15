@@ -2,6 +2,14 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.8.3 — 2026-11-15
+
+### Changed
+- A set picks 2 to 4 cards (was 5), plus the starter, which still joins for free (rules r17).
+- Settings, the last score and the turn's feed are behind the gear in the top line, so the window is just the game.
+- The window fits the game exactly, so nothing is cut off. On a short screen, the whole game scales down to fit.
+- The strong and medium bots are re-tuned for 4-card sets, so strong scores more than medium again.
+
 ## 0.8.2 — 2026-11-15
 
 ### Changed

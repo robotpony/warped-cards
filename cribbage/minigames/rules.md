@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 5, 2026-11-15. Match turns follow match rules r16. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 5, 2026-11-15. Match turns follow match rules r17. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -68,7 +68,7 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-These are match rules r16, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r17, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -86,7 +86,7 @@ Match board (one player's turn)
 
 A turn at a glance:
 
-1. Trace a set of 2 to 5 touching cards. It scores at once, counted like a cribbage hand.
+1. Trace a set of 2 to 4 touching cards. It scores at once, counted like a cribbage hand.
 2. Scored grid cards clear and the stock refills the grid. Your hand, crib and starter stay and power up.
 3. Use your power jokers to change the board.
 4. When the stock runs out, play out the cards that are left.
@@ -103,7 +103,7 @@ A turn at a glance:
 Drag across touching cards and let go, or tap them one by one and tap the last one again. Drag back to undo the last card.
 
 - Cards touch their 8 neighbours, diagonals included. Hand, crib and starter cards follow the same rule.
-- A set picks 2 to 5 cards. The card counter beside the help line shows how many you've picked. Later, some combos, jokers and prizes will raise the limit for a while.
+- A set picks 2 to 4 cards, plus the starter, which joins for free. The card counter beside the help line shows how many you've picked. Later, some combos, jokers and prizes will raise the limit for a while.
 - Every set MUST include at least one grid card. Your hand, crib and starter can't score on their own.
 - The same set of cards can't score twice in a turn.
 
@@ -333,7 +333,7 @@ Game, round, stage, turn, minigame and match turn are defined in How a game fits
 | Branch | A route that leaves the main route at a fork |
 | Stock | The cards used to fill the match grid on a turn: every card not in a hand, the crib or the starter, extra cards included |
 | Edge cards | Your hand, the crib and the starter, laid along the edges of the match grid. They're never used up |
-| Set | 2 to 5 touching cards traced on the match board. It scores if every card is part of a cribbage combo |
+| Set | 2 to 4 touching cards traced on the match board, plus the starter. It scores if every card is part of a cribbage combo |
 | Single | A set worth exactly one combo |
 | Multi | A set worth two or more combos |
 | Power level | How often an edge card has scored this turn; multiplies the sets it's in later |

@@ -11,9 +11,8 @@ struct CribMazeApp: App {
     var body: some Scene {
         WindowGroup(Edition.name) {
             MatchTurnView(session: session)
-                .frame(minWidth: 860, minHeight: 760)
         }
-        .windowResizability(.contentMinSize)
+        .windowResizability(.contentSize)   // the window is the phone, nothing more
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Turn") { session.newTurn() }.keyboardShortcut("n")

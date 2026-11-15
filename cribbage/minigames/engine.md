@@ -437,10 +437,10 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r16",
+  "rulesVersion": "match-r17",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
-    "maxSet": 5, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
+    "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 150 },
@@ -492,8 +492,8 @@ Weights are lists of pairs, not objects, so their order is fixed in every langua
   "version": 1,
   "match": [
     { "id": "perfect", "search": "all" },
-    { "id": "strong",  "search": "traced", "depth": 5, "starts": 0.15 },
-    { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.5 },
+    { "id": "strong",  "search": "traced", "depth": 4, "starts": 1.0 },
+    { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.3 },
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
   ],
   "classic": [

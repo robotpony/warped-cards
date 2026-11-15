@@ -21,10 +21,10 @@ How Crib Maze for Mac gets from a commit to a free download on [GitHub releases]
 ## Each release
 
 1. Playtest the build you mean to ship (`scripts/debug.sh release`).
-2. Bump `MARKETING_VERSION` in `swift/App/project.yml` and write the version's section at the top of `CHANGELOG.md`, for players, in on-screen names. The script refuses to run if the two disagree, and that section becomes the release notes.
+2. Bump `MARKETING_VERSION` in `swift/App/project.yml` and write the version's section at the top of `CHANGELOG.md`, for players, in on-screen names. The script refuses to run if the two disagree. The release notes are `scripts/release-intro.md` (what the game is; keep it current) followed by that section.
 3. Check the docs say what the build does: `README.md` (games table, test count), `rules.md` (rules version), `PLAN.md`.
 4. Run `scripts/check.sh`, then commit.
 5. `scripts/release.sh build`: archives, signs, notarizes (a few minutes), staples and zips into `.build-release/`. Open the stapled app from there once.
-6. `scripts/release.sh publish`: tags `v<version>`, pushes the tag and posts the zip and notes. This step is public; Bruce says go first.
+6. `scripts/release.sh publish`: tags the commit that was built as `v<version>`, pushes the tag and posts the zip and notes. This step is public; Bruce says go first.
 
 If notarizing fails, `xcrun notarytool log <submission id> --keychain-profile warped-cards-notary` says why.

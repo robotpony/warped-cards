@@ -224,6 +224,7 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r12 | 2026-11-14 | The amber and teal jokers replace the placeholder joker. Each extra card plays the hidden-table reveal (shuffle, wheel or die; prize; fly to its place) instead of explaining its outcomes. A teal special card joins the deck for the next round (mock v7) |
 | r13 | 2026-11-14 | A special joker from the teal joker is shuffled into this turn's stock; drawn onto the board, it joins the tray (mock v7) |
 | r14 | 2026-11-14 | 0 to n jokers a round, decided at the shuffle (setting; 0 to 2 by default), each amber or teal. Cards a joker makes are new cards, marked ★, kept for the game. A special joker drawn onto the board waits until tapped, can't be part of a set, and is used up where it lies (mock v7) |
+| r17 | 2026-11-15 | A set picks 2 to 4 cards (was 5), plus the starter. Crib Maze Beta only; the web mock stays at r16 |
 | r16 | 2026-11-15 | The starter counts with every set, like the starter in a cribbage hand: it isn't traced and doesn't count toward the set's cards. In a combo, its power multiplies and it powers up; otherwise it's ignored, never left over (setting) |
 | r15 | 2026-11-14 | One score: no pips. Edge power multiplies a set's combos (levels added, ×1.5 a level, capped at ×2; settings). The title and blank cards' pips prize is 5 steps (mock v9) |
 

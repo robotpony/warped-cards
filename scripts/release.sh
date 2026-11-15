@@ -24,7 +24,9 @@ TOP=$(sed -n 's/^## \([0-9][0-9.]*\) — .*/\1/p' CHANGELOG.md | head -1)
 
 notes() {
   mkdir -p "$OUT"
-  awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} on && /^## / {exit} on {print}' CHANGELOG.md > "$NOTES"
+  # Every release page starts with what the game is (scripts/release-intro.md), then this version's changes.
+  { cat scripts/release-intro.md; printf '\n## What'"'"'s new in %s\n' "$VERSION"; } > "$NOTES"
+  awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} on && /^## / {exit} on {print}' CHANGELOG.md >> "$NOTES"
   printf '\n---\nA free demo for macOS 26 or later. Unzip and drag Crib Maze to Applications. Every version: [CHANGELOG.md](https://github.com/robotpony/warped-cards/blob/main/CHANGELOG.md)\n' >> "$NOTES"
 }
 
@@ -60,17 +62,19 @@ PLIST
   spctl -a -vv -t exec "$BUNDLE"
   ditto -c -k --keepParent "$BUNDLE" "$ZIP"
   notes
+  git rev-parse HEAD > "$OUT/commit"   # publish tags the commit that was built, not whatever is checked out later
   echo "== Ready: $ZIP"
   echo "Release notes: $NOTES. Try the app, then run: scripts/release.sh publish"
   ;;
 publish)
   [ -f "$ZIP" ] || fail "no $ZIP; run scripts/release.sh build first"
   [ "$(git branch --show-current)" = main ] || fail "publish from main"
-  [ -z "$(git status --porcelain)" ] || fail "uncommitted changes"
+  git merge-base --is-ancestor "$(cat "$OUT/commit")" HEAD || fail "the built commit isn't on main"
   TAG="v$VERSION"
+  BUILT=$(cat "$OUT/commit")
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "tag $TAG already exists"
   notes
-  git tag -a "$TAG" -m "Crib Maze $VERSION"
+  git tag -a "$TAG" "$BUILT" -m "Crib Maze $VERSION"
   git push origin main "$TAG"
   gh release create "$TAG" "$ZIP" --title "Crib Maze $VERSION" --notes-file "$NOTES" --prerelease
   echo "== Published $TAG"

@@ -13,7 +13,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
     @Test func repoConfigLoads() throws {
         let c = try loadConfig()
         #expect(c.rules.rulesVersion == MatchTurn.rulesVersion)
-        #expect(c.rules.match.maxSet == 5)
+        #expect(c.rules.match.maxSet == 4)
         #expect(c.jokers.tables["amber"]?.entries.map(\.1) == [90, 9, 1])
     }
     @Test func badConfigFails() throws {
@@ -184,10 +184,11 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
     @Test func starterIsFreeUnderTheCounter() throws {
         let c = try config(true)
         let (t, _) = MatchTurn.start(config: c, setup: TurnSetup(seed: 3))
-        let five = [Board.g(3, 3), Board.g(3, 2), Board.g(2, 3), Board.g(2, 2), Board.g(3, 1)]
-        #expect(t.traceProblem(five + [Board.starter]) != "size")
+        let four = [Board.g(3, 3), Board.g(3, 2), Board.g(2, 3), Board.g(2, 2)]
+        #expect(t.traceProblem(four + [Board.starter]) != "size")
+        #expect(t.traceProblem(four + [Board.g(3, 1)]) == "size")   // a fifth picked card is over the limit
         #expect(t.traceProblem([Board.g(3, 3), Board.starter]) == "size")   // one picked card isn't a set
-        #expect(t.picked(five + [Board.starter]) == five && t.pickLimit == 5)
+        #expect(t.picked(four + [Board.starter]) == four && t.pickLimit == 4)
     }
 
     @Test func scoreNamesTheStarterOnlyWhenItScores() throws {

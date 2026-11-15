@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "rulesVersion": "match-r16",
+  "rulesVersion": "match-r17",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
-    "maxSet": 5,
+    "maxSet": 4,
     "flushMin": 4,
     "timerSeconds": 180,
     "cardBudget": 0,

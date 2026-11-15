@@ -2,8 +2,8 @@
   "version": 1,
   "match": [
     { "id": "perfect", "search": "all" },
-    { "id": "strong",  "search": "traced", "depth": 5, "starts": 0.15 },
-    { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.5 },
+    { "id": "strong",  "search": "traced", "depth": 4, "starts": 1.0 },
+    { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.3 },
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
   ],
   "classic": [
