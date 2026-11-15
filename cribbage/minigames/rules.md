@@ -103,7 +103,7 @@ A turn at a glance:
 Drag across touching cards and let go, or tap them one by one and tap the last one again. Drag back to undo the last card.
 
 - Cards touch their 8 neighbours, diagonals included. Hand, crib and starter cards follow the same rule.
-- A set picks 2 to 4 cards, plus the starter, which joins for free. The card counter in the bar along the bottom shows how many you've picked. A reach joker raises the limit for a while; later, some combos and prizes may too.
+- Your hand size is how many cards a set can pick: 2 to 4, plus the starter, which joins for free. The hand size counter in the bar along the bottom shows how many you've picked. A reach joker raises your hand size for a while; later, some combos and prizes may too.
 - Every set MUST include at least one grid card. Your hand, crib and starter can't score on their own.
 - The same set of cards can't score twice in a turn.
 
@@ -200,7 +200,7 @@ Special jokers are jokers that carry an action. The ones you hold are your power
 |---|---|
 | Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places |
 | Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing |
-| Reach | Tap it and it works at once: sets can pick more cards for a while. Usually 1 more card for about 20 seconds; sometimes 2 more, or 10 to 45 seconds (to tune). Reaches stack. The card counter shows the extra cards in violet, with a little clock for the time left |
+| Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter |
 
 You start the game with 2 swappers, 1 bomb and 1 reach (to tune). You get more from prizes, jokers and the shop.
 

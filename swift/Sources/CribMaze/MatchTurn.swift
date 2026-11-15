@@ -35,6 +35,11 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var stepsBySuit: [String: Int] = [:]
     public var stepsWithEdge = 0, stepsWithoutEdge = 0
     public var extraSteps = 0, clearBonus = 0
+    /// Reach jokers (r19), for measuring them: the cards and seconds rolled, the sets scored while a
+    /// reach was in effect, and the sets that picked more cards than `maxSet` (only possible under one).
+    public var reachCards = 0, reachSeconds = 0
+    public var reachScores = 0, reachSteps = 0, reachBest: Int?
+    public var bigScores = 0, bigSteps = 0
 }
 
 public enum MatchEvent: Codable, Sendable, Equatable {
@@ -435,6 +440,8 @@ public struct MatchTurn: Sendable {
         var t = state.totals
         t.steps += v.points; t.stepsFromEdgePower += v.multiplied - v.comboPoints; t.leftOverTotal += cost
         t.scores += 1; if v.count.combos.count == 1 { t.singles += 1 } else { t.multis += 1 }
+        if !state.reaches.isEmpty { t.reachScores += 1; t.reachSteps += v.points; t.reachBest = max(t.reachBest ?? v.points, v.points) }
+        if picked(traced).count > r.maxSet { t.bigScores += 1; t.bigSteps += v.points }
         let hasEdge = ps.contains(where: Board.isEdge)
         if hasEdge { t.stepsWithEdge += v.points } else { t.stepsWithoutEdge += v.points }
         t.stepsBySuit[v.suit?.letter ?? "none", default: 0] += v.points
@@ -529,7 +536,7 @@ public struct MatchTurn: Sendable {
         let seconds = dice.pick(cfg.secondsWeights, stream: "special", purpose: "reach_seconds")
         let id = state.nextReachID; state.nextReachID += 1
         state.reaches.append(ActiveReach(id: id, cards: cards, seconds: seconds))
-        state.totals.reaches += 1
+        state.totals.reaches += 1; state.totals.reachCards += cards; state.totals.reachSeconds += seconds
         var ev: [MatchEvent] = [.reach(id: id, cards: cards, seconds: seconds, pickLimit: pickLimit, source: source.map(Board.name) ?? "tray")]
         if let s = source { ev.append(clearAndRefill([s])) }
         ev += resolveExtras()

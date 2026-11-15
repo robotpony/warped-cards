@@ -1,6 +1,6 @@
 // cribmaze-sim: plays match turns with bots and prints the numbers.
 //
-//   cribmaze-sim run --level medium --turns 1000 --seed 1 [--dealer] [--config <folder>]
+//   cribmaze-sim run --level medium --turns 1000 --seed 1 [--dealer] [--reach stuck|early] [--config <folder>]
 //
 // Turn i plays from seed + i, bot seat 0, starting tray from config, warned set
 // (bots count as already warned). Config defaults to ../cribbage/minigames/config.
@@ -16,12 +16,13 @@ struct Options {
     var turns = 1000
     var seed: UInt64 = 1
     var dealer = false
+    var reachEarly = false
     var config = "../cribbage/minigames/config"
 }
 
 func usage(_ why: String? = nil) -> Never {
     if let why { FileHandle.standardError.write(Data("cribmaze-sim: \(why)\n".utf8)) }
-    print("usage: cribmaze-sim run --level <perfect|strong|medium|weak> --turns <n> --seed <n> [--dealer] [--config <folder>]")
+    print("usage: cribmaze-sim run --level <perfect|strong|medium|weak> --turns <n> --seed <n> [--dealer] [--reach stuck|early] [--config <folder>]")
     exit(why == nil ? 0 : 2)
 }
 
@@ -40,6 +41,8 @@ func parse(_ args: [String]) -> Options {
         case "--turns": guard let n = Int(value()), n > 0 else { usage("--turns needs a positive number") }; o.turns = n
         case "--seed": guard let n = UInt64(value()) else { usage("--seed needs a number") }; o.seed = n
         case "--dealer": o.dealer = true
+        case "--reach":
+            switch value() { case "early": o.reachEarly = true; case "stuck": o.reachEarly = false; default: usage("--reach is stuck or early") }
         case "--config": o.config = value()
         case "--help", "-h": usage()
         default: usage("unknown option \(args[i])")
@@ -54,7 +57,8 @@ struct Tally {
     var cleared = 0
     var prizes: [String: Int] = [:]
     var noPrize = 0
-    var actions = 0, swaps = 0, bombs = 0, reaches = 0, reachScores = 0
+    var actions = 0, swaps = 0, bombs = 0, reaches = 0
+    var reachCards = 0, reachSeconds = 0, reachScores = 0, reachSteps = 0, bigScores = 0, bigSteps = 0, reachBest: [Int] = []
     var best: [Int] = []
     var fromPower = 0, scores = 0, starterIn = 0, flush4 = 0, flush5 = 0
 }
@@ -62,7 +66,8 @@ struct Tally {
 let o = parse(Array(CommandLine.arguments.dropFirst()))
 let config: Config
 do { config = try Config.load(from: URL(fileURLWithPath: o.config)) } catch { usage("config: \(error)") }
-guard let bot = MatchBot(config: config, id: o.level) else { usage("no bot level \(o.level) in bots.json") }
+guard var bot = MatchBot(config: config, id: o.level) else { usage("no bot level \(o.level) in bots.json") }
+bot.reachEarly = o.reachEarly
 
 // A person's pace, for timing reach jokers (timing.json › profiles.human.trace).
 let traceMs: Double = {
@@ -87,7 +92,6 @@ for i in 0..<o.turns {
             events += ev
             acted += 1
             for e in ev { if case .reach(let id, _, let seconds, _, _) = e { reachEnds[id] = acted + max(1, Int((Double(seconds) * 1000 / traceMs).rounded(.up))) } }
-            if !turn.state.reaches.isEmpty, ev.contains(where: { if case .score = $0 { return true }; return false }) { t.reachScores += 1 }
             for (id, end) in reachEnds where end <= acted && !turn.state.over {
                 reachEnds[id] = nil
                 events += try turn.apply(.reachOver(id: id))
@@ -105,6 +109,9 @@ for i in 0..<o.turns {
             t.steps.append(totals.steps)
             if reason == "board_cleared" { t.cleared += 1 }
             t.swaps += totals.swaps; t.bombs += totals.bombs; t.reaches += totals.reaches
+            t.reachCards += totals.reachCards; t.reachSeconds += totals.reachSeconds; t.reachScores += totals.reachScores
+            t.reachSteps += totals.reachSteps; t.bigScores += totals.bigScores; t.bigSteps += totals.bigSteps
+            if let b = totals.reachBest { t.reachBest.append(b) }
             t.best.append(totals.best ?? 0); t.fromPower += totals.stepsFromEdgePower
         case .score(let positions, _, let combos, _, _, _, _, _, _, _, _, _):
             t.scores += 1; if positions.contains("s") { t.starterIn += 1 }
@@ -127,10 +134,14 @@ print("steps per turn   mean \(String(format: "%.1f", mean)) · min \(sorted.fir
 print("boards cleared   \(t.cleared) (\(String(format: "%.1f", 100 * Double(t.cleared) / n))%)")
 let tiers = ["common", "rare", "epic"].map { "\($0) \(t.prizes[$0, default: 0])" }.joined(separator: " · ")
 print("prizes           \(tiers) · none \(o.turns - t.prizes.values.reduce(0, +))")
-print("per turn         actions \(String(format: "%.1f", Double(t.actions) / n)) · swaps \(String(format: "%.2f", Double(t.swaps) / n)) · bombs \(String(format: "%.2f", Double(t.bombs) / n)) · reaches \(String(format: "%.2f", Double(t.reaches) / n)) · scores under a reach \(t.reachScores)")
+print("per turn         actions \(String(format: "%.1f", Double(t.actions) / n)) · swaps \(String(format: "%.2f", Double(t.swaps) / n)) · bombs \(String(format: "%.2f", Double(t.bombs) / n)) · reaches \(String(format: "%.2f", Double(t.reaches) / n))")
 let bs = t.best.sorted()
 let bp = { (q: Double) in bs[min(bs.count - 1, Int(q * Double(bs.count)))] }
 print("best set         mean \(String(format: "%.1f", Double(bs.reduce(0, +)) / n)) · p10 \(bp(0.1)) · p25 \(bp(0.25)) · median \(bp(0.5)) · p75 \(bp(0.75)) · p90 \(bp(0.9))")
 print("edge power       \(String(format: "%.0f", 100 * Double(t.fromPower) / Double(max(1, t.steps.reduce(0, +)))))% of steps · starter in \(t.starterIn) of \(t.scores) scores (\(String(format: "%.0f", 100 * Double(t.starterIn) / Double(max(1, t.scores))))%)")
 print("flushes          4-card \(t.flush4) · 5-card \(t.flush5) · in \(String(format: "%.1f", 100 * Double(t.flush4 + t.flush5) / Double(max(1, t.scores))))% of scores")
+let f1 = { (x: Double) in String(format: "%.1f", x) }
+if t.reaches > 0 {
+    print("reach (\(o.reachEarly ? "early" : "when stuck"))  used \(t.reaches) · mean +\(f1(Double(t.reachCards) / Double(t.reaches))) cards for \(f1(Double(t.reachSeconds) / Double(t.reaches))) s · \(t.reachScores) scores under one (\(f1(Double(t.reachSteps) / Double(max(1, t.reachScores)))) steps each) · \(t.bigScores) over \(r.maxSet) cards (\(f1(Double(t.bigSteps) / Double(max(1, t.bigScores)))) each) · \(f1(100 * Double(t.reachSteps) / Double(max(1, t.steps.reduce(0, +)))))% of steps")
+}
 print("time             \(String(format: "%.1f", secs)) s")

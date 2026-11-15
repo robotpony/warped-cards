@@ -393,9 +393,9 @@ final class GameSession {
         case .bomb(_, _, let cleared, _): line("Bomb: cleared \(faces(cleared))")
         case .stockOut(let reason, _): line((reason == "stock_empty" ? "Stock empty" : "Card budget used") + ": play out the board")
         case .reach(_, let cards, let seconds, let limit, _):
-            line("Reach: +\(cards) card\(cards == 1 ? "" : "s") for \(seconds) s (sets pick up to \(limit))")
-            show("Reach: +\(cards) card\(cards == 1 ? "" : "s") for \(seconds) s")
-        case .reachOver(_, let limit): line("Reach over: sets pick up to \(limit) again")
+            line("Reach: hand size +\(cards) for \(seconds) s (now \(limit))")
+            show("Reach: hand size +\(cards) for \(seconds) s")
+        case .reachOver(_, let limit): line("Reach over: hand size back to \(limit)")
         case .noSetsLeft(_, let tray):
             show(tray.values.contains { $0 > 0 } ? "No sets score: use a power joker" : "No sets score")
         case .boardCleared(_, let amount): line("Board cleared! +\(amount) steps", prize: true)

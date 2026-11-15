@@ -88,6 +88,23 @@ These back up the curves with specific checks.
 | How much does finding sets matter? | Best sets available vs found, by player and bot level; steps left on the board |
 | Is the maze working? | Branch choices, gate bounces and steps lost, steps spent on doors, prize cells reached |
 | Are prizes balanced? | Prizes per game by tier and source; win rate by prizes held; how often deck prizes help someone else |
+| Is the reach joker too strong? | See Reach joker below |
+
+### Reach joker
+
+The reach joker (match rules r19) raises the hand size, the cards a set can pick, for a while. Its odds are in `rules.json` › `specials.reach`; each turn record holds what it rolled and what it led to:
+
+- Events: `reach` (id, cards, seconds, new hand size) and `reach_over` (id, hand size after). A score between them was made under the reach, and its positions show how many cards it picked.
+- Turn totals in `turn_end`: `reaches`, `reachCards` and `reachSeconds` (sums of what was rolled), `reachScores`, `reachSteps` and `reachBest` (sets scored while a reach was in effect), and `bigScores` and `bigSteps` (sets that picked more than `maxSet`).
+
+Graph, by rules version and by player or bot level, against the odds in force:
+
+1. Steps per turn and prize tiers, with and without reaches used.
+2. Steps from sets scored under a reach, as a share of the turn's steps.
+3. Steps per set by cards picked (2 to 6), to show what a bigger hand is worth.
+4. When in the turn a reach is played (seconds in, stock left) and how much of its time is used.
+
+`cribmaze-sim run --reach early` has bots play a reach as soon as they hold one; `--reach stuck` (the default) only when no set scores. The two bound what a person might do. The first runs, on 2026-11-15, are in `concept.md` › Decisions.
 
 ## Targets
 

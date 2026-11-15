@@ -14,6 +14,9 @@ public struct MatchBot: Sendable {
     public let level: BotsConfig.MatchLevel
     public let seat: Int
     public var stream: String { "bot.\(seat)" }
+    /// When the bot plays a reach joker: only when stuck (the default), or as soon as it has one.
+    /// The simulator's `--reach early` measures the second, closer to how a keen player might use it.
+    public var reachEarly = false
 
     public init(level: BotsConfig.MatchLevel, seat: Int = 0) { self.level = level; self.seat = seat }
 
@@ -26,6 +29,8 @@ public struct MatchBot: Sendable {
     /// The bot's next action. Only legal actions: a trace, a reach, a swap, a bomb or end turn.
     public func choose(_ turn: MatchTurn, dice: inout Dice) -> MatchAction {
         let s = turn.state
+        // 0. With `reachEarly`, a reach joker first.
+        if reachEarly, s.reaches.isEmpty, let source = specialSource("reach", s) { return .reach(source: source.pos) }
         // 1. The best set, if it scores.
         if let b = bestSet(turn, dice: &dice) { return .trace(positions: b.positions) }
         // 2. A reach joker, which may open a bigger set, before changing the board.

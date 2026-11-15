@@ -99,8 +99,7 @@ struct PhoneView: View {
         HStack(alignment: .center) {
             // Tapping the counter explains it; the rest of the bar opens the settings.
             PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true,
-                        extra: session.pickLimit - (session.config?.rules.match.maxSet ?? session.pickLimit),
-                        reach: session.reachFraction)
+                        extra: session.pickLimit - (session.config?.rules.match.maxSet ?? session.pickLimit))
                 .contentShape(Rectangle())
                 .onTapGesture { if !session.blocked { session.info = .counter } }
             Spacer()
@@ -163,7 +162,8 @@ struct PhoneView: View {
                     if i < known.count {
                         let kind = known[i]
                         TrayCard(kind: kind, count: session.state?.tray[kind] ?? 0, w: 72,
-                                 armed: kind != "reach" && session.mode == (kind == "swapper" ? .swap : .bomb) && session.armedSource == nil) {
+                                 armed: kind != "reach" && session.mode == (kind == "swapper" ? .swap : .bomb) && session.armedSource == nil,
+                                 countdown: kind == "reach" ? session.reachFraction : nil) {
                             if kind == "reach" {
                                 if !session.over, (session.state?.tray[kind] ?? 0) > 0, session.mode == .trace { session.arm(kind) }
                             } else { tapTray(kind, kind == "swapper" ? .swap : .bomb) }
@@ -200,6 +200,8 @@ struct TrayCard: View {
     let kind: String, count: Int
     var w: CGFloat = 58
     let armed: Bool
+    /// A reach in effect: the share of its time left, drawn over the card as a violet wedge that empties.
+    var countdown: Double? = nil
     let action: () -> Void
     var body: some View {
         let card = Card(id: 0, kind: .special(kind), rank: 0, suit: nil)
@@ -210,6 +212,21 @@ struct TrayCard: View {
             }
             CardFace(card: card, width: w)
                 .overlay { if armed { RoundedRectangle(cornerRadius: 5.5).stroke(.white, lineWidth: 3).padding(-1.5) } }
+                .overlay {
+                    if let c = countdown {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 5).fill(Theme.felt.opacity(0.55))
+                            ZStack {
+                                Circle().fill(Theme.felt.opacity(0.6))
+                                Wedge(fraction: c).fill(Theme.violet).animation(.linear(duration: 1), value: c)
+                                Circle().strokeBorder(Theme.violet, lineWidth: 2.5)
+                            }
+                            .frame(width: w * 0.62, height: w * 0.62)
+                            .shadow(color: Theme.violet.opacity(0.7), radius: 6)
+                        }
+                        .allowsHitTesting(false)
+                    }
+                }
                 .shadow(color: armed ? .black.opacity(0.4) : .clear, radius: 6, y: 6)
         }
         .overlay(alignment: .bottomTrailing) {
@@ -217,13 +234,13 @@ struct TrayCard: View {
                 .background(Capsule().fill(Theme.violet).shadow(color: Theme.violet.opacity(0.6), radius: 3)).foregroundStyle(Theme.felt).offset(x: 6, y: 6)
         }
         .offset(y: armed ? -10 : 0)
-        .opacity(count < 1 ? 0.3 : 1)
+        .opacity(count < 1 && countdown == nil ? 0.3 : 1)
         .animation(.easeOut(duration: Motion.t(0.12)), value: armed)
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
         .help(["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
                "bomb": "Bomb: clears a card and its neighbours, without scoring",
-               "reach": "Reach: sets can pick more cards for a while"][kind] ?? kind)
+               "reach": "Reach: hand size +1 (sometimes +2) for about 20 seconds"][kind] ?? kind)
     }
 }
 
@@ -444,9 +461,8 @@ struct SidePanel: View {
 struct PickCounter: View {
     let count: Int, limit: Int
     var leading = false
-    /// Slots a reach joker adds, drawn in violet, and the share of its time left (nil: none in effect).
+    /// Slots a reach joker adds, drawn in violet.
     var extra = 0
-    var reach: Double?
     var body: some View {
         VStack(alignment: leading ? .leading : .trailing, spacing: 4) {
             HStack(spacing: 4) {
@@ -457,22 +473,13 @@ struct PickCounter: View {
                         .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(added ? Theme.violet : Theme.feltText.opacity(i < count ? 0 : 0.3), lineWidth: added ? 1.5 : 1))
                         .frame(width: 9, height: 13)
                 }
-                if let reach {
-                    // The reach's time left: a violet wedge that empties as it runs out.
-                    ZStack {
-                        Circle().fill(Theme.violet.opacity(0.18))
-                        Wedge(fraction: reach).fill(Theme.violet).animation(.linear(duration: 1), value: reach)
-                        Circle().strokeBorder(Theme.violet, lineWidth: 1.5)
-                    }
-                    .frame(width: 13, height: 13).padding(.leading, 2)
-                }
             }
-            Text("CARDS \(count) / \(limit)").font(Theme.font(11, .bold)).tracking(0.6).monospacedDigit()
+            Text("HAND SIZE \(count) / \(limit)").font(Theme.font(11, .bold)).tracking(0.6).monospacedDigit()
                 .foregroundStyle(count == limit ? Theme.gold : Theme.feltText.opacity(0.75))
         }
         .animation(.easeOut(duration: Motion.t(0.12)), value: count)
         .contentShape(Rectangle())
-        .help("How many cards a set can pick. The starter is free.")
+        .help("Hand size: how many cards a set can pick. The starter is free.")
     }
 }
 
@@ -526,12 +533,12 @@ struct InfoCard: View {
             return ("Power jokers", ["Special jokers you've won, kept all game.",
                                   "Swapper: tap it, then trace a straight line of 2 to 4 grid cards to reverse it.",
                                   "Bomb: tap it, then tap a grid card. It clears that card and its neighbours, without scoring.",
-                                  "Reach: tap it and sets can pick more cards for a while, usually 1 more for about 20 seconds. The card counter shows the extra cards and the time left.",
+                                  "Reach: tap it to raise your hand size, the cards a set can pick, usually by 1 for about 20 seconds. The countdown shows on the card, and the extra cards show in violet on the card counter.",
                                   "Tap an armed joker again to put it back."])
         case .counter:
-            return ("Cards per set", ["A set picks 2 to \(session.pickLimit) cards. The pips fill as you pick, and turn gold at the limit.",
+            return ("Hand size", ["Your hand size is how many cards a set can pick: 2 to \(session.pickLimit) now. The pips fill as you pick, and turn gold at the limit.",
                                       "The starter is free: it joins every set without using a pip.",
-                                      "A reach joker adds violet pips for a while; the little violet clock beside them shows its time left. Later, some combos and prizes may raise the limit too."])
+                                      "A reach joker raises your hand size for a while: its extra pips are violet, and its countdown shows on the reach card. Later, some combos and prizes may raise it too."])
         }
     }
 }
