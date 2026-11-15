@@ -11,7 +11,8 @@ SCHEME=CribMaze
 APP="Crib Maze"
 TEAM=7J49PFSP65
 PROFILE=${NOTARY_PROFILE:-warped-cards-notary}
-OUT=swift/.build-release
+# Outside swift/: an archive whose build folder sits inside the package folder fails to resolve modules.
+OUT=.build-release
 VERSION=$(sed -n 's/^ *MARKETING_VERSION: "\(.*\)"/\1/p' swift/App/project.yml)
 ZIP="$OUT/Crib-Maze-$VERSION-mac.zip"
 NOTES="$OUT/notes-$VERSION.md"
