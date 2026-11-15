@@ -45,8 +45,9 @@ struct PhoneView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            stepsRow
-            track
+            // Tapping the header or the footer opens the settings; there's no gear.
+            VStack(alignment: .leading, spacing: 10) { stepsRow; track }
+                .contentShape(Rectangle()).onTapGesture { openSettings() }
             BoardView(session: session).padding(.top, 9).frame(maxWidth: .infinity)
             // What the trace would score, or what an armed joker or a dead board needs; empty otherwise.
             // The turn's log lives behind the gear.
@@ -57,16 +58,24 @@ struct PhoneView: View {
                 .frame(maxWidth: .infinity, minHeight: 20, maxHeight: 20, alignment: .leading)
                 .padding(.vertical, -4)   // one tight line, so the power jokers sit close under the board
             bottom   // power jokers, close under the board
-            // The card counter, timer and gear, on a lighter bar along the bottom edge.
+                .hintBlink(session.hinting(.powerJokers))
+            // The card counter and timer, on a lighter bar along the bottom edge.
             topLine
                 .padding(.horizontal, 30).padding(.top, 12).padding(.bottom, 20)
                 .frame(maxWidth: .infinity)
                 .background(Theme.panel)
                 .overlay(alignment: .top) { Rectangle().fill(Theme.rim).frame(height: 1) }
+                .contentShape(Rectangle()).onTapGesture { openSettings() }
+                .help("Settings")
+                .popover(isPresented: $showSettings, arrowEdge: .top) {
+                    SidePanel(session: session).frame(width: 340, height: 620)
+                }
                 .padding(.horizontal, -16).padding(.top, 4)
         }
         .padding(.horizontal, 16).padding(.top, 14)
         .frame(width: Self.width)
+        .coordinateSpace(.named("phone"))
+        .overlay(alignment: .topLeading) { FlyView(pb: session.playback) }
         .foregroundStyle(Theme.feltText)
         .background(Theme.felt)
         .overlay {   // tap anywhere to skip the breakdown
@@ -83,20 +92,14 @@ struct PhoneView: View {
         .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Color(hex: 0x111111), lineWidth: 10).padding(-5))
     }
 
+    /// Settings, the last score, this turn's log and (in the beta) diagnostics.
+    private func openSettings() { if !session.playback.active { showSettings = true } }
+
     private var topLine: some View {
         HStack(alignment: .center) {
             PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true)
-                .onTapGesture { if !session.blocked { session.info = .counter } }
             Spacer()
             TurnClock(session: session)
-            // Settings, the last score, this turn's feed and (in the beta) diagnostics, out of the way.
-            Image(systemName: "gearshape.fill").font(.system(size: 15)).padding(.leading, 10)
-                .contentShape(Rectangle())
-                .onTapGesture { showSettings.toggle() }
-                .help("Settings")
-                .popover(isPresented: $showSettings, arrowEdge: .top) {
-                    SidePanel(session: session).frame(width: 340, height: 620)
-                }
         }
         .font(Theme.font(14, .medium)).opacity(0.9)
     }
@@ -108,7 +111,10 @@ struct PhoneView: View {
                     .foregroundStyle(session.playback.bump ? Theme.gold : Theme.feltText)
                     .scaleEffect(session.playback.bump ? 1.25 : 1, anchor: .leading)
                     .animation(.snappy, value: session.state?.steps)
-                Text("steps this turn").font(Theme.font(13, .medium)).opacity(0.75)
+                    .onGeometryChange(for: CGPoint.self, of: { g in
+                        let f = g.frame(in: .named("phone")); return CGPoint(x: f.minX + 24, y: f.midY)
+                    }) { session.playback.stepsAt = $0 }
+                Text("steps scored").font(Theme.font(13, .medium)).opacity(0.75)
             }
             Spacer()
             // The stock, face down; an empty outline once it runs out.
@@ -348,6 +354,7 @@ struct SidePanel: View {
             VStack(alignment: .leading, spacing: 6) {
                 Toggle("Dealer: crib down the side", isOn: $session.settings.dealer)
                 Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
+                Toggle("Hints when you're stuck", isOn: $session.settings.hints)
                 Picker("Hand", selection: $session.settings.hand) { Text("Random").tag("random"); Text("Strong (4♥ 5♣ 6♦ J♠, 5♠)").tag("strong") }
                 HStack {
                     // The field shows this turn's seed; type another to replay it, or leave it blank for a random deal.
@@ -512,6 +519,7 @@ struct InfoCard: View {
 struct TurnClock: View {
     let session: GameSession
     @State private var pulse = false
+    @State private var breathe = false
 
     enum Look { case running, warning, stuck, done, off }
 
@@ -542,9 +550,15 @@ struct TurnClock: View {
             Circle().strokeBorder(colour, lineWidth: 2)
         }
         .frame(width: 30, height: 30)
+        // While the clock runs it breathes, slowly, so it reads as alive; a stuck board pulses faster.
+        .scaleEffect(look == .running || look == .warning ? (breathe ? 1.07 : 0.96) : 1)
         .opacity(look == .stuck && pulse ? 0.35 : 1)
         .shadow(color: look == .off ? .clear : colour.opacity(0.5), radius: 4)
         .animation(.easeOut(duration: 0.3), value: look)
+        .onChange(of: look == .running || look == .warning, initial: true) { _, running in
+            breathe = false
+            if running { withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) { breathe = true } }   // about a breath: 2 s in, 2 s out
+        }
         .onChange(of: look == .stuck, initial: true) { _, stuck in
             pulse = false
             if stuck { withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { pulse = true } }

@@ -128,6 +128,13 @@ With `starterJoins`, and the starter holding a playing card, every set is counte
 - His nobs needs only the jack of the starter's suit, from the hand or crib, in the set.
 - A `leftover_penalty` costs only the picked cards.
 
+#### Hand flushes and an optional starter (r18)
+
+With `starterJoins` and `handFlush`, two more rules apply:
+
+1. Flushes count like a classic hand (`handFlush4` in the counting options): when the counted list is 4 picked cards and the starter, and the 4 picked cards are one suit, they score a 4-card flush whatever the starter's suit. The flush's card indexes leave the starter out. A starter of the same suit makes a 5-card flush. `flushMin` stays 4, so 3 picked cards never flush on their own.
+2. The starter is optional. The engine MUST also count the picked positions alone, and use that count when it has combos and more points. A tie keeps the starter. With rule 1, the count without the starter can't score more today; the rule guards future combos that, like a flush, look at the whole set.
+
 #### Pick limit
 
 The pick limit is how many cards a set may pick. It's `maxSet` for now. Later, some combos, jokers and prizes will raise it for a while; the engine MUST keep it in turn state so the app can show it.
@@ -430,18 +437,18 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r16 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r18 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r17",
+  "rulesVersion": "match-r18",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
-    "leftOverCost": 2, "starterJoins": true,
+    "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 150 },
     "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 60], ["bomb", 40]] }
@@ -454,7 +461,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
 }
 ```
 
-`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
+`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 

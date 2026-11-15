@@ -6,7 +6,7 @@ Free card game demos, with the specs, simulations and tests behind them. Each ga
 
 | Game | What it is | Status |
 |---|---|---|
-| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.8.4 (match turns only), match rules r17, rules draft 5 |
+| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.9.0 (match turns only), match rules r18, rules draft 5 |
 | Classic cribbage | The classic game, sharing Crib Maze's engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -33,7 +33,7 @@ scripts/debug.sh -- --demo --slow
 
 In Claude Code, `/debug` and `/debug-release` run the same script.
 
-How to play a match turn: drag across 2 to 4 touching cards and let go. Every card you pick should be part of a combo (fifteens, pairs, runs, flushes, his nobs). The starter counts with every set for free. Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the card counter, to read what each one does. The gear in the top line opens the settings. The full rules are in [rules.md](cribbage/minigames/rules.md).
+How to play a match turn: drag across 2 to 4 touching cards and let go. Every card you pick should be part of a combo (fifteens, pairs, runs, flushes, his nobs). The starter counts with every set for free. Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the card counter, to read what each one does. Tap the step count at the top, or the bar along the bottom, to open the settings. The full rules are in [rules.md](cribbage/minigames/rules.md).
 
 The beta saves each finished turn as a JSON record in `~/Library/Application Support/Crib Maze Beta/records/`. It sends nothing anywhere, and release builds don't record at all.
 
@@ -53,7 +53,7 @@ Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.8.4: **48 tests, all passing** (28 Swift, 20 JS).
+State on 2026-11-15, version 0.9.0: **51 tests, all passing** (31 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -63,6 +63,7 @@ State on 2026-11-15, version 0.8.4: **48 tests, all passing** (28 Swift, 20 JS).
 | CribMaze › Board | 3 | Positions, touching, lines, and every connected set in order |
 | CribMaze › Match turn | 7 | Same seed, same turn; setup; rejected traces; scoring; the left-over warning and cost; scripted replay; special jokers |
 | CribMaze › Starter joins (r16) | 4 | The starter counts with every set, is free under the card counter, and is named in a score only when it scores; off by default in older configs |
+| CribMaze › Hand flushes (r18) | 3 | 4 picked cards of one suit flush whatever the starter; no 3-card flushes; the starter never costs a set points |
 | CribMaze › Bots | 4 | Every level plays whole turns with only legal moves; the same seed plays the same turn; each seat has its own dice stream; perfect finds the best set |
 | CribMaze › Engine rules | 1 | The engine never calls the clock, system randomness or UI code |
 | JS › Fixtures | 5 | `dice.json`, `counting.json`, `classic-hands.json` and `pegging.json` agree with the reference code; the config files pass the load checks |

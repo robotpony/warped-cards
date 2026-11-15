@@ -54,7 +54,7 @@ struct Tally {
     var noPrize = 0
     var actions = 0, swaps = 0, bombs = 0
     var best: [Int] = []
-    var fromPower = 0, scores = 0, starterIn = 0
+    var fromPower = 0, scores = 0, starterIn = 0, flush4 = 0, flush5 = 0
 }
 
 let o = parse(Array(CommandLine.arguments.dropFirst()))
@@ -84,8 +84,9 @@ for i in 0..<o.turns {
             if reason == "board_cleared" { t.cleared += 1 }
             t.swaps += totals.swaps; t.bombs += totals.bombs
             t.best.append(totals.best ?? 0); t.fromPower += totals.stepsFromEdgePower
-        case .score(let positions, _, _, _, _, _, _, _, _, _, _, _):
+        case .score(let positions, _, let combos, _, _, _, _, _, _, _, _, _):
             t.scores += 1; if positions.contains("s") { t.starterIn += 1 }
+            for c in combos where c.kind == .flush { if (c.size ?? 0) >= 5 { t.flush5 += 1 } else { t.flush4 += 1 } }
         default: break
         }
     }
@@ -109,4 +110,5 @@ let bs = t.best.sorted()
 let bp = { (q: Double) in bs[min(bs.count - 1, Int(q * Double(bs.count)))] }
 print("best set         mean \(String(format: "%.1f", Double(bs.reduce(0, +)) / n)) · p10 \(bp(0.1)) · p25 \(bp(0.25)) · median \(bp(0.5)) · p75 \(bp(0.75)) · p90 \(bp(0.9))")
 print("edge power       \(String(format: "%.0f", 100 * Double(t.fromPower) / Double(max(1, t.steps.reduce(0, +)))))% of steps · starter in \(t.starterIn) of \(t.scores) scores (\(String(format: "%.0f", 100 * Double(t.starterIn) / Double(max(1, t.scores))))%)")
+print("flushes          4-card \(t.flush4) · 5-card \(t.flush5) · in \(String(format: "%.1f", 100 * Double(t.flush4 + t.flush5) / Double(max(1, t.scores))))% of scores")
 print("time             \(String(format: "%.1f", secs)) s")

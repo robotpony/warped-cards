@@ -55,6 +55,10 @@ final class Playback {
     var rowOn = false
     /// Power chips on the row's edge cards (×1.5), updated as they power up.
     var chipText: [Pos: String] = [:]
+    /// The total's flight from the tally up to the step counter, in the phone's coordinates.
+    var totalAt: CGPoint?
+    var stepsAt: CGPoint = .zero
+    var fly: FlyText?
     var active = false
     var skipping = false
     var bump = false
@@ -111,7 +115,7 @@ final class Playback {
 
     func reset() {
         set = []; lit = []; litPower = []; leftOver = []; chipLevel = [:]; banner = nil; tally = []; tallyOn = false
-        row = []; rowCards = [:]; rowOn = false; chipText = [:]
+        row = []; rowCards = [:]; rowOn = false; chipText = [:]; fly = nil
         floats = []; active = false; skipping = false; holding = false
         release()
     }
@@ -236,9 +240,14 @@ extension GameSession {
         await pb.hold()
         // The cards fly home; then the board moves on (grid cards clear, edge cards stay).
         if !pb.instant {
+            // The total floats up from the scoresheet to the step counter as the cards fly home.
+            if let from = pb.totalAt {
+                pb.fly = FlyText(text: Self.signed(points), from: from)
+                withAnimation(.easeIn(duration: Motion.t(0.5))) { pb.fly?.arrived = true }
+            }
             withAnimation(.easeOut(duration: Motion.t(0.2))) { pb.tallyOn = false; pb.banner = nil }
             pb.rowOn = false
-            try? await Task.sleep(for: .milliseconds(Motion.ms(420)))
+            try? await Task.sleep(for: .milliseconds(Motion.ms(500)))
         }
     }
 }
@@ -328,6 +337,9 @@ struct BreakdownOverlay: View {
                     .frame(minHeight: 24)
                     .padding(.top, l.style == .total ? 4 : 0)
                     .overlay(alignment: .top) { if l.style == .total { Rectangle().fill(Theme.feltText.opacity(0.3)).frame(height: 1) } }
+                    .onGeometryChange(for: CGPoint.self, of: { g in
+                        let f = g.frame(in: .named("phone")); return CGPoint(x: f.maxX - 30, y: f.midY)
+                    }) { p in if l.style == .total { pb.totalAt = p } }
                     .transition(.opacity.combined(with: .offset(x: -10)))
                 }
             }
@@ -425,5 +437,25 @@ struct RowCard: View {
             .offset(x: c.x - Theme.cardW / 2, y: c.y - Theme.cardH / 2)
             // Staggered flights; the starter, last in the row, comes up from its corner last.
             .animation(.spring(duration: Motion.t(0.5), bounce: 0.18).delay(Motion.t(Double(index) * 0.05)), value: on)
+    }
+}
+
+struct FlyText: Equatable {
+    let text: String
+    let from: CGPoint
+    var arrived = false
+}
+
+/// The score's total on its way to the step counter.
+struct FlyView: View {
+    let pb: Playback
+    var body: some View {
+        if let f = pb.fly {
+            Text(f.text).font(Theme.font(f.arrived ? 26 : 34, .bold)).foregroundStyle(Theme.gold)
+                .shadow(color: Theme.gold.opacity(0.7), radius: 8)
+                .fixedSize()
+                .position(f.arrived ? pb.stepsAt : f.from)
+                .allowsHitTesting(false)
+        }
     }
 }

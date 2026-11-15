@@ -216,3 +216,39 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(t.value(of: set)?.counted == set)
     }
 }
+
+/// r18: flushes count like a classic hand, and a joining starter never costs a set points.
+@Suite struct HandFlushTests {
+    func turn(_ hand: [String], _ starter: String, handFlush: Bool = true) throws -> MatchTurn {
+        var c = try loadConfig(); c.rules.match.starterJoins = true; c.rules.match.handFlush = handFlush
+        return MatchTurn.start(config: c, setup: TurnSetup(seed: 1, fixedHand: hand, fixedStarter: starter)).0
+    }
+    func flush(_ v: SetValue?) -> Int? { v?.count.combos.first { $0.kind == .flush }?.size }
+
+    // The hand row's 4 cards are counted directly (value(of:) doesn't need a legal trace).
+    @Test func fourPickedOfOneSuitAreAFlushWhateverTheStarter() throws {
+        #expect(flush(try turn(["2H", "4H", "8H", "QH"], "KS").value(of: Array(Board.hand))) == 4)
+        #expect(flush(try turn(["2H", "4H", "8H", "QH"], "KH").value(of: Array(Board.hand))) == 5)
+        #expect(flush(try turn(["2H", "4H", "8H", "QH"], "KS", handFlush: false).value(of: Array(Board.hand))) == nil)   // r17
+    }
+
+    @Test func noThreeCardFlushes() throws {
+        let three = Array(Board.hand.prefix(3))
+        #expect(flush(try turn(["2H", "4H", "8H", "QC"], "KS").value(of: three)) == nil)
+        #expect(flush(try turn(["2H", "4H", "8H", "QC"], "KH").value(of: three)) == 4)   // with a matching starter
+    }
+
+    @Test func theStarterNeverCostsPoints() throws {
+        var c = try loadConfig(); c.rules.match.starterJoins = true; c.rules.match.handFlush = true
+        for seed in UInt64(1)...6 {
+            let t = MatchTurn.start(config: c, setup: TurnSetup(seed: seed)).0
+            for set in MatchTurn.sets(maxSize: 4) where !set.contains(Board.starter) && t.traceProblem(set) == nil {
+                guard let v = t.value(of: set) else { continue }
+                var off = c; off.rules.match.starterJoins = false
+                let alone = MatchTurn.start(config: off, setup: TurnSetup(seed: seed)).0.value(of: set)
+                #expect(v.points >= (alone?.points ?? .min))
+            }
+        }
+    }
+}
+

@@ -26,6 +26,7 @@ struct TurnSettings: Equatable {
     var hand = "random"   // or "strong"
     var budget = 0        // 0 is the whole stock
     var breakdown = true  // play each score's breakdown; off is a quick flash
+    var hints = true      // nudge the player when they seem stuck (Hints.swift)
 }
 
 @MainActor @Observable

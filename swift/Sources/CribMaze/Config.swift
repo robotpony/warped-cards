@@ -33,6 +33,10 @@ public struct RulesConfig: Codable, Sendable, Equatable {
         /// The starter counts with every set, like the starter in a cribbage hand (match rules r16).
         /// Missing in older configs, which means no.
         public var starterJoins: Bool?
+        /// Match rules r18, with `starterJoins`: flushes count like a classic hand (4 picked cards of
+        /// one suit score a 4-card flush whatever the starter's suit), and the starter is optional (a
+        /// set is counted with and without it, and the better score wins). Missing means no.
+        public var handFlush: Bool?
         public var clearBonus: ClearBonus
         public var edgePower: EdgePower
         public var prize: Prize

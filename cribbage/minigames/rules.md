@@ -113,6 +113,7 @@ As in a cribbage hand, the starter counts with every set you score. You don't ne
 
 - If the starter is part of a combo, it's in the set: it lights up, its power multiplies the set, it powers up, and its suit counts.
 - If it isn't, it's ignored. It's never left over.
+- The starter never costs a set points. A flush works as in a cribbage hand: 4 picked cards of one suit score, whatever the starter's suit.
 - His nobs needs only the jack of the starter's suit, from your hand or the crib, in the set.
 
 ```
@@ -140,7 +141,7 @@ A set is counted like a cribbage hand. Every combo inside it scores.
 | Double pair royal (4 of a kind) | 12 |
 | 5 or more of a kind (cards a joker made) | 2 for every pair in it: 5 of a kind is 20 |
 | Run of 3 or more | 1 per card; in a double run, each run counts |
-| Flush: 4 or 5 cards of one suit | 1 per card |
+| Flush: the 4 cards you picked all one suit score 4, or 5 when the starter matches too. 3 picked cards and a matching starter score 4. There are no 3-card flushes | 1 per card |
 | His nobs: the jack of the starter's suit, from your hand or the crib | 1 |
 
 | Set | Combos | Steps |

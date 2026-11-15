@@ -2,6 +2,23 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.9.0 — 2026-11-15
+
+### Added
+
+- Hints. When no sets are left and you hold power jokers, the power jokers panel blinks. Turn hints off under the gear's Game tab.
+- When a score's breakdown ends, its total floats up from the scoresheet to the step count.
+
+### Fixed
+
+- Four cards of one suit score a flush again, whatever the starter's suit; a matching starter makes it 5. The starter now never costs a set points (match rules r18).
+
+### Changed
+
+- There's no gear: tap or click the top (the step count and track) or the bottom bar to open the settings.
+- The clock breathes slowly while it runs, so you can tell the turn is live.
+- The step count reads "steps scored".
+
 ## 0.8.4 — 2026-11-15
 
 ### Changed

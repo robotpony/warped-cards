@@ -124,7 +124,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r17"
+    public static let rulesVersion = "match-r18"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -333,11 +333,22 @@ public struct MatchTurn: Sendable {
     }
 
     /// What a set of positions would score now, counted in the order given.
+    /// With r18, a joining starter is optional: the set is counted with it and without it, and the
+    /// better score wins (a tie keeps the starter). So the starter can never cost a set points.
     public func value(of traced: [Pos]) -> SetValue? {
-        let ps = starterJoins ? picked(traced) + [Board.starter] : traced
+        guard starterJoins else { return value(counting: traced, starterJoined: false) }
+        let picks = picked(traced)
+        guard let with = value(counting: picks + [Board.starter], starterJoined: true) else { return nil }
+        guard (r.handFlush ?? false), let without = value(counting: picks, starterJoined: false),
+              !without.count.combos.isEmpty, without.points > with.points else { return with }
+        return without
+    }
+
+    private func value(counting ps: [Pos], starterJoined: Bool) -> SetValue? {
         var cards: [(rank: Int, suit: Suit)] = []
         for p in ps { guard let c = state.cells[p], c.isPlaying, let s = c.suit else { return nil }; cards.append((c.rank, s)) }
-        var opts = CountOptions(flushMin: r.flushMin)
+        // r18: 4 picked cards of one suit are a flush whatever the starter's suit, as in a classic hand.
+        var opts = CountOptions(flushMin: r.flushMin, handFlush4: starterJoined && (r.handFlush ?? false))
         if let si = ps.firstIndex(of: Board.starter), let st = state.cells[Board.starter],
            let ji = ps.firstIndex(where: { (Board.hand.contains($0) || Board.crib.contains($0)) && state.cells[$0]?.rank == 11 && state.cells[$0]?.suit == st.suit }) {
             opts.nobs = [si, ji]
@@ -346,7 +357,7 @@ public struct MatchTurn: Sendable {
         let combo = cnt.total
         // A joining starter is in the set only when a combo uses it: then its power multiplies, it
         // powers up and its suit counts. Otherwise it's ignored, never left over.
-        let starterAt = starterJoins ? ps.count - 1 : nil
+        let starterAt = starterJoined ? ps.count - 1 : nil
         let starterUsed = starterAt.map { i in cnt.combos.contains { $0.cards.contains(i) } } ?? false
         let inSet = starterAt != nil && !starterUsed ? Array(ps.dropLast()) : ps
         let ep = r.edgePower
