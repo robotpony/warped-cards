@@ -9,13 +9,12 @@ Where things live:
 - **Mocks and their findings:** `mocks/README.md`. **Playtest data:** `playtests/`.
 - **Small next tasks:** [TODO.md](TODO.md). **Bugs:** [BUGS.md](BUGS.md). **Changes:** [CHANGELOG.md](CHANGELOG.md).
 
-Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run side by side: design (rules and mocks) and engine (spec, Python, simulator). Swift comes last.
+Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run side by side: design (rules and mocks) and engine (spec, Swift engine, simulator). The Mac beta app follows the engine; iOS comes after it. How the code fits together: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Phase 1 · Rules draft
 
 - [x] First rules draft (`cribbage/minigames/rules.md`)
 - [x] Draft 4: match turns for match rules r7, doors, suit gates for sets (`rules.md` › Match turns)
-- [ ] Doors, prizes and power slots once designed (`rules.md` › Doors, Prizes)
 
 ## Phase 2 · Stats and simulator ideation
 
@@ -27,28 +26,34 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 - [x] Cards: standard layout, four-colour suits, back, jokers (`design/cards/index.html`)
 - [x] Match turn, rules r8, bot skill levels, play-out and clear-board ending (`cribbage/minigames/mocks/match-turn.html`)
 - [ ] Playtest the match turn and tune it with your runs (`playtests/`)
+- [x] Match turn begin and end effects: deal-in, board cleared, wrap-up (`mocks/match-turn.html` v8)
 - [x] Score breakdown in the match turn (`mocks/match-turn.html`)
-- [ ] Multi-turn match mock: tray and pips carry over (`rules.md` › Special jokers); not needed yet
 - [x] Jokers v3: amber, teal, title and blank cards with hidden chances tables, the reveal, simulation (`mocks/jokers.html`)
 - [x] Joker reveals in the match turn, rules r14 (`rules.md` › Jokers and extra cards)
-- [ ] Prize pick: where a prize goes, badges (`concept.md` › Deck building and prizes)
-- [ ] Shop: spending pips between rounds
-- [ ] Maze walk after a match turn (`concept.md` › The maze walk)
-- [ ] Transitions between mini games, and begin, end and bonus effects (`concept.md` › Transitions and effects)
-- [ ] Pegging on the maze, after maze inspiration
 
 ## Phase 4 · Engine spec
 
-- [ ] Data model, event log, bot interface, sim clock (`stats.md` › Event log, Simulator)
+- [ ] Data model, actions, events, dice streams, config files, bot interface, sim clock, written to port (`ARCHITECTURE.md` › Engine; `stats.md` › Event log, Simulator)
 
-## Phase 5 · Python engine and simulator
+## Phase 5 · Swift engine and simulator
 
-- [ ] Classic cribbage as the baseline
-- [ ] Crib Maze rules, bots (random, greedy, planning), simulator at 1x, 100x, 1000x and flat out
+Build plan phases A to D in `ARCHITECTURE.md`.
+
+- [ ] Foundations: package, app targets, version stamping, checks (A)
+- [ ] Classic cribbage counting written fresh against shared fixtures, as the baseline (B)
+- [ ] GameRecord: records, replay, counts (C)
+- [ ] Crib Maze rules, bots (random, greedy, planning), simulator at 1x, 100x, 1000x and flat out (D)
 - [ ] Stats reports and graphs (`stats.md` › Scoring curves)
 
-## Phase 6 · Maze design
+## Phase 6 · Maze, prizes and shop design
 
+- [ ] Doors, prizes and power slots rules (`rules.md` › Doors, Prizes)
+- [ ] Prize pick mock: where a prize goes, badges (`concept.md` › Deck building and prizes)
+- [ ] Shop mock: spending pips between rounds
+- [ ] Maze walk mock, after a match turn (`concept.md` › The maze walk)
+- [ ] Pegging on the maze mock, after maze inspiration
+- [ ] Transitions between mini games, and bonus effects (`concept.md` › Transitions and effects)
+- [ ] Multi-turn match mock: tray and pips carry over (`rules.md` › Special jokers), if still needed
 - [ ] Door strengths and placement; rules so far in `rules.md` › Doors
 - [ ] Branches, traps, wall shifts, fog, generator (`concept.md` › The maze)
 
@@ -66,4 +71,9 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 
 ## Phase 10 · Swift app
 
-- [ ] iPhone app built from the specs
+- [x] Agree the architecture, tools and libraries ([ARCHITECTURE.md](ARCHITECTURE.md), [LIBRARIES.md](LIBRARIES.md))
+- [ ] Mac beta, playable match turn (`ARCHITECTURE.md` › Build plan E)
+- [ ] Beta tools: records, replay, stats, animation lab, tuning (F)
+- [ ] The rest of a round, as each part's design settles (G)
+- [ ] iOS, and TestFlight for sharing the beta (H)
+- [ ] Release build (I)

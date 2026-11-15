@@ -14,8 +14,8 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 - [ ] Notes toward the maze walk mini game (`concept.md` › The maze walk)
 - [ ] Shop mock: spending pips on jokers and special jokers between rounds
 - [ ] Tune bot levels so medium scores like a person, from playtest runs
-- [ ] Match turn begin effect: cards fall into place from the deck (`concept.md` › Transitions and effects)
-- [ ] Match turn end effects: board cleared (with its bonus) vs not (`concept.md` › Transitions and effects)
+- [x] Match turn begin effect: cards fall into place from the deck (`concept.md` › Transitions and effects)
+- [x] Match turn end effects: board cleared (with its bonus) vs not (`concept.md` › Transitions and effects)
 - [x] Show each set's suit, or "no suit" on ties, in the match turn and score breakdown (`rules.md` › Suit gates)
 - [ ] Make clearing the board hard enough to feel big, once human playtests show how often a person clears it (`concept.md` › Learnings)
 - [ ] Jokers and extra cards: design the title and blank card prizes, how many jokers a round can have, each special joker type's rules, and what happens when one is dealt or cut (`rules.md` › Jokers and extra cards)
@@ -29,4 +29,4 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 ## Repo
 
 - [x] Licence: MIT
-- [ ] Put the version in the Python engine once it exists, in step with the changelog
+- [ ] Put the version in the Swift app once it exists (`MARKETING_VERSION`), in step with the changelog

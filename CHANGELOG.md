@@ -2,6 +2,24 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.4.0 — 2026-11-14
+
+### Added
+
+- Match turn: the turn begins with the grid dealing in column by column, then your hand, crib and starter sliding into place. The timer starts once the deal is done.
+- Match turn: clearing the board ends with a gold flash, confetti and a "Board cleared!" banner with your bonus. Any other ending is a quiet wrap-up: what's left on the board dims and a banner says why the turn ended.
+- Match turn: tap to skip the deal or the ending. A setting plays them full, quick or off.
+
+### Fixed
+
+- Match turn: pressing End turn during a joker reveal or a score no longer ends the turn underneath it; End turn waits until they finish.
+
+## 0.3.1 — 2026-11-14
+
+### Added
+
+- Plans for the Crib Maze app: a Mac beta first for playing, replaying and tuning games, then iOS. Its rules engine is Swift, replacing the planned Python one, so the app, bots and simulator all play by the same code.
+
 ## 0.3.0 — 2026-11-14
 
 ### Added

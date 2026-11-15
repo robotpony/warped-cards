@@ -9,7 +9,8 @@ Card game prototypes, specs and tests. One session acts as project commander; ot
 - One standard 52-card deck unless a spec says otherwise.
 - Classic cribbage rule wording lives in `~/projects/utilities/scorekeep/docs/rules/cribbage.md` (owned by the SCOREKEEP session). Reference it, don't copy it. Don't invent classic scoring rules that conflict with it; ask SCOREKEEP.
 - Balance claims need simulation numbers, not estimates.
-- Order of work: rules and mocks (design track) alongside engine spec, Python engine and simulator (engine track). Swift comes last, built from the specs.
+- Order of work: rules and mocks (design track) alongside engine spec, Swift engine and simulator (engine track). The Mac beta app comes next, then iOS. Architecture: `ARCHITECTURE.md`; tools and libraries: `LIBRARIES.md` (add a row before adding anything new).
+- Engine specs are written to port: plain Markdown, no Swift-only ideas. Numbers and tables the code needs (rules values, chances, timings, bot levels, effects) live in JSON config files, not in code.
 - Games are 1 human vs 1 or 2 bots. Bots are game features, not just test tools.
 
 ## Versions and tracking

@@ -116,7 +116,7 @@ Notes for a mini game not designed yet (2026-11-14). After a match turn, your sc
 
 ## Transitions and effects
 
-Each part of a round is its own mini game, so moving between them, and starting and ending each one, needs its own moment. These are concepts to mock later; nothing here is designed yet (2026-11-14).
+Each part of a round is its own mini game, so moving between them, and starting and ending each one, needs its own moment. The match turn's begin and end effects are mocked (match turn mock v8, 2026-11-14); transitions between mini games wait until the other mini games are designed.
 
 ```
 A round, as the player sees it
@@ -214,8 +214,8 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 
 | Date | Decision |
 |---|---|
-| 2026-11-13 | iPhone app first; maybe iPad and Mac later |
-| 2026-11-13 | Rules in Markdown first; engine and simulator in Python; Swift app built later from the specs |
+| 2026-11-13 | iPhone app first; maybe iPad and Mac later (the first build is a Mac beta for testing, decided 2026-11-14; iPhone is still the players' app) |
+| 2026-11-13 | Rules in Markdown first; engine and simulator in Python; Swift app built later from the specs (superseded 2026-11-14: engine and simulator in Swift) |
 | 2026-11-13 | 2 or 3 players: one human, the rest bots. Bots play by the same rules as the human |
 | 2026-11-13 | Fixed structure: maze replaces the pegboard, match turns replace counting |
 | 2026-11-13 | Pegging is classic; each point is a step, moved as it's scored |
@@ -229,7 +229,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Hand and crib score as classic patterns only when the player marks them (superseded the same day: there is no marking; sets are traced and every set needs a grid card) |
 | 2026-11-14 | Match turns run until the stock is used; a timer and card budget cap them, set by simulation. The player may also end the turn |
 | 2026-11-14 | Claiming missed patterns is parked for later |
-| 2026-11-14 | The app may send game logs as opt-in data |
+| 2026-11-14 | The app may send game logs as opt-in data (superseded the same day: only the beta app records games; release builds don't send logs for now) |
 | 2026-11-14 | Stats exist mainly to compare scoring curves between bots, and to measure timing |
 | 2026-11-14 | First mocks are clickable HTML in an iPhone frame, covering pegging on the maze, a match turn and a prize pick |
 | 2026-11-14 | Cards: standard layout (rank in two corners, one large centred suit), rank and suit in the suit's colour, near-white faces only (no dark faces). Built on Scorekeep's card kit; its short form (one rank, one suit) is for documentation. Mock: [design/cards](../../design/cards/index.html) |
@@ -283,6 +283,10 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | What a joker makes lasts by kind: cards it makes (a card, a scoring card, a 5) are new cards kept in the deck for the rest of the game; special jokers made by a reveal last only for that round. Each special joker type gets its own rules, balanced from stats later (r14) |
 | 2026-11-14 | The game's structure has names: a game is made of rounds, a round of stages (deal and discard, cut, pegging, match turns, shop), a stage of turns. A minigame replaces a classic cribbage step; the match game is the first (rules.md › How a game fits together) |
 | 2026-11-14 | Special actions come from special jokers: smaller cards in a tray at the bottom, stacked by type, in limited supply. First two: the swapper joker (reverses a line of grid cards; swapping is no longer a free action) and the bomb joker (blows up cards) |
+| 2026-11-14 | The first app is a Mac beta for playing, testing and tuning; iOS follows from the same code. Gameplay is a Swift package with no UI, and game tracking (GameRecord) is a separate component linked only into the beta ([ARCHITECTURE.md](../../ARCHITECTURE.md)) |
+| 2026-11-14 | Engine and simulator are Swift, replacing Python; engine specs are written to port, and numbers and tables the code needs live in JSON config files |
+| 2026-11-14 | Only the beta app records games; release builds don't record or send logs for now |
+| 2026-11-14 | Swift stack agreed: Apple frameworks only, Swift Testing, macOS 26 and iOS 26, two app targets (beta and release), SwiftUI and Metal shader effects. Beta is local builds on the Mac; TestFlight comes with iOS ([LIBRARIES.md](../../LIBRARIES.md)) |
 
 ## Open questions
 
@@ -306,11 +310,11 @@ Two tracks run side by side: design, so we can think about how the game plays an
 |---|---|---|---|
 | 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; kept in step with decisions |
 | 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Ideation done |
-| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2 done), match turn (v7, rules r14, with the score breakdown and joker reveals merged in), jokers (v3), then a prize pick, and pegging on the maze once we've gathered maze inspiration | In progress |
+| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2), match turn (v8, rules r14, with the score breakdown, joker reveals and begin and end effects), jokers (v3). The prize pick, shop, maze walk and pegging on the maze move to phase 6 | Done, but for playtests |
 | 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
-| 5 | Engine | Python engine, bots, simulator and stats reports; classic cribbage as the baseline | After 4 |
-| 6 | Design | Maze design: door types, branches, traps, wall shifts, fog, generator | Alongside 5 |
+| 5 | Engine | Swift engine, bots, simulator and stats reports; classic cribbage as the baseline ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases A to D) | After 4 |
+| 6 | Design | Maze, prizes and shop: doors, prizes and power slots, door types, branches, traps, wall shifts, fog, generator; mocks of the prize pick, shop, maze walk, pegging on the maze and transitions between mini games | After 5 |
 | 7 | Both | Tune with simulation until the numbers hold up | After 5 |
 | 8 | Design | Face-card art: full graphics for J, Q and K (letters until then) | Not scheduled |
 | 9 | Design | Card backs: design more backs (crosshatch until then) | Not scheduled |
-| 10 | App | Swift app, built from the specs | After 7 |
+| 10 | App | Mac beta app, then iOS ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases E to I) | Beta after 5; iOS after 7 |

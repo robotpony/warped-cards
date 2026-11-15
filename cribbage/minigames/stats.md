@@ -16,7 +16,7 @@ The engine records every event in a log from the first build. The simulator play
 1. Log events, not totals. Totals can be rebuilt from events, but events can't be rebuilt from totals.
 2. Every event carries a time on the modelled clock, so timing comes from the same log as scoring.
 3. Every game can be replayed from its seed and the players' choices.
-4. The Python simulator and the Swift app use one event format, so real and simulated games can be compared.
+4. The simulator and the app run the same Swift engine and write the same record format, so real and simulated games can be compared.
 5. Classic cribbage is the baseline. We measure it in our own simulator before setting targets.
 6. A stat earns its place by answering a tuning question. If nobody would change a rule because of it, cut it.
 
@@ -100,7 +100,7 @@ These are placeholders until we've measured classic cribbage in our own simulato
 
 ## App telemetry
 
-Decided 2026-11-14: the Swift app writes the same event log from real games and MAY send it, as data the player chooses to share.
+Decided 2026-11-14, revised the same day: only the beta app records games ([ARCHITECTURE.md](../../ARCHITECTURE.md) › GameRecord). Release builds don't record or send logs. A later idea is to send only a game's seed, config and actions, since seeded shuffles let a game be rebuilt from them (`ARCHITECTURE.md` › Later ideas); if that's ever taken up, these rules apply:
 
 - Sending MUST be opt-in and off by default.
 - Logs MUST NOT contain personal details: no names, contacts or device identifiers, only a random install ID.

@@ -181,6 +181,34 @@
   .warn .bad { color: #C00000; font-weight: 700; }
   .warn .pbtn { width: 100%; background: #0E3B2E; color: #F3ECDC; margin-top: 4px; }
   .overlay h3.cleared { color: var(--gold); font-size: 30px; }
+  /* Begin effect: the grid deals in column by column, then the hand slides up, the crib slides
+     in and the starter flips over. Before the deal the board's cards are hidden. --d is each
+     card's delay, --k the speed (1 full, .5 quick). Animated on the cell, so the card's own
+     transforms (starter tilt, selection) are untouched. */
+  .board.predeal .cell .card, #starter.predeal .cell .card { opacity: 0; }
+  .intro .cell { animation: dealin calc(.34s * var(--k, 1)) cubic-bezier(.3,1.3,.5,1) both; animation-delay: var(--d, 0ms); }
+  .intro .cell.hand { animation-name: slideup; }
+  .intro .cell.crib { animation-name: slidein; }
+  .intro .cell.starter { animation-name: flipin; }
+  @keyframes dealin { from { opacity: 0; transform: translateY(-140%) rotate(-8deg); } to { opacity: 1; transform: none; } }
+  @keyframes slideup { from { opacity: 0; transform: translateY(70px); } to { opacity: 1; transform: none; } }
+  @keyframes slidein { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: none; } }
+  @keyframes flipin { 0% { opacity: 0; transform: scaleX(0); } 40% { opacity: 1; transform: scaleX(0); } 100% { opacity: 1; transform: scaleX(1); } }
+  /* End effects. Board cleared: the empty board flashes gold, confetti bursts and a big banner
+     lands. Ran out: what's left on the board dims and settles, and a small banner fades in. */
+  .board.cleared-flash { animation: clearflash calc(1.1s * var(--k, 1)) ease-out; border-radius: 12px; }
+  @keyframes clearflash { 0% { box-shadow: 0 0 0 0 rgba(232,184,74,0); } 25% { box-shadow: 0 0 0 6px rgba(232,184,74,.9), 0 0 60px 20px rgba(232,184,74,.6); } 100% { box-shadow: 0 0 0 0 rgba(232,184,74,0); } }
+  .board.settle .cell:not(.edge):not(.empty) .card { transition: opacity .5s, filter .5s, transform .5s; opacity: .45; filter: grayscale(.6); transform: translateY(3px) scale(.96); }
+  .endbanner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; z-index: 7; pointer-events: none; white-space: nowrap; }
+  .endbanner.big { font-size: 40px; font-weight: 800; color: var(--gold); text-shadow: 0 3px 12px rgba(0,0,0,.7); animation: slam calc(.6s * var(--k, 1)) cubic-bezier(.2,1.6,.4,1) both; }
+  .endbanner.big small { display: block; font-size: 18px; font-weight: 700; color: #fff; }
+  .endbanner.quiet { font-size: 22px; font-weight: 600; color: var(--felt-text); background: rgba(8,30,23,.8); padding: 8px 16px; border-radius: 12px; animation: fadein calc(.5s * var(--k, 1)) ease-out both; }
+  @keyframes slam { from { opacity: 0; transform: translate(-50%, -50%) scale(2.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+  @keyframes fadein { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  .confetti { position: absolute; width: 8px; height: 12px; border-radius: 2px; z-index: 7; pointer-events: none;
+              animation: burst var(--t) cubic-bezier(.15,.7,.4,1) forwards; }
+  @keyframes burst { 0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+                     100% { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
   .start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,30,23,.6); z-index: 4; }
   .start.off { display: none; }
   @media (max-width: 440px) { .phone { transform: scale(.85); transform-origin: top left; margin-bottom: -128px; margin-right: -60px; } }
@@ -209,7 +237,7 @@
 
   <div class="side">
     <h1>Match turn mock</h1>
-    <p class="muted">Crib Maze, mock v7 (Boggle-style, special jokers, score breakdown, left-over cost, lit combos, joker reveals), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
+    <p class="muted">Crib Maze, mock v8 (Boggle-style, special jokers, score breakdown, left-over cost, lit combos, joker reveals, begin and end effects), match rules <b id="rulesVer"></b>, 2026-11-14. Every value is a starting guess.</p>
     <div class="toolbar"><button class="btn" id="newBtn">New turn</button> <button class="btn" id="autoBtn">Watch a bot play this turn</button></div>
     <div class="tabs" role="tablist" aria-label="Mock panels">
       <button class="tab" role="tab" id="tab-how" aria-controls="pane-how">How to play</button>
@@ -303,6 +331,9 @@
       <label>Fifteens <select id="optFifteens"><option value="each" selected>One line each, like counting aloud</option><option value="grouped">Grouped into one line</option></select></label>
       <label><input type="checkbox" id="optFloat" checked> Float points over the cards</label>
       <p style="margin:6px 0 0"><button class="btn" id="replayBtn">Replay the last score</button></p>
+      <strong style="display:block;margin-top:10px">Begin and end effects</strong>
+      <label>Play <select id="optFx"><option value="1" selected>Full (default)</option><option value="0.5">Quick (a practised player)</option><option value="0">Off</option></select></label>
+      <p class="muted" style="margin:2px 0 0">The turn begins with the grid dealing in column by column, then the hand, crib and starter. It ends with a celebration when you clear the board, or a quiet wrap-up when time, the stock or the sets run out. Tap to skip either. The timer starts after the deal.</p>
     </div>
 
     <div class="panel" role="tabpanel" id="pane-runs" aria-labelledby="tab-runs">
@@ -517,7 +548,72 @@ function newTurn() {
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) S.grid[r][c] = S.stock.shift();
   $("summary").classList.remove("on"); $("start").classList.remove("off");
   $("feed").innerHTML = ""; $("log").textContent = "";
+  $("board").classList.remove("intro", "settle", "cleared-flash");
+  ["board", "starter"].forEach(id => $(id).classList.toggle("predeal", fxSpeed() > 0));
+  $("fx").querySelectorAll(".endbanner, .confetti").forEach(el => el.remove());
   render();
+}
+// ---------- Begin and end effects ----------
+// Mock of concept.md › Transitions and effects. Speed: 1 full, .5 quick, 0 off. Skippable
+// with a tap, like the score breakdown. Bot batches (FAST) skip them.
+const fxSpeed = () => FAST ? 0 : +$("optFx").value;
+async function skippableWait(ms) {
+  const end = performance.now() + ms;
+  while (performance.now() < end && !S.skip) await new Promise(r => setTimeout(r, 30));
+  const skipped = S.skip; S.skip = false; return skipped;
+}
+async function playIntro() {
+  const k = fxSpeed();
+  if (!k) { ["board", "starter"].forEach(id => $(id).classList.remove("predeal")); return; }
+  const cells = [...document.querySelectorAll("#board .cell, #starter .cell")];
+  const col = 130 * k, row = 45 * k, step = 70 * k;
+  const gridEnd = 3 * col + 3 * row + 340 * k;
+  for (const el of cells) {
+    if (!el.dataset.p) continue;
+    const p = JSON.parse(el.dataset.p);
+    const d = p.k === "g" ? p.c * col + p.r * row : p.k === "s" ? gridEnd + 4 * step : gridEnd + p.i * step;
+    el.style.setProperty("--d", Math.round(d) + "ms");
+  }
+  ["board", "starter"].forEach(id => { const el = $(id); el.style.setProperty("--k", k); el.classList.remove("predeal"); el.classList.add("intro"); });
+  S.intro = true;
+  const skipped = await skippableWait(gridEnd + 4 * step + 340 * k);
+  S.intro = false;
+  ["board", "starter"].forEach(id => $(id).classList.remove("intro"));
+  log("effect", { name: "deal_in", speed: k, skipped });
+}
+function confetti(n) {
+  const fx = $("fx"), cols = ["#E8B84A", "#E00000", "#0070E0", "#00843D", "#F3ECDC", "#C9A0FF"];
+  const box = $("board").getBoundingClientRect(), scr = $("screen").getBoundingClientRect();
+  const cx = box.left - scr.left + box.width / 2, cy = box.top - scr.top + box.height / 2;
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement("i"), a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 190;
+    c.className = "confetti"; c.style.left = cx + "px"; c.style.top = cy + "px"; c.style.background = cols[i % cols.length];
+    c.style.setProperty("--x", Math.round(Math.cos(a) * d) + "px");
+    c.style.setProperty("--y", Math.round(Math.sin(a) * d + 120) + "px"); // falls as it flies
+    c.style.setProperty("--r", Math.round(Math.random() * 720 - 360) + "deg");
+    c.style.setProperty("--t", (1 + Math.random() * .7) * Math.max(fxSpeed(), .5) + "s");
+    fx.appendChild(c);
+  }
+}
+const ENDING_TEXT = { timer: "Time's up", "no sets left": "No more sets", "ended by player": "Turn ended" };
+async function playEnding(reason, bonusText) {
+  const k = fxSpeed(); if (!k) return;
+  renderTop(); // show the clear-board bonus in the step count
+  const b = $("board"), fx = $("fx"), banner = document.createElement("div");
+  b.style.setProperty("--k", k); fx.style.setProperty("--k", k);
+  S.ending = true;
+  if (S.cleared) {
+    b.classList.add("cleared-flash"); confetti(48);
+    banner.className = "endbanner big"; banner.innerHTML = `Board cleared!${bonusText ? `<small>${bonusText}</small>` : ""}`;
+  } else {
+    b.classList.add("settle");
+    banner.className = "endbanner quiet"; banner.textContent = `${ENDING_TEXT[reason] || "Turn over"} · ${S.steps} steps`;
+  }
+  fx.appendChild(banner);
+  const skipped = await skippableWait((S.cleared ? 1900 : 1100) * k);
+  S.ending = false;
+  fx.querySelectorAll(".endbanner, .confetti").forEach(el => el.remove());
+  log("effect", { name: S.cleared ? "board_cleared" : "wrap_up", speed: k, skipped });
 }
 function draw() {
   if (!S.stock.length || (S.opts.budget && S.drawn >= S.opts.budget)) return null;
@@ -871,8 +967,10 @@ async function doSwap() {
 
 // ---------- Turn flow ----------
 async function startTurn() {
-  S.started = true; S.t0 = performance.now();
+  S.started = true;
   $("start").classList.add("off");
+  S.busy = true; await playIntro(); S.busy = false; // the deal doesn't use the player's time
+  S.t0 = performance.now();
   log("turn_start", { rules: RULES, dealer: S.opts.dealer, stock: S.stock.length, timer: S.opts.timer, budget: S.opts.budget,
     hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter) });
   if (S.opts.timer) S.tick = setInterval(() => {
@@ -883,7 +981,7 @@ async function startTurn() {
   S.busy = true; await resolveExtras(); S.busy = false; // extras dealt into the grid
   afterAction(); // a dealt board can already be dead
 }
-function endTurn(reason) {
+async function endTurn(reason) {
   if (S.over) return;
   S.over = true; clearInterval(S.tick);
   // Clearing the board (every grid card scored or bombed, nothing left) earns a bonus (r8; size to tune).
@@ -893,7 +991,7 @@ function endTurn(reason) {
     const [kind, n] = S.opts.clearBonus.split(":");
     if (kind === "steps") S.steps += +n; else if (kind === "pips") S.pips += +n;
     clearText = kind === "none" ? "no bonus (setting)" : `+${n} ${kind}`;
-    toast(`Board cleared! ${kind === "none" ? "" : clearText}`);
+    if (!fxSpeed()) toast(`Board cleared! ${kind === "none" ? "" : clearText}`);
     log("board_cleared", { bonus: S.opts.clearBonus });
   }
   // One prize per turn, for the turn's best score (r7). Its tier grows with the score.
@@ -908,6 +1006,7 @@ function endTurn(reason) {
   const secs = Math.round((performance.now() - S.t0) / 1000);
   log("turn_end", { reason, penalty: S.penalty, leftovers: S.leftovers, steps: S.steps, pips: S.pips, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
   saveRun(reason, secs);
+  await playEnding(reason, S.cleared && !S.opts.clearBonus.startsWith("none") ? clearText : "");
   const suits = Object.entries(S.bySuit).map(([s, n]) => `${s === "none" ? "no suit" : WC.SUITS[s].glyph} ${n}`).join(", ") || "none";
   $("summary").innerHTML = (S.cleared ? `<h3 class="cleared">Board cleared! ${S.steps} steps</h3>` : `<h3>Turn over: ${S.steps} steps</h3>`) +
     `<div style="opacity:.8">Ended by ${reason} after ${secs} s</div>
@@ -1095,7 +1194,7 @@ let drag = null;
 const posAtPoint = (x, y) => { const el = document.elementFromPoint(x, y)?.closest(".cell"); return el && el.dataset.p && !el.classList.contains("empty") ? JSON.parse(el.dataset.p) : null; };
 $("stage").addEventListener("pointerdown", () => RV.skip()); // tap to skip a joker reveal
 $("screen").addEventListener("pointerdown", (e) => {
-  if (S.breaking) { S.skip = true; return; } // tap to skip the score breakdown
+  if (S.breaking || S.intro || S.ending) { S.skip = true; return; } // tap to skip the breakdown or a begin or end effect
   if (!S.started || S.over || S.busy) return;
   const p = posAtPoint(e.clientX, e.clientY); if (!p) return;
   drag = { start: p, x: e.clientX, y: e.clientY, tracing: false };
@@ -1153,7 +1252,7 @@ document.addEventListener("pointerup", () => {
   else S.sel = [p];
   render();
 });
-$("endBtn").onclick = () => { if (S.started) endTurn("ended by player"); };
+$("endBtn").onclick = () => { if (S.started && !S.busy && !S.breaking) endTurn("ended by player"); }; // not mid-reveal or mid-score
 $("startBtn").onclick = startTurn;
 $("newBtn").onclick = newTurn;
 $("newBtn2").onclick = newTurn;
@@ -1283,7 +1382,7 @@ async function autoPlay() {
     } else break;
     await sleep(200);
   }
-  if (!S.over) endTurn("no sets left");
+  if (!S.over) await endTurn("no sets left");
 }
 
 $("rulesVer").textContent = "r" + RULES;

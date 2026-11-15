@@ -6,11 +6,22 @@ Every scoring set is a single (exactly one combo, like 7-8) or a multi (two or m
 
 | Mock | What it covers | Status |
 |---|---|---|
-| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, cards left over (warning and cost), lit combos while tracing, joker reveals, special jokers (swapper, bomb), power levels, prizes, timer and card budget, play-out and the clear-board ending | v7, 2026-11-14 |
+| [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, cards left over (warning and cost), lit combos while tracing, joker reveals, special jokers (swapper, bomb), power levels, prizes, timer and card budget, play-out, and begin and end effects (deal-in, board cleared, wrap-up) | v8, 2026-11-14 |
 | [jokers.html](jokers.html) | Joker mechanics on their own: the amber and teal jokers and the title and blank cards, each rolling on a hidden table of chances. Players see a shuffle, wheel or die, the prize revealed (bigger for rarer prizes) and flown to where it goes. Game-maker panels edit the chances and simulate 10,000 games. Outcome logic in `jokers.js`, tests in `jokers.test.js`; the reveal in `reveal.js` and `reveal.css`, shared with the match turn | v3, 2026-11-14 |
 | Score breakdown | Merged into the match turn in v4. The standalone mock (v1, with presets) is in git history | Retired |
-| Prize pick | Choosing where a prize goes (deck or power slot), badges | Not started |
-| Pegging on the maze | Pegging with live token movement | Waiting on maze inspiration |
+| Prize pick | Choosing where a prize goes (deck or power slot), badges | After the engine (PLAN.md Phase 6), with the prize rules |
+| Pegging on the maze | Pegging with live token movement | After the engine (PLAN.md Phase 6), with maze design |
+
+## Match turn v8: begin and end effects (2026-11-14)
+
+No rules change (still r14). First mock of `concept.md` › Transitions and effects for the match turn.
+
+- Begin: after Start turn, the grid deals in column by column (each card falls and settles), then the hand slides up, the crib slides in and the starter flips over. The board's cards stay hidden until the deal. The timer starts after it.
+- End, board cleared: the empty board flashes gold, confetti bursts from the centre and "Board cleared!" lands with its bonus, then the summary.
+- End, anything else (timer, no sets left, the player ends): the cards left on the grid dim and settle, and a small banner names why the turn ended and its steps, then the summary.
+- Tap to skip either effect. Breakdown tab › Begin and end effects: full (about 1.6 s in, 1.9 s or 1.1 s out), quick (half) or off. Bot batches skip them.
+- Each effect is logged (`effect`: name, speed, skipped), so playtests show how often people skip them.
+- Fixed: End turn did nothing useful mid-reveal or mid-score; it now waits until they finish.
 
 ## Match turn v7 and jokers v3: joker reveals in the match (2026-11-14)
 

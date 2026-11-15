@@ -11,6 +11,8 @@ Card game prototypes, specifications and tests.
 
 Shared design: [card mock](design/cards/index.html) (renderer in `design/cards/cards.js`).
 
+App design: [ARCHITECTURE.md](ARCHITECTURE.md) (Swift app, engine, tracking, effects), [LIBRARIES.md](LIBRARIES.md) (tools and libraries).
+
 Tracking: [PLAN.md](PLAN.md) (phases), [TODO.md](TODO.md) (next tasks), [BUGS.md](BUGS.md), [CHANGELOG.md](CHANGELOG.md). Tests: `node --test cribbage/minigames/mocks/`.
 
 Licence: MIT ([LICENSE](LICENSE)).
@@ -19,8 +21,8 @@ Licence: MIT ([LICENSE](LICENSE)).
 
 ```
 <game>/
-  <variant>/      specs and ideation for a variant
-  engine/         shared rules code (planned)
-  sims/           bots and simulation harness (planned)
-  tests/          rules tests (planned)
+  <variant>/      specs, ideation, mocks and playtests for a variant
+    fixtures/     rules fixtures shared by the mocks and Swift (planned)
+swift/            engine, tracking, effects, simulator and app (planned)
+design/           shared design mocks (cards)
 ```
