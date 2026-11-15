@@ -3,3 +3,4 @@ swift/.build/
 swift/.build-*/
 swift/App/CribMaze.xcodeproj/
 .DS_Store
+swift/.build-app-*.log

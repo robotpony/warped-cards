@@ -112,12 +112,25 @@ Checks run in this order. The first that fails decides the result.
 
 | Step | Check | If it fails |
 |---|---|---|
-| 1 | 2 to `maxSet` positions, no repeats, each holding a card, none of them a special joker | `trace_rejected`, reason `size` or `special`; costs nothing |
+| 1 | 2 to the pick limit (`maxSet`) picked positions, no repeats, each holding a card, none of them a special joker. With `starterJoins`, the starter isn't a picked position: tracing it is allowed and doesn't count | `trace_rejected`, reason `size` or `special`; costs nothing |
 | 2 | At least one grid position | `trace_rejected`, reason `no_grid_card`; costs nothing |
 | 3 | The positions are connected through touching (in any order; the traced order doesn't matter) | `trace_rejected`, reason `not_touching`; costs nothing |
-| 4 | This set of card IDs hasn't scored this turn | `trace_rejected`, reason `already_scored`; costs nothing |
+| 4 | This set of picked card IDs hasn't scored this turn | `trace_rejected`, reason `already_scored`; costs nothing |
 
 Then count the set (see Counting a set). Each card in no combo is left over.
+
+#### The starter joins every set (r16)
+
+With `starterJoins`, and the starter holding a playing card, every set is counted with the starter: the picked positions in traced order, then the starter last. Combo card indexes point into that list.
+
+- If a combo uses the starter, it's in the set: its power level counts in the multiplier, it powers up, its suit counts, and `score` names it last in positions and cards.
+- If no combo uses it, it's ignored: it isn't left over, adds no power, doesn't power up, and `score` leaves it out.
+- His nobs needs only the jack of the starter's suit, from the hand or crib, in the set.
+- A `leftover_penalty` costs only the picked cards.
+
+#### Pick limit
+
+The pick limit is how many cards a set may pick. It's `maxSet` for now. Later, some combos, jokers and prizes will raise it for a while; the engine MUST keep it in turn state so the app can show it.
 
 | Combos | Left over | Warned before? | Result |
 |---|---|---|---|
@@ -424,11 +437,11 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r15",
+  "rulesVersion": "match-r16",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 5, "flushMin": 4, "timerSeconds": 90, "cardBudget": 0,
-    "leftOverCost": 2,
+    "leftOverCost": 2, "starterJoins": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 200 },
     "prize": { "rareAt": 8, "epicAt": 16, "special": [["swapper", 60], ["bomb", 40]] }
@@ -441,7 +454,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
 }
 ```
 
-A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
+`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 

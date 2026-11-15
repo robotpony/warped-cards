@@ -296,6 +296,11 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | The scale problem (match turns score far more steps than the route is long) is deferred; the maze walk mock keeps its settings for trying fixes later ([maze-inspiration.md](maze-inspiration.md) › Ideas) |
 | 2026-11-14 | The look is vector arcade: neon lines on near-black (look C of [mocks/maze-retro.html](mocks/maze-retro.html)), for cards, jokers and the maze. The asset set lives in `design/neon/`, tracked in its gallery pages; mocks and the app switch over once each part is confirmed |
 | 2026-11-14 | Cards keep their original faces (`design/cards/cards.js`) over the neon colours. Neon cards were far too hard to read; neon stays for the table, board, tray, maze and effects |
+| 2026-11-15 | The starter counts with every set, as in a cribbage hand, so it's pivotal again (match rules r16). It isn't traced and doesn't count toward a set's cards; it scores, multiplies and powers up only when it's in a combo, and is never left over. It sits on a lighter bed. Medium bot, 2,000 dealer turns: 252 steps a turn under r15, 363 under r16, and every turn ends with an epic prize, so the prize thresholds and edge power need retuning |
+| 2026-11-15 | Crib Maze Beta is the match turn mock; `match-turn.html` is frozen at r16 and gets no more changes. New match turn work goes into the beta only |
+| 2026-11-15 | A set still needs 2 picked cards: one card plus the starter isn't a set |
+| 2026-11-15 | A card counter shows how many cards a set can pick (the pick limit, `maxSet` for now). Some combos, jokers and prizes will raise it for a while; not designed yet |
+| 2026-11-15 | A score's breakdown plays over a row of its cards, flown up from the board with the starter on the right, so it always sits in the same place instead of away from the set. It waits for a tap at the end, and each line shows its cards. The mock still plays over the board |
 
 ## Open questions
 

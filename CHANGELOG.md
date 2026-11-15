@@ -2,6 +2,24 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.8.0 — 2026-11-15
+
+### Added
+- The starter counts with every set you score, as in a cribbage hand (rules r16). You don't trace it and it doesn't use up a card. When it's part of a combo, it lights up, its power multiplies the set and it powers up. It's never left over.
+- A card counter beside the help line shows how many cards you've picked and how many a set can take. The starter is free.
+- Tap the HAND, CRIB, STARTER or TRAY tag, or the card counter, to read what it does.
+
+### Changed
+- The starter sits on a lighter bed of its own, so it reads as special.
+- A score's breakdown waits for a tap or click at the end before the board moves on. Tapping earlier skips to the end.
+- A score's cards fly up from the board into a row, with the starter on the right, and the breakdown plays over that row. Each line of the breakdown shows its cards: the combo's cards, the powered card, or the card left over.
+- The tray is bigger and sits on its own panel with a TRAY tag.
+- The match turn mock now plays r16, with a setting to turn the starter rule off. It's frozen there: Crib Maze Beta is the match turn mock from now on.
+
+### Fixed
+- Card moves in Crib Maze Beta are smoother, and a card's tags, power chip and badges now move with it instead of staying behind.
+- Crib Maze Beta no longer pauses for a second or so at launch.
+
 ## 0.7.0 — 2026-11-14
 
 ### Added

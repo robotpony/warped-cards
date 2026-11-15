@@ -252,6 +252,7 @@
       <ol class="tight">
         <li>Drag across 2 to 5 touching cards (diagonals count) and let go. Or tap cards, then tap the last one again.</li>
         <li>The set scores at once, counted like a cribbage hand. Every set needs a grid card.</li>
+        <li>The starter joins every set for free. If a combo uses it, it scores and powers up with the set; if not, it's ignored. Tracing it doesn't use up a pick.</li>
         <li>Scored grid cards clear and the stock refills. Your hand, crib and starter (gold) stay and power up: each level multiplies the later sets they're in.</li>
         <li>When the stock runs out, play out what's left.</li>
         <li>The turn ends on the timer, a cleared board, or End turn. Your best score wins a special joker.</li>
@@ -303,6 +304,7 @@
       <label>Prize tier: rare at <select id="optPrize"><option value="6">6+ steps</option><option value="8" selected>8+ steps</option><option value="10">10+ steps</option><option value="12">12+ steps</option></select> best score, epic at double</label>
       <label><input type="checkbox" id="optTouch" checked> Selected cards must touch</label>
       <label>Starter <select id="optStarter"><option value="corner" selected>In the corner (real neighbours)</option><option value="bridge">Apart, touches all hand and crib cards</option></select></label>
+      <label><input type="checkbox" id="optStarterJoins" checked> Starter joins every set (r16; off plays r15)</label>
       <label>Max cards per set <select id="optMax"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option></select></label>
       <label>Start with <select id="optSwaps"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select> swappers and
         <select id="optBombs"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select> bombs</label>
@@ -373,10 +375,10 @@ const label = (c) => c.sj ? WC.SPECIALS[c.sj].name : c.x ? kindName(c.x) : WC.RA
 const val = (c) => Math.min(c.r, 10);
 // Match turn rules version. Bump it whenever a rule changes, and add a line to
 // the rules history in mocks/README.md, so runs from old rules are never mixed in.
-const RULES = 15;
+const RULES = 16;
 // Edge power (r15): each edge card's power level multiplies the sets it's in. One score:
 // there is no separate pips tally any more.
-// jokers and special jokers).
+// The starter joins every set (r16): see picked() and counted() below.
 // The multiplier a set gets from the power of its edge cards. Soften scales each level
 // (0.5: level 1 is ×1.5, level 2 is ×2). "add" sums the levels into one multiplier;
 // "each" multiplies every edge card's own multiplier together (steeper).
@@ -438,14 +440,30 @@ function connected(sel) {
 // The selection scores like a classic cribbage hand: every fifteen, pair, run
 // (double runs too), flush and his nobs inside it counts. Cards in no combo are
 // left over; they cost steps (r10).
-function combos(sel) {
-  const cards = sel.map(cardAt);
-  if (cards.length < 2 || cards.length > 5 || cards.some(c => !c)) return [];
+// The starter joins every set (r16, the "Starter joins every set" setting): each set is
+// counted with the starter last, after the picked cards. Tracing it is allowed, but it isn't
+// a pick, so it doesn't count toward the max cards per set. If a combo uses it, it's in the
+// set (its power multiplies, it powers up, its suit counts); if not, it's ignored and never
+// left over. engine.md › Trace › The starter joins every set.
+const joins = () => !!(S.opts.starterJoins && S.starter && !S.starter.sj && !S.starter.x);
+const picked = (sel) => joins() ? sel.filter(p => p.k !== "s") : sel;
+const counted = (sel) => joins() ? [...picked(sel), P.s()] : sel;
+function combos(traced) {
+  const pk = picked(traced);
+  if (pk.length < 2 || pk.length > S.opts.maxSet) return [];
+  const sel = counted(traced), cards = sel.map(cardAt);
+  if (cards.some(c => !c)) return [];
   const si = sel.findIndex(p => p.k === "s");
   const ji = si < 0 ? -1 : sel.findIndex(p => (p.k === "h" || p.k === "c") && cardAt(p).r === 11 && cardAt(p).s === S.starter.s);
   const { out, used, items } = countCards(cards, { nobs: ji >= 0 ? [si, ji] : null, flushMin: 4 });
-  out.left = sel.filter((_, i) => !used.has(i)); // cards in no combo (r10: they cost steps)
+  const starterAt = joins() ? sel.length - 1 : -1, starterUsed = starterAt >= 0 && used.has(starterAt);
+  out.starter = starterAt < 0 ? "off" : starterUsed ? "used" : "ignored";
+  // The cards in the set, in count order (combo indexes point into it): a joining starter
+  // that no combo uses is dropped from the end.
+  out.set = starterAt >= 0 && !starterUsed ? sel.slice(0, -1) : sel;
+  out.left = sel.filter((_, i) => !used.has(i) && i !== starterAt); // cards in no combo (r10: they cost steps)
   out.used = used;
+  out.usedKeys = new Set(sel.filter((_, i) => used.has(i)).map(key)); // for lighting cards while tracing
   out.kind = WS.kind(items); // single (one combo) or multi (two or more)
   out.items = items; // each combo with the cards it uses, for the score breakdown
   out.opts = { nobs: ji >= 0 ? [si, ji] : null };
@@ -470,23 +488,22 @@ function classicCount(four, starter, isCrib) {
 // Cards in a set that aren't part of any combo (r9): returns their positions, or null when
 // the set can't be judged that way (too small, no grid card, already scored, not touching).
 function leftOver(sel) {
-  if (sel.length < 2 || sel.length > S.opts.maxSet || !sel.some(p => p.k === "g") || S.scored.has(setKey(sel))) return null;
+  const pk = picked(sel);
+  if (pk.length < 2 || pk.length > S.opts.maxSet || !sel.some(p => p.k === "g") || S.scored.has(setKey(sel))) return null;
   if (S.opts.touch && !connected(sel)) return null;
-  const cards = sel.map(cardAt), si = sel.findIndex(p => p.k === "s");
-  const ji = si < 0 ? -1 : sel.findIndex(p => (p.k === "h" || p.k === "c") && cardAt(p).r === 11 && cardAt(p).s === S.starter.s);
-  const { used } = WS.count(cards, { nobs: ji >= 0 ? [si, ji] : null, flushMin: 4 });
-  const out = sel.filter((_, i) => !used.has(i));
+  const out = combos(sel).left || []; // a joining starter is never left over (r16)
   return out.length ? out : null;
 }
 // The left-over warning shows once per player (kept in this browser), before any penalty.
 const WARN_KEY = "crib-maze-leftover-warned";
 const warned = () => { try { return localStorage.getItem(WARN_KEY) === "1"; } catch (e) { return S.warnedHere; } };
 const setWarned = (v) => { S.warnedHere = v; try { v ? localStorage.setItem(WARN_KEY, "1") : localStorage.removeItem(WARN_KEY); } catch (e) {} };
-const setKey = (sel) => sel.map(p => cardAt(p).id).sort((a, b) => a - b).join("-");
+// "Already scored" keys on the picked cards' IDs (r16: the starter joins every set alike).
+const setKey = (sel) => picked(sel).map(p => cardAt(p).id).sort((a, b) => a - b).join("-");
 // A set that scores: at least one combo. With allowLeft, cards left over are allowed and
 // cost the penalty each (r10); pts is the net. Without it, every card must be in a combo.
 function scoreable(sel, allowLeft) {
-  if (sel.length > S.opts.maxSet) return null;
+  if (picked(sel).length > S.opts.maxSet) return null;
   if (sel.some(p => cardAt(p) && cardAt(p).sj)) return null; // a special joker on the board isn't a scoring card
   if (!sel.some(p => p.k === "g")) return null; // edge cards can't score on their own
   if (S.opts.touch && !connected(sel)) return null;
@@ -495,8 +512,9 @@ function scoreable(sel, allowLeft) {
   if (cs.left.length && !allowLeft) return null;
   // r15: edge power multiplies the combos (rounded); the left-over cost isn't multiplied.
   const combo = cs.reduce((a, c) => a + c.pts, 0), pen = cs.left.length * S.opts.penalty;
-  const mult = edgeMult(sel), boosted = Math.round(combo * mult);
-  return { cs, combo, mult, boosted, pen, left: cs.left, pts: boosted - pen, kind: cs.kind, items: cs.items };
+  // set: the cards that score, in count order (with the starter last when a combo uses it).
+  const set = cs.set, mult = edgeMult(set), boosted = Math.round(combo * mult);
+  return { cs, combo, mult, boosted, pen, left: cs.left, pts: boosted - pen, kind: cs.kind, items: cs.items, set, starter: cs.starter };
 }
 // Bots and the dead-board check count a set only if it nets more than 0 steps.
 const netScore = (sel) => { const sc = scoreable(sel, true); return sc && sc.pts > 0 ? sc : null; };
@@ -504,18 +522,21 @@ const netScore = (sel) => { const sc = scoreable(sel, true); return sc && sc.pts
 // stopping at the first that scores. Used to tell the player the board is dead.
 function anySet() {
   if (!S.opts.touch) return !!bestScore();
-  const pos = allPositions().filter(p => cardAt(p) && !cardAt(p).sj), seen = new Set();
+  const pos = searchPositions(), seen = new Set();
   const grow = (set) => {
     const id = set.map(key).sort().join();
     if (seen.has(id)) return false;
     seen.add(id);
     if (set.length >= 2 && netScore(set)) return true;
-    if (set.length >= S.opts.maxSet) return false;
+    if (picked(set).length >= S.opts.maxSet) return false;
     for (const p of pos) if (!set.some(q => key(q) === key(p)) && set.some(q => touching(q, p)) && grow([...set, p])) return true;
     return false;
   };
   return pos.some(p => grow([p]));
 }
+// Positions worth searching. With the starter joining every set and in the corner, tracing
+// it changes nothing (its neighbours all touch each other), so the searches leave it out.
+const searchPositions = () => allPositions().filter(p => cardAt(p) && !cardAt(p).sj && !(p.k === "s" && joins() && S.opts.starter !== "bridge"));
 const posOfId = (id) => { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (S.grid[r][c] && S.grid[r][c].id === id) return P.g(r, c); return null; };
 const boardSpecial = (type) => { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (S.grid[r][c] && S.grid[r][c].sj === type) return P.g(r, c); return null; };
 const gridEmpty = () => S.grid.every(row => row.every(c => !c));
@@ -534,7 +555,7 @@ function newTurn() {
   if (S) clearInterval(S.tick);
   const opts = {
     dealer: $("optDealer").checked, hand: $("optHand").value, timer: +$("optTimer").value,
-    budget: +$("optBudget").value, prize: +$("optPrize").value, clearBonus: $("optClear").value, penalty: +$("optPenalty").value, jokers: $("optJokers").value, titleBlank: $("optTitleBlank").checked, touch: $("optTouch").checked, starter: $("optStarter").value, maxSet: +$("optMax").value,
+    budget: +$("optBudget").value, prize: +$("optPrize").value, clearBonus: $("optClear").value, penalty: +$("optPenalty").value, jokers: $("optJokers").value, titleBlank: $("optTitleBlank").checked, touch: $("optTouch").checked, starter: $("optStarter").value, starterJoins: $("optStarterJoins").checked, maxSet: +$("optMax").value,
     swaps: +$("optSwaps").value, bombs: +$("optBombs").value, blast: $("optBlast").value, prizeSpecial: $("optPrizeSpecial").checked, bot: $("optBot").value,
   };
   const deck = []; let id = 0;
@@ -558,7 +579,7 @@ function newTurn() {
     opts, hand, crib: opts.dealer ? crib : null, starter, stock: deck, grid: [[], [], [], []],
     power: {}, steps: 0, drawn: 0, tally: { grid: 0, edge: 0, power: 0 }, best: null, prizes: [], scored: new Set(),
     sel: [], busy: false, over: false, started: false, t0: 0, log: [], timeLeft: opts.timer,
-    scores: 0, swaps: 0, rejected: 0, bombs: 0,
+    scores: 0, swaps: 0, rejected: 0, bombs: 0, starterUsed: 0,
     specials: { swap: opts.swaps, bomb: opts.bombs }, armed: null,
     penalty: 0, leftovers: 0, extras: [], items: 0, stockAdds: {}, made: [], jokers: nJokers, armedFrom: null, bySuit: {}, dead: false, stockOut: false, cleared: false, last: null, skip: false,
   };
@@ -682,7 +703,7 @@ function submit() {
   const left = leftOver(S.sel);
   if (left && warned() && scoreable(S.sel, true)) { doScore(); return; } // combos minus the left-over cost
   S.rejected++;
-  log("trace_no_score", { cards: S.sel.map(cardAt).map(label), left_over: left ? left.map(cardAt).map(label) : [] });
+  log("trace_no_score", { cards: picked(S.sel).map(cardAt).map(label), left_over: left ? left.map(cardAt).map(label) : [] });
   if (left) { leftOverSet(S.sel, left); return; }
   S.sel = []; render(); // nothing happens
 }
@@ -695,7 +716,7 @@ async function leftOverSet(sel, left) {
   const names = left.map(cardAt).map(label).join(" "), n = left.length, cost = n * S.opts.penalty;
   if (!warned()) {
     setWarned(true);
-    log("leftover_warning", { cards: sel.map(cardAt).map(label), left_over: left.map(cardAt).map(label) });
+    log("leftover_warning", { cards: picked(sel).map(cardAt).map(label), left_over: left.map(cardAt).map(label) });
     const w = $("warn");
     w.innerHTML = `<h3>Every card must score</h3>
       <p>A set can hold one combo or several (7-8-8 is two fifteens and a pair), but every card you trace must be part of at least one: a fifteen, pair, run, flush or his nobs.</p>
@@ -709,8 +730,8 @@ async function leftOverSet(sel, left) {
     S.steps -= cost; // steps can go below 0 (r10)
     S.penalty += cost; S.leftovers += n;
     left.forEach(p => floatAt([p], "−" + S.opts.penalty, "left over", "penalty"));
-    feed(`${sel.map(cardAt).map(label).join(" ")}  no combo: ${names} left over  −${cost}`);
-    log("leftover_penalty", { cards: sel.map(cardAt).map(label), left_over: left.map(cardAt).map(label), cost });
+    feed(`${picked(sel).map(cardAt).map(label).join(" ")}  no combo: ${names} left over  −${cost}`);
+    log("leftover_penalty", { cards: picked(sel).map(cardAt).map(label), left_over: left.map(cardAt).map(label), cost });
     await sleep(700);
   } else await sleep(400);
   S.busy = false; render();
@@ -745,9 +766,12 @@ async function doScore() {
   const sc = scoreable(S.sel, true);
   if (!sc) return;
   S.busy = true;
-  const sel = S.sel, cards = sel.map(cardAt), edges = sel.filter(isEdge).map(cardAt);
+  // set: the cards that score (r16: with the starter last when a combo uses it, so it lifts,
+  // powers up and its suit counts). The traced selection only decides the picked cards.
+  const traced = S.sel, sel = sc.set, cards = sel.map(cardAt), edges = sel.filter(isEdge).map(cardAt);
   const suit = WS.suitOf(cards);
-  S.scored.add(setKey(sel)); S.sel = [];
+  S.scored.add(setKey(traced)); S.sel = [];
+  if (sc.starter === "used") S.starterUsed++;
   // Keep what's needed to replay this score on the board as it was.
   S.last = { sel, sc, suit, grid: S.grid.map(r => [...r]), power: { ...S.power }, steps: S.steps };
   const t0 = performance.now();
@@ -762,7 +786,7 @@ async function doScore() {
   if (sel.some(isEdge)) S.tally.edge += sc.pts; else S.tally.grid += sc.pts;
   const what = (sc.kind.type === "multi" ? `multi ×${sc.kind.combos}: ` : "single: ") + sc.cs.map(c => c.name).join(" + ");
   feed(`${cards.map(label).join(" ")}  ${what}  ${sc.left.length ? `+${sc.combo} −${sc.pen} (${sc.left.map(cardAt).map(label).join(" ")} left over) = ${sc.pts}` : "+" + sc.pts} ${suitText(suit)}${sc.mult > 1 ? ` (${sc.combo} ${fmtMult(sc.mult)} edge power)` : ""}`);
-  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, combo_pts: sc.combo, left_over: sc.left.map(cardAt).map(label), penalty: sc.pen, suit, mult: sc.mult, boosted: sc.boosted, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length, breakdown_ms: ms });
+  log("score", { cards: cards.map(label), kind: sc.kind.type, count: sc.kind.combos, combos: sc.cs.map(c => c.name), pts: sc.pts, combo_pts: sc.combo, left_over: sc.left.map(cardAt).map(label), penalty: sc.pen, suit, mult: sc.mult, boosted: sc.boosted, edge: edges.map(label), grid: sel.filter(p => p.k === "g").length, starter: sc.starter, breakdown_ms: ms });
   const gridSel = sel.filter(p => p.k === "g");
   render(collapse(gridSel), "drop"); await sleep(280);
   await resolveExtras();
@@ -991,7 +1015,7 @@ async function startTurn() {
   $("start").classList.add("off");
   S.busy = true; await playIntro(); S.busy = false; // the deal doesn't use the player's time
   S.t0 = performance.now();
-  log("turn_start", { rules: RULES, dealer: S.opts.dealer, stock: S.stock.length, timer: S.opts.timer, budget: S.opts.budget,
+  log("turn_start", { rules: RULES, starter_joins: !!S.opts.starterJoins, dealer: S.opts.dealer, stock: S.stock.length, timer: S.opts.timer, budget: S.opts.budget,
     hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter) });
   if (S.opts.timer) S.tick = setInterval(() => {
     if (S.busy) return; // the timer pauses while a score plays (r7)
@@ -1024,7 +1048,7 @@ async function endTurn(reason) {
     log("prize_won", { tier, steps: b, cards: S.best.cards, special: extra.replace(", ", "") || null });
   }
   const secs = Math.round((performance.now() - S.t0) / 1000);
-  log("turn_end", { reason, penalty: S.penalty, leftovers: S.leftovers, steps: S.steps, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
+  log("turn_end", { reason, penalty: S.penalty, leftovers: S.leftovers, steps: S.steps, best: S.best ? S.best.pts : 0, tally: S.tally, prizes: S.prizes, scores: S.scores, starter_used: S.starterUsed, swaps: S.swaps, rejected: S.rejected, drawn: S.drawn, seconds: secs });
   saveRun(reason, secs);
   await playEnding(reason, S.cleared && !S.opts.clearBonus.startsWith("none") ? clearText : "");
   const suits = Object.entries(S.bySuit).map(([s, n]) => `${s === "none" ? "no suit" : WC.SUITS[s].glyph} ${n}`).join(", ") || "none";
@@ -1037,6 +1061,7 @@ async function endTurn(reason) {
       ${S.cleared ? `<tr><td>Clear-board bonus</td><td>${clearText}</td></tr>` : ""}
       <tr><td>Sets using your hand, crib or starter</td><td>${S.tally.edge}</td></tr>
       <tr><td>Sets of grid cards only</td><td>${S.tally.grid}</td></tr>
+      ${S.opts.starterJoins ? `<tr><td>Sets the starter joined</td><td>${S.starterUsed} of ${S.scores}</td></tr>` : ""}
       <tr><td>Steps added by edge power</td><td>${S.tally.power}</td></tr>
       <tr><td>Prize</td><td>${prizeText}</td></tr>
       <tr><td>Scores / traces that didn't score</td><td>${S.scores} / ${S.rejected}</td></tr>
@@ -1059,11 +1084,11 @@ function saveRun(reason, secs) {
   const o = S.opts;
   RUNS.push({
     v: 4, rules: RULES, at: new Date().toISOString(), player: S.bot ? "bot" : "human",
-    settings: { starter: o.starter, dealer: o.dealer, hand: o.hand, timer: o.timer, budget: o.budget, prize: o.prize, touch: o.touch, maxSet: o.maxSet,
+    settings: { starter: o.starter, starterJoins: !!o.starterJoins, dealer: o.dealer, hand: o.hand, timer: o.timer, budget: o.budget, prize: o.prize, touch: o.touch, maxSet: o.maxSet,
                 swaps: o.swaps, bombs: o.bombs, blast: o.blast, prizeSpecial: o.prizeSpecial, bot: o.bot, clearBonus: o.clearBonus, penalty: o.penalty, jokers: o.jokers, titleBlank: o.titleBlank },
     hand: S.hand.map(label), crib: S.crib ? S.crib.map(label) : null, starter: label(S.starter),
     classic: { hand: classicCount(S.hand, S.starter, false), crib: classicCount(S.crib, S.starter, true) },
-    steps: S.steps, best: S.best ? S.best.pts : 0, tally: { ...S.tally }, mult: { soften: +$("optMult").value, mode: $("optMultMode").value, cap: +$("optMultCap").value }, scores: S.scores, prizes: S.prizes.length, rejected: S.rejected,
+    steps: S.steps, best: S.best ? S.best.pts : 0, tally: { ...S.tally }, mult: { soften: +$("optMult").value, mode: $("optMultMode").value, cap: +$("optMultCap").value }, scores: S.scores, starterUsed: S.starterUsed, prizes: S.prizes.length, rejected: S.rejected,
     swaps: S.swaps, bombs: S.bombs, drawn: S.drawn, seconds: secs, ended: reason, cleared: S.cleared, bySuit: { ...S.bySuit }, penalty: S.penalty, leftovers: S.leftovers, extras: S.extras.map(e => e.card + ":" + e.outcome), items: S.items, stockAdds: { ...S.stockAdds }, jokers: S.jokers, made: S.made,
     singles: S.log.filter(e => e.type === "score" && e.count === 1).length,
     multis: S.log.filter(e => e.type === "score" && e.count > 1).length,
@@ -1071,7 +1096,7 @@ function saveRun(reason, secs) {
   });
   storeRuns(); renderRuns();
 }
-const sigOf = (r) => `r${r.rules || "?"} · ${r.player}${r.player === "bot" && r.settings.bot ? " " + BOT_LEVELS[r.settings.bot].name.toLowerCase() : ""}${r.settings.starter === "bridge" ? " · starter apart" : ""} · set ${r.settings.maxSet} · prize ${r.settings.prize} · ${r.settings.timer ? r.settings.timer + " s" : "no timer"}` +
+const sigOf = (r) => `r${r.rules || "?"} · ${r.player}${r.player === "bot" && r.settings.bot ? " " + BOT_LEVELS[r.settings.bot].name.toLowerCase() : ""}${r.settings.starter === "bridge" ? " · starter apart" : ""}${r.settings.starterJoins ? " · starter joins" : ""} · set ${r.settings.maxSet} · prize ${r.settings.prize} · ${r.settings.timer ? r.settings.timer + " s" : "no timer"}` +
   `${r.settings.budget ? " · " + r.settings.budget + " cards" : ""}${r.settings.dealer ? " · dealer" : ""}${r.settings.hand === "good" ? " · strong hand" : ""}${r.mult ? " · power ×" + (1 + r.mult.soften) + (r.mult.mode === "each" ? " each" : "") + (r.mult.cap ? " cap ×" + r.mult.cap : "") : ""}`;
 function renderRuns() {
   const groups = {};
@@ -1114,18 +1139,20 @@ function cellEl(p, fx, cls) {
   if (p.k === "s" && S.opts.starter !== "bridge") d.insertAdjacentHTML("beforeend", `<span class="tag">STARTER</span>`);
   if (p.i === 0 && (p.k === "h" || p.k === "c")) d.insertAdjacentHTML("beforeend", `<span class="tag gold">${p.k === "h" ? "HAND" : "CRIB"}</span>`);
   if (isEdge(p) && S.power[card.id]) d.insertAdjacentHTML("beforeend", `<span class="chip">${fmtMult(cardMult(S.power[card.id]))}</span>`);
-  const si = S.sel.findIndex(q => key(q) === key(p));
-  if (si >= 0 && S.selUsed && S.selUsed.has(si)) d.classList.add("used");
+  const si = S.sel.findIndex(q => key(q) === key(p)), lit = S.selUsed && S.selUsed.has(key(p));
+  if (lit) d.classList.add("used");
   if (si >= 0) { d.classList.add("sel"); d.insertAdjacentHTML("beforeend", `<span class="order">${si + 1}</span>`); }
+  else if (lit) d.classList.add("sel"); // the starter joins the set without being traced (r16)
   if (fx) { const f = fx.find(q => key(q) === key(p)); if (f) { d.classList.add(cls); if (f.dy) d.style.setProperty("--dy", f.dy); } }
   return d;
 }
-// Which selected cards are part of a combo in the current trace (they light up). With a
+// Which cards are part of a combo in the current trace (they light up), as position keys.
+// With the starter joining (r16), it lights up when a combo uses it, traced or not. With a
 // swapper armed, the whole line lights up.
 function selUsed() {
-  if (S.armed === "swap") return new Set(S.sel.map((_, i) => i));
-  if (S.sel.length < 2 || S.sel.some(p => !cardAt(p))) return new Set();
-  return combos(S.sel).used || new Set();
+  if (S.armed === "swap") return new Set(S.sel.map(key));
+  if (S.sel.some(p => !cardAt(p) || cardAt(p).sj)) return new Set();
+  return combos(S.sel).usedKeys || new Set();
 }
 function render(fx, cls) {
   S.selUsed = selUsed();
@@ -1153,15 +1180,16 @@ function render(fx, cls) {
   else if (!S.sel.length && S.dead) msg = "No sets left on the board. " + (S.specials.swap || S.specials.bomb ? "Use a swapper or bomb, or end the turn." : "End the turn to finish.");
   else if (!S.sel.length) msg = "Drag across touching cards and let go. Cards in a combo light up; cards left over cost steps.";
   else {
-    const cards = S.sel.map(cardAt);
-    msg = cards.map(label).join(" ") + `  (sum ${cards.reduce((a, c) => a + val(c), 0)})`;
+    // The picked cards (r16: a traced starter isn't a pick; it joins every set anyway).
+    const pk = S.armed === "swap" ? S.sel : picked(S.sel), cards = pk.map(cardAt);
+    msg = cards.length ? cards.map(label).join(" ") + `  (sum ${cards.reduce((a, c) => a + val(c), 0)})` : `${label(S.starter)}, the starter: it joins every set`;
     if (S.armed === "swap") msg += mirrorLine(S.sel) ? ": reverse this line" : ": not a straight line";
     else {
-      const sc = scoreable(S.sel, true);
-      if (sc && !sc.left.length) msg += `: ${sc.cs.map(c => c.name).join(" + ")} (+${sc.pts})`;
-      else if (sc && warned()) msg += `: ${sc.cs.map(c => c.name).join(" + ")} (+${sc.combo}), ${sc.left.map(cardAt).map(label).join(" ")} left over (−${sc.pen}) = ${signed(sc.pts)}`;
-      else if (S.sel.length >= 2 && !S.sel.some(p => p.k === "g")) msg += ": needs a grid card";
-      else if (S.sel.length >= 2 && S.scored.has(setKey(S.sel))) msg += ": already scored";
+      const sc = scoreable(S.sel, true), withStarter = sc && sc.starter === "used" ? ` with the starter ${label(S.starter)}` : "";
+      if (sc && !sc.left.length) msg += `: ${sc.cs.map(c => c.name).join(" + ")}${withStarter} (+${sc.pts})`;
+      else if (sc && warned()) msg += `: ${sc.cs.map(c => c.name).join(" + ")}${withStarter} (+${sc.combo}), ${sc.left.map(cardAt).map(label).join(" ")} left over (−${sc.pen}) = ${signed(sc.pts)}`;
+      else if (pk.length >= 2 && !S.sel.some(p => p.k === "g")) msg += ": needs a grid card";
+      else if (pk.length >= 2 && S.scored.has(setKey(S.sel))) msg += ": already scored";
       else { const left = leftOver(S.sel); if (left) msg += `: ${left.map(cardAt).map(label).join(" ")} left over` + (warned() && S.opts.penalty ? ` (−${left.length * S.opts.penalty})` : ""); }
     }
   }
@@ -1232,12 +1260,14 @@ function swipePos(x, y) {
   }
   return JSON.parse(el.dataset.p);
 }
+// Too many cards for one set? The pick limit counts picked cards (r16: not the starter).
+const overLimit = (sel) => (S.armed === "swap" ? sel : picked(sel)).length > S.opts.maxSet;
 function swipeTo(x, y) {
   const p = swipePos(x, y); if (!p) return false;
   const last = S.sel[S.sel.length - 1];
   if (key(p) === key(last)) return false;
   if (S.sel.length >= 2 && key(S.sel[S.sel.length - 2]) === key(p)) { S.sel.pop(); return true; } // trace back to undo
-  if (S.sel.some(q => key(q) === key(p)) || S.sel.length >= S.opts.maxSet) return false;
+  if (S.sel.some(q => key(q) === key(p)) || overLimit([...S.sel, p])) return false;
   if (S.opts.touch && !touching(last, p)) return false;
   S.sel.push(p); return true;
 }
@@ -1267,7 +1297,7 @@ document.addEventListener("pointerup", () => {
   const i = S.sel.findIndex(q => key(q) === key(p));
   if (i >= 0 && i === S.sel.length - 1 && S.sel.length >= 2) { submit(); return; }
   if (i >= 0) S.sel.splice(i, 1);
-  else if (S.sel.length < S.opts.maxSet && (!S.opts.touch || !S.sel.length || S.sel.some(q => touching(q, p)))) S.sel.push(p);
+  else if (!overLimit([...S.sel, p]) && (!S.opts.touch || !S.sel.length || S.sel.some(q => touching(q, p)))) S.sel.push(p);
   else S.sel = [p];
   render();
 });
@@ -1328,7 +1358,7 @@ const BOT_LEVELS = {
 function bestScore() {
   const lv = BOT_LEVELS[S.opts.bot || "perfect"];
   if (lv.depth) return tracedBest(lv);
-  const pos = allPositions().filter(p => cardAt(p) && !cardAt(p).sj);
+  const pos = searchPositions();
   let best = null;
   const pick = [];
   (function rec(start) {
@@ -1336,7 +1366,7 @@ function bestScore() {
       const sc = netScore(pick);
       if (sc && (!best || sc.pts > best.pts || (sc.pts === best.pts && pick.length > best.sel.length))) best = { sel: [...pick], pts: sc.pts };
     }
-    if (pick.length === S.opts.maxSet) return;
+    if (picked(pick).length === S.opts.maxSet) return;
     for (let i = start; i < pos.length; i++) { pick.push(pos[i]); rec(i + 1); pick.pop(); }
   })(0);
   return best;
@@ -1352,7 +1382,7 @@ function tracedBest(lv) {
       const sc = netScore(path);
       if (sc && (!best || sc.pts > best.pts)) best = { sel: [...path], pts: sc.pts };
     }
-    if (path.length === depth) return;
+    if (picked(path).length === depth) return; // depth counts picked cards (r16)
     const last = path[path.length - 1];
     for (const p of pos) {
       if (path.some(q => key(q) === key(p)) || !touching(last, p)) continue;

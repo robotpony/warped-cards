@@ -159,3 +159,59 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         }
     }
 }
+
+/// Match rules r16: the starter counts with every set.
+@Suite struct StarterJoinsTests {
+    func config(_ joins: Bool) throws -> Config { var c = try loadConfig(); c.rules.match.starterJoins = joins; return c }
+
+    @Test func starterCountsWithEverySet() throws {
+        let c = try config(true)
+        var sawUsed = false, sawUnused = false
+        for seed in UInt64(1)...40 {
+            let (t, _) = MatchTurn.start(config: c, setup: TurnSetup(seed: seed, fixedHand: ["AH", "AC", "AS", "JD"], fixedStarter: "5D"))
+            for set in MatchTurn.sets(maxSize: 3) where !set.contains(Board.starter) && t.traceProblem(set) == nil {
+                guard let v = t.value(of: set) else { continue }
+                #expect(v.counted == set + [Board.starter])
+                let used = v.count.combos.contains { $0.cards.contains(set.count) }
+                #expect(v.inSet == (used ? v.counted : set))
+                #expect(v.leftOver == v.count.leftOver.filter { $0 != set.count }.count)   // never left over
+                if used { sawUsed = true } else { sawUnused = true }
+            }
+        }
+        #expect(sawUsed && sawUnused)
+    }
+
+    @Test func starterIsFreeUnderTheCounter() throws {
+        let c = try config(true)
+        let (t, _) = MatchTurn.start(config: c, setup: TurnSetup(seed: 3))
+        let five = [Board.g(3, 3), Board.g(3, 2), Board.g(2, 3), Board.g(2, 2), Board.g(3, 1)]
+        #expect(t.traceProblem(five + [Board.starter]) != "size")
+        #expect(t.traceProblem([Board.g(3, 3), Board.starter]) == "size")   // one picked card isn't a set
+        #expect(t.picked(five + [Board.starter]) == five && t.pickLimit == 5)
+    }
+
+    @Test func scoreNamesTheStarterOnlyWhenItScores() throws {
+        let c = try config(true)
+        var checked = 0
+        for seed in UInt64(1)...30 {
+            var (t, _) = MatchTurn.start(config: c, setup: TurnSetup(seed: seed, warned: true, fixedHand: ["AH", "AC", "AS", "JD"], fixedStarter: "5D"))
+            guard let set = MatchTurn.sets(maxSize: 2).first(where: { !$0.contains(Board.starter) && t.traceProblem($0) == nil && !(t.value(of: $0)?.count.combos.isEmpty ?? true) }),
+                  let v = t.value(of: set) else { continue }
+            let before = t.state.power[Board.starter]
+            let ev = try t.apply(.trace(positions: set))
+            guard case .score(let names, _, _, _, _, _, _, _, let points, _, _, _) = ev[0] else { Issue.record("no score"); continue }
+            #expect(points == v.points)
+            #expect(names.contains("s") == v.inSet.contains(Board.starter))
+            #expect(t.state.power[Board.starter] == before + (v.inSet.contains(Board.starter) ? 1 : 0))
+            checked += 1
+        }
+        #expect(checked > 10)
+    }
+
+    @Test func offByDefault() throws {
+        let (t, _) = MatchTurn.start(config: try config(false), setup: TurnSetup(seed: 3))
+        #expect(!t.starterJoins)
+        let set = [Board.g(0, 0), Board.g(0, 1)]
+        #expect(t.value(of: set)?.counted == set)
+    }
+}

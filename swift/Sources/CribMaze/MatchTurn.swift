@@ -114,12 +114,17 @@ public struct SetValue: Sendable {
     public let leftOver: Int
     public let points: Int
     public let suit: Suit?
+    /// The positions counted, in count order: the traced cards, then the starter when it joins
+    /// (r16). Combo card indexes point into this list.
+    public let counted: [Pos]
+    /// The positions that are in the set: `counted`, less a starter that joined but isn't in a combo.
+    public let inSet: [Pos]
 }
 
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r15"
+    public static let rulesVersion = "match-r16"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -297,24 +302,39 @@ public struct MatchTurn: Sendable {
         return false
     }
 
-    private static let setsCache: [[[Pos]]] = (0...7).map { $0 >= 2 ? Board.connectedSets(maxSize: $0) : [] }
+    // Only sizes up to 5 (the rules' maxSet) are cached: size 7 alone took over a second to build at launch.
+    private static let setsCache: [[[Pos]]] = (0...5).map { $0 >= 2 ? Board.connectedSets(maxSize: $0) : [] }
     /// Every connected set up to maxSize, in position order.
-    public static func sets(maxSize: Int) -> [[Pos]] { maxSize <= 7 ? setsCache[max(0, maxSize)] : Board.connectedSets(maxSize: maxSize) }
+    public static func sets(maxSize: Int) -> [[Pos]] { maxSize <= 5 ? setsCache[max(0, maxSize)] : Board.connectedSets(maxSize: maxSize) }
 
     // MARK: Tracing
 
     /// Why a trace would be rejected (steps 1 to 4), or nil if it passes.
+    /// Whether the starter counts with every set (r16).
+    public var starterJoins: Bool { (r.starterJoins ?? false) && state.cells[Board.starter]?.isPlaying == true }
+
+    /// How many cards a set may pick now. For now it's always `maxSet`; later some combos, jokers
+    /// and prizes raise it for a while, and the engine will track that here.
+    public var pickLimit: Int { r.maxSet }
+
+    /// The cards a trace picks, which `maxSet` limits: with r16 the starter is free, traced or not.
+    public func picked(_ ps: [Pos]) -> [Pos] { starterJoins ? ps.filter { $0 != Board.starter } : ps }
+
+    /// The ID set that marks a set as scored: the picked cards (the starter joins every set alike).
+    func scoredKey(_ ps: [Pos]) -> [Int] { picked(ps).map { state.cells[$0]!.id }.sorted() }
+
     public func traceProblem(_ ps: [Pos]) -> String? {
-        if ps.count < 2 || ps.count > r.maxSet || Set(ps).count != ps.count { return "size" }
+        if picked(ps).count < 2 || picked(ps).count > pickLimit || Set(ps).count != ps.count { return "size" }
         for p in ps { guard let c = state.cells[p] else { return "size" }; if c.isSpecial { return "special" } }
         if !ps.contains(where: Board.isGrid) { return "no_grid_card" }
         if !Board.connected(ps) { return "not_touching" }
-        if state.scoredSets.contains(ps.map { state.cells[$0]!.id }.sorted()) { return "already_scored" }
+        if state.scoredSets.contains(scoredKey(ps)) { return "already_scored" }
         return nil
     }
 
     /// What a set of positions would score now, counted in the order given.
-    public func value(of ps: [Pos]) -> SetValue? {
+    public func value(of traced: [Pos]) -> SetValue? {
+        let ps = starterJoins ? picked(traced) + [Board.starter] : traced
         var cards: [(rank: Int, suit: Suit)] = []
         for p in ps { guard let c = state.cells[p], c.isPlaying, let s = c.suit else { return nil }; cards.append((c.rank, s)) }
         var opts = CountOptions(flushMin: r.flushMin)
@@ -324,8 +344,13 @@ public struct MatchTurn: Sendable {
         }
         let cnt = count(cards, opts, scoring: config.rules.scoring)
         let combo = cnt.total
+        // A joining starter is in the set only when a combo uses it: then its power multiplies, it
+        // powers up and its suit counts. Otherwise it's ignored, never left over.
+        let starterAt = starterJoins ? ps.count - 1 : nil
+        let starterUsed = starterAt.map { i in cnt.combos.contains { $0.cards.contains(i) } } ?? false
+        let inSet = starterAt != nil && !starterUsed ? Array(ps.dropLast()) : ps
         let ep = r.edgePower
-        let levels = ps.filter(Board.isEdge).map { state.power[$0] }
+        let levels = inSet.filter(Board.isEdge).map { state.power[$0] }
         var percent: Int
         if ep.combine == "each" {
             percent = 100
@@ -335,9 +360,10 @@ public struct MatchTurn: Sendable {
         }
         if ep.capPercent > 0 { percent = min(percent, ep.capPercent) }
         let multiplied = (combo * percent + 50) / 100
-        let left = cnt.leftOver.count
+        let left = cnt.leftOver.filter { $0 != starterAt }.count
         return SetValue(count: cnt, comboPoints: combo, percent: percent, multiplied: multiplied, leftOver: left,
-                        points: multiplied - r.leftOverCost * left, suit: suitOf(cards.map(\.suit)))
+                        points: multiplied - r.leftOverCost * left, suit: suitOf(Array(cards.map(\.suit).prefix(inSet.count))),
+                        counted: ps, inSet: inSet)
     }
 
     // MARK: Actions
@@ -356,10 +382,15 @@ public struct MatchTurn: Sendable {
         }
     }
 
-    mutating func trace(_ ps: [Pos]) -> [MatchEvent] {
-        let names = ps.map(Board.name)
-        if let why = traceProblem(ps) { state.totals.rejected += 1; return [.traceRejected(positions: names, reason: why)] }
-        let v = value(of: ps)!
+    mutating func trace(_ traced: [Pos]) -> [MatchEvent] {
+        var names = traced.map(Board.name)
+        if let why = traceProblem(traced) { state.totals.rejected += 1; return [.traceRejected(positions: names, reason: why)] }
+        let v = value(of: traced)!
+        // From here on the set is what was counted (the starter last when it joins), and a scored set
+        // names only the cards in it. Combo card indexes still point at the same cards.
+        let key = scoredKey(traced)
+        let ps = v.count.combos.isEmpty ? picked(traced) : v.inSet
+        names = ps.map(Board.name)
         let hasCombos = !v.count.combos.isEmpty
         if v.leftOver > 0 && !state.warned {
             state.warned = true; state.totals.warnings += 1
@@ -383,7 +414,7 @@ public struct MatchTurn: Sendable {
         var powerAfter: [String: Int] = [:]
         for p in ps where Board.isEdge(p) { state.power[p] += r.edgePower.step; powerAfter[Board.name(p)] = state.power[p] }
         let cards = ps.map { state.cells[$0]! }
-        state.scoredSets.append(cards.map(\.id).sorted())
+        state.scoredSets.append(key)
         if state.bestPoints == nil || v.points > state.bestPoints! { state.bestPoints = v.points; state.bestCards = cards; state.totals.best = v.points }
         var ev: [MatchEvent] = [.score(positions: names, cards: cards.map(CardRef.init),
                                        combos: v.count.combos.map { ComboOut(kind: $0.kind, size: $0.size, multiplier: $0.multiplier, points: $0.points, cards: $0.cards) },

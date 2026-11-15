@@ -67,6 +67,8 @@ Build plan phases A to D in `ARCHITECTURE.md`.
 ## Phase 7 · Tuning
 
 - [ ] Tune with simulation until the numbers hold up (`stats.md` › Targets)
+- [ ] Retune prizes and edge power for r16, where the starter joins every set (`concept.md` › Decisions, 2026-11-15)
+- [ ] Design what raises the pick limit for a while: combos, jokers, prizes (`engine.md` › Pick limit)
 
 ## Phase 8 · Face-card art
 
@@ -82,6 +84,7 @@ Build plan phases A to D in `ARCHITECTURE.md`.
 - [x] Mac beta, playable match turn (`ARCHITECTURE.md` › Build plan E), without effects yet
 - [x] Breakdown playback and card movement in the beta
 - [ ] Joker reveals, and the begin and end effects, in the beta (`ARCHITECTURE.md` › Effects)
+- [ ] The total flies up to the step counter at the end of a breakdown, as in the mock
 - [ ] Beta tools: records, replay, stats, animation lab, tuning (F)
 - [ ] The rest of a round, as each part's design settles (G)
 - [ ] iOS, and TestFlight for sharing the beta (H)

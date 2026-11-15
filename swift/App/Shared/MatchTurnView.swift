@@ -20,6 +20,7 @@ struct MatchTurnView: View {
                 SidePanel(session: session).frame(width: 320)
             }
             .background(Theme.page)
+            .background(FrameMeterHost(meter: session.meter))
         }
     }
 }
@@ -36,10 +37,14 @@ struct PhoneView: View {
             stepsRow
             track
             BoardView(session: session).padding(.top, 9).frame(maxWidth: .infinity)
-            Text(session.pickMessage)
-                .font(Theme.font(14, session.dead && session.selection.isEmpty && session.mode == .trace ? .semibold : .medium))
-                .foregroundStyle(session.dead && session.selection.isEmpty && session.mode == .trace ? Theme.gold : Theme.feltText.opacity(0.9))
-                .lineLimit(2).frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .topLeading)
+            HStack(alignment: .top, spacing: 10) {
+                Text(session.pickMessage)
+                    .font(Theme.font(14, session.dead && session.selection.isEmpty && session.mode == .trace ? .semibold : .medium))
+                    .foregroundStyle(session.dead && session.selection.isEmpty && session.mode == .trace ? Theme.gold : Theme.feltText.opacity(0.9))
+                    .lineLimit(2).frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .topLeading)
+                PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit)
+                    .onTapGesture { if !session.busy { session.info = .counter } }
+            }
             feed
             bottom
         }
@@ -49,11 +54,13 @@ struct PhoneView: View {
         .background(Theme.felt)
         .overlay {   // tap anywhere to skip the breakdown
             if session.playback.active {
-                Color.clear.contentShape(Rectangle()).onTapGesture { session.playback.skipping = true }
+                // A tap skips to the end of the breakdown; at the end, a tap moves on.
+                Color.clear.contentShape(Rectangle()).onTapGesture { session.playback.tap() }
             }
         }
         .overlay { Toast(text: session.toast) }
         .overlay { if let left = session.warning { WarningCard(left: left, cost: session.config?.rules.match.leftOverCost ?? 2) { session.dismissWarning() } } }
+        .overlay { if let topic = session.info { InfoCard(topic: topic, session: session) { session.info = nil } } }
         .overlay { if session.over { SummaryView(session: session) } }
         .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Color(hex: 0x111111), lineWidth: 10).padding(-5))
@@ -95,7 +102,7 @@ struct PhoneView: View {
                 Capsule().fill(Theme.feltText.opacity(0.15))
                 Capsule().fill(Theme.gold).frame(width: g.size.width * min(1, max(0, CGFloat(session.state?.steps ?? 0) / 121)))
                     .shadow(color: Theme.gold.opacity(0.7), radius: 3)
-                    .animation(.easeOut(duration: 0.4), value: session.state?.steps)
+                    .animation(.easeOut(duration: Motion.t(0.4)), value: session.state?.steps)
             }
         }
         .frame(height: 6)
@@ -117,12 +124,23 @@ struct PhoneView: View {
 
     private var bottom: some View {
         HStack(alignment: .bottom, spacing: 16) {
-            TrayCard(kind: "swapper", count: session.state?.tray["swapper"] ?? 0, armed: session.mode == .swap && session.armedSource == nil) { tapTray("swapper", .swap) }
-            TrayCard(kind: "bomb", count: session.state?.tray["bomb"] ?? 0, armed: session.mode == .bomb && session.armedSource == nil) { tapTray("bomb", .bomb) }
+            // The tray: special jokers on a bed of their own, with a TRAY tag like the hand's.
+            HStack(spacing: 22) {
+                TrayCard(kind: "swapper", count: session.state?.tray["swapper"] ?? 0, armed: session.mode == .swap && session.armedSource == nil) { tapTray("swapper", .swap) }
+                TrayCard(kind: "bomb", count: session.state?.tray["bomb"] ?? 0, armed: session.mode == .bomb && session.armedSource == nil) { tapTray("bomb", .bomb) }
+            }
+            .padding(.horizontal, 14).padding(.top, 18).padding(.bottom, 12)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.panel))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.violet.opacity(0.5), lineWidth: 1))
+            .overlay(alignment: .top) {
+                Text("TRAY").font(Theme.font(10, .bold)).tracking(0.8).padding(.horizontal, 6).frame(height: 16)
+                    .background(Capsule().fill(Theme.violet)).foregroundStyle(Theme.felt).offset(y: -8)
+                    .onTapGesture { if !session.blocked { session.info = .tray } }
+            }
             Spacer()
             EndTurnButton(nudge: session.dead && !session.over) { session.send(.endTurn) }
         }
-        .frame(minHeight: 72, alignment: .bottom)
+        .frame(minHeight: 112, alignment: .bottom)
     }
 
     private func tapTray(_ kind: String, _ m: InputMode) {
@@ -134,15 +152,16 @@ struct PhoneView: View {
 /// A special joker in the tray: a small card, a stack when there's more than one, and a count.
 struct TrayCard: View {
     let kind: String, count: Int, armed: Bool
+    var w: CGFloat = 58
     let action: () -> Void
     var body: some View {
         let card = Card(id: 0, kind: .special(kind), rank: 0, suit: nil)
         ZStack {
             if count > 1 {
-                RoundedRectangle(cornerRadius: 4).fill(Color(hex: 0xA99E86)).frame(width: 44, height: 61.6).offset(x: 6, y: -6)
-                RoundedRectangle(cornerRadius: 4).fill(Color(hex: 0xCFC6B3)).frame(width: 44, height: 61.6).offset(x: 3, y: -3)
+                RoundedRectangle(cornerRadius: 5).fill(Color(hex: 0xA99E86)).frame(width: w, height: w * 1.4).offset(x: 6, y: -6)
+                RoundedRectangle(cornerRadius: 5).fill(Color(hex: 0xCFC6B3)).frame(width: w, height: w * 1.4).offset(x: 3, y: -3)
             }
-            CardFace(card: card, width: 44)
+            CardFace(card: card, width: w)
                 .overlay { if armed { RoundedRectangle(cornerRadius: 5.5).stroke(.white, lineWidth: 3).padding(-1.5) } }
                 .shadow(color: armed ? .black.opacity(0.4) : .clear, radius: 6, y: 6)
         }
@@ -152,7 +171,7 @@ struct TrayCard: View {
         }
         .offset(y: armed ? -10 : 0)
         .opacity(count < 1 ? 0.3 : 1)
-        .animation(.easeOut(duration: 0.12), value: armed)
+        .animation(.easeOut(duration: Motion.t(0.12)), value: armed)
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
         .help(kind == "swapper" ? "Swapper: reverses a straight line of 2 to 4 grid cards" : "Bomb: clears a card and its neighbours, without scoring")
@@ -174,7 +193,7 @@ struct EndTurnButton: View {
             .contentShape(Rectangle()).onTapGesture(perform: action)
             .onChange(of: nudge, initial: true) { _, on in
                 pulse = false
-                if on { withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { pulse = true } }
+                if on { withAnimation(.easeInOut(duration: Motion.t(0.6)).repeatForever(autoreverses: true)) { pulse = true } }
             }
     }
 }
@@ -220,7 +239,7 @@ struct Toast: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
-        .animation(.easeOut(duration: 0.2), value: text)
+        .animation(.easeOut(duration: Motion.t(0.2)), value: text)
         .allowsHitTesting(false)
     }
 }
@@ -313,7 +332,7 @@ struct SidePanel: View {
                 }
                 GroupBox("This turn") {
                     VStack(alignment: .leading, spacing: 3) {
-                        ForEach(session.feed) { l in
+                        ForEach(session.feed.prefix(8)) { l in   // capped: the whole turn's list made each move slower
                             HStack(alignment: .firstTextBaseline) {
                                 Text(l.text).font(.callout)
                                 Spacer()
@@ -321,6 +340,16 @@ struct SidePanel: View {
                             }
                         }
                         if session.feed.isEmpty { Text("Drag across 2 to 5 touching cards.").foregroundStyle(.secondary) }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                GroupBox("Animation diagnostics") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Slow motion (5× slower)", isOn: $session.slowMotion)
+                        TimelineView(.periodic(from: .now, by: 1)) { _ in
+                            Text("\(Int(session.meter.fps.rounded())) fps · \(session.meter.hitches) hitches during moves · worst \(Int(session.meter.worstMs)) ms")
+                                .font(.callout.monospacedDigit())
+                        }
+                        Button("Reset count") { session.meter.reset() }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if let url = session.savedRecord {
@@ -339,5 +368,87 @@ struct SidePanel: View {
     private var version: String {
         let i = Bundle.main.infoDictionary
         return "\(i?["CFBundleShortVersionString"] as? String ?? "?") (\(i?["CFBundleVersion"] as? String ?? "?"))"
+    }
+}
+
+/// The card counter beside the help line: one pip per card a set may pick, lit as you pick them.
+/// Room for more: a later rule can raise the limit for a while.
+struct PickCounter: View {
+    let count: Int, limit: Int
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(0..<limit, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(i < count ? (count == limit ? Theme.gold : Theme.cyan) : Theme.feltText.opacity(0.14))
+                        .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Theme.feltText.opacity(i < count ? 0 : 0.3), lineWidth: 1))
+                        .frame(width: 9, height: 13)
+                }
+            }
+            Text("CARDS \(count) / \(limit)").font(Theme.font(11, .bold)).tracking(0.6).monospacedDigit()
+                .foregroundStyle(count == limit ? Theme.gold : Theme.feltText.opacity(0.75))
+        }
+        .animation(.easeOut(duration: Motion.t(0.12)), value: count)
+        .contentShape(Rectangle())
+        .help("How many cards a set can pick. The starter is free.")
+    }
+}
+
+/// What a tapped tag or the card counter explains.
+enum InfoTopic { case hand, crib, starter, tray, counter }
+
+/// An info card over the board, like the left-over warning; play waits for "Got it".
+struct InfoCard: View {
+    let topic: InfoTopic
+    let session: GameSession
+    let done: () -> Void
+
+    var body: some View {
+        let (title, lines) = text
+        ZStack {
+            Color.black.opacity(0.25).contentShape(Rectangle()).onTapGesture(perform: done)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title).font(Theme.font(22, .bold))
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, l in Text(l).fixedSize(horizontal: false, vertical: true) }
+                Text("Got it").font(Theme.font(15, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.felt)).foregroundStyle(Theme.feltText)
+                    .contentShape(Rectangle()).onTapGesture(perform: done).padding(.top, 4)
+            }
+            .font(Theme.font(15, .medium))
+            .padding(18)
+            .frame(width: 340)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Theme.face))
+            .foregroundStyle(Theme.ink)
+            .shadow(color: .black.opacity(0.4), radius: 14, y: 8)
+        }
+    }
+
+    private var text: (String, [String]) {
+        let m = session.config?.rules.match
+        let pct = m?.edgePower.percentPerLevel ?? 50
+        let power = "Each time it scores, it powers up: every level multiplies the sets it's in by another ×\(session.multiplierText(percent: 100 + pct).dropFirst()), up to \(session.multiplierText(percent: m?.edgePower.capPercent ?? 200))."
+        switch topic {
+        case .hand:
+            return ("Your hand", ["The 4 cards you kept from the deal. They're edge cards: they stay all turn and never clear.",
+                                  "Trace them with grid cards that touch them. " + power])
+        case .crib:
+            return ("The crib", [session.state?.dealer == false
+                                 ? "The crib is the dealer's. On your turns as dealer, its 4 cards sit down this side."
+                                 : "The dealer's crib: 4 more edge cards down the side. Like your hand, they stay all turn and never clear.",
+                                 "Trace them with grid cards that touch them. " + power])
+        case .starter:
+            return ("The starter", ["As in a cribbage hand, the starter counts with every set you score. You don't have to trace it, and it never counts toward your cards.",
+                                    "When it's part of a combo it lights up and scores, and it's never left over when it isn't.",
+                                    power])
+        case .tray:
+            return ("Your tray", ["Special jokers you've won. They're kept all game.",
+                                  "Swapper: tap it, then trace a straight line of 2 to 4 grid cards to reverse it.",
+                                  "Bomb: tap it, then tap a grid card. It clears that card and its neighbours, without scoring.",
+                                  "Tap an armed joker again to put it back."])
+        case .counter:
+            return ("Cards per set", ["A set picks 2 to \(session.pickLimit) cards. The pips fill as you pick, and turn gold at the limit.",
+                                      "The starter is free: it joins every set without using a pip.",
+                                      "Some combos, jokers and prizes will raise the limit for a while."])
+        }
     }
 }

@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 4, 2026-11-14. Match turns follow match rules r15. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 5, 2026-11-15. Match turns follow match rules r16. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -68,7 +68,7 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-These are match rules r15, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r16, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -103,8 +103,17 @@ A turn at a glance:
 Drag across touching cards and let go, or tap them one by one and tap the last one again. Drag back to undo the last card.
 
 - Cards touch their 8 neighbours, diagonals included. Hand, crib and starter cards follow the same rule.
+- A set picks 2 to 5 cards. The card counter beside the help line shows how many you've picked. Later, some combos, jokers and prizes will raise the limit for a while.
 - Every set MUST include at least one grid card. Your hand, crib and starter can't score on their own.
 - The same set of cards can't score twice in a turn.
+
+#### The starter joins every set
+
+As in a cribbage hand, the starter counts with every set you score. You don't need to trace it, and it doesn't count toward your cards (tracing it does no harm).
+
+- If the starter is part of a combo, it's in the set: it lights up, its power multiplies the set, it powers up, and its suit counts.
+- If it isn't, it's ignored. It's never left over.
+- His nobs needs only the jack of the starter's suit, from your hand or the crib, in the set.
 
 ```
 What touches the starter (S)
@@ -132,7 +141,7 @@ A set is counted like a cribbage hand. Every combo inside it scores.
 | 5 or more of a kind (cards a joker made) | 2 for every pair in it: 5 of a kind is 20 |
 | Run of 3 or more | 1 per card; in a double run, each run counts |
 | Flush: 4 or 5 cards of one suit | 1 per card |
-| His nobs: the jack of the starter's suit, with the starter | 1 |
+| His nobs: the jack of the starter's suit, from your hand or the crib | 1 |
 
 | Set | Combos | Steps |
 |---|---|---|
@@ -166,7 +175,7 @@ Your hand, crib and starter are edge cards. They stay, and they power up. Power 
 
 - Each edge card starts the turn at power 0.
 - A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.5 for each level (level 1 is ×1.5, level 2 is ×2), up to ×2. Round to the nearest step. Cards left over aren't multiplied.
-- After a set scores, each edge card in it goes up one level.
+- After a set scores, each edge card in it goes up one level. The starter is in a set only when it's part of a combo.
 - Power lasts the turn. Values: to tune (the mock has settings for the step per level, adding or multiplying levels, and the cap).
 
 | Set | Edge power | Combos | Multiplier | Steps |

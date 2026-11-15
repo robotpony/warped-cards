@@ -30,6 +30,9 @@ public struct RulesConfig: Codable, Sendable, Equatable {
     public struct Prize: Codable, Sendable, Equatable { public var rareAt: Int, epicAt: Int; public var special: Weights }
     public struct Match: Codable, Sendable, Equatable {
         public var maxSet: Int, flushMin: Int, timerSeconds: Int, cardBudget: Int, leftOverCost: Int
+        /// The starter counts with every set, like the starter in a cribbage hand (match rules r16).
+        /// Missing in older configs, which means no.
+        public var starterJoins: Bool?
         public var clearBonus: ClearBonus
         public var edgePower: EdgePower
         public var prize: Prize

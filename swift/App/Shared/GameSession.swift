@@ -2,6 +2,7 @@
 // The engine decides everything; this only sends actions and keeps the events.
 import CardKit
 import CribMaze
+import CribMazeBots
 import CribbageKit
 import Foundation
 import GameKit
@@ -39,6 +40,10 @@ final class GameSession {
     private(set) var toast: String?
     /// The first-time left-over warning: the cards left over, until "Got it".
     private(set) var warning: [String]?
+    /// An info card the player opened by tapping a word tag or the card counter.
+    var info: InfoTopic?
+    /// Input waits while a card covers the board.
+    var blocked: Bool { over || busy || warning != nil || info != nil }
     func dismissWarning() { warning = nil }
     /// Cards popping before they clear: scored sets in gold, bomb blasts in red.
     private(set) var flash: Set<Pos> = []
@@ -51,6 +56,8 @@ final class GameSession {
     var animate = true
     /// The score breakdown as it plays, and its timing.
     let playback = Playback()
+    let meter = FrameMeter()
+    var slowMotion = false { didSet { Motion.scale = slowMotion ? 5 : 1 } }
     var timing = BreakdownTiming()
     private(set) var secondsLeft = 0
     private(set) var savedRecord: URL?
@@ -65,6 +72,7 @@ final class GameSession {
     private var toastTask: Task<Void, Never>?
 
     init() {
+        defer { meter.moving = { [weak self] in self?.busy ?? false } }
         do {
             guard let folder = Bundle.main.url(forResource: "config", withExtension: nil) else { throw ConfigError(description: "config folder missing from the app") }
             config = try Config.load(from: folder)
@@ -81,6 +89,7 @@ final class GameSession {
         c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
         seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
         seedText = ""
+        playback.reset(); info = nil
         let strong = settings.hand == "strong"
         let setup = TurnSetup(seed: seed, dealer: settings.dealer,
                               fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil)
@@ -92,6 +101,16 @@ final class GameSession {
     }
 
     // MARK: Input
+
+    /// One move by a bot, through the same path as the player's (used by the demo).
+    func botMove(_ id: String = "medium") {
+        guard !busy, warning == nil, info == nil, var t = turn, !t.state.over, let c = config, let bot = MatchBot(config: c, id: id) else { return }
+        var d = t.dice
+        let a = bot.choose(t, dice: &d)
+        t.dice = d
+        turn = t
+        send(a)
+    }
 
     func send(_ action: MatchAction) {
         guard !busy, let old = turn, !old.state.over else { return }
@@ -114,22 +133,22 @@ final class GameSession {
                 Task { [weak self] in
                     guard let self else { return }
                     await self.playBreakdown(score, before: old.state)
-                    withAnimation(.easeOut(duration: 0.2)) { self.playback.reset() }
+                    withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.reset() }
                     self.commit(t, ev)
-                    withAnimation(.spring(duration: 0.26)) { self.playback.bump = true }
-                    try? await Task.sleep(for: .milliseconds(320))
-                    withAnimation(.easeOut(duration: 0.2)) { self.playback.bump = false }
+                    withAnimation(.spring(duration: Motion.t(0.26))) { self.playback.bump = true }
+                    try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
+                    withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.bump = false }
                     self.busy = false
                 }
                 return
             }
             busy = true; flash = hit; flashIsBomb = bomb
             Task { [weak self] in
-                try? await Task.sleep(for: .milliseconds(bomb ? 380 : 340))
+                try? await Task.sleep(for: .milliseconds(Motion.ms(bomb ? 380 : 340)))
                 guard let self else { return }
                 self.flash = []
                 self.commit(t, ev)
-                try? await Task.sleep(for: .milliseconds(320))
+                try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
                 self.busy = false
             }
         } catch {
@@ -142,7 +161,7 @@ final class GameSession {
         var drawn = [Int](repeating: 0, count: 4)
         for e in ev { if case .boardChanged(_, _, let d) = e { for x in d { if let p = Board.parse(x.cell), Board.isGrid(p) { drawn[p % 4] += 1 } } } }
         drawnPerColumn = drawn
-        if animate { withAnimation(.easeOut(duration: 0.3)) { turn = t } } else { turn = t }
+        if animate { withAnimation(.easeOut(duration: Motion.t(0.3))) { turn = t } } else { turn = t }
         for e in ev { describe(e) }
         if t.state.over { finish() }
     }
@@ -174,7 +193,7 @@ final class GameSession {
         guard mode == .trace, let t = turn, ps.count >= 2, ps.allSatisfy({ t.state.cells[$0]?.isPlaying == true }), let v = t.value(of: ps) else { return [] }
         var lit = Set<Int>()
         for c in v.count.combos { lit.formUnion(c.cards) }
-        return Set(lit.map { ps[$0] })
+        return Set(lit.map { v.counted[$0] })   // the starter lights too when it joins a combo
     }
 
     /// The edge power multiplier for a level, as the engine works it out: ×1.5, ×2.
@@ -186,6 +205,10 @@ final class GameSession {
     }
 
     var dead: Bool { turn?.state.dead ?? false }
+
+    /// The card counter: cards picked so far, and how many a set may pick (the starter is free when it joins).
+    var pickCount: Int { turn.map { $0.picked(selection).count } ?? 0 }
+    var pickLimit: Int { turn?.pickLimit ?? (config?.rules.match.maxSet ?? 5) }
 
     /// The line under the board (the mock's pick message).
     var pickMessage: String {
@@ -206,7 +229,8 @@ final class GameSession {
         }
         guard let v = t.value(of: selection) else { return msg }
         let names = v.count.combos.map { Self.comboName($0) }.joined(separator: " + ")
-        let left = Set(0..<selection.count).subtracting(v.count.combos.flatMap(\.cards)).sorted().map { cards[$0].face }.joined(separator: " ")
+        let picked = t.picked(selection)
+        let left = Set(picked.indices).subtracting(v.count.combos.flatMap(\.cards)).sorted().compactMap { t.state.cells[picked[$0]]?.face }.joined(separator: " ")
         let cost = (config?.rules.match.leftOverCost ?? 2) * v.leftOver
         if v.count.combos.isEmpty { msg += ": no combo" + (t.state.warned ? " (−\(cost))" : "") }
         else if v.leftOver == 0 { msg += ": \(names) (+\(v.points))" }
@@ -239,7 +263,7 @@ final class GameSession {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 guard let self, !Task.isCancelled, !self.over else { return }
-                if self.busy || self.warning != nil { continue }   // the clock waits while a move plays or the warning shows
+                if self.busy || self.warning != nil || self.info != nil { continue }   // the clock waits while a move plays or the warning shows
                 self.secondsLeft -= 1
                 if self.secondsLeft <= 0 { self.send(.timeUp); return }
             }
@@ -262,14 +286,14 @@ final class GameSession {
     private func describe(_ e: MatchEvent) {
         switch e {
         case .traceRejected(_, let reason):
-            let why = ["size": "Sets are 2 to 5 cards", "special": "A special joker can't be in a set", "no_grid_card": "Every set needs a grid card",
+            let why = ["size": "Sets are 2 to \(pickLimit) cards", "special": "A special joker can't be in a set", "no_grid_card": "Every set needs a grid card",
                        "not_touching": "The cards must touch", "already_scored": "That set already scored"][reason] ?? reason
             show(why)
         case .leftoverWarning(let names, _):
             let ps = names.compactMap(Board.parse)
             if let t = turn, let v = t.value(of: ps) {
-                let used = Set(v.count.combos.flatMap(\.cards))
-                warning = ps.indices.filter { !used.contains($0) }.compactMap { t.state.cells[ps[$0]]?.face }
+                let used = Set(v.count.combos.flatMap(\.cards)), picked = t.picked(ps)
+                warning = picked.indices.filter { !used.contains($0) }.compactMap { t.state.cells[picked[$0]]?.face }
             } else { warning = [] }
         case .leftoverPenalty(let names, _, let cost):
             let faces = names.compactMap(Board.parse).compactMap { turn?.state.cells[$0]?.face }.joined(separator: " ")

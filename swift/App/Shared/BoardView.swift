@@ -49,24 +49,33 @@ struct BoardView: View {
         let lit = session.litPositions
         ZStack(alignment: .topLeading) {
             EdgeBackground(dealer: state?.dealer ?? true).fill(Theme.panel)
-            EdgeBackground(dealer: state?.dealer ?? true).stroke(Theme.cyan.opacity(0.45), lineWidth: 1)
-                .shadow(color: Theme.cyan.opacity(0.6), radius: 4)
+            EdgeBackground(dealer: state?.dealer ?? true).stroke(Theme.cyan.opacity(0.12), lineWidth: 5)
+            EdgeBackground(dealer: state?.dealer ?? true).stroke(Theme.cyan.opacity(0.5), lineWidth: 1)
+            // The starter counts with every set (r16), so it sits on a lighter bed of its own.
+            let sf = BoardLayout.frame(Board.starter).insetBy(dx: -Theme.edgePad - 3, dy: -Theme.edgePad - 3)
+            RoundedRectangle(cornerRadius: Theme.cardRadius + 8)
+                .fill(Color(hex: 0x3A4A80))
+                .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius + 8).strokeBorder(Theme.feltText.opacity(0.6), lineWidth: 1.5))
+                .frame(width: sf.width, height: sf.height)
+                .offset(x: sf.minX, y: sf.minY)
             ForEach(0..<Board.count, id: \.self) { p in
                 let f = BoardLayout.frame(p)
-                EmptyCell(p: p, noCrib: state?.dealer == false).position(x: f.midX, y: f.midY)
+                EmptyCell(p: p, noCrib: state?.dealer == false).offset(x: f.minX, y: f.minY)
             }
             // Each card is keyed by its ID, so a card that falls or swaps slides to its new cell,
             // new cards drop in from above, and cleared cards shrink away.
             ForEach(placed, id: \.card.id) { item in
                 let p = item.p, f = BoardLayout.frame(p)
-                CellView(p: p, card: item.card, state: state, order: session.selection.firstIndex(of: p),
-                         used: lit.contains(p), hit: session.flash.contains(p), bomb: session.flashIsBomb, session: session)
-                    .position(x: f.midX, y: f.midY)
+                CellView(p: p, card: item.card, look: look(p, state, lit)).equatable()
+                    // Placed with .offset, not .position: moving a card is then drawing-only, with no
+                    // layout pass for the window on every frame (the main cause of choppy moves).
+                    .frame(width: Theme.cardW, height: Theme.cardH)
+                    .offset(x: f.minX, y: f.minY)
                     .zIndex(session.selection.contains(p) || session.flash.contains(p) ? 1 : 0)
                     .transition(.asymmetric(
                         insertion: .offset(y: Board.isGrid(p) ? -CGFloat(max(1, session.drawnPerColumn[p % 4])) * BoardLayout.pitchY : 0).combined(with: .opacity),
-                        // .position fills the board, so the shrink is anchored on the card's own centre.
-                        removal: .scale(scale: 0.2, anchor: UnitPoint(x: f.midX / BoardLayout.width, y: f.midY / BoardLayout.height)).combined(with: .opacity)))
+                        // The view's frame sits at the board's origin, so the anchor points at the card's offset centre.
+                        removal: .scale(scale: 0.2, anchor: UnitPoint(x: f.midX / Theme.cardW, y: f.midY / Theme.cardH)).combined(with: .opacity)))
             }
         }
         .frame(width: BoardLayout.width, height: BoardLayout.height, alignment: .topLeading)
@@ -78,9 +87,31 @@ struct BoardView: View {
         }
     }
 
+    private func look(_ p: Pos, _ state: MatchState?, _ lit: Set<Pos>) -> CellLook {
+        let pb = session.playback
+        let inset = pb.set.contains(p)
+        let level = Board.isEdge(p) ? (pb.chipLevel[p] ?? state?.power[p] ?? 0) : 0
+        return CellLook(order: session.selection.firstIndex(of: p), used: lit.contains(p),
+                        hit: session.flash.contains(p), bomb: session.flashIsBomb,
+                        inset: inset, dimmed: pb.active && !pb.set.isEmpty && !inset,
+                        lit: pb.lit.contains(p), litPower: pb.litPower.contains(p), left: pb.leftOver.contains(p),
+                        away: pb.row.contains(p), armedSource: session.armedSource == p,
+                        chipText: level > 0 ? session.multiplierText(level) : nil, chipPulse: pb.litPower.contains(p))
+    }
+
     private var placed: [(p: Pos, card: Card)] {
         guard let cells = session.state?.cells else { return [] }
         return (0..<Board.count).compactMap { p in cells[p].map { (p, $0) } }
+    }
+
+    /// A word tag under a point: tapping HAND, CRIB or STARTER explains it.
+    private func tagHit(_ pt: CGPoint) -> InfoTopic? {
+        let tags: [(Pos, InfoTopic)] = [(Board.hand.lowerBound, .hand), (Board.crib.lowerBound, .crib), (Board.starter, .starter)]
+        for (p, topic) in tags where session.state?.cells[p] != nil {
+            let f = BoardLayout.frame(p)
+            if CGRect(x: f.midX - 40, y: f.minY - 20, width: 80, height: 24).contains(pt) { return topic }
+        }
+        return nil
     }
 
     /// The position under a point; a swipe must land near the card's centre.
@@ -95,7 +126,7 @@ struct BoardView: View {
     private var drag: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { v in
-                guard !session.over, !session.busy, session.warning == nil else { return }
+                guard !session.blocked else { return }
                 let far = hypot(v.translation.width, v.translation.height) > 6
                 if !dragging {
                     dragging = true; moved = false
@@ -109,20 +140,27 @@ struct BoardView: View {
                 var sel = session.selection
                 if sel.isEmpty { sel = [p] }
                 else if sel.count >= 2 && sel[sel.count - 2] == p { sel.removeLast() }   // back up
-                else if !sel.contains(p), Board.touching(sel.last!, p), sel.count < (session.config?.rules.match.maxSet ?? 5) { sel.append(p) }
+                else if !sel.contains(p), Board.touching(sel.last!, p), canAdd(p, to: sel) { sel.append(p) }
                 if sel != session.selection { session.selection = sel }
             }
             .onEnded { v in
                 dragging = false
-                guard !session.over, !session.busy, session.warning == nil else { session.selection = []; return }
+                guard !session.blocked else { session.selection = []; return }
                 if moved {
                     if session.selection.count >= 2 { session.submit(session.selection) }
                     session.selection = []
                     return
                 }
+                if let topic = tagHit(v.location) { session.selection = []; session.info = topic; return }
                 guard let p = hit(v.location, strict: false), let card = session.state?.cells[p] else { session.selection = []; return }
                 tap(p, card)
             }
+    }
+
+    /// Whether a card fits under the card counter (a joining starter is free).
+    private func canAdd(_ p: Pos, to sel: [Pos]) -> Bool {
+        guard let t = session.turn else { return false }
+        return (p == Board.starter && t.starterJoins) || t.picked(sel).count < t.pickLimit
     }
 
     private func tap(_ p: Pos, _ card: Card) {
@@ -135,6 +173,7 @@ struct BoardView: View {
         } else if let i = sel.firstIndex(of: p) {
             sel.removeSubrange(i...)
         } else if sel.isEmpty || Board.touching(sel.last!, p) {
+            guard canAdd(p, to: sel) else { session.show("A set picks \(session.pickLimit) cards at most"); return }
             sel.append(p)
         } else {
             sel = [p]
@@ -155,56 +194,74 @@ struct EmptyCell: View {
     }
 }
 
+/// Everything a cell shows besides its card, as plain values, so SwiftUI redraws only the
+/// cells whose look changed (reading the session in each cell redrew all 25 on every change).
+struct CellLook: Equatable {
+    var order: Int?
+    var used = false, hit = false, bomb = false
+    var inset = false, dimmed = false, lit = false, litPower = false, left = false
+    /// The card has flown up into the breakdown's row; its cell shows empty.
+    var away = false
+    var armedSource = false
+    var chipText: String?
+    var chipPulse = false
+}
+
 /// One cell, styled like the mock's .cell: edge ring, tags, power chip, made star,
 /// selection ring and order, and the brighter "used" look for cards in a combo.
-struct CellView: View {
+/// Tags, chips and badges are attached before the lift and scale, so they move with the card.
+struct CellView: View, Equatable {
     let p: Pos
     let card: Card
-    let state: MatchState?
-    let order: Int?
-    let used: Bool
-    var hit = false
-    var bomb = false
-    let session: GameSession
+    let look: CellLook
 
     var body: some View {
-            let pb = session.playback
-            let inset = pb.set.contains(p), dimmed = pb.active && !pb.set.isEmpty && !inset
-            let lit = pb.lit.contains(p), litPower = pb.litPower.contains(p), left = pb.leftOver.contains(p)
-            let selected = order != nil
-            let edge = Board.isEdge(p), starter = p == Board.starter
-            let armedSource = session.armedSource == p
-            CardFace(card: card)
-                .overlay {   // rings sit outside the card, like the mock's box-shadow rings
-                    let w: CGFloat = used || armedSource ? 3 : 2
-                    let colour: Color = selected || armedSource ? .white : starter ? Theme.feltText : edge ? Theme.gold : .clear
-                    RoundedRectangle(cornerRadius: Theme.cardRadius + w / 2).stroke(colour, lineWidth: w).padding(-w / 2)
+        let l = look
+        let selected = l.order != nil
+        let edge = Board.isEdge(p), starter = p == Board.starter
+        let glow: Color? = l.hit ? (l.bomb ? Color(hex: 0xE00000, opacity: 0.85) : Theme.gold.opacity(0.9))
+            : l.lit ? Theme.gold.opacity(0.85) : l.litPower ? Theme.power.opacity(0.8) : l.left ? Color(hex: 0xFF5A5A, opacity: 0.7)
+            : l.used ? .white.opacity(0.55) : nil
+        CardFace(card: card)
+            .overlay {   // dimming and the "used" brightening: plain overlays, not colour filters
+                RoundedRectangle(cornerRadius: Theme.cardRadius)
+                    .fill(l.dimmed ? Theme.felt.opacity(0.72) : l.used ? Color.white.opacity(0.08) : .clear)
+            }
+            .overlay {   // rings sit outside the card, like the mock's box-shadow rings
+                let w: CGFloat = l.used || l.armedSource ? 3 : 2
+                let colour: Color = selected || l.armedSource ? .white : starter ? Theme.feltText : edge ? Theme.gold : .clear
+                RoundedRectangle(cornerRadius: Theme.cardRadius + w / 2).stroke(colour, lineWidth: w).padding(-w / 2)
+            }
+            .overlay {   // the pop before a bombed card clears, and the breakdown's rings
+                let ring: Color? = l.hit || (l.inset && !l.lit && !l.litPower && !l.left) ? .white
+                    : l.lit ? Theme.gold : l.litPower ? Theme.power : l.left ? Color(hex: 0xFF5A5A) : nil
+                if let ring { RoundedRectangle(cornerRadius: Theme.cardRadius + 1.5).stroke(ring, lineWidth: 3).padding(-1.5) }
+            }
+            .background {   // steady looks without blur: a soft gold halo on edge cards, a hard drop shadow when raised
+                if edge && !selected && !l.hit {
+                    RoundedRectangle(cornerRadius: Theme.cardRadius + 4).stroke(Theme.gold.opacity(0.22), lineWidth: 4).padding(-4)
                 }
-                .overlay {   // the pop before a bombed card clears, and the breakdown's rings
-                    let ring: Color? = hit || (inset && !lit && !litPower && !left) ? .white : lit ? Theme.gold : litPower ? Theme.power : left ? Color(hex: 0xFF5A5A) : nil
-                    if let ring { RoundedRectangle(cornerRadius: Theme.cardRadius + 1.5).stroke(ring, lineWidth: 3).padding(-1.5) }
+                if selected || starter {
+                    RoundedRectangle(cornerRadius: Theme.cardRadius).fill(.black.opacity(0.35)).offset(y: 4)
                 }
-                .shadow(color: lit ? Theme.gold.opacity(0.85) : litPower ? Theme.power.opacity(0.8) : left ? Color(hex: 0xFF5A5A, opacity: 0.7) : .clear, radius: 9)
-                .shadow(color: Board.isEdge(p) && !selected && !hit ? Theme.gold.opacity(0.45) : .clear, radius: 4)
-                .brightness(used ? 0.06 : 0)
-                .shadow(color: hit ? (bomb ? Color(hex: 0xE00000, opacity: 0.85) : Theme.gold.opacity(0.9)) : used ? .white.opacity(0.55) : .clear, radius: hit ? 10 : 8)
-                .shadow(color: .black.opacity(selected || starter ? 0.33 : 0), radius: 4, y: 4)
-                .scaleEffect(hit ? (bomb ? 1.18 : 1.12) : lit || litPower ? 1.06 : used ? 1.1 : selected ? 1.04 : 1)
-                .offset(y: lit || litPower ? -8 : inset ? -4 : used ? -4 : selected ? -2 : armedSource ? -6 : 0)
-                .opacity(dimmed ? 0.28 : 1)
-                .saturation(dimmed ? 0.4 : 1)
-                .rotationEffect(starter ? .degrees(-5) : .zero)
-                .overlay(alignment: .top) { tag }
-                .overlay(alignment: .topTrailing) { chip }
-                .overlay(alignment: .topLeading) {
-                    if card.kind == .made { badge("★", Theme.gold, Theme.ink, 16).offset(x: -5, y: -5) }
-                }
-                .overlay(alignment: .bottomLeading) {
-                    if let order { badge("\(order + 1)", .white, Theme.felt, 18).offset(x: -4, y: 4) }
-                }
-                .animation(.easeOut(duration: 0.12), value: selected)
-                .animation(.easeOut(duration: 0.12), value: used)
-                .animation(.spring(duration: 0.3, bounce: 0.4), value: hit)
+            }
+            .rotationEffect(starter ? .degrees(-5) : .zero)
+            .overlay(alignment: .top) { tag }
+            .overlay(alignment: .topTrailing) { chip }
+            .overlay(alignment: .topLeading) {
+                if card.kind == .made { badge("★", Theme.gold, Theme.ink, 16).offset(x: -5, y: -5) }
+            }
+            .overlay(alignment: .bottomLeading) {
+                if let order = l.order { badge("\(order + 1)", .white, Theme.felt, 18).offset(x: -4, y: 4) }
+            }
+            // One blurred glow, and only while a card is lit, popped or in a combo.
+            .shadow(color: glow ?? .clear, radius: glow == nil ? 0 : (l.hit ? 10 : 9))
+            .scaleEffect(l.hit ? (l.bomb ? 1.18 : 1.12) : l.lit || l.litPower ? 1.06 : l.used ? 1.1 : selected ? 1.04 : 1)
+            .offset(y: l.lit || l.litPower ? -8 : l.inset ? -4 : l.used ? -4 : selected ? -2 : l.armedSource ? -6 : 0)
+            .animation(.easeOut(duration: Motion.t(0.12)), value: selected)
+            .animation(.easeOut(duration: Motion.t(0.12)), value: l.used)
+            .animation(.spring(duration: Motion.t(0.3), bounce: 0.4), value: l.hit)
+            .opacity(l.away ? 0 : 1)
     }
 
     /// Word tags: one on the first hand card, the top crib card and the starter.
@@ -215,19 +272,16 @@ struct CellView: View {
                 .background(Capsule().fill(p == Board.starter ? Theme.feltText : Theme.gold))
                 .foregroundStyle(p == Board.starter ? Theme.felt : Theme.ink)
                 // With a power chip on the right, the tag moves left so both read.
-                .offset(x: hasChip ? -10 : 0, y: -10)
+                .offset(x: look.chipText != nil ? -10 : 0, y: -10)
         }
     }
 
-    private var hasChip: Bool { Board.isEdge(p) && (session.playback.chipLevel[p] ?? state?.power[p] ?? 0) > 0 }
-
     /// The power chip: this card's multiplier once it has a level.
     @ViewBuilder private var chip: some View {
-        if Board.isEdge(p), let level = session.playback.chipLevel[p] ?? state?.power[p], level > 0 {
-            let pulse = session.playback.litPower.contains(p)
-            Text(session.multiplierText(level)).font(Theme.font(12, .bold)).padding(.horizontal, 6).frame(height: 18)
-                .background(Capsule().fill(pulse ? Theme.power : Theme.gold)).foregroundStyle(Theme.ink)
-                .scaleEffect(pulse ? 1.5 : 1).offset(x: 6, y: -6)
+        if let text = look.chipText {
+            Text(text).font(Theme.font(12, .bold)).padding(.horizontal, 6).frame(height: 18)
+                .background(Capsule().fill(look.chipPulse ? Theme.power : Theme.gold)).foregroundStyle(Theme.ink)
+                .scaleEffect(look.chipPulse ? 1.5 : 1).offset(x: 6, y: -6)
         }
     }
 
