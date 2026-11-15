@@ -2,6 +2,12 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.4.1 — 2026-11-14
+
+### Added
+
+- Engine spec, draft 1: exactly how a match turn plays at rules r14, from the shuffle to the prize, so the app, the bots and the simulator play the same game from the same seed.
+
 ## 0.4.0 — 2026-11-14
 
 ### Added

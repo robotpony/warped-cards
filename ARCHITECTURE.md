@@ -113,13 +113,14 @@ These keep the engine deterministic, so a seed and a list of actions always give
 
 ### Dice
 
-`Dice` holds named streams, each a seeded generator (SplitMix64 to seed, xoshiro256** to draw) derived from the game's seed:
+`Dice` holds named streams, each a seeded generator (SplitMix64 to seed, xoshiro256** to draw) derived from the game's seed. The exact algorithm and draw order are in [engine.md](cribbage/minigames/engine.md) › Dice.
 
 | Stream | Draws |
 |---|---|
 | `deal` | Shuffles, cuts, how many jokers a round has |
 | `reveal` | Joker and extra-card outcomes, what a made card becomes |
 | `board` | Where a special joker lands in the stock |
+| `prize` | The special joker a turn's best score wins |
 | `bot.<seat>` | A bot's own choices, one stream per seat |
 
 Separate streams keep things apart: a bot that thinks differently MUST NOT change the next deal, and a new joker kind MUST NOT shift every shuffle after it. Every draw produces a `Roll` (stream, purpose, range, value) that lands in the step, so the record holds every roll. `Dice` can also run scripted, handing back recorded rolls in order; that is how a replay survives a change to the generator.

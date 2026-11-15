@@ -33,7 +33,9 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 
 ## Phase 4 · Engine spec
 
-- [ ] Data model, actions, events, dice streams, config files, bot interface, sim clock, written to port (`ARCHITECTURE.md` › Engine; `stats.md` › Event log, Simulator)
+- [x] Match turn, rules r14: data model, actions, events, dice streams, config files, bots, clock (`cribbage/minigames/engine.md` draft 1)
+- [ ] Classic cribbage game for the baseline: deal, discard, cut, pegging, show (`engine.md` › Open questions)
+- [ ] Write the config files and shared fixtures the spec names (`engine.md` › Config, Fixtures)
 
 ## Phase 5 · Swift engine and simulator
 
