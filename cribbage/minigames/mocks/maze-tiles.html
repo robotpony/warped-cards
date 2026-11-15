@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maze Tiles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+    --felt: #0E3B2E; --felt-text: #F3ECDC; --gold: #E8B84A; --wall: #F3ECDC; --door: #A85A00;
+    --floor: rgba(243,236,220,.08); --fogc: rgba(0,0,0,.4);
+    --S: #000000; --H: #E00000; --D: #0070E0; --C: #00843D;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 18px; margin: 26px 0 8px; }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  ul.tight { margin: 4px 0 12px; padding-left: 18px; }
+  .controls { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+  .controls label { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+  .controls input[type=range] { width: 110px; }
+  .controls output { min-width: 3.2em; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .controls select { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .item { background: var(--felt); color: var(--felt-text); border-radius: 12px; padding: 12px 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 120px; }
+  .item svg { display: block; }
+  .item .name { font-weight: 600; font-size: 14px; }
+  .item .note { font-size: 12px; opacity: .75; max-width: 200px; text-align: center; }
+  .wide { flex: 1 1 100%; align-items: flex-start; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 6px; }
+  td, th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Maze tiles and icons</h1>
+  <p class="muted">Style guide v1, 2026-11-14. Every tile and icon the maze draws, at game size, from the same code the maze walk uses (<code>maze-art.js</code>). Tune them here, then copy the values into <code>maze-art.js</code> › S, and the maze walk follows.</p>
+
+  <h2>Visual goals</h2>
+  <ul class="tight">
+    <li>Every cell reads as part of a grid, at least subtly.</li>
+    <li>Start and goal are clear at a glance. Doors are clearly doors. Walls are clear.</li>
+    <li>The art style stays simple, but it must be clear.</li>
+  </ul>
+
+  <div class="controls" id="controls">
+    <label>Cell size <select id="cs"><option value="55" selected>55 pt (long game, quarter view)</option><option value="80">80 pt (short game, quarter view)</option><option value="27">27 pt (whole maze)</option></select></label>
+    <button class="btn" id="copy">Copy values</button>
+    <button class="btn" id="reset">Reset</button>
+    <span class="muted" id="copied" aria-live="polite"></span>
+  </div>
+
+  <div id="sections"></div>
+
+  <h2>Review notes</h2>
+  <table>
+    <tr><th>Element</th><th>Now</th><th>Open</th></tr>
+    <tr><td>Floor</td><td>Faint cream tile per cell, small gap between tiles</td><td>Texture (stone, felt, paper)? Different floors per zone?</td></tr>
+    <tr><td>Walls</td><td>Cream lines, rounded ends, heavier outer wall</td><td>Thickness at 55 pt; whether walls should cast a shadow</td></tr>
+    <tr><td>Start and goal</td><td>Cream pad with S; gold pad with ring and G</td><td>Icons instead of letters (flag, door, crown)?</td></tr>
+    <tr><td>Doors</td><td>Wooden plank across the passage, strength on a badge</td><td>A lock or hinge icon? Show damage as cracks as well as the number?</td></tr>
+    <tr><td>Gates</td><td>Cream plate in the suit colour, suit on a round badge</td><td>Spade gates read weaker on felt; try a gold outline</td></tr>
+    <tr><td>Tokens</td><td>Gold for the player; teal and violet proposed for bots</td><td>Bot colours, faces or initials; how tokens share a cell</td></tr>
+    <tr><td>Fog</td><td>Dark tile, walls hidden</td><td>Soft edge between seen and unseen</td></tr>
+  </table>
+</main>
+
+<script src="maze-art.js"></script>
+<script>
+(() => {
+  const A = window.WarpedMazeArt, $ = (id) => document.getElementById(id);
+  const DEFAULTS = { ...A.S };
+  // The sizes the guide lets you tune, as [key, label, min, max, step].
+  const TUNE = [
+    ["wall", "Walls", 0.04, 0.2, 0.01], ["outerWall", "Outer wall", 0.06, 0.24, 0.01], ["floorInset", "Tile gap", 0, 0.1, 0.01],
+    ["plankThick", "Plank", 0.1, 0.35, 0.01], ["badge", "Door badge", 0.12, 0.35, 0.01], ["gatePlate", "Gate badge", 0.2, 0.5, 0.01],
+    ["token", "Token", 0.18, 0.45, 0.01], ["star", "Star", 0.3, 0.9, 0.02], ["label", "S and G", 0.3, 0.8, 0.02],
+  ];
+  const ctl = $("controls");
+  for (const [k, label, min, max, step] of TUNE) {
+    const l = document.createElement("label");
+    l.innerHTML = `${label} <input type="range" min="${min}" max="${max}" step="${step}" value="${A.S[k]}" data-k="${k}"><output>${A.S[k]}</output>`;
+    ctl.insertBefore(l, $("copy"));
+  }
+  ctl.addEventListener("input", (e) => { const k = e.target.dataset.k; if (!k) return; A.S[k] = +e.target.value; e.target.nextElementSibling.textContent = e.target.value; draw(); });
+  $("cs").addEventListener("change", draw);
+  $("reset").addEventListener("click", () => { Object.assign(A.S, DEFAULTS); ctl.querySelectorAll("input[type=range]").forEach(r => { r.value = A.S[r.dataset.k]; r.nextElementSibling.textContent = r.value; }); draw(); });
+  $("copy").addEventListener("click", () => {
+    const out = "  const S = " + JSON.stringify(A.S).replace(/"(\w+)":/g, "$1: ").replace(/,/g, ", ") + ";";
+    navigator.clipboard && navigator.clipboard.writeText(out); $("copied").textContent = "Copied, for maze-art.js › S";
+  });
+
+  // A small maze patch: w × h cells, with the passages listed as [cell, cell] pairs.
+  // extra(cs, X, Y, cx, cy) adds anything drawn on top.
+  function patch(w, h, passages, extra = () => "", opts = {}) {
+    const cs = +$("cs").value, pad = 6, X = (i) => pad + (i % w) * cs, Y = (i) => pad + Math.floor(i / w) * cs;
+    const cx = (i) => X(i) + cs / 2, cy = (i) => Y(i) + cs / 2;
+    const open = new Set(passages.map(([a, b]) => Math.min(a, b) + ":" + Math.max(a, b)));
+    let s = "", d = "";
+    for (let i = 0; i < w * h; i++) s += A.floor(X(i), Y(i), cs, (opts.fog || []).includes(i));
+    for (let i = 0; i < w * h; i++) {
+      const x = i % w, y = Math.floor(i / w);
+      if (x + 1 < w && !open.has(i + ":" + (i + 1))) d += `M${X(i) + cs} ${Y(i)}v${cs}`;
+      if (y + 1 < h && !open.has(i + ":" + (i + w))) d += `M${X(i)} ${Y(i) + cs}h${cs}`;
+    }
+    s += A.walls(d, cs) + A.outerWall(pad, pad, cs * w, cs * h, cs) + extra(cs, X, Y, cx, cy);
+    const W = cs * w + pad * 2, H = cs * h + pad * 2;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+  }
+  const mid = (a, b, cx, cy) => [(cx(a) + cx(b)) / 2, (cy(a) + cy(b)) / 2];
+  const item = (name, svg, note = "", wide = false) => `<div class="item${wide ? " wide" : ""}">${svg}<div class="name">${name}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
+
+  function draw() {
+    const sections = [
+      ["Floor and walls", [
+        item("Corridor and corners", patch(3, 2, [[0, 1], [1, 2], [2, 5], [5, 4], [4, 3]]), "A U-bend: straight runs and two corners"),
+        item("Fork (T) and dead ends", patch(3, 2, [[0, 1], [1, 2], [1, 4]]), "Three ways meet; the ends are dead ends"),
+        item("Crossroads", patch(3, 3, [[1, 4], [3, 4], [4, 5], [4, 7]]), "Four ways meet"),
+        item("Open floor", patch(2, 2, [[0, 1], [0, 2], [1, 3], [2, 3]]), "No walls inside: the tiles still show the grid"),
+      ]],
+      ["Start, goal and tokens", [
+        item("Start", patch(1, 1, [], (cs, X, Y) => A.start(X(0), Y(0), cs))),
+        item("Token on the start", patch(1, 1, [], (cs, X, Y, cx, cy) => A.start(X(0), Y(0), cs, false) + A.token(cx(0), cy(0), cs, { small: true })), "The token shrinks so the pad shows"),
+        item("Goal", patch(1, 1, [], (cs, X, Y) => A.goal(X(0), Y(0), cs))),
+        item("Player token", patch(1, 1, [], (cs, X, Y, cx, cy) => A.token(cx(0), cy(0), cs))),
+        item("Bot tokens (proposed)", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.token(cx(0), cy(0), cs, { colour: "#3FB6B2" }) + A.token(cx(1), cy(1), cs, { colour: "#B48CFF" })), "Teal and violet, not decided"),
+        item("Goal pointer", `<svg width="90" height="90">${A.pointer(45, 52, 45, "G", 40)}</svg>`, "At the view's edge when the goal is out of sight"),
+      ]],
+      ["Doors", [
+        item("Door, standing", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.door(...mid(0, 1, cx, cy), cs, true, 20)), "Between cells side by side"),
+        item("Door, lying", patch(1, 2, [[0, 1]], (cs, X, Y, cx, cy) => A.door(...mid(0, 1, cx, cy), cs, false, 10)), "Between cells one above the other"),
+        item("Damaged door", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.door(...mid(0, 1, cx, cy), cs, true, 7)), "Strength left, 7 of 20"),
+        item("Broken door", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.brokenDoor(...mid(0, 1, cx, cy), cs, true)), "Stubs stay; open for everyone"),
+      ]],
+      ["Suit gates", ["S", "H", "D", "C"].map((s, k) => item(`${A.GLYPH[s]} gate`, k % 2
+        ? patch(1, 2, [[0, 1]], (cs, X, Y, cx, cy) => A.gate(...mid(0, 1, cx, cy), cs, false, s))
+        : patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.gate(...mid(0, 1, cx, cy), cs, true, s))))],
+      ["Prizes, choices and the route", [
+        item("Prize cell", patch(1, 1, [], (cs, X, Y) => A.prize(X(0), Y(0), cs)), "At a dead end, like Labyrinth's treasures"),
+        item("Fork choice", patch(3, 2, [[0, 1], [1, 2], [1, 4]], (cs, X, Y, cx, cy) => A.token(cx(1), cy(1), cs) + A.choice(X(0), Y(0), cs, 0) + A.choice(X(2), Y(2), cs, 2) + A.choice(X(4), Y(4), cs, 4)), "Pulses in the walk"),
+        item("Main route (designer view)", patch(3, 2, [[0, 1], [1, 2], [2, 5], [5, 4], [4, 3]], (cs, X, Y, cx, cy) => A.route([0, 1, 2, 5, 4, 3].map(i => [cx(i), cy(i)]), [])), "Hidden from players"),
+      ]],
+      ["Fog", [
+        item("Seen and unseen", patch(4, 2, [[0, 1], [1, 2], [2, 3], [1, 5]], (cs, X, Y, cx, cy) => A.token(cx(0), cy(0), cs), { fog: [3, 6, 7] }), "Unseen cells go dark (walls in them are hidden in the walk)"),
+      ]],
+      ["In context", [
+        item("A corner of a maze", patch(4, 3, [[0, 1], [1, 2], [2, 3], [3, 7], [7, 6], [6, 5], [5, 9], [9, 10], [10, 11], [0, 4], [4, 8], [6, 10]],
+          (cs, X, Y, cx, cy) => A.start(X(8), Y(8), cs) + A.door(...mid(2, 3, cx, cy), cs, true, 20) + A.gate(...mid(6, 10, cx, cy), cs, false, "H") + A.prize(X(11), Y(11), cs) + A.token(cx(5), cy(5), cs)),
+          "Start, a door, a heart gate, a prize and the token together", true),
+      ]],
+    ];
+    $("sections").innerHTML = sections.map(([h, items]) => `<h2>${h}</h2><div class="row">${items.join("")}</div>`).join("");
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

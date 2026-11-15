@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maze Walk Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+    --felt: #0E3B2E; --felt-text: #F3ECDC; --gold: #E8B84A; --wall: #F3ECDC; --route: rgba(232,184,74,.22);
+    --floor: rgba(243,236,220,.08); --fogc: rgba(0,0,0,.4); --S: #000000; --H: #E00000; --D: #0070E0; --C: #00843D; --door: #A85A00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 17px; margin: 14px 0 6px; }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  .side { flex: 1 1 340px; min-width: 0; max-width: 620px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .panel label { display: flex; gap: 8px; align-items: center; margin: 5px 0; flex-wrap: wrap; }
+  .panel select, .panel input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+  .panel input[type=text] { width: 13em; }
+  .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  ul.tight { margin: 4px 0; padding-left: 18px; }
+  #log { font: 12px/1.4 ui-monospace, Menlo, monospace; max-height: 260px; overflow: auto; white-space: pre-wrap; background: var(--bg); padding: 8px; border-radius: 6px; }
+
+  /* Phone: 393 x 852 pt screen, 1 CSS px = 1 pt */
+  .phone { width: 413px; height: 872px; border-radius: 52px; border: 10px solid #111; background: var(--felt);
+           position: relative; overflow: hidden; flex: none; color: var(--felt-text); user-select: none; -webkit-user-select: none; }
+  .phone::before { content: ""; position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 3; }
+  .screen { position: absolute; inset: 0; padding: 58px 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; opacity: .9; }
+  .steps { display: flex; justify-content: space-between; align-items: baseline; }
+  .steps .big { font-size: 34px; font-weight: 700; line-height: 1; }
+  .steps .sub { font-size: 13px; opacity: .8; text-align: right; }
+  .track { height: 6px; background: rgba(243,236,220,.15); border-radius: 3px; overflow: hidden; }
+  .track i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .4s; }
+  svg.maze { display: block; margin: 0 auto; touch-action: manipulation; border-radius: 10px; flex: none; }
+  #mazeCam { transition: transform .35s ease; }
+  @media (prefers-reduced-motion: reduce) { #mazeCam { transition: none; } }
+  .legend { display: flex; justify-content: center; gap: 12px; font-size: 12px; opacity: .85; margin-top: -4px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .lg { font-style: normal; font-weight: 700; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; font-size: 11px; color: #2B2A26; }
+  .lg.start { background: var(--felt-text); } .lg.goal { background: var(--gold); }
+  .lg.door { background: #5C3100; color: #fff; border-radius: 50%; font-size: 9px; } .lg.gate { background: var(--felt-text); color: var(--H); border: 2px solid var(--H); border-radius: 50%; }
+  .lg.star { color: var(--gold); font-size: 16px; }
+  .players { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; opacity: .9; margin-top: -4px; }
+  .pl { display: flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 10px; }
+  .pl i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #2B2A26; display: inline-block; }
+  .pl.now { background: rgba(243,236,220,.15); outline: 1px solid var(--gold); }
+  .prompt { min-height: 20px; font-size: 14px; text-align: center; color: var(--gold); }
+  .tray-h { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin-bottom: 4px; }
+  .bundles, .items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bundle { font: inherit; border: 0; border-radius: 9px; padding: 4px 9px 3px; cursor: pointer; background: var(--felt-text); color: #2B2A26; text-align: left; line-height: 1.15; }
+  .bundle b { font-size: 18px; } .bundle small { display: block; font-size: 11px; opacity: .75; }
+  .bundle[disabled] { opacity: .35; cursor: default; }
+  .bundle.peg { outline: 2px dashed var(--gold); outline-offset: -2px; }
+  .item { font: inherit; border: 1px solid var(--gold); border-radius: 9px; padding: 3px 9px; background: transparent; color: var(--gold); cursor: pointer; }
+  .item[disabled] { opacity: .4; cursor: default; }
+  .foot { margin-top: auto; display: flex; gap: 8px; justify-content: space-between; align-items: center; font-size: 13px; }
+  .foot .btn { background: transparent; color: var(--felt-text); border-color: rgba(243,236,220,.35); }
+  .won { position: absolute; inset: 0; background: rgba(14,59,46,.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; z-index: 4; }
+  .won[hidden] { display: none; } .won .big { font-size: 34px; font-weight: 700; color: var(--gold); }
+  .choice { cursor: pointer; }
+  @keyframes pulse { 0%, 100% { opacity: .9; } 50% { opacity: .35; } }
+  .choice rect { animation: pulse 1s infinite; }
+  @media (prefers-reduced-motion: reduce) { .choice rect { animation: none; } .track i { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="phone" aria-label="Maze walk on a phone">
+    <div class="screen">
+      <div class="top"><span id="roundLabel">Round 1</span><span id="seedLabel"></span></div>
+      <div class="steps">
+        <div><div class="big" id="toGo">0</div><div style="font-size:13px;opacity:.8">steps to the goal</div></div>
+        <div class="sub" id="walked"></div>
+      </div>
+      <div class="track"><i id="trackBar"></i></div>
+      <div class="players" id="players"></div>
+      <svg class="maze" id="maze" role="img" aria-label="The maze"><g id="mazeCam"></g><g id="mazeHud"></g></svg>
+      <div class="legend" aria-hidden="true"><span><i class="lg start">S</i>start</span><span><i class="lg goal">G</i>goal</span><span><i class="lg door">10</i>door</span><span><i class="lg gate">♥</i>gate</span><span><i class="lg star">★</i>prize</span></div>
+      <div class="prompt" id="prompt" aria-live="polite"></div>
+      <div><div class="tray-h">Plays</div><div class="bundles" id="bundles"></div></div>
+      <div><div class="tray-h">Items</div><div class="items" id="items"></div></div>
+      <div class="foot">
+        <span id="roundInfo"></span>
+        <button class="btn" id="nextRound">Next round</button>
+      </div>
+    </div>
+    <div class="won" id="won" hidden><div class="big" id="wonTitle">Goal!</div><div id="wonText"></div><button class="btn" id="again">Play this seed again</button></div>
+  </div>
+
+  <div class="side">
+    <h1>Maze walk mock</h1>
+    <p class="muted">v4, 2026-11-14. A Labyrinth-style walk to the goal, built from the game's seed: the same seed gives the same maze and the same rounds. Change the seed to see another.</p>
+
+    <div class="panel">
+      <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button></label>
+      <label>Game <select id="length"><option value="61">Short, 61 steps</option><option value="121" selected>Long, 121 steps</option></select></label>
+      <label>Sets per round <select id="sets"><option>3</option><option selected>5</option><option>8</option></select></label>
+      <label>A set walks <select id="bundleRule">
+        <option value="points" selected>its points (one point, one step)</option>
+        <option value="half">half its points, rounded up</option>
+        <option value="cards">one step per card</option>
+      </select></label>
+      <label>Doors on the route <select id="doors"><option value="0">none</option><option value="3" selected>3, getting stronger</option><option value="5">5, getting stronger</option></select></label>
+      <label>Door strength <select id="doorBase"><option value="5">5, 10, 15 ...</option><option value="10" selected>10, 20, 30 ...</option><option value="20">20, 40, 60 ...</option></select></label>
+      <label>Gated shortcuts <select id="gates"><option value="0">none</option><option value="4" selected>4, one of each suit</option><option value="8">8</option></select></label>
+      <label>Prize cells trigger <select id="prizeOn"><option value="land" selected>when you land on them</option><option value="pass">when you pass them</option></select></label>
+      <label><input type="checkbox" id="fog"> Fog (see 3 cells around you)</label>
+      <label>Bots <select id="bots"><option value="1" selected>1</option><option value="2">2</option></select></label>
+      <label>Camera follows <select id="camera"><option value="turn" selected>whoever's turn it is</option><option value="you">you</option></select></label>
+      <label>Camera scrolls <select id="scroll"><option value="edge" selected>near the edge of the view</option><option value="centre">to keep the token centred</option></select></label>
+      <label><input type="checkbox" id="showRoute" checked> Show the main route (designer view)</label>
+      <label><input type="checkbox" id="whole"> Show the whole maze (designer view)</label>
+    </div>
+
+    <h2>How it plays</h2>
+    <ul class="tight">
+      <li>Each round deals every player their plays: a few small pegging scores (dashed) and their match turn's sets. Each play is worth steps and carries a suit, or none on a tie.</li>
+      <li>Players take turns making plays, as in pegging: the seat after the dealer goes first, and the deal passes each round. A player with no plays left says go; the others keep playing. The first to the goal wins.</li>
+      <li>On your turn, tap a play to walk it. You must take every step. The token walks along corridors and stops at forks for you to pick a way (the pulsing squares).</li>
+      <li>Suit gates guard shortcuts. Only steps of that suit pass; anything else bounces off the gate (costing a step) and walks back the way it came.</li>
+      <li>Doors on the main route absorb steps. Damage stays; once a door is down it stays open.</li>
+      <li>Prize cells (stars) sit at dead ends, like Labyrinth's treasures. They give items: a jump ahead, a key for any gate, or extra steps.</li>
+      <li>The main route is exactly the game's length. Shortcuts make it shorter if you have the suit.</li>
+    </ul>
+
+    <h2>What's real and what's a stand-in</h2>
+    <ul class="tight">
+      <li>Real: the dice (<code>dice.js</code>, the engine's streams), the counting (<code>scoring.js</code>) and each set's suit.</li>
+      <li>Stand-in: the sets. Each round shuffles the deck (stream <code>deal</code>) and takes the best set of 2 to 5 from each run of 7 cards. That's well below a real match turn (a medium bot scores about 243 steps a turn at r15), so try 8 sets a round to feel the real scale.</li>
+      <li>Stand-in: pegging is 2 or 3 small scores from single cards, not a real play.</li>
+      <li>Bots: they make their biggest play first, take the shortest way at forks (through gates their suit or a key opens), and use items at once. Bot colours are proposals (see the tiles style guide).</li>
+      <li>Not yet: a full round's other stages. Shifting walls are removed for now, so the route is always the game's length.</li>
+    </ul>
+
+    <h2>Event log</h2>
+    <p><button class="btn" id="copyLog">Copy log</button></p>
+    <div id="log"></div>
+  </div>
+</main>
+
+<script src="dice.js"></script>
+<script src="scoring.js"></script>
+<script src="maze-art.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const D = window.WarpedDice, WS = window.WarpedScore;
+  const SUITS = ["S", "H", "D", "C"], GLYPH = { S: "♠", H: "♥", D: "♦", C: "♣" };
+  const RANK = (r) => ({ 1: "A", 11: "J", 12: "Q", 13: "K" }[r] || String(r));
+  const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N E S W
+
+  // ---------- Settings and seed ----------
+  const cfg = () => ({
+    length: +$("length").value, sets: +$("sets").value, bundleRule: $("bundleRule").value,
+    doors: +$("doors").value, doorBase: +$("doorBase").value, gates: +$("gates").value,
+    prizeOn: $("prizeOn").value, fog: $("fog").checked, showRoute: $("showRoute").checked,
+    camera: $("camera").value, scroll: $("scroll").value, whole: $("whole").checked, bots: +$("bots").value,
+  });
+  // Numbers are used as they are; any other text is hashed, so "bruce" is a seed too.
+  const seedValue = (text) => /^\d+$/.test(text.trim()) ? BigInt.asUintN(64, BigInt(text.trim())) : D.fnv1a64(text);
+
+  let G = null; // the game
+
+  // ---------- Maze generation (stream "maze") ----------
+  // A grid of cells with passages between them. A tree is carved by a
+  // recursive backtracker; the goal is a cell exactly `length` steps from the
+  // start along the tree. Then extra passages are opened that make loops
+  // (forks) without shortening the route, and a few that do shorten it, each
+  // guarded by a suit gate. Doors go on the main route.
+  function makeMaze(seed, c) {
+    const rng = D.stream(seed, "maze", G.rolls);
+    const size = c.length <= 61 ? 9 : 13, W = size, H = size, N = W * H;
+    const id = (x, y) => y * W + x, xy = (i) => [i % W, Math.floor(i / W)];
+    const nb = (i) => { const [x, y] = xy(i); return DIRS.map(([dx, dy]) => [x + dx, y + dy]).filter(([a, b]) => a >= 0 && b >= 0 && a < W && b < H).map(([a, b]) => id(a, b)); };
+    const key = (a, b) => a < b ? a + ":" + b : b + ":" + a;
+    let edges, start = id(0, H - 1), goal = -1, tries = 0;
+    while (goal < 0) {
+      if (++tries > 200) throw new Error("no maze of that length");
+      edges = new Map();
+      const seen = new Uint8Array(N), stack = [start]; seen[start] = 1;
+      while (stack.length) {
+        const cur = stack[stack.length - 1], open = nb(cur).filter(n => !seen[n]);
+        if (!open.length) { stack.pop(); continue; }
+        const n = open[rng.below(open.length, "carve")];
+        edges.set(key(cur, n), { kind: "open" }); seen[n] = 1; stack.push(n);
+      }
+      const dist = bfs(start, edges, nb, N);
+      const exact = [...Array(N).keys()].filter(i => dist[i] === c.length);
+      if (exact.length) goal = exact[rng.below(exact.length, "goal")];
+    }
+    const M = { W, H, N, start, goal, edges, nb, key, xy, id, prizes: new Map(), seen: new Uint8Array(N) };
+    // Loops that don't shorten the route: forks with two ways round.
+    const walls = [];
+    for (let i = 0; i < N; i++) for (const n of nb(i)) if (i < n && !edges.has(key(i, n))) walls.push([i, n]);
+    rng.shuffle(walls, "walls");
+    let loops = Math.round(N * 0.08);
+    const shortcuts = [];
+    for (const [a, b] of walls) {
+      if (!loops && shortcuts.length >= 40) break;
+      edges.set(key(a, b), { kind: "open" });
+      const d = bfs(start, edges, nb, N)[goal];
+      if (d >= c.length && loops) { loops--; continue; }
+      edges.delete(key(a, b));
+      if (d < c.length && c.length - d >= 4) shortcuts.push([a, b, c.length - d]);
+    }
+    // Gated shortcuts: open a few, each with a suit gate. Gates don't count for
+    // the main route, so the route stays exactly `length` without them.
+    let g = 0;
+    for (const [a, b] of shortcuts) {
+      if (g >= c.gates) break;
+      edges.set(key(a, b), { kind: "gate", suit: SUITS[g % 4] });
+      if (openDist(M)[goal] !== c.length) { edges.delete(key(a, b)); continue; }
+      g++;
+    }
+    M.route = routeFrom(M, start);
+    // Doors on the main route, evenly spaced, stronger as you go.
+    for (let k = 1; k <= c.doors; k++) {
+      const at = Math.floor(M.route.length * k / (c.doors + 1));
+      const e = edges.get(key(M.route[at - 1], M.route[at]));
+      Object.assign(e, { kind: "door", strength: c.doorBase * k, damage: 0 });
+    }
+    // Prize cells at dead ends off the route, like Labyrinth's treasures.
+    const onRoute = new Set(M.route), deadEnds = [];
+    for (let i = 0; i < N; i++) if (!onRoute.has(i) && i !== start && links(M, i).length === 1) deadEnds.push(i);
+    rng.shuffle(deadEnds, "prize_cells");
+    deadEnds.slice(0, Math.max(3, Math.round(c.length / 20))).forEach(i => M.prizes.set(i, true));
+    return M;
+  }
+  function bfs(from, edges, nb, N, pass = () => true) {
+    const dist = new Int32Array(N).fill(-1), q = [from]; dist[from] = 0;
+    for (let h = 0; h < q.length; h++) for (const n of nb(q[h])) {
+      const e = edges.get(q[h] < n ? q[h] + ":" + n : n + ":" + q[h]);
+      if (e && dist[n] < 0 && pass(e)) { dist[n] = dist[q[h]] + 1; q.push(n); }
+    }
+    return dist;
+  }
+  // Distances through open passages and doors (gates shut): the main route.
+  const openDist = (M, from = M.start) => bfs(from, M.edges, M.nb, M.N, e => e.kind !== "gate");
+  // The main route from a cell to the goal, ignoring gates. Neighbour order N, E, S, W breaks ties.
+  function routeFrom(M, from) {
+    const d = bfs(M.goal, M.edges, M.nb, M.N, e => e.kind !== "gate"), path = [from];
+    let cur = from;
+    while (cur !== M.goal && d[cur] > 0) { cur = M.nb(cur).find(n => d[n] === d[cur] - 1 && pass(M.edges.get(M.key(cur, n)))); path.push(cur); }
+    return path;
+    function pass(e) { return e && e.kind !== "gate"; }
+  }
+  const links = (M, i) => M.nb(i).filter(n => M.edges.has(M.key(i, n)));
+
+  // ---------- Rounds: each player's plays (stream "deal") ----------
+  const cardOf = (id) => ({ r: id % 13 + 1, s: SUITS[Math.floor(id / 13)] });
+  const cardText = (c) => RANK(c.r) + GLYPH[c.s];
+  // A player's plays for this round: a few pegging scores, then their match turn's sets.
+  function dealPlays(c, seat) {
+    const rng = D.stream(G.seed, "deal", G.rolls);
+    // Each player and round reads its own place in the stream: draw past the earlier ones.
+    const deck = [...Array(52).keys()];
+    for (let r = 0; r <= G.round * G.P.length + seat; r++) rng.shuffle(deck, "shuffle");
+    const out = [];
+    // Pegging stand-ins: a couple of single-card scores, suit of the card.
+    const pegs = 2 + (deck[51] % 2);
+    for (let k = 0; k < pegs; k++) { const card = cardOf(deck[k]); out.push({ peg: true, cards: [card], points: 1 + (deck[k + 10] % 2), suit: card.s, label: "pegging" }); }
+    // Match-turn stand-ins: the best set of 2 to 5 from each run of 7 cards.
+    for (let k = 0; k < c.sets; k++) out.push(bestSet(deck.slice(4 + k * 6, 4 + k * 6 + 7).map(cardOf)));
+    return out.map((b, i) => ({ ...b, id: G.round + "." + seat + "." + i, steps: walkSize(b, c), used: false }));
+  }
+  function bestSet(pool) {
+    let best = null;
+    for (let m = 1; m < 1 << pool.length; m++) {
+      const cards = pool.filter((_, i) => m >> i & 1);
+      if (cards.length < 2 || cards.length > 5) continue;
+      const { items, used } = WS.count(cards, { flushMin: 4 });
+      if (used.size !== cards.length) continue; // every card in a combo, as the match turn wants
+      const points = items.reduce((a, x) => a + x.pts, 0);
+      if (!best || points > best.points || (points === best.points && cards.length > best.cards.length)) best = { cards, points, suit: WS.suitOf(cards), label: WS.headline(items) };
+    }
+    return best || { cards: pool.slice(0, 2), points: 0, suit: null, label: "nothing" };
+  }
+  function walkSize(b, c) {
+    if (b.peg) return b.points;
+    if (c.bundleRule === "half") return Math.ceil(b.points / 2);
+    if (c.bundleRule === "cards") return b.cards.length;
+    return b.points;
+  }
+
+  // ---------- Game and turns ----------
+  const SEATS = [
+    { name: "You", human: true, colour: "var(--gold)" },
+    { name: "Bot 1", colour: "#3FB6B2" },
+    { name: "Bot 2", colour: "#B48CFF" },
+  ];
+  const BOT_PAUSE = 450, STEP_MS = 70;
+  function newGame(seedText) {
+    const c = cfg();
+    G = { seedText, seed: seedValue(seedText), c, cam: null, round: 0, rolls: [], log: [], walking: null, won: null, turn: 0, roundOver: false };
+    G.M = makeMaze(G.seed, c);
+    G.P = SEATS.slice(0, 1 + c.bots).map((s, seat) => ({ ...s, seat, pos: G.M.start, prev: -1, walked: 0, items: [], keys: 0, plays: [] }));
+    G.prizeRng = D.stream(G.seed, "prize", G.rolls);
+    log("game_start", { seed: seedText, length: c.length, size: G.M.W + "x" + G.M.H, players: G.P.map(p => p.name), doors: c.doors, gates: c.gates, prizes: G.M.prizes.size });
+    startRound();
+    try { location.replace("#seed=" + encodeURIComponent(seedText)); } catch (e) {}
+  }
+  function startRound() {
+    const n = G.P.length;
+    G.P.forEach(p => { p.plays = dealPlays(G.c, p.seat); });
+    G.round++;
+    // The deal passes each round. As in pegging, the seat after the dealer plays first.
+    G.dealer = (n - 1 + G.round - 1) % n;
+    G.roundOver = false;
+    log("round_start", { round: G.round, dealer: G.P[G.dealer].name, plays: G.P.map(p => p.plays.map(b => b.steps + (b.suit || "-"))) });
+    G.turn = G.dealer;
+    nextTurn();
+  }
+  const left = (p) => p.plays.filter(b => !b.used);
+  // Pass the turn to the next player with a play left. A player with none says go.
+  function nextTurn() {
+    if (G.won !== null) return render();
+    const n = G.P.length;
+    for (let k = 1; k <= n; k++) {
+      const p = G.P[(G.turn + k) % n];
+      if (left(p).length) { G.turn = p.seat; render(); if (!p.human) setTimeout(botPlay, BOT_PAUSE); return; }
+      if (!p.saidGo) { p.saidGo = true; log("go", { player: p.name }); }
+    }
+    G.roundOver = true; G.P.forEach(p => { p.saidGo = false; });
+    log("round_end", { round: G.round, toGo: G.P.map(p => toGo(p)) });
+    render();
+  }
+  function log(type, data) { G.log.push({ type, ...data }); }
+  const cur = () => G.P[G.turn];
+
+  // ---------- Bots ----------
+  // A bot plays its biggest play, takes the shortest way at forks (through gates
+  // its suit or a key opens), and uses jumps and extra steps as soon as it wins them.
+  function botPlay() {
+    const p = cur();
+    if (p.human || G.walking || G.won !== null) return;
+    const b = left(p).sort((a, z) => z.steps - a.steps)[0];
+    startWalk(b);
+  }
+  function botWay(p, w, ways) {
+    const d = bfs(G.M.goal, G.M.edges, G.M.nb, G.M.N, e => e.kind !== "gate" || e.suit === w.suit || p.keys > 0);
+    return ways.reduce((best, n) => (d[n] >= 0 && (d[best] < 0 || d[n] < d[best]) ? n : best), ways[0]);
+  }
+
+  // ---------- Walking ----------
+  // A play walks one step at a time. Corridors walk themselves; a fork asks.
+  // Every step must be taken: at a dead end you turn round.
+  function startWalk(b) {
+    const p = cur();
+    if (G.walking || G.won !== null || !b || b.used) return;
+    b.used = true;
+    G.walking = { b, left: b.steps, suit: b.suit, p };
+    log("play", { player: p.name, cards: b.cards.map(cardText).join(" "), steps: b.steps, suit: b.suit });
+    step();
+  }
+  function options(p) {
+    const ways = links(G.M, p.pos).filter(n => n !== p.prev);
+    return ways.length ? ways : links(G.M, p.pos); // dead end: back the way you came
+  }
+  function step() {
+    const w = G.walking;
+    if (!w) return;
+    if (w.left <= 0 || G.won !== null) return endWalk();
+    const ways = options(w.p);
+    if (ways.length > 1) {
+      if (w.p.human) { w.choices = ways; render(); return; } // a fork: the player picks
+      return move(botWay(w.p, w, ways));
+    }
+    move(ways[0]);
+  }
+  function move(to) {
+    const w = G.walking, p = w.p, M = G.M, e = M.edges.get(M.key(p.pos, to));
+    w.choices = null;
+    if (e.kind === "gate" && e.suit !== w.suit && !p.keys) {
+      // Wrong suit: bounce. Walking into the gate costs a step, and the rest
+      // take you back the way you came. (The cost means a play always ends,
+      // even between two gates of other suits.)
+      w.left--;
+      log("gate", { player: p.name, suit: e.suit, passed: false, bounced: true, left: w.left });
+      p.prev = to;
+      render(); return setTimeout(step, 160);
+    }
+    if (e.kind === "gate") { const key = e.suit !== w.suit; log("gate", { player: p.name, suit: e.suit, passed: true, key }); if (key) { p.keys--; p.items.splice(p.items.findIndex(i => i.kind === "key"), 1); } }
+    if (e.kind === "door" && e.damage < e.strength) {
+      const hit = Math.min(w.left, e.strength - e.damage);
+      e.damage += hit; w.left -= hit;
+      log("door", { player: p.name, strength: e.strength, damage: e.damage, broken: e.damage >= e.strength, spent: hit });
+      if (e.damage < e.strength) { render(); return endWalk(); }
+      e.kind = "open"; e.broken = true; // down for good, for everyone
+      render(); return setTimeout(step, 260);
+    }
+    p.prev = p.pos; p.pos = to; p.walked++; w.left--;
+    if (p.pos === M.goal) return reachGoal(p);
+    if (M.prizes.get(p.pos) && (G.c.prizeOn === "pass" || w.left === 0)) winPrize(p, p.pos);
+    render();
+    setTimeout(step, STEP_MS);
+  }
+  function reachGoal(p) {
+    G.won = p.seat; log("goal", { player: p.name, round: G.round, walked: p.walked });
+    G.walking = null; render();
+  }
+  function endWalk() {
+    const w = G.walking; G.walking = null;
+    if (!w) return;
+    log("play_end", { player: w.p.name, at: G.M.xy(w.p.pos).join(","), toGo: toGo(w.p) });
+    nextTurn();
+  }
+  function winPrize(p, cell) {
+    G.M.prizes.delete(cell);
+    const kind = G.prizeRng.pick([["jump", 50], ["key", 25], ["steps", 25]], "prize_kind");
+    let item;
+    if (kind === "jump") item = { kind, n: 3 + G.prizeRng.below(8, "jump_size") };
+    else if (kind === "key") { item = { kind }; p.keys++; }
+    else item = { kind, n: 4 + G.prizeRng.below(7, "steps_size") };
+    item.text = kind === "jump" ? `Jump ${item.n} ahead` : kind === "key" ? "Skeleton key" : `+${item.n} steps`;
+    p.items.push(item);
+    log("prize_won", { player: p.name, item: item.text });
+    if (!p.human && kind !== "key") setTimeout(() => useItem(p, p.items.indexOf(item)), 0);
+  }
+  // Items: a jump moves you along the main route, over doors and gates alike;
+  // extra steps become another play this round. A key is used by itself at a gate.
+  function useItem(p, i) {
+    const it = p.items[i];
+    if (!it || it.kind === "key" || G.won !== null) return;
+    p.items.splice(i, 1);
+    if (it.kind === "steps") {
+      p.plays.push({ cards: [], points: it.n, steps: it.n, suit: null, label: "prize", id: "p" + p.seat + G.log.length, used: false, prize: true });
+      log("item_used", { player: p.name, item: it.text });
+      if (G.roundOver) { G.roundOver = false; G.turn = (p.seat - 1 + G.P.length) % G.P.length; nextTurn(); }
+      return render();
+    }
+    const path = routeFrom(G.M, p.pos), k = Math.min(it.n, path.length - 1);
+    p.prev = path[k - 1] ?? -1; p.pos = path[k]; p.walked += k;
+    log("item_used", { player: p.name, item: it.text, to: G.M.xy(p.pos).join(",") });
+    if (p.pos === G.M.goal) return reachGoal(p);
+    render();
+  }
+  function toGo(p) { const d = bfs(G.M.goal, G.M.edges, G.M.nb, G.M.N, e => e.kind !== "gate"); return d[p.pos] < 0 ? "?" : d[p.pos]; }
+
+  // ---------- Drawing ----------
+  function render() {
+    const M = G.M, c = G.c, A = window.WarpedMazeArt, me = G.P[0], w = G.walking;
+    // The view shows a quarter of the maze (half its width and height), so cells are twice the size.
+    const V = 360, whole = c.whole, cs = whole ? Math.floor(V / M.W) : Math.round(2 * V / M.W), pad = 6, full = cs * M.W + pad * 2;
+    const svg = $("maze"); svg.setAttribute("width", V + pad * 2); svg.setAttribute("height", V + pad * 2); svg.setAttribute("viewBox", `0 0 ${V + pad * 2} ${V + pad * 2}`);
+    const X = (i) => pad + M.xy(i)[0] * cs, Y = (i) => pad + M.xy(i)[1] * cs;
+    const cx = (i) => X(i) + cs / 2, cy = (i) => Y(i) + cs / 2;
+    // Fog: cells within 3 of your token are seen, and stay seen.
+    if (c.fog) for (let i = 0; i < M.N; i++) { const [a, b] = M.xy(i), [p, q] = M.xy(me.pos); if (Math.abs(a - p) + Math.abs(b - q) <= 3) M.seen[i] = 1; }
+    const shown = (i) => !c.fog || M.seen[i] || i === M.goal || i === M.start;
+    const onStart = G.P.some(p => p.pos === M.start);
+    let s = "";
+    for (let i = 0; i < M.N; i++) s += A.floor(X(i), Y(i), cs, !shown(i));
+    s += A.start(X(M.start), Y(M.start), cs, !onStart) + A.goal(X(M.goal), Y(M.goal), cs);
+    const focus = c.camera === "you" ? me : (w ? w.p : cur());
+    if (c.showRoute) { const r = routeFrom(M, focus.pos); s += A.route(r.map(i => [cx(i), cy(i)]), r); }
+    let walls = "";
+    for (let i = 0; i < M.N; i++) {
+      if (!shown(i)) continue;
+      const [x, y] = M.xy(i), x0 = X(i), y0 = Y(i);
+      const inner = (dx, dy) => { const a = x + dx, b = y + dy; return a >= 0 && b >= 0 && a < M.W && b < M.H && !M.edges.has(M.key(i, M.id(a, b))); };
+      if (inner(1, 0)) walls += `M${x0 + cs} ${y0}v${cs}`;
+      if (inner(0, 1)) walls += `M${x0} ${y0 + cs}h${cs}`;
+      if (inner(-1, 0) && !shown(M.id(x - 1, y))) walls += `M${x0} ${y0}v${cs}`;
+      if (inner(0, -1) && !shown(M.id(x, y - 1))) walls += `M${x0} ${y0}h${cs}`;
+    }
+    s += A.walls(walls, cs) + A.outerWall(pad, pad, cs * M.W, cs * M.H, cs);
+    for (const [k, e] of M.edges) {
+      if (e.kind === "open" && !e.broken) continue;
+      const [a, b] = k.split(":").map(Number); if (!shown(a) && !shown(b)) continue;
+      const mx = (cx(a) + cx(b)) / 2, my = (cy(a) + cy(b)) / 2, upright = M.xy(a)[1] === M.xy(b)[1];
+      if (e.broken) s += A.brokenDoor(mx, my, cs, upright);
+      else if (e.kind === "gate") s += A.gate(mx, my, cs, upright, e.suit);
+      else if (e.kind === "door") s += A.door(mx, my, cs, upright, e.strength - e.damage);
+    }
+    for (const [i] of M.prizes) if (shown(i)) s += A.prize(X(i), Y(i), cs);
+    if (w && w.choices) for (const n of w.choices) s += A.choice(X(n), Y(n), cs, n);
+    // Tokens: players sharing a cell sit side by side. The player whose turn it is goes on top.
+    const order = G.P.filter(p => p !== cur()).concat([cur()]);
+    for (const p of order) {
+      if (!shown(p.pos) && !p.human) continue;
+      const mates = G.P.filter(q => q.pos === p.pos), k = mates.indexOf(p), off = mates.length > 1 ? (k - (mates.length - 1) / 2) * cs * .28 : 0;
+      s += A.token(cx(p.pos) + off, cy(p.pos) + off * .3, cs, { colour: p.colour, small: p.pos === M.start || mates.length > 1 });
+    }
+    $("mazeCam").innerHTML = s;
+    // The camera follows whoever's turn it is (or you, by setting). "edge": scroll
+    // when the token is within 1.5 cells of the view's edge; "centre": keep it in the middle.
+    const span = V + pad * 2, maxT = Math.max(0, full - span), tx0 = G.cam ? G.cam[0] : 0, ty0 = G.cam ? G.cam[1] : maxT;
+    const margin = cs * 1.5, clamp = (v) => Math.min(maxT, Math.max(0, v));
+    const follow = (p, t) => c.scroll === "centre" ? p - span / 2 : p - t < margin ? p - margin : p - t > span - margin ? p - span + margin : t;
+    G.cam = whole ? [0, 0] : [clamp(follow(cx(focus.pos), tx0)), clamp(follow(cy(focus.pos), ty0))];
+    $("mazeCam").style.transform = `translate(${-G.cam[0]}px, ${-G.cam[1]}px)`;
+    // A pointer to the goal when it's out of view.
+    let hud = "";
+    const gx = cx(M.goal) - G.cam[0], gy = cy(M.goal) - G.cam[1];
+    if (!whole && (gx < 0 || gy < 0 || gx > span || gy > span)) {
+      const ox = span / 2, oy = span / 2, dx = gx - ox, dy = gy - oy, k = Math.min((span / 2 - 22) / Math.abs(dx || 1e-9), (span / 2 - 22) / Math.abs(dy || 1e-9));
+      hud = A.pointer(ox + dx * k, oy + dy * k, Math.atan2(dy, dx) * 180 / Math.PI + 90, "G", 40);
+    }
+    $("mazeHud").innerHTML = hud;
+
+    const myLeft = toGo(me);
+    $("toGo").textContent = myLeft;
+    $("trackBar").style.width = (100 * (1 - (myLeft === "?" ? 1 : myLeft) / c.length)) + "%";
+    $("walked").innerHTML = `${me.walked} steps walked<br>route ${c.length} · ${M.W}×${M.H}`;
+    $("roundLabel").textContent = `Round ${G.round} · ${G.P[G.dealer].name === "You" ? "your deal" : G.P[G.dealer].name + " deals"}`;
+    $("seedLabel").textContent = "seed " + G.seedText;
+    $("players").innerHTML = G.P.map(p => `<span class="pl${p.seat === G.turn && !G.roundOver && G.won === null ? " now" : ""}"><i style="background:${p.colour}"></i>${p.name} <b>${toGo(p)}</b> to go · ${left(p).length} ${left(p).length === 1 ? "play" : "plays"}</span>`).join("");
+    const mine = left(me);
+    $("roundInfo").textContent = G.roundOver ? "Everyone has played" : `${mine.reduce((a, b) => a + b.steps, 0)} steps in your plays`;
+    $("prompt").textContent = G.won !== null ? "" : G.roundOver ? "Round done: deal the next one" : w ? (w.choices ? `A fork: pick a way (${w.left} steps left)` : `${w.p.human ? "Walking" : w.p.name + " walks"}: ${w.left} steps left`) : cur().human ? "Your turn: pick a play" : `${cur().name} is choosing a play`;
+    const myTurn = cur().human && !w && !G.roundOver && G.won === null;
+    $("bundles").innerHTML = me.plays.map((b, i) => `<button class="bundle${b.peg ? " peg" : ""}" data-i="${i}" ${b.used || !myTurn ? "disabled" : ""}>
+        <b>${b.steps}</b> <span style="color:${b.suit ? `var(--${b.suit})` : "inherit"}">${b.suit ? GLYPH[b.suit] : "no suit"}</span>
+        <small>${b.cards.length ? b.cards.map(x => `<span style="color:var(--${x.s})">${cardText(x)}</span>`).join(" ") : b.label}${!b.peg && b.steps !== b.points ? ` · ${b.points} pts` : ""}</small></button>`).join("") || `<span class="muted">none</span>`;
+    $("items").innerHTML = me.items.map((it, i) => `<button class="item" data-i="${i}" ${it.kind === "key" || !(myTurn || (G.roundOver && it.kind === "steps")) ? "disabled" : ""} title="${it.kind === "key" ? "Used by itself at the next gate of another suit" : ""}">${it.text}</button>`).join("") || `<span style="font-size:13px;opacity:.6">Win items from the stars</span>`;
+    $("nextRound").disabled = !G.roundOver || G.won !== null;
+    $("won").hidden = G.won === null;
+    if (G.won !== null) { const p = G.P[G.won]; $("wonTitle").textContent = p.human ? "You reach the goal!" : `${p.name} reaches the goal`; $("wonText").textContent = `Round ${G.round}, ${p.walked} steps walked. Seed ${G.seedText}.`; }
+    $("log").textContent = G.log.slice(-60).map(e => JSON.stringify(e)).join("\n");
+    $("log").scrollTop = 1e9;
+  }
+
+  // ---------- Wiring ----------
+  $("maze").addEventListener("click", (ev) => {
+    const g = ev.target.closest(".choice"); if (!g || !G.walking || !G.walking.choices) return;
+    const n = +g.dataset.cell;
+    log("fork_choice", { player: "You", options: G.walking.choices.map(i => G.M.xy(i).join(",")), choice: G.M.xy(n).join(",") });
+    move(n);
+  });
+  $("bundles").addEventListener("click", (ev) => { const b = ev.target.closest(".bundle"); if (b && !b.disabled && cur().human) startWalk(G.P[0].plays[+b.dataset.i]); });
+  $("items").addEventListener("click", (ev) => { const b = ev.target.closest(".item"); if (b && !b.disabled) useItem(G.P[0], +b.dataset.i); });
+  $("nextRound").addEventListener("click", () => { if (G.roundOver && G.won === null) startRound(); });
+  $("again").addEventListener("click", () => newGame(G.seedText));
+  $("apply").addEventListener("click", () => newGame($("seed").value || "1"));
+  $("seed").addEventListener("keydown", (e) => { if (e.key === "Enter") newGame($("seed").value || "1"); });
+  $("newSeed").addEventListener("click", () => { const s = String(Math.floor(Math.random() * 1e9)); $("seed").value = s; newGame(s); });
+  for (const id of ["length", "sets", "bundleRule", "doors", "doorBase", "gates", "prizeOn", "bots"]) $(id).addEventListener("change", () => newGame(G.seedText));
+  for (const id of ["fog", "showRoute", "camera", "scroll", "whole"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
+  $("copyLog").addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(G.log.map(e => JSON.stringify(e)).join("\n")));
+  window.__mazeGame = () => G; // for the headless checks
+
+  const fromHash = decodeURIComponent((location.hash.match(/seed=([^&]+)/) || [])[1] || "");
+  $("seed").value = fromHash || "20261114";
+  newGame($("seed").value);
+})();
+</script>
+</body>
+</html>

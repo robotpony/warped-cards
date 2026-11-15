@@ -53,12 +53,14 @@ Build plan phases A to D in `ARCHITECTURE.md`.
 - [ ] Doors, prizes and power slots rules (`rules.md` › Doors, Prizes)
 - [ ] Prize pick mock: where a prize goes, badges (`concept.md` › Deck building and prizes)
 - [ ] Shop mock: what you pay with (pips are gone since r15), what's for sale
-- [ ] Maze walk mock, after a match turn (`concept.md` › The maze walk)
+- [x] Maze walk mock v1: seeded maze, forks, gates, doors, prize cells, fog (`mocks/maze-walk.html`)
+- [x] Maze tiles style guide (`mocks/maze-tiles.html`)
+- [ ] Maze walk with real match turn sets, bots on the same maze (`concept.md` › The maze walk)
 - [ ] Pegging on the maze mock, after maze inspiration
 - [ ] Transitions between mini games, and bonus effects (`concept.md` › Transitions and effects)
 - [ ] Multi-turn match mock: the tray carries over (`rules.md` › Special jokers), if still needed
 - [ ] Door strengths and placement; rules so far in `rules.md` › Doors
-- [ ] Branches, traps, wall shifts, fog, generator (`concept.md` › The maze)
+- [ ] Branches, traps, fog, generator (`concept.md` › The maze)
 
 ## Phase 7 · Tuning
 

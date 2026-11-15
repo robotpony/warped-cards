@@ -8,9 +8,29 @@ Every scoring set is a single (exactly one combo, like 7-8) or a multi (two or m
 |---|---|---|
 | [match-turn.html](match-turn.html) | One match turn, Boggle-style: trace to score, the score breakdown, set suits, cards left over (warning and cost), lit combos while tracing, joker reveals, special jokers (swapper, bomb), edge power multipliers, prizes, timer and card budget, play-out, and begin and end effects (deal-in, board cleared, wrap-up) | v9, 2026-11-14 |
 | [jokers.html](jokers.html) | Joker mechanics on their own: the amber and teal jokers and the title and blank cards, each rolling on a hidden table of chances. Players see a shuffle, wheel or die, the prize revealed (bigger for rarer prizes) and flown to where it goes. Game-maker panels edit the chances and simulate 10,000 games. Outcome logic in `jokers.js`, tests in `jokers.test.js`; the reveal in `reveal.js` and `reveal.css`, shared with the match turn | v3, 2026-11-14 |
+| [maze-walk.html](maze-walk.html) | A Labyrinth-style walk to the goal, generated from the game's seed (change the seed, get another maze and other rounds). Bundles of steps with suits, forks you choose at, gated shortcuts, doors on the route that absorb steps, prize cells with items (jump ahead, skeleton key, extra steps), fog. Settings for game length, sets per round, how a set walks, doors, gates and prize triggers. You and 1 or 2 bots take turns making plays, as in pegging. The view shows a quarter of the maze and follows whoever's turn it is (or you), with a pointer to the goal. The sets are stand-ins | v4, 2026-11-14 |
+| [maze-tiles.html](maze-tiles.html) | Style guide for the maze's tiles and icons: floor, walls, start, goal, tokens, doors, gates, prizes, fork choices, the route, fog, at game size. Sliders tune sizes live; "Copy values" gives the line for `maze-art.js`, which both maze mocks draw from | v1, 2026-11-14 |
 | Score breakdown | Merged into the match turn in v4. The standalone mock (v1, with presets) is in git history | Retired |
 | Prize pick | Choosing where a prize goes (deck or power slot), badges | After the engine (PLAN.md Phase 6), with the prize rules |
 | Pegging on the maze | Pegging with live token movement | After the engine (PLAN.md Phase 6), with maze design |
+
+## Maze walk v1 to v4: from the seed, clear to read, a closer view, turns (2026-11-14)
+
+The maze, the rounds and the prizes all come from the game's seed through the engine's dice (`dice.js`, streams `maze`, `deal` and `prize`), so a seed always gives the same game. Inspiration and generator notes: [maze-inspiration.md](../maze-inspiration.md).
+
+- The maze: a recursive backtracker on a 9 × 9 grid (short game) or 13 × 13 (long), with the goal exactly 61 or 121 steps from the start. Loops that don't shorten the route make forks; shortcuts that do are guarded by suit gates. Doors on the route get stronger as you go. Prize cells sit at dead ends.
+- Stand-in sets: each round shuffles the deck and takes the best set of 2 to 5 from each run of 7 cards, every card in a combo. Pegging is 2 or 3 single-card scores.
+- Visual goals (Bruce, 2026-11-14), the bar every maze view must meet:
+  - Every cell reads as part of a grid, at least subtly.
+  - Start and goal are clear at a glance. Doors are clearly doors. Walls are clear.
+  - The art style stays simple, but it must be clear.
+- v2 meets them: a floor tile per cell, 3.5 pt walls with a heavier outer wall, a cream start pad and a ringed gold goal pad, doors as wooden planks with a strength badge (broken doors leave stubs), gates as cream plates in their suit colour, and a legend under the maze.
+- v3 (Bruce's notes): the view shows a quarter of the maze (half its width and height), so cells are twice the size (55 pt in a long game, 80 pt in a short one). The maze scrolls as the token nears the view's edge, or keeps it centred (a setting), and a gold pointer at the edge shows which way the goal is. A designer setting shows the whole maze.
+- v4 (Bruce's notes): what you spend are plays, and players take turns making them, as in pegging. Each round deals every player their plays; the seat after the dealer goes first and the deal passes each round; a player with none left says go. Bots make their biggest play first, take the shortest way at forks (through gates their suit or a key opens) and use items at once. The camera follows whoever's turn it is, or you. Tokens sharing a cell sit side by side.
+- Fixed in v4: a token boxed in between two gates of other suits bounced forever without spending a step. A bounce now costs a step, so every play ends.
+- Headless check, v4 (25 seeds each, your side making plays in dealt order and following the main route at forks): every game finishes. 1 bot: short games 2.3 rounds, long 3.6; 2 bots: 1.6 and 3.1. The bots win most games because they aim for shortcuts their suits open and the test player doesn't.
+- The tiles and icons are drawn by `maze-art.js`, shared with the style guide (`maze-tiles.html`), so they're tuned in one place.
+- Headless check (60 seeds, following the main route at forks, default settings): every seed builds and finishes. Short games took 1 to 3 rounds (mean 2.8), long games 1 to 5 (mean 4.0). Real match turns score far more than the stand-ins, so real games would end sooner unless the maze absorbs more.
 
 ## Match turn v9: one score, edge power multiplies (2026-11-14)
 

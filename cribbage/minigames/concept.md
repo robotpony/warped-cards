@@ -24,7 +24,6 @@ Three things change:
 
 - Every peg moves you, right away. A fifteen isn't 2 points on a board; it's 2 steps that might carry you past a fork, or into a gate.
 - Which card scores matters. A fifteen made with the 5♥ opens heart gates. Holding the right suit for the gate ahead is a new reason to keep or throw a card.
-- A 31 can shift a wall: open a shortcut for yourself, or close the one a bot was heading for.
 - Forks are a gamble: a shorter branch with a gate and a prize, or the long safe way round.
 - The match board rewards the counting skill cribbage players already have. Every set is counted like a hand, so spotting a double run or a hidden fifteen pays, and you score only what you find.
 - Edge cards power up as you use them, so a turn builds: a 5 in your hand multiplies every set it joins a little more, up to a cap. There's one score, steps.
@@ -65,7 +64,6 @@ Maze sketch (real mazes are generated)
 - The main route is 61 steps (short game) or 121 (standard), so games run about as long as classic cribbage.
 - Branches leave the main route at a fork and rejoin it later. A branch may be shorter or longer, and it may hold gates, prizes or traps.
 - Suit gates open only for steps scored by a card of that suit. Steps that hit a gate of the wrong suit bounce you back. Special doors stop you instead.
-- Some walls can shift. Pegging a 31 lets you shift one, and powers may too.
 - Fog hides the maze beyond a few cells of each token. Cells anyone has seen stay revealed.
 - The maze is shared. All tokens race the same routes and may stand on the same cell.
 - Every maze MUST always keep an open route from start to goal.
@@ -153,7 +151,7 @@ Prizes come from prize cells in the maze and from the match board (a special jok
 |---|---|
 | Card | An extra standard card, like a third 5♥ |
 | Special joker | A wild joker (any rank and suit); a skeleton key (any suit at a gate) |
-| Power | Kept in a power slot: re-cut the starter, shift a wall, peek at a crib card |
+| Power | Kept in a power slot: re-cut the starter, peek at a crib card |
 | Addition | A badge on one card: +1 step whenever it's part of a fifteen |
 
 There's one shared deck, so prizes work on two layers:
@@ -288,12 +286,20 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Engine and simulator are Swift, replacing Python; engine specs are written to port, and numbers and tables the code needs live in JSON config files |
 | 2026-11-14 | Only the beta app records games; release builds don't record or send logs for now |
 | 2026-11-14 | Swift stack agreed: Apple frameworks only, Swift Testing, macOS 26 and iOS 26, two app targets (beta and release), SwiftUI and Metal shader effects. Beta is local builds on the Mac; TestFlight comes with iOS ([LIBRARIES.md](../../LIBRARIES.md)) |
+| 2026-11-14 | The maze plays like Labyrinth: you move through it until you reach the goal. A short game is 61 steps and a long one 121; you get there by stepping that many times, or by winning items that jump you steps ahead |
+| 2026-11-14 | Mazes are generated from the game's seed, the same seed that drives the shuffle, so changing the seed shows another maze. The maze walk mock works this way from the start |
+| 2026-11-14 | Pegging moves your token on the maze as each point is scored (confirms 2026-11-13), so pegging matters on the board |
+| 2026-11-14 | Maze visual goals: every cell reads as part of a grid (at least subtly); start and goal are clear; doors are clearly doors; walls are clear. The art stays simple but must be clear ([mocks/README.md](mocks/README.md) › Maze walk) |
+| 2026-11-14 | The steps you walk are called plays: each pegging score or scored set is one play. On the maze, players take turns making plays, as in pegging: the seat after the dealer goes first, a player with no plays left says go, and the others keep playing |
+| 2026-11-14 | Bouncing off a gate of the wrong suit costs one step; the rest of the play walks back the way it came. This also means every play ends, even between two gates of other suits |
+| 2026-11-14 | Shifting walls are removed for now (supersedes 2026-11-13). The maze stays fixed, so with a scrolling view the route from start to goal is always a known number of steps |
+| 2026-11-14 | The scale problem (match turns score far more steps than the route is long) is deferred; the maze walk mock keeps its settings for trying fixes later ([maze-inspiration.md](maze-inspiration.md) › Ideas) |
 
 ## Open questions
 
 1. Which prizes go into the shared deck, and which does a player keep? Can you choose to keep a card instead of shuffling it in?
 2. How many power slots, and how do you get more?
-3. Can tokens get in each other's way at a gate or a fork, or only through wall shifts?
+3. Can tokens get in each other's way at a gate or a fork?
 4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 90-second timer leave a person room to clear the board?
 5. Edge power: is ×1.5 a level, levels added, capped at ×2 right? Bot tests so far (mocks/README.md › Match turn v9) say the cap matters most; the simulator should settle it.
 6. Doors: how strong and how many? This decides how much of a match score becomes distance.
@@ -314,7 +320,7 @@ Two tracks run side by side: design, so we can think about how the game plays an
 | 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2), match turn (v9, rules r15, with the score breakdown, joker reveals and begin and end effects), jokers (v3). The prize pick, shop, maze walk and pegging on the maze move to phase 6 | Done, but for playtests |
 | 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
 | 5 | Engine | Swift engine, bots, simulator and stats reports; classic cribbage as the baseline ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases A to D) | After 4 |
-| 6 | Design | Maze, prizes and shop: doors, prizes and power slots, door types, branches, traps, wall shifts, fog, generator; mocks of the prize pick, shop, maze walk, pegging on the maze and transitions between mini games | After 5 |
+| 6 | Design | Maze, prizes and shop: doors, prizes and power slots, door types, branches, traps, fog, generator; mocks of the prize pick, shop, maze walk, pegging on the maze and transitions between mini games | After 5 |
 | 7 | Both | Tune with simulation until the numbers hold up | After 5 |
 | 8 | Design | Face-card art: full graphics for J, Q and K (letters until then) | Not scheduled |
 | 9 | Design | Card backs: design more backs (crosshatch until then) | Not scheduled |

@@ -27,6 +27,7 @@ Game ............................ until a token reaches the goal
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
 | Stage | One part of a round. In order: deal and discard, cut the starter, pegging, match turns, the shop |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
+| Play | One go on the maze: a pegging score or a scored set, walked as its steps. Players take turns making plays, as in pegging (concept.md, 2026-11-14; the maze walk rules are still to be written) |
 | Minigame | A game played in a stage in place of a classic cribbage step. The match game is the first: it replaces counting your hand. More may follow |
 | Match turn | One player's turn of the match game. Your steps from it are walked through the maze right after |
 
@@ -272,7 +273,7 @@ A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps of that suit.
 
 So a set built around one suit is worth more than its steps: a run of 3 hearts walks through a heart gate that a mixed run of 3 can't, and a 2-card set of two suits never passes a gate.
 
-If your steps reach a gate of the wrong suit, you bounce: the rest of your steps take you back the way you came. A special door stops you instead, and the rest of your steps are lost.
+If your steps reach a gate of the wrong suit, you bounce: walking into the gate costs one step, and the rest of your steps take you back the way you came. A special door stops you instead, and the rest of your steps are lost.
 
 ### Doors
 
@@ -283,10 +284,6 @@ Some doors must be knocked down. A door has a strength, and the steps you spend 
 - Once a door is down, it's open for every player.
 
 Door strengths and where doors go: not designed yet.
-
-### Shifting walls
-
-Some walls can move. When you peg a 31, you move your 2 steps and may also shift one movable wall. A shift can open a branch for you or close one in front of another player. You can't make a shift that would cut off every route to the goal.
 
 ### Fog
 

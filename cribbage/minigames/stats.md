@@ -65,7 +65,7 @@ One JSON Lines file per game. Each line is one event, with a sequence number, mo
 | Game | game_start (seed, players, bot levels, maze size, timing profile, rules version), round_start, game_end (winner, positions) |
 | Deal | deal, discard (kept, thrown), cut, heels |
 | Pegging | card_played, peg_score (reason, points, scoring card), go |
-| Maze | step, fork_choice (options, choice), gate (suit, passed, bounced, stopped), prize_cell, wall_shift, fog_reveal |
+| Maze | step, fork_choice (options, choice), gate (suit, passed, bounced, stopped), prize_cell, fog_reveal |
 | Match | turn_start (rules version, hand, crib, starter, stock size), score (cards, single or multi, combos, steps, power bonus), trace_no_score, swap, bomb, arm and disarm, prize_won, best sets left on the board, turn_end (reason: timer, budget, empty stock or player) |
 | Prizes | prize_won (source, tier, kind), prize_placed (deck or player layer), prize_used |
 
@@ -86,7 +86,7 @@ These back up the curves with specific checks.
 | Is the match turn too strong or weak? | Match steps vs pegging steps per round; sets, singles and multis per turn; steps lost to doors |
 | Does the hand still matter? | Link between a hand's classic value and its match-turn steps; how often the best discard differs from classic's |
 | How much does finding sets matter? | Best sets available vs found, by player and bot level; steps left on the board |
-| Is the maze working? | Branch choices, gate bounces and steps lost, steps spent on doors, prize cells reached, wall shifts and who they hurt |
+| Is the maze working? | Branch choices, gate bounces and steps lost, steps spent on doors, prize cells reached |
 | Are prizes balanced? | Prizes per game by tier and source; win rate by prizes held; how often deck prizes help someone else |
 
 ## Targets

@@ -2,6 +2,31 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.6.0 — 2026-11-14
+
+### Added
+
+- Maze walk mock: walk your steps through a maze to the goal, like Labyrinth. Each seed builds its own maze and deals its own rounds, so changing the seed shows another game. Choose a way at forks, pass suit gates on shortcuts with the right suit, break down doors, and win items from prize cells: a jump ahead, a skeleton key or extra steps. Fog is optional.
+- Maze walk: every cell sits on a visible grid, walls are bold, the start and goal have their own pads, doors are wooden planks showing their strength, gates are suit plates, and a legend under the maze names each one.
+- Maze walk: you see a quarter of the maze at a time, with bigger cells. The view scrolls as you walk, either when you near its edge or keeping you centred, and a pointer shows which way the goal is.
+- Maze walk: you play against 1 or 2 bots, taking turns making plays as in pegging. The seat after the dealer goes first, the deal passes each round, and a player with no plays left says go. The view follows whoever's turn it is, and the first to the goal wins.
+- Maze tiles: a style guide showing every tile and icon in the maze at game size, with sliders to tune them, so the maze's look can be reviewed and changed in one place.
+- Maze inspiration notes: what Labyrinth, Mario Party, Slay the Spire, Balatro, Karuba and others could lend the maze.
+
+### Changed
+
+- Maze walk: what you spend is now called plays (it was steps to spend).
+
+- Rules: bouncing off a suit gate of the wrong suit costs one step, and the rest of your steps walk back the way you came.
+
+### Fixed
+
+- Maze walk: a token caught between two gates of other suits could bounce forever. Bouncing off a gate now costs a step.
+
+### Removed
+
+- Rules: shifting walls, for now. The maze stays fixed, so the route from start to goal is always the same number of steps.
+
 ## 0.5.1 — 2026-11-14
 
 ### Added

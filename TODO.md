@@ -24,7 +24,7 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 - [ ] Measure "no suit" ties in human playtests (share of steps, by bot level and by person) before changing the tie rule (`rules.md` › Suit gates)
 - [ ] Score breakdown: keep the tally panel off the set when a set spans the top and bottom rows
 - [ ] Graph playtest runs by rules version (`cribbage/minigames/stats.md` › Mock playtests)
-- [ ] Gather maze inspiration before the maze mock
+- [x] Gather maze inspiration before the maze mock (`cribbage/minigames/maze-inspiration.md`)
 
 ## Repo
 
