@@ -25,7 +25,7 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 
 - [x] Cards: standard layout, four-colour suits, back, jokers (`design/cards/index.html`)
 - [x] Match turn, rules r8, bot skill levels, play-out and clear-board ending (`cribbage/minigames/mocks/match-turn.html`)
-- [ ] Playtest the match turn and tune it with your runs (`playtests/`)
+- [x] Playtest the match turn and tune it with your runs (`playtests/`)
 - [x] Match turn begin and end effects: deal-in, board cleared, wrap-up (`mocks/match-turn.html` v8)
 - [x] One score: edge power multiplies, capped; pips removed (rules r15, mock v9)
 - [x] Score breakdown in the match turn (`mocks/match-turn.html`)
@@ -35,8 +35,8 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 ## Phase 4 · Engine spec
 
 - [x] Match turn, rules r15: data model, actions, events, dice streams, config files, bots, clock (`cribbage/minigames/engine.md` draft 1)
-- [ ] Classic cribbage game for the baseline: deal, discard, cut, pegging, show (`engine.md` › Open questions)
-- [ ] Write the config files and shared fixtures the spec names (`engine.md` › Config, Fixtures)
+- [x] Classic cribbage game for the baseline: deal, discard, cut, pegging, show, bots (`engine.md` › Classic cribbage, draft 3)
+- [x] Write the config files and shared fixtures the spec names (`cribbage/minigames/config/`, `fixtures/`)
 
 ## Phase 5 · Swift engine and simulator
 

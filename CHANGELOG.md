@@ -2,6 +2,18 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.5.1 — 2026-11-14
+
+### Added
+
+- Engine spec, draft 3: a full game of classic cribbage for 2 or 3 players (cut for deal, deal and discard, the cut, the play, the show and winning), with three classic bot levels. The simulator plays it as the baseline that Crib Maze is measured against.
+- The game's settings files: match turn rules, jokers, bots, timing and the classic game, so the app, the bots and the simulator all read the same numbers.
+- Shared test cases for counting hands, classic hands (the 29, flush rules, his nobs), pegging and the dice, so every version of the game counts the same way.
+
+### Fixed
+
+- Match turn: a set with two separate runs (possible in sets of 6 or more) now scores both, not just the higher one.
+
 ## 0.5.0 — 2026-11-14
 
 ### Changed

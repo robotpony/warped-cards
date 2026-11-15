@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "about": "engine.md › Classic cribbage › The play. Seats play in turn from the one after the dealer. plays lists the cards played, in order; gos and resets follow from the hands. expect lists every scoring moment in order: a card's scores, or a go. Values worked out by hand (see note).",
+  "cases": [
+    {
+      "note": "Fifteen, a pair, a go with nobody able to play, then the last card.",
+      "players": 2, "dealer": 1,
+      "hands": [["5S", "5D", "9C", "4H"], ["10H", "5H", "6S", "3C"]],
+      "plays": ["5S", "10H", "5D", "5H", "4H", "6S", "9C", "3C"],
+      "expect": [
+        { "seat": 1, "card": "10H", "count": 15, "scores": [["fifteen", 2]] },
+        { "seat": 1, "card": "5H", "count": 25, "scores": [["pair", 2]] },
+        { "seat": 0, "go": 1, "count": 29 },
+        { "seat": 0, "card": "9C", "count": 15, "scores": [["fifteen", 2]] },
+        { "seat": 1, "card": "3C", "count": 18, "scores": [["last_card", 1]] }
+      ],
+      "totals": [3, 5]
+    },
+    {
+      "note": "Runs played out of order: 4-5-6 with a fifteen, then 3-4-5-6, then a run of 4 under a repeated 4, a pair, a go.",
+      "players": 2, "dealer": 1,
+      "hands": [["4S", "6D", "4H", "9C"], ["5H", "3S", "4D", "7C"]],
+      "plays": ["4S", "5H", "6D", "3S", "4H", "4D", "9C", "7C"],
+      "expect": [
+        { "seat": 0, "card": "6D", "count": 15, "scores": [["fifteen", 2], ["run", 3]] },
+        { "seat": 1, "card": "3S", "count": 18, "scores": [["run", 4]] },
+        { "seat": 0, "card": "4H", "count": 22, "scores": [["run", 4]] },
+        { "seat": 1, "card": "4D", "count": 26, "scores": [["pair", 2]] },
+        { "seat": 1, "go": 1, "count": 26 },
+        { "seat": 1, "card": "7C", "count": 16, "scores": [["last_card", 1]] }
+      ],
+      "totals": [9, 8]
+    },
+    {
+      "note": "Pair, pair royal, then 31 (no go point with it). The player after the 31 leads next.",
+      "players": 2, "dealer": 1,
+      "hands": [["10S", "10H", "KD", "AS"], ["10D", "AC", "5C", "QS"]],
+      "plays": ["10S", "10D", "10H", "AC", "KD", "5C", "AS", "QS"],
+      "expect": [
+        { "seat": 1, "card": "10D", "count": 20, "scores": [["pair", 2]] },
+        { "seat": 0, "card": "10H", "count": 30, "scores": [["pair", 6]] },
+        { "seat": 1, "card": "AC", "count": 31, "scores": [["thirty_one", 2]] },
+        { "seat": 1, "card": "5C", "count": 15, "scores": [["fifteen", 2]] },
+        { "seat": 1, "card": "QS", "count": 26, "scores": [["last_card", 1]] }
+      ],
+      "totals": [6, 7]
+    },
+    {
+      "note": "After a go, the other player keeps playing while they can, and reaches 31.",
+      "players": 2, "dealer": 1,
+      "hands": [["10S", "8C", "9D", "QH"], ["KC", "2S", "AH", "7D"]],
+      "plays": ["10S", "KC", "8C", "2S", "AH", "9D", "7D", "QH"],
+      "expect": [
+        { "seat": 1, "card": "AH", "count": 31, "scores": [["thirty_one", 2]] },
+        { "seat": 0, "card": "QH", "count": 26, "scores": [["last_card", 1]] }
+      ],
+      "totals": [1, 2]
+    },
+    {
+      "note": "Three players: a run of K-Q-J, a player who can't play sits out, a 31, then two more counts.",
+      "players": 3, "dealer": 2,
+      "hands": [["KS", "9S", "8S", "4S"], ["QH", "AH", "2H", "3H"], ["JD", "5D", "7D", "6D"]],
+      "plays": ["KS", "QH", "JD", "AH", "5D", "9S", "2H", "7D", "8S", "3H", "6D", "4S"],
+      "expect": [
+        { "seat": 2, "card": "JD", "count": 30, "scores": [["run", 3]] },
+        { "seat": 1, "card": "AH", "count": 31, "scores": [["thirty_one", 2]] },
+        { "seat": 0, "card": "8S", "count": 31, "scores": [["thirty_one", 2]] },
+        { "seat": 0, "card": "4S", "count": 13, "scores": [["last_card", 1]] }
+      ],
+      "totals": [3, 2, 3]
+    }
+  ]
+}

@@ -17,7 +17,7 @@
   const PAIR_NAMES = { 2: "Pair", 3: "Pair royal", 4: "Double pair royal" };
 
   // cards: [{ r: 1..13, s: "S"|"H"|"D"|"C" }]
-  // o: { flushMin: 4 or 5, flush4: true to allow a 4-card flush in the first four
+  // o: { flushMin: 4 or 5, handFlush4 (or flush4): true to allow a 4-card flush in the first four
   //      (a classic hand), nobs: [starterIndex, jackIndex] or null }
   // Returns { items: [{ kind, name, pts, idx }], used: Set of card indexes in a combo }.
   function count(cards, o) {
@@ -40,20 +40,19 @@
       add("pair", PAIR_NAMES[idx.length] || `${idx.length} of a kind`, idx.length * (idx.length - 1), idx);
     // Runs of 3 or more distinct ranks; repeated ranks make double runs.
     const ranks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
-    let run = null;
+    // Every stretch of 3 or more counts, lowest first (engine.md › Counting a set).
     for (let i = 0; i < ranks.length;) {
       let j = i;
       while (j + 1 < ranks.length && ranks[j + 1] === ranks[j] + 1) j++;
-      if (j - i + 1 >= 3) run = ranks.slice(i, j + 1);
+      if (j - i + 1 >= 3) {
+        const run = ranks.slice(i, j + 1), mult = run.reduce((a, r) => a * byRank[r].length, 1);
+        add("run", `${RUN_NAMES[mult] || mult + " runs"} of ${run.length}`, mult * run.length, run.flatMap(r => byRank[r]).sort((a, b) => a - b));
+      }
       i = j + 1;
-    }
-    if (run) {
-      const mult = run.reduce((a, r) => a * byRank[r].length, 1);
-      add("run", `${RUN_NAMES[mult] || mult + " runs"} of ${run.length}`, mult * run.length, run.flatMap(r => byRank[r]));
     }
     // Flush: o.flushMin cards or more, all one suit.
     if (n >= o.flushMin && cards.every(c => c.s === cards[0].s)) add("flush", `Flush of ${n}`, n, cards.map((_, i) => i));
-    else if (o.flush4 && n === 5 && cards.slice(0, 4).every(c => c.s === cards[0].s)) add("flush", "Flush of 4", 4, [0, 1, 2, 3]);
+    else if ((o.handFlush4 || o.flush4) && n === 5 && cards.slice(0, 4).every(c => c.s === cards[0].s)) add("flush", "Flush of 4", 4, [0, 1, 2, 3]);
     // His nobs: a hand or crib jack with the starter, same suit.
     if (o.nobs) add("nobs", "His nobs", 1, o.nobs);
     return { items, used };

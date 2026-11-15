@@ -148,7 +148,8 @@ Code holds behaviour; config holds data. Any number, table or list the game need
 |---|---|
 | `rules.json` | Timer, card budget, set size, left-over cost, clear-board bonus, prize tiers |
 | `jokers.json` | Joker kinds, how many a round can have, each kind's hidden chance table (as whole weights), special joker supplies |
-| `bots.json` | Bot levels and their limits (starting cards, search depth), names, on-screen pacing |
+| `bots.json` | Bot levels and their limits (starting cards, search depth; classic discard and play styles), names, on-screen pacing |
+| `classic.json` | The classic game: target, deal table, cut, show and pegging values, its own copy of the scoring |
 | `timing.json` | Timing profiles for the modelled clock: human speed and bot speed, per action (`stats.md` › Timing) |
 | `fx.json` | The FX catalogue: what each cue looks, sounds and feels like (see Presentation) |
 

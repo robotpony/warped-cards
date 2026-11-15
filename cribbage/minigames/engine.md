@@ -1,6 +1,6 @@
 # Crib Maze: Engine Spec
 
-Status: draft 2, 2026-11-14. Covers the match turn at match rules r15. Deal, discard, cut, pegging, the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 3, 2026-11-14. Covers the match turn at match rules r15, and a full game of classic cribbage as the baseline. A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -212,10 +212,10 @@ Counting is shared with classic cribbage (CribbageKit). It takes a list of cards
 | 1 | Fifteens | Every subset of 2 or more cards whose values add to 15, each one a combo. Subsets in increasing bitmask order of card index | `fifteen` each |
 | 2 | Pairs | Group by rank, ranks ascending. A group of 2 or more is one combo, scoring every pair in it: n cards give n(n−1)/2 pairs (made cards can give 5 or more) | `pair` × pairs |
 | 3 | Runs | Each maximal stretch of 3 or more consecutive distinct ranks, ascending. Multiplier = product of each rank's count. One combo per stretch, using every card of those ranks | `runPerCard` × length × multiplier |
-| 4 | Flush | All cards one suit, and at least `flushMin` cards. Classic hands also allow a 4-card flush of the hand's cards without the starter (option `handFlush4`) | `flushPerCard` × cards |
+| 4 | Flush | All cards one suit, and at least `flushMin` cards. Classic hands also allow a 4-card flush of the first 4 cards (the hand) when the 5th (the starter) is another suit (option `handFlush4`) | `flushPerCard` × cards |
 | 5 | His nobs | A jack from the hand or crib, of the starter's suit, in the same set as the starter (option: the two indexes) | `nobs` |
 
-- Each combo reports its kind, its multiplier or size, its points and its card indexes.
+- Each combo reports its kind, its multiplier or size, its points and its card indexes, in ascending order.
 - A card is used if any combo includes it. Unused cards are the left-over cards.
 - A set is a single with exactly one combo, a multi with two or more.
 - Ace is low only: runs don't wrap (Q-K-A is not a run).
@@ -252,15 +252,15 @@ Each game has a 64-bit seed. Each stream is its own generator:
 
 1. The stream's seed is the game seed XOR the 64-bit FNV-1a hash of the stream's name (UTF-8).
 2. SplitMix64, started from the stream's seed, fills the four 64-bit words of a xoshiro256** generator.
-3. A draw of an integer below n takes xoshiro256** output and uses Lemire's method with rejection, so every value is equally likely.
+3. A draw of an integer below n (n ≥ 1) uses Lemire's method with rejection, so every value is equally likely: take a 64-bit output x and form the 128-bit product m = x × n. Let low be m's lower 64 bits. If low < n, let t = (2^64 − n) mod n, and while low < t, draw a new x and recompute m and low. The value is m's upper 64 bits.
 4. A weighted pick from integer weights draws below the total weight and walks the entries in the order given, taking the first whose running total passes the draw.
 5. A shuffle is Fisher-Yates from the end: for i from the last index down to 1, draw j below i + 1 and swap i and j.
 
-Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle reports one roll per swap step.
+Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle reports one roll per swap step. The reference is `mocks/dice.js`; `fixtures/dice.json` holds its values for every port to match.
 
 | Stream | Purposes, in the order they happen |
 |---|---|
-| `deal` | `shuffle` (the 52), `joker_count`, `joker_kind` per joker, `shuffle` (the stock) |
+| `deal` | Match turn: `shuffle` (the 52), `joker_count`, `joker_kind` per joker, `shuffle` (the stock). Classic: `shuffle` and `cut_for_deal` per cut at the start, then `shuffle` and `cut` each hand |
 | `reveal` | Per extra card: `outcome:<kind>`, then `made_card` or `special_kind` if the outcome needs one |
 | `board` | `stock_insert` |
 | `prize` | `prize_special` |
@@ -290,9 +290,126 @@ Finding the best set, by level (`bots.json`):
 - Search `all` (perfect): every combination of 2 to `maxSet` positions, in position order, that passes the trace checks. Highest points wins; on a tie, the larger set; then the first found.
 - Search `traced` (the lower levels): shuffle the positions holding cards (stream `bot.<seat>`, purpose `starts`), take the first `round(n × starts)` (at least 1) as starting cards, and walk paths from each: each next card touches the last, up to `depth` cards and never past `maxSet`, never repeating a card. Every path of 2 or more is checked. Highest points wins; on a tie, the first found.
 
+## Classic cribbage
+
+A full game of classic cribbage, for 2 or 3 players. It is the simulator's baseline (how a classic game scores and how long it runs), and a Crib Maze round reuses its deal, cut and play. The player-facing wording is Scorekeep's How to play page (`~/projects/utilities/scorekeep/docs/rules/cribbage.md`); the 3-player deal is Crib Maze's ([rules.md](rules.md) › Deal and discard). This section fixes the algorithm and doesn't change either. Numbers come from `classic.json`.
+
+### Game state
+
+| Field | Holds |
+|---|---|
+| players, seats | 2 or 3; seats are numbered 0 up, and play passes from a seat to the next (seat + 1, wrapping) |
+| dealer | The dealing seat this hand |
+| scores | Points per seat |
+| stage | `discard`, `cut`, `play`, `show` or `over` |
+| hands | Each seat's cards; 6 or 5 after the deal, 4 after the discard |
+| crib, starter | The dealer's crib (4 cards once everyone has discarded), and the starter once cut |
+| stock | The cards left after the deal, in order |
+| play | The count, the cards played since the count last started (in order), each seat's played cards, whose turn it is, the last seat to play, and which seats have said go |
+| hand | How many hands have been played |
+
+### Starting a game
+
+1. Build the standard 52 in ID order and shuffle it (stream `deal`, purpose `shuffle`).
+2. Cut for deal: each seat in order cuts once, drawing an index below the cards left (purpose `cut_for_deal`); that card comes out of the deck. Emit `cut_for_deal` with each seat's card.
+3. The lowest rank deals (ace is low; suit doesn't count). If two or more tie for lowest, only they cut again, in seat order, from the cards left, until one is lowest.
+4. Emit `game_start` (rulesVersion, players, target, dealer), then start the first hand.
+
+### A hand
+
+1. Shuffle all 52 (stream `deal`, purpose `shuffle`).
+2. Deal from the top, one card at a time, starting with the seat after the dealer and going round, until each seat has `cards`. Then deal `toCrib` cards to the crib. The rest is the stock. Emit `deal` (dealer; each seat's view shows only its own cards).
+3. Discard: each seat sends `discard` with exactly `discard` of its cards, in any order. Emit `discarded` for each (the cards are hidden from other seats). When all have discarded, the crib is the dealt crib card, if any, then the discards in seat order.
+4. Cut: the seat before the dealer (the dealer's right) sends `cut`. Draw k below (stock size − 2 × `cutMin` + 1), purpose `cut`; the starter is the stock card at index `cutMin` + k. Emit `starter`. If it's a jack, the dealer pegs his heels (`peg.heels`).
+5. The play (below).
+6. The show (below).
+7. The deal passes to the next seat, win or lose. Emit `hand_end` with the scores, and start the next hand.
+
+Every point is pegged the moment it's scored, as a `pegged` event (seat, kind, points, new total). If a total reaches `target`, the game ends right there: emit `game_end` (winner, scores, hands played) and set the stage to `over`. Nothing after it is scored, mid-play or mid-show.
+
+### The play
+
+The count starts at 0 and the seat after the dealer plays first. On a seat's turn:
+
+- If any of its cards keeps the count at `maxCount` or under, it MUST send `play` with one of them.
+- If none can, the engine emits `go` for that seat, and the turn passes on. A seat that has said go sits out until the count starts again.
+
+After each card, add its value (rank, with 11, 12 and 13 counting 10), emit `played` (seat, card, count) and score, in this order:
+
+| Order | Kind | When | Points |
+|---|---|---|---|
+| 1 | `fifteen` | The count is 15 | `peg.fifteen` |
+| 2 | `thirty_one` | The count is `maxCount` | `peg.thirtyOne` |
+| 3 | `pair` | The last k cards since the count started share a rank, k ≥ 2 (take the largest k) | `peg.pair` × k(k−1)/2 |
+| 4 | `run` | The last n cards since the count started are n distinct, consecutive ranks in any order, n ≥ 3 (take the largest n) | `peg.runPerCard` × n |
+| 5 | `last_card` | Every card from every hand is down, and the count isn't `maxCount` | `peg.lastCard` |
+
+Then the count starts again when:
+
+- The count is `maxCount`: start again at once (no go point).
+- No seat can play and cards remain: the last seat to play pegs `go` (`peg.go`). Emit `count_reset`, then start again.
+
+After a start again, the seat after the last one to play leads, skipping seats with no cards. Ace is low here too, so Q-K-A is no run. When every card is down, the play ends and the cards go back to their owners for the show.
+
+### The show
+
+Count in order, starting with the seat after the dealer and going round to the dealer, then the dealer's crib:
+
+- A hand: its 4 cards then the starter, counted with `show.hand` options. His nobs: a hand jack of the starter's suit.
+- The crib: its 4 cards then the starter, with `show.crib` options (a flush needs all 5). His nobs counts here too.
+
+Each count uses Counting a set with `classic.json`'s `scoring`, emits `show` (seat, hand or crib, cards, combos, points), and pegs its total as one `pegged` event (kind `show` or `crib`). A jack cut as the starter is his heels, pegged at the cut, never his nobs.
+
+The engine counts every hand in full, so there is no muggins. Skunks aren't scored (as on Scorekeep).
+
+### Actions
+
+| Action | Fields | Allowed when |
+|---|---|---|
+| `discard` | cards (exactly `discard` of the seat's own) | Stage `discard`; this seat hasn't discarded |
+| `cut` | none | Stage `cut`; the seat before the dealer |
+| `play` | card | Stage `play`; this seat's turn; the card keeps the count at `maxCount` or under |
+
+Gos, starting the count again, the show and the next deal need no action: the engine runs them as soon as they're due. The session paces them on screen.
+
+### Events
+
+| Event | Fields |
+|---|---|
+| `game_start` | rulesVersion, players, target, dealer |
+| `cut_for_deal` | cuts (seat, card), in order, recuts included; dealer |
+| `deal` | hand number, dealer, each seat's cards (own view only), crib card if any |
+| `discarded` | seat, cards (own view only) |
+| `starter` | card, cut index, heels or not |
+| `played` | seat, card, count |
+| `go` | seat |
+| `count_reset` | reason (`thirty_one` or `go`) |
+| `show` | seat, `hand` or `crib`, cards, combos (as in Counting a set), points |
+| `pegged` | seat, kind (`heels`, `fifteen`, `thirty_one`, `pair`, `run`, `go`, `last_card`, `show`, `crib`), points, total |
+| `hand_end` | hand number, scores, points this hand by kind and seat |
+| `game_end` | winner, scores, hands played |
+
+### Bots
+
+A classic bot sees its own cards, the starter once cut, the play so far and the scores. It never sees other hands, the crib or the stock. Levels are in `bots.json` › `classic`. Its randomness comes from `bot.<seat>`.
+
+"In order" for a hand means sorted by card ID. Discards are tried as index combinations of that sorted hand, in lexicographic order ({0,1}, {0,2} ... {4,5}).
+
+Discard, by `discard`:
+
+- `random`: one discard chosen evenly (purpose `discard`).
+- `hand`: keep the cards whose count without a starter (4 cards, `flushMin` 4, no nobs) is highest. On a tie, the first in order.
+- `average`: for each discard, take every card the bot can't see (not in its hand) as a possible starter. Add up the kept hand's count with that starter (`show.hand` options, nobs included), and the discards' count with that starter (3 cards, `show.crib` options), added if the bot deals and subtracted if not. Highest sum wins; on a tie, the first in order. Sums, not averages, so every language agrees.
+
+Play, by `peg`:
+
+- `random`: one legal card chosen evenly (purpose `play`).
+- `greedy`: the legal card that scores the most now. On a tie, the higher value (keeping low cards for late in a count), then the lower card ID.
+- `careful`: for each legal card, its points now, minus the most the next seat could score with one card in reply, over every card the bot can't see. Highest wins; ties as `greedy`.
+
 ## Config
 
-All files live in `cribbage/minigames/config/` and carry a `version`. Values below are rules r15 as the mock plays them by default. The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r15 as the mock plays them by default. The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
@@ -352,14 +469,21 @@ Weights are lists of pairs, not objects, so their order is fixed in every langua
 ```json
 {
   "version": 1,
-  "levels": [
+  "match": [
     { "id": "perfect", "search": "all" },
     { "id": "strong",  "search": "traced", "depth": 5, "starts": 0.15 },
     { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.5 },
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
+  ],
+  "classic": [
+    { "id": "expert", "discard": "average", "peg": "careful" },
+    { "id": "greedy", "discard": "hand",    "peg": "greedy" },
+    { "id": "random", "discard": "random",  "peg": "random" }
   ]
 }
 ```
+
+`match` holds the match turn levels (see Bots), `classic` the classic game's (see Classic cribbage › Bots).
 
 `starts` is a fraction, the one place config uses a non-integer. The engine MUST round `n × starts` half away from zero, so every language agrees.
 
@@ -379,6 +503,34 @@ Durations in milliseconds per action, for the simulator's modelled clock. These 
 }
 ```
 
+### classic.json
+
+The classic game's numbers. Its scoring is its own copy, so tuning Crib Maze's `rules.json` never changes the baseline.
+
+```json
+{
+  "version": 1,
+  "rulesVersion": "classic-1",
+  "target": 121,
+  "deal": [
+    { "players": 2, "cards": 6, "discard": 2, "toCrib": 0 },
+    { "players": 3, "cards": 5, "discard": 1, "toCrib": 1 }
+  ],
+  "cutMin": 4,
+  "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
+  "show": {
+    "hand": { "flushMin": 5, "handFlush4": true },
+    "crib": { "flushMin": 5, "handFlush4": false }
+  },
+  "peg": {
+    "maxCount": 31, "fifteen": 2, "thirtyOne": 2, "pair": 2, "runPerCard": 1,
+    "go": 1, "lastCard": 1, "heels": 2
+  }
+}
+```
+
+The engine MUST check on load that each deal row fills the crib to exactly 4 (`toCrib` + players × `discard`), and that `target` is above 0. `peg.pair` is per pair, so a pair royal is 3 pairs (6).
+
 ### fx.json
 
 The effects catalogue belongs to the app, not the engine. Its format is set in Phase E (`ARCHITECTURE.md` › Presentation and effects).
@@ -389,14 +541,17 @@ The warning shows once per player, ever, not once per turn. The engine treats `w
 
 ## Fixtures
 
-Shared test cases live in `cribbage/minigames/fixtures/` as JSON. The JS mock tests and the Swift tests both read them.
+Shared test cases live in [`cribbage/minigames/fixtures/`](fixtures/) as JSON. The JS tests (`node --test cribbage/minigames/`) and the Swift tests both read them.
 
 | File | Cases |
 |---|---|
-| `counting.json` | A list of cards, options, and the expected combos (kind, size or multiplier, points, card indexes) and total |
-| `classic-hands.json` | Classic hands and cribs with known counts: 29, 28, 24, 0, his nobs, the hand and crib flush rules |
-| `dice.json` | For a few seeds and stream names: the first draws, a weighted pick and a shuffle of 52, so every port matches the generator exactly |
-| `turns/*.jsonl` | Whole recorded turns (a header and steps). Replaying each MUST give the same events |
+| `counting.json` | A list of cards, options, and the expected combos (kind, size or multiplier, points, card indexes), total and left-over cards |
+| `classic-hands.json` | Classic hands and cribs with known counts: 29, 28, 24, 0, his nobs (in a hand and a crib), a jack starter (no nobs), the hand and crib flush rules |
+| `pegging.json` | Whole plays for 2 and 3 players: the hands, the cards in the order played, and every score (fifteens, pairs, a pair royal, runs played out of order, gos, 31s, the last card) |
+| `dice.json` | For a few seeds and stream names: the first raw outputs, draws below n, weighted picks and a shuffle of 52, so every port matches the generator exactly |
+| `turns/*.jsonl` | Whole recorded turns (a header and steps). Replaying each MUST give the same events. Recorded once the Swift engine plays (`ARCHITECTURE.md` › Build plan D) |
+
+Totals and combo counts in `counting.json`, `classic-hands.json` and `pegging.json` are worked out by hand; each case's note shows the sum. `make-counting.js` fills in the card indexes from the mock counter and stops if it disagrees with a hand-worked number. `make-dice.js` writes `dice.json` from the reference dice; rerun it only when Dice changes, and say so in the commit.
 
 ## Differences from the mock
 
@@ -407,7 +562,6 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 | `Math.random`, no seed | Seeded named streams; every draw recorded |
 | Logs outcomes (cards scored) | Records actions, rolls and events, so turns replay |
 | Crashed on 5 or more of a kind (fixed in the mock too) | Scores every pair in the group |
-| Picks only the last run in a set | Counts every run of 3 or more (no 5-card set can hold two, so scores don't change) |
 | The traced bots' starting cards can include special jokers | Starting cards hold no special jokers (bot results shift a little) |
 | Starter "apart" and "touching off" settings | Not in the engine; r14 has the starter in the corner and touching on |
 | "Good hand" setting | Fixed cards in a standalone turn |
@@ -416,5 +570,4 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 
 ## Open questions
 
-1. Classic cribbage as the baseline: the next section to spec is a full classic game (deal, discard, cut, pegging, show), since the simulator needs it first.
-2. A full Crib Maze round: where jokers go when dealt into a hand or the crib, cut as the starter or played in pegging. rules.md lists this as not designed.
+1. A full Crib Maze round: where jokers go when dealt into a hand or the crib, cut as the starter or played in pegging. rules.md lists this as not designed.

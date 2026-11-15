@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "rulesVersion": "match-r15",
+  "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
+  "match": {
+    "maxSet": 5,
+    "flushMin": 4,
+    "timerSeconds": 90,
+    "cardBudget": 0,
+    "leftOverCost": 2,
+    "clearBonus": { "kind": "steps", "amount": 10 },
+    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 200 },
+    "prize": { "rareAt": 8, "epicAt": 16, "special": [["swapper", 60], ["bomb", 40]] }
+  },
+  "specials": {
+    "known": ["swapper", "bomb"],
+    "start": { "swapper": 2, "bomb": 1 },
+    "bombShape": "plus"
+  }
+}

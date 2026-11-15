@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "perRound": { "min": 0, "max": 2 },
+  "kinds": [["amber", 1], ["teal", 1]],
+  "extras": ["title", "blank"],
+  "scoringRanks": [5, 10, 11, 12, 13],
+  "outcomes": {
+    "card":    { "goes": "board", "tier": "quiet", "makes": "any" },
+    "scoring": { "goes": "board", "tier": "glint", "makes": "scoring" },
+    "five":    { "goes": "board", "tier": "glint", "makes": "five" },
+    "item":    { "goes": "tray",  "tier": "burst" },
+    "power":   { "goes": "stock", "tier": "burst", "special": "any" },
+    "named":   { "goes": "tray",  "tier": "burst", "special": "any" },
+    "steps":   { "goes": "steps", "tier": "glint", "amount": 5 }
+  },
+  "tables": {
+    "amber": [["card", 90], ["scoring", 9], ["item", 1]],
+    "teal":  [["card", 80], ["scoring", 15], ["power", 5]],
+    "title": [["five", 34], ["named", 33], ["steps", 33]],
+    "blank": [["five", 34], ["named", 33], ["steps", 33]]
+  }
+}

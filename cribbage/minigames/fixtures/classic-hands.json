@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "about": "engine.md › Counting a set. Cards are in fixture notation; options are the count options; combos come in count order with card indexes ascending; leftOver lists the indexes in no combo. Totals and combo counts were worked out by hand (see note). Classic hands: the hand or crib's four cards, then the starter (index 4); options are classic.json › show, with nobs set when a hand jack matches the starter's suit.",
+  "cases": [
+    {
+      "cards": "5H 5C 5S JD 5D",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true,
+        "nobs": [3, 4]
+      },
+      "total": 29,
+      "combos": [
+        { "kind": "fifteen", "points": 2, "cards": [0, 1, 2] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [1, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [2, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 1, 4] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 2, 4] },
+        { "kind": "fifteen", "points": 2, "cards": [1, 2, 4] },
+        { "kind": "fifteen", "points": 2, "cards": [3, 4] },
+        { "kind": "pair", "points": 12, "cards": [0, 1, 2, 4], "size": 4 },
+        { "kind": "nobs", "points": 1, "cards": [3, 4] }
+      ],
+      "leftOver": [],
+      "note": "The 29: J with each 5 (4) and each three 5s (4) = 8 fifteens (16), 6 pairs (12), his nobs (1)."
+    },
+    {
+      "cards": "5H 5C 5S 5D KS",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true
+      },
+      "total": 28,
+      "combos": [
+        { "kind": "fifteen", "points": 2, "cards": [0, 1, 2] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 1, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 2, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [1, 2, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 4] },
+        { "kind": "fifteen", "points": 2, "cards": [1, 4] },
+        { "kind": "fifteen", "points": 2, "cards": [2, 4] },
+        { "kind": "fifteen", "points": 2, "cards": [3, 4] },
+        { "kind": "pair", "points": 12, "cards": [0, 1, 2, 3], "size": 4 }
+      ],
+      "leftOver": [],
+      "note": "K with each 5 (4) and each three 5s (4) = 8 fifteens (16), 6 pairs (12)."
+    },
+    {
+      "cards": "7H 7S 8D 8C 9H",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true
+      },
+      "total": 24,
+      "combos": [
+        { "kind": "fifteen", "points": 2, "cards": [0, 2] },
+        { "kind": "fifteen", "points": 2, "cards": [1, 2] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [1, 3] },
+        { "kind": "pair", "points": 2, "cards": [0, 1], "size": 2 },
+        { "kind": "pair", "points": 2, "cards": [2, 3], "size": 2 },
+        { "kind": "run", "points": 12, "cards": [0, 1, 2, 3, 4], "size": 3, "multiplier": 4 }
+      ],
+      "leftOver": [],
+      "note": "Each 7 with each 8 (8), 2 pairs (4), 4 runs of 7-8-9 (12)."
+    },
+    {
+      "cards": "2S 4H 6D 8C 10S",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true
+      },
+      "total": 0,
+      "combos": [],
+      "leftOver": [0, 1, 2, 3, 4],
+      "note": "All even, no 15; gaps, no run; no pairs; mixed suits."
+    },
+    {
+      "cards": "JH 2C 4D 9S 3H",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true,
+        "nobs": [0, 4]
+      },
+      "total": 8,
+      "combos": [
+        { "kind": "fifteen", "points": 2, "cards": [1, 2, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 1, 4] },
+        { "kind": "run", "points": 3, "cards": [1, 2, 4], "size": 3, "multiplier": 1 },
+        { "kind": "nobs", "points": 1, "cards": [0, 4] }
+      ],
+      "leftOver": [],
+      "note": "J+2+3 and 2+4+9 (4), run 2-3-4 (3), his nobs: jack of hearts with a heart starter (1)."
+    },
+    {
+      "cards": "2S 4H 6D 8C JS",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true
+      },
+      "total": 0,
+      "combos": [],
+      "leftOver": [0, 1, 2, 3, 4],
+      "note": "A jack cut as the starter is his heels (pegged at the cut), never his nobs."
+    },
+    {
+      "cards": "2H 4H 6H 8H KC",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true
+      },
+      "total": 4,
+      "combos": [
+        { "kind": "flush", "points": 4, "cards": [0, 1, 2, 3], "size": 4 }
+      ],
+      "leftOver": [4],
+      "note": "Four hearts in hand, starter a club: flush of 4."
+    },
+    {
+      "cards": "2H 4H 6H 8H KH",
+      "as": "hand",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": true
+      },
+      "total": 5,
+      "combos": [
+        { "kind": "flush", "points": 5, "cards": [0, 1, 2, 3, 4], "size": 5 }
+      ],
+      "leftOver": [],
+      "note": "Five hearts: flush of 5."
+    },
+    {
+      "cards": "2H 4H 6H 8H KC",
+      "as": "crib",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": false
+      },
+      "total": 0,
+      "combos": [],
+      "leftOver": [0, 1, 2, 3, 4],
+      "note": "The crib only scores a flush of 5."
+    },
+    {
+      "cards": "2H 4H 6H 8H KH",
+      "as": "crib",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": false
+      },
+      "total": 5,
+      "combos": [
+        { "kind": "flush", "points": 5, "cards": [0, 1, 2, 3, 4], "size": 5 }
+      ],
+      "leftOver": [],
+      "note": "Five hearts in the crib: flush of 5."
+    },
+    {
+      "cards": "JD 2C 4D 9S 3D",
+      "as": "crib",
+      "options": {
+        "flushMin": 5,
+        "handFlush4": false,
+        "nobs": [0, 4]
+      },
+      "total": 8,
+      "combos": [
+        { "kind": "fifteen", "points": 2, "cards": [1, 2, 3] },
+        { "kind": "fifteen", "points": 2, "cards": [0, 1, 4] },
+        { "kind": "run", "points": 3, "cards": [1, 2, 4], "size": 3, "multiplier": 1 },
+        { "kind": "nobs", "points": 1, "cards": [0, 4] }
+      ],
+      "leftOver": [],
+      "note": "His nobs counts in the crib too."
+    }
+  ]
+}

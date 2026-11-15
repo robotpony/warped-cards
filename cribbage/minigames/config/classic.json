@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "rulesVersion": "classic-1",
+  "target": 121,
+  "deal": [
+    { "players": 2, "cards": 6, "discard": 2, "toCrib": 0 },
+    { "players": 3, "cards": 5, "discard": 1, "toCrib": 1 }
+  ],
+  "cutMin": 4,
+  "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
+  "show": {
+    "hand": { "flushMin": 5, "handFlush4": true },
+    "crib": { "flushMin": 5, "handFlush4": false }
+  },
+  "peg": {
+    "maxCount": 31, "fifteen": 2, "thirtyOne": 2, "pair": 2, "runPerCard": 1,
+    "go": 1, "lastCard": 1, "heels": 2
+  }
+}

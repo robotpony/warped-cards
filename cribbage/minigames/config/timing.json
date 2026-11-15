@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "profiles": {
+    "human": { "trace": 4000, "swap": 3000, "bomb": 2500, "breakdownBase": 1200, "breakdownStep": 0.85,
+               "breakdownMin": 400, "reveal": 2500, "dealIn": 1600, "ending": 1500 },
+    "bot":   { "trace": 300, "swap": 300, "bomb": 300, "breakdownBase": 0, "breakdownStep": 1,
+               "breakdownMin": 0, "reveal": 0, "dealIn": 0, "ending": 0 }
+  }
+}
