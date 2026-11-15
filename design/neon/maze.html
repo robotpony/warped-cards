@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neon Maze</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Russo+One&display=swap">
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+<main>
+  <nav><b>NEON</b><a href="index.html">Assets</a><a href="cards.html">Cards</a><a href="maze.html" aria-current="page">Maze</a></nav>
+  <h1>Maze tiles and pieces</h1>
+  <p class="muted">Neon v1, 2026-11-14. Every tile and piece the maze draws, from <code>neon-maze.js</code> (the same calls as <code>maze-art.js</code>, plus <code>defs()</code>). Tune sizes here, then copy the values into <code>neon-maze.js</code> › S and run <code>node design/neon/export.js</code>.</p>
+  <ul class="tight">
+    <li>Every cell reads as part of a grid: a faint tile and a dot at each corner.</li>
+    <li>Start and goal are icons: a play arrow and a diamond portal. Doors are laser barriers with their strength on a badge; walls glow cyan inside a magenta border.</li>
+    <li>Each glow has a solid core, so lines read with the blur off.</li>
+  </ul>
+
+  <div class="controls" id="controls">
+    <label>Cell size <select id="cs"><option value="55" selected>55 pt (long game)</option><option value="80">80 pt (short game)</option><option value="27">27 pt (whole maze)</option></select></label>
+    <label><input type="checkbox" id="noglow"> Glow off</label>
+    <button class="btn" id="copy">Copy values</button>
+    <button class="btn" id="reset">Reset</button>
+    <span class="muted" id="copied" aria-live="polite"></span>
+  </div>
+
+  <div id="sections"></div>
+</main>
+
+<script src="neon-core.js"></script>
+<script src="neon-maze.js"></script>
+<script>
+(() => {
+  const A = window.WarpedNeonMaze, $ = (id) => document.getElementById(id);
+  const DEFAULTS = { ...A.S };
+  const TUNE = [
+    ["wall", "Walls", .02, .12, .005], ["outerWall", "Outer wall", .03, .16, .005], ["glow", "Glow", 0, 5, .2], ["floorOpacity", "Tile", 0, .2, .01],
+    ["laser", "Laser", .03, .14, .005], ["gateBadge", "Gate plate", .3, .7, .02], ["token", "Token", .15, .4, .01], ["star", "Star", .2, .48, .01],
+  ];
+  const ctl = $("controls");
+  for (const [k, label, min, max, step] of TUNE) {
+    const l = document.createElement("label");
+    l.innerHTML = `${label} <input type="range" min="${min}" max="${max}" step="${step}" value="${A.S[k]}" data-k="${k}"><output>${A.S[k]}</output>`;
+    ctl.insertBefore(l, $("copy"));
+  }
+  ctl.addEventListener("input", (e) => { const k = e.target.dataset.k; if (!k) return; A.S[k] = +e.target.value; e.target.nextElementSibling.textContent = e.target.value; draw(); });
+  $("cs").addEventListener("change", draw); $("noglow").addEventListener("change", draw);
+  $("reset").addEventListener("click", () => { Object.assign(A.S, DEFAULTS); ctl.querySelectorAll("input[type=range]").forEach(r => { r.value = A.S[r.dataset.k]; r.nextElementSibling.textContent = r.value; }); draw(); });
+  $("copy").addEventListener("click", () => {
+    const out = "  const S = " + JSON.stringify(A.S).replace(/"(\w+)":/g, "$1: ").replace(/,/g, ", ") + ";";
+    navigator.clipboard && navigator.clipboard.writeText(out); $("copied").textContent = "Copied, for neon-maze.js › S";
+  });
+
+  function patch(w, h, passages, extra = () => "", opts = {}) {
+    const cs = opts.cs || +$("cs").value, pad = Math.max(8, Math.round(cs * .16));
+    const X = (i) => pad + (i % w) * cs, Y = (i) => pad + Math.floor(i / w) * cs, cx = (i) => X(i) + cs / 2, cy = (i) => Y(i) + cs / 2;
+    const open = new Set(passages.map(([a, b]) => Math.min(a, b) + ":" + Math.max(a, b)));
+    let s = "", d = "";
+    for (let i = 0; i < w * h; i++) s += A.floor(X(i), Y(i), cs, (opts.fog || []).includes(i));
+    for (let i = 0; i < w * h; i++) {
+      const x = i % w, y = Math.floor(i / w);
+      if (x + 1 < w && !open.has(i + ":" + (i + 1))) d += `M${X(i) + cs} ${Y(i)}v${cs}`;
+      if (y + 1 < h && !open.has(i + ":" + (i + w))) d += `M${X(i)} ${Y(i) + cs}h${cs}`;
+    }
+    s += (d ? A.walls(d, cs) : "") + A.outerWall(pad, pad, cs * w, cs * h, cs) + extra(cs, X, Y, cx, cy);
+    const W = cs * w + pad * 2, H = cs * h + pad * 2;
+    // Glow off: drop the filter, to check every piece still reads by its core.
+    if ($("noglow").checked) s = s.replace(/filter="url\(#nm-glow\)"/g, "");
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${A.defs()}</defs><rect width="${W}" height="${H}" rx="10" fill="${A.P.bg}"/>${s}</svg>`;
+  }
+  const mid = (a, b, cx, cy) => [(cx(a) + cx(b)) / 2, (cy(a) + cy(b)) / 2];
+  const item = (name, svg, note = "") => `<div class="item">${svg}<div class="name">${name}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
+  const corner = (cs) => patch(4, 3, [[0, 1], [1, 2], [2, 3], [3, 7], [7, 6], [6, 5], [5, 9], [9, 10], [10, 11], [0, 4], [4, 8], [6, 10]],
+    (cs, X, Y, cx, cy) => A.start(X(8), Y(8), cs) + A.goal(X(3), Y(3), cs) + A.door(...mid(2, 3, cx, cy), cs, true, 20) + A.gate(...mid(6, 10, cx, cy), cs, false, "H") +
+      A.gate(...mid(0, 4, cx, cy), cs, false, "S") + A.prize(X(11), Y(11), cs) + A.token(cx(5), cy(5), cs, { who: 0 }) + A.token(cx(1), cy(1), cs, { who: 1 }), { cs });
+
+  function draw() {
+    const sections = [
+      ["Floor and walls", [
+        item("Corridor and corners", patch(3, 2, [[0, 1], [1, 2], [2, 5], [5, 4], [4, 3]])),
+        item("Fork and dead ends", patch(3, 2, [[0, 1], [1, 2], [1, 4]])),
+        item("Crossroads", patch(3, 3, [[1, 4], [3, 4], [4, 5], [4, 7]])),
+        item("Open floor", patch(2, 2, [[0, 1], [0, 2], [1, 3], [2, 3]]), "The tiles and dots still show the grid"),
+      ]],
+      ["Start, goal and tokens", [
+        item("Start", patch(1, 1, [], (cs, X, Y) => A.start(X(0), Y(0), cs))),
+        item("Token on the start", patch(1, 1, [], (cs, X, Y, cx, cy) => A.start(X(0), Y(0), cs, false) + A.token(cx(0), cy(0), cs, { small: true })), "The token shrinks so the pad shows"),
+        item("Goal", patch(1, 1, [], (cs, X, Y) => A.goal(X(0), Y(0), cs))),
+        item("You and two bots", patch(3, 1, [[0, 1], [1, 2]], (cs, X, Y, cx, cy) => [0, 1, 2].map(k => A.token(cx(k), cy(k), cs, { who: k })).join("")), "Disc, square, triangle"),
+        item("Sharing a cell", patch(1, 1, [], (cs, X, Y, cx, cy) => A.token(cx(0) - cs * .2, cy(0), cs, { who: 0, small: true }) + A.token(cx(0) + cs * .2, cy(0), cs, { who: 2, small: true }))),
+        item("Goal pointer", `<svg width="96" height="96"><defs>${A.defs()}</defs><rect width="96" height="96" rx="10" fill="${A.P.bg}"/>${A.pointer(48, 54, 45, "G", 40)}</svg>`, "At the view's edge when the goal is out of sight"),
+      ]],
+      ["Doors", [
+        item("Door, 20 of 20", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.door(...mid(0, 1, cx, cy), cs, true, 20))),
+        item("Door, lying", patch(1, 2, [[0, 1]], (cs, X, Y, cx, cy) => A.door(...mid(0, 1, cx, cy), cs, false, 12))),
+        item("Damaged door, 7 of 20", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.door(...mid(0, 1, cx, cy), cs, true, 7)), "The beam thins out below half"),
+        item("Broken door", patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.brokenDoor(...mid(0, 1, cx, cy), cs, true)), "The emitters stay; open for everyone"),
+      ]],
+      ["Suit gates", ["S", "H", "D", "C"].map((s, k) => item(`${A.GLYPH[s]} gate`, k % 2
+        ? patch(1, 2, [[0, 1]], (cs, X, Y, cx, cy) => A.gate(...mid(0, 1, cx, cy), cs, false, s))
+        : patch(2, 1, [[0, 1]], (cs, X, Y, cx, cy) => A.gate(...mid(0, 1, cx, cy), cs, true, s))))],
+      ["Prizes, choices and the route", [
+        item("Prize cell", patch(1, 1, [], (cs, X, Y) => A.prize(X(0), Y(0), cs)), "At a dead end"),
+        item("Fork choice", patch(3, 2, [[0, 1], [1, 2], [1, 4]], (cs, X, Y, cx, cy) => A.token(cx(1), cy(1), cs) + A.choice(X(0), Y(0), cs, 0) + A.choice(X(2), Y(2), cs, 2) + A.choice(X(4), Y(4), cs, 4)), "Pulses in the walk (not under Reduce Motion)"),
+        item("Main route (designer view)", patch(3, 2, [[0, 1], [1, 2], [2, 5], [5, 4], [4, 3]], (cs, X, Y, cx, cy) => A.route([0, 1, 2, 5, 4, 3].map(i => [cx(i), cy(i)]), [])), "Hidden from players"),
+      ]],
+      ["Fog", [
+        item("Seen and unseen", patch(4, 2, [[0, 1], [1, 2], [2, 3], [1, 5]], (cs, X, Y, cx, cy) => A.token(cx(0), cy(0), cs), { fog: [3, 6, 7] }), "Unseen cells go dark with scanlines"),
+      ]],
+      ["In context", [
+        item("A corner of a maze", corner(), "At the chosen cell size"),
+        item("At 27 pt", corner(27), "Whole-maze size"),
+      ]],
+    ];
+    $("sections").innerHTML = sections.map(([h, items]) => `<h2>${h}</h2><div class="row">${items.join("")}</div>`).join("");
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

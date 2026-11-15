@@ -1,0 +1,56 @@
+# Crib Maze apps (ARCHITECTURE.md › App targets). Generate with: xcodegen generate
+name: CribMaze
+options:
+  bundleIdPrefix: ca.robotpony
+  deploymentTarget: { macOS: "26.0" }
+  createIntermediateGroups: true
+packages:
+  CribMazeEngine: { path: .. }
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    MARKETING_VERSION: "0.7.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    ENABLE_HARDENED_RUNTIME: NO
+    INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.card-games
+targetTemplates:
+  App:
+    type: application
+    platform: macOS
+    sources:
+      - Shared
+      - path: ../../cribbage/minigames/config
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: CribMazeEngine
+        product: CribMaze
+      - package: CribMazeEngine
+        product: CribMazeBots
+    postBuildScripts:
+      - name: Build number from git
+        basedOnDependencyAnalysis: false
+        script: |
+          n=$(git -C "$SRCROOT" rev-list --count HEAD 2>/dev/null || echo 1)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $n" "$TARGET_BUILD_DIR/$INFOPLIST_PATH"
+targets:
+  CribMazeBeta:
+    templates: [App]
+    sources: [Beta]
+    settings:
+      base:
+        PRODUCT_NAME: "Crib Maze Beta"
+        PRODUCT_BUNDLE_IDENTIFIER: ca.robotpony.cribmaze.beta
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) BETA"
+  CribMaze:
+    templates: [App]
+    sources: [Release]
+    settings:
+      base:
+        PRODUCT_NAME: "Crib Maze"
+        PRODUCT_BUNDLE_IDENTIFIER: ca.robotpony.cribmaze

@@ -1,6 +1,6 @@
 # Crib Maze: Engine Spec
 
-Status: draft 3, 2026-11-14. Covers the match turn at match rules r15, and a full game of classic cribbage as the baseline. A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 3, 2026-11-14 (Bots search order settled 2026-11-14). Covers the match turn at match rules r15, and a full game of classic cribbage as the baseline. A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -279,7 +279,7 @@ A bot sees the player's view (no hidden cards: the stock order is hidden) and re
 Each bot turn repeats until the turn is over:
 
 1. Find the best set (below). If one scores above 0, trace it.
-2. Otherwise, if it has a swapper (on the board first, then the tray), find the best swap: try every pair of touching grid cells (each cell, then its neighbours to the right, below, below-right and below-left), swap them in a copy, and find the best set. Take the swap that opens the highest score. If one opens a score above 0, swap.
+2. Otherwise, if it has a swapper (on the board first, then the tray), find the best swap: try every pair of touching grid cells that both hold a card, leaving out a board swapper's own cell (each cell, then its neighbours to the right, below, below-right and below-left), swap them in a copy, and find the best set. Take the swap that opens the highest score; on a tie, the first pair tried. If one opens a score above 0, swap.
 3. Otherwise, if it has a bomb (on the board first, then the tray) and the grid isn't empty, bomb the cell whose blast clears the most cards (the first in position order on a tie).
 4. Otherwise, end the turn.
 
@@ -288,7 +288,15 @@ Bots count as already warned about cards left over.
 Finding the best set, by level (`bots.json`):
 
 - Search `all` (perfect): every combination of 2 to `maxSet` positions, in position order, that passes the trace checks. Highest points wins; on a tie, the larger set; then the first found.
-- Search `traced` (the lower levels): shuffle the positions holding cards (stream `bot.<seat>`, purpose `starts`), take the first `round(n × starts)` (at least 1) as starting cards, and walk paths from each: each next card touches the last, up to `depth` cards and never past `maxSet`, never repeating a card. Every path of 2 or more is checked. Highest points wins; on a tie, the first found.
+- Search `traced` (the lower levels): list the positions holding playing cards, in position order, leaving out special jokers; n is the length of that list. Shuffle it (stream `bot.<seat>`, purpose `starts`, so n − 1 rolls). Take the first `round(n × starts)` (at least 1) as starting cards, in shuffled order, and walk paths from each: each next card touches the last, up to `depth` cards and never past `maxSet`, never repeating a card. Every path of 2 or more is checked. Highest points wins; on a tie, the first found.
+
+The traced search MUST run in this order, so every port draws the same rolls and breaks ties the same way:
+
+- A walk is depth first. At each step it tries the next cards in the shuffled order, not position order, and checks each path as it reaches it.
+- Each search shuffles afresh. In step 2, every candidate swap, in pair order, gets its own traced search on its copy of the board, with its own `starts` shuffle. A swap search therefore draws one shuffle per pair tried.
+- Search `all` draws nothing from `bot.<seat>`.
+
+Note, 2026-11-14: the three points above were settled from the Swift bots, which match the mock. Bot results in `mocks/README.md` › Match turn v9 still stand.
 
 ## Classic cribbage
 
@@ -562,7 +570,7 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 | `Math.random`, no seed | Seeded named streams; every draw recorded |
 | Logs outcomes (cards scored) | Records actions, rolls and events, so turns replay |
 | Crashed on 5 or more of a kind (fixed in the mock too) | Scores every pair in the group |
-| The traced bots' starting cards can include special jokers | Starting cards hold no special jokers (bot results shift a little) |
+| The traced bots' starting cards and paths can include special jokers | The shuffled list holds playing cards only, so special jokers are never starting cards or on a path (bot results shift a little) |
 | Starter "apart" and "touching off" settings | Not in the engine; r14 has the starter in the corner and touching on |
 | "Good hand" setting | Fixed cards in a standalone turn |
 | Epic at double the rare threshold | `epicAt` set in config (16) |

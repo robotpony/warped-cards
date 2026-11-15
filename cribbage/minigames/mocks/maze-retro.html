@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maze Retro Looks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Press+Start+2P&family=Righteous&family=Orbitron:wght@600;800&display=swap">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 20px; margin: 0 0 4px; } h3 { font-size: 15px; margin: 16px 0 6px; color: var(--muted); }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  ul.tight { margin: 4px 0 12px; padding-left: 18px; }
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin: 12px 0 8px; }
+  .compare figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .compare figcaption { font-weight: 600; margin-top: 6px; }
+  .look { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 16px; margin: 22px 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+  @media (max-width: 720px) { .cols { grid-template-columns: 1fr; } }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+  .swatches span { width: 24px; height: 24px; border-radius: 5px; border: 1px solid rgba(0,0,0,.18); }
+  .fontline { font-size: 13px; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 5px; max-width: 300px; }
+  .item svg, .compare svg { display: block; max-width: 100%; height: auto; }
+  .item .name { font-weight: 600; font-size: 13px; text-align: center; }
+  .item .note { font-size: 12px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Maze tiles: three retro looks</h1>
+  <p class="muted">Design exploration, 2026-11-14. Bruce asked for a retro look for the tiles and pieces, with modern considerations. Three directions, each drawing the same pieces. This page stands alone: <code>maze-art.js</code> and the maze walk stay as they are until a look is chosen.</p>
+
+  <h3>Modern considerations, for every look</h3>
+  <ul class="tight">
+    <li>Clear at every size the game uses: 55 and 80 pt in the quarter view, 27 pt for the whole maze. Each look is shown at 55 and 27 pt.</li>
+    <li>Colour is never the only cue. Suits carry their glyph, bots differ by shape as well as colour, and doors carry their strength as a number.</li>
+    <li>Contrast aims at WCAG AA: 3:1 for walls and icons against their floor, 4.5:1 for numbers. Spades get a light plate or a light colour so they never sit black on dark.</li>
+    <li>Crisp on Retina screens: everything is vector, and pixel art snaps to an 11 × 11 grid per cell.</li>
+    <li>Glows, pulses and flicker are decoration only, and they stop under Reduce Motion. The retro font is only for short numbers and labels, never rules text.</li>
+  </ul>
+
+  <h3>Side by side: the same corner of a maze at 55 pt</h3>
+  <div class="compare" id="compare"></div>
+
+  <div id="looks"></div>
+</main>
+
+<script>
+(() => {
+  const n = (v) => Math.round(v * 10) / 10;
+  const GLYPH = { S: "♠", H: "♥", D: "♦", C: "♣" };
+  const txt = (x, y, t, size, fill, font, extra = "") =>
+    `<text x="${n(x)}" y="${n(y)}" text-anchor="middle" dominant-baseline="central" font-family="${font}" font-size="${n(size)}" font-weight="700" fill="${fill}" ${extra}>${t}</text>`;
+  const star = (cx, cy, R, r) => Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + i * Math.PI / 5, d = i % 2 ? r : R;
+    return `${n(cx + d * Math.cos(a))},${n(cy + d * Math.sin(a))}`;
+  }).join(" ");
+  const poly = (cx, cy, r, k, rot = -Math.PI / 2) => Array.from({ length: k }, (_, i) => {
+    const a = rot + i * 2 * Math.PI / k; return `${n(cx + r * Math.cos(a))},${n(cy + r * Math.sin(a))}`;
+  }).join(" ");
+  const segPath = (segs) => segs.map(([x1, y1, x2, y2]) => `M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}`).join("");
+
+  // Pixel sprites: rows of characters, "." is clear; runs of one colour merge into one rect.
+  function sprite(x, y, u, rows, pal, shadow) {
+    let s = "";
+    const pass = (ox, oy, colour) => rows.forEach((row, r) => {
+      for (let c = 0; c < row.length;) {
+        const ch = row[c]; if (ch === ".") { c++; continue; }
+        let e = c; while (e < row.length && row[e] === ch) e++;
+        s += `<rect x="${n(x + ox + c * u)}" y="${n(y + oy + r * u)}" width="${n((e - c) * u + .15)}" height="${n(u + .15)}" fill="${colour || pal[ch]}"/>`;
+        c = e;
+      }
+    });
+    if (shadow) pass(u * .6, u * .6, shadow);
+    pass(0, 0, null);
+    return s;
+  }
+  const centred = (cx, cy, u, rows, pal, shadow) => sprite(cx - rows[0].length * u / 2, cy - rows.length * u / 2, u, rows, pal, shadow);
+
+  // ---------- Look A: 8-bit cartridge ----------
+  const PX = { felt: "#0E3B2E", a: "#185641", b: "#124937", fog: "#05190F", stone: "#F3ECDC", stoneDark: "#A89C80", ink: "#16130E",
+    gold: "#E8B84A", wood: "#A85A00", woodDark: "#4A2700", cream: "#F3ECDC", red: "#E00000", tok: ["#E8B84A", "#3FB6B2", "#B48CFF"],
+    suit: { S: "#16130E", H: "#E00000", D: "#0070E0", C: "#00843D" } };
+  const SPR = {
+    flag: [".krr...", ".krrrr.", ".krrrr.", ".kr....", ".k.....", ".k.....", "kkk...."],
+    crown: ["k..k..k", "kk.k.kk", "kkkkkkk", "kckckck", "kkkkkkk"],
+    star: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."],
+    tok: [
+      [".kkkkk.", "kyyyyyk", "kykykyk", "kyyyyyk", "kykkkyk", "kyyyyyk", ".kkkkk."],
+      ["...k...", "kkkkkkk", "kyyyyyk", "kykykyk", "kyyyyyk", "kykkkyk", "kkkkkkk"],
+      ["...k...", "..kyk..", ".kyyyk.", "kykykyk", ".kyyyk.", "..kkk..", "...k..."],
+    ],
+    suit: {
+      S: ["...s...", "..sss..", ".sssss.", "sssssss", "ss.s.ss", "...s...", "..sss.."],
+      H: [".ss.ss.", "sssssss", "sssssss", "sssssss", ".sssss.", "..sss..", "...s..."],
+      D: ["...s...", "..sss..", ".sssss.", "sssssss", ".sssss.", "..sss..", "...s..."],
+      C: ["..sss..", "..sss..", "ss.s.ss", "sssssss", "ss.s.ss", "...s...", "..sss.."],
+    },
+  };
+  const plankRows = (len, thick, up, fill) => {
+    const rows = [];
+    for (let r = 0; r < len; r++) {
+      let row = "";
+      for (let c = 0; c < thick; c++) row += (r === 0 || r === len - 1 || c === 0 || c === thick - 1) ? "k" : fill(r, c);
+      rows.push(row);
+    }
+    return up ? rows : Array.from({ length: thick }, (_, c) => rows.map(row => row[c]).join(""));
+  };
+  const pixel = {
+    key: "pixel", name: "A · 8-bit cartridge", font: "'Press Start 2P', monospace", bg: PX.felt, crisp: true,
+    blurb: "Chunky pixel sprites on an 11 × 11 grid per cell, on the game's green felt. Bevelled stone walls, drop shadows, selection brackets and dithered fog, like a cartridge game.",
+    retro: ["Pixel sprites for the start flag, goal crown, prize star and tokens", "Stone walls with a lit top edge and a dark lower edge", "Fog as a dither pattern, the 8-bit way to fade", "Numbers in Press Start 2P on dark plates"],
+    modern: ["Pixels snap to the cell's grid, so they stay crisp at any size", "Icons instead of S and G", "Bots differ by face shape (round, robot, diamond) as well as colour", "Spade gates sit on a cream plate, so black reads on felt", "Checkered floor keeps the grid visible without lines"],
+    swatches: [PX.felt, PX.a, PX.stone, PX.stoneDark, PX.gold, PX.wood, PX.red, PX.tok[1], PX.tok[2]],
+    defs: () => `<pattern id="px-dither" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#2A5A48"/><rect x="2" y="2" width="2" height="2" fill="#2A5A48"/></pattern>`,
+    floor(x, y, cs, fog, c, r) {
+      return fog ? `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="${PX.fog}"/><rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="url(#px-dither)" opacity=".5"/>`
+        : `<rect x="${x}" y="${y}" width="${cs + .2}" height="${cs + .2}" fill="${(c + r) % 2 ? PX.a : PX.b}"/>`;
+    },
+    walls(segs, cs, outer) {
+      const h = cs / 11 * (outer ? 1.3 : 1);
+      let base = "", top = "";
+      for (const [x1, y1, x2, y2] of segs) {
+        const hor = y1 === y2, lx = Math.min(x1, x2), ly = Math.min(y1, y2), len = Math.abs(x2 - x1) + Math.abs(y2 - y1);
+        base += hor ? `<rect x="${n(lx - h)}" y="${n(ly - h)}" width="${n(len + 2 * h)}" height="${n(2 * h)}" fill="${PX.stoneDark}"/>`
+          : `<rect x="${n(lx - h)}" y="${n(ly - h)}" width="${n(2 * h)}" height="${n(len + 2 * h)}" fill="${PX.stoneDark}"/>`;
+        top += hor ? `<rect x="${n(lx - h)}" y="${n(ly - h)}" width="${n(len + 2 * h)}" height="${n(h)}" fill="${PX.stone}"/>`
+          : `<rect x="${n(lx - h)}" y="${n(ly - h)}" width="${n(h)}" height="${n(len + 2 * h)}" fill="${PX.stone}"/>`;
+      }
+      return base + top;
+    },
+    start(x, y, cs) { const u = cs / 11; return `<rect x="${n(x + u)}" y="${n(y + u)}" width="${n(cs - 2 * u)}" height="${n(cs - 2 * u)}" fill="${PX.cream}"/>` + centred(x + cs / 2, y + cs / 2, u, SPR.flag, { k: PX.ink, r: PX.red }); },
+    goal(x, y, cs) {
+      const u = cs / 11;
+      return `<rect x="${n(x + u)}" y="${n(y + u)}" width="${n(cs - 2 * u)}" height="${n(cs - 2 * u)}" fill="${PX.ink}"/><rect x="${n(x + 1.6 * u)}" y="${n(y + 1.6 * u)}" width="${n(cs - 3.2 * u)}" height="${n(cs - 3.2 * u)}" fill="${PX.gold}"/>` +
+        centred(x + cs / 2, y + cs / 2, u, SPR.crown, { k: PX.ink, c: PX.cream });
+    },
+    door(mx, my, cs, up, left, max) {
+      const u = cs / 11, hurt = left / max < .5;
+      const rows = plankRows(12, 3, up, (r) => hurt && (r === 2 || r === 9) ? "c" : r % 3 === 1 ? "d" : "b");
+      const digits = String(left).length, bw = (digits * 1.5 + 1.2) * u, bh = 2.7 * u;
+      return centred(mx, my, u, rows, { k: PX.woodDark, b: PX.wood, d: "#7E4300", c: PX.cream }) +
+        `<rect x="${n(mx - bw / 2)}" y="${n(my - bh / 2)}" width="${n(bw)}" height="${n(bh)}" fill="${PX.ink}"/>` + txt(mx, my + u * .1, left, u * 1.5, PX.cream, this.font);
+    },
+    broken(mx, my, cs, up) {
+      const u = cs / 11, rows = plankRows(12, 3, true, () => "b").map((r, i) => i < 2 || i > 9 ? r : "...");
+      return centred(mx, my, u, up ? rows : Array.from({ length: 3 }, (_, c) => rows.map(row => row[c]).join("")), { k: PX.woodDark, b: PX.wood });
+    },
+    gate(mx, my, cs, up, suit) {
+      const u = cs / 11, bu = u * .75, col = PX.suit[suit];
+      const badge = ["sssssssssss", "scccccccccs", ...SPR.suit[suit].map(r => "sc" + r.replace(/\./g, "c") + "cs"), "scccccccccs", "sssssssssss"];
+      return centred(mx, my, u, plankRows(12, 3, up, () => "c").map(r => r.replace(/k/g, "s")), { s: col, c: PX.cream }) + centred(mx, my, bu, badge, { s: col, c: PX.cream });
+    },
+    prize(x, y, cs) { return centred(x + cs / 2, y + cs / 2, cs / 11, SPR.star, { y: PX.gold }, PX.ink); },
+    token(cx, cy, cs, who = 0, small = false) { return centred(cx, cy, cs / 11 * (small ? .62 : 1), SPR.tok[who], { k: PX.ink, y: PX.tok[who] }); },
+    choice(x, y, cs) {
+      const u = cs / 11, L = 3 * u, i = u * .6, g = PX.gold; let s = "";
+      for (const [ax, ay, sx, sy] of [[x + i, y + i, 1, 1], [x + cs - i, y + i, -1, 1], [x + i, y + cs - i, 1, -1], [x + cs - i, y + cs - i, -1, -1]]) {
+        s += `<rect x="${n(sx > 0 ? ax : ax - L)}" y="${n(sy > 0 ? ay : ay - u)}" width="${n(L)}" height="${n(u)}" fill="${g}"/><rect x="${n(sx > 0 ? ax : ax - u)}" y="${n(sy > 0 ? ay : ay - L)}" width="${n(u)}" height="${n(L)}" fill="${g}"/>`;
+      }
+      return s;
+    },
+  };
+
+  // ---------- Look B: 70s board game print ----------
+  const PR = { bg: "#E6D7B8", tile: "#F8EFDB", fog: "#CDBE9C", wall: "#B5441B", mis: "#E0A526", ink: "#2B2A26", avo: "#5F6E22",
+    mustard: "#E0A526", teak: "#8A4B1E", cream: "#FBF5E6", tok: ["#E0A526", "#2E8C8A", "#7A4E9E"],
+    suit: { S: "#2B2A26", H: "#C8102E", D: "#0060C0", C: "#00733A" } };
+  const print = {
+    key: "print", name: "B · 70s board game", font: "Righteous, sans-serif", bg: PR.bg,
+    blurb: "A printed game board from the 1970s: burnt orange and mustard ink a little off register, halftone fog, rounded lettering and wooden playing pieces with a cast shadow.",
+    retro: ["Walls printed twice, orange over a mustard offset, like cheap two-colour printing", "Sunburst goal, avocado start, Righteous lettering", "Halftone dots for fog", "Wooden pieces: mustard, teal and plum, with a highlight and shadow"],
+    modern: ["Big clean shapes that hold up at 27 pt", "Keeps S and G letters, but in a retro face (a contrast to looks A and C)", "Suit badges are filled discs with a cream glyph, so spades read strongly", "Bots differ by piece shape (disc, square, hexagon)", "Leaves the green felt for a cream board, and needs its own dark mode (a walnut board)"],
+    swatches: [PR.bg, PR.tile, PR.wall, PR.mis, PR.avo, PR.teak, PR.tok[1], PR.tok[2], PR.ink],
+    defs: () => `<pattern id="pr-ht" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.3" fill="${PR.ink}" opacity=".3"/></pattern>`,
+    floor(x, y, cs, fog) {
+      const i = 1.5, w = cs - 2 * i;
+      return fog ? `<rect x="${x + i}" y="${y + i}" width="${w}" height="${w}" rx="2" fill="${PR.fog}"/><rect x="${x + i}" y="${y + i}" width="${w}" height="${w}" rx="2" fill="url(#pr-ht)"/>`
+        : `<rect x="${x + i}" y="${y + i}" width="${w}" height="${w}" rx="2" fill="${PR.tile}"/>`;
+    },
+    walls(segs, cs, outer) {
+      const w = outer ? Math.max(4, cs * .13) : Math.max(3, cs * .1), off = Math.max(1.5, cs * .04), d = segPath(segs);
+      return `<path d="${d}" stroke="${PR.mis}" stroke-width="${n(w)}" stroke-linecap="square" fill="none" transform="translate(${n(off)} ${n(off)})"/>` +
+        `<path d="${d}" stroke="${PR.wall}" stroke-width="${n(w)}" stroke-linecap="square" fill="none"/>`;
+    },
+    start(x, y, cs) { return `<circle cx="${n(x + cs / 2)}" cy="${n(y + cs / 2)}" r="${n(cs * .38)}" fill="${PR.avo}" stroke="${PR.ink}" stroke-width="2"/>` + txt(x + cs / 2, y + cs / 2 + cs * .02, "S", cs * .44, PR.cream, this.font); },
+    goal(x, y, cs) {
+      const cx = x + cs / 2, cy = y + cs / 2; let rays = "";
+      for (let i = 0; i < 12; i++) {
+        const a = i * Math.PI / 6, b = .17, R = cs * .49, r = cs * .26;
+        rays += `<polygon points="${n(cx + r * Math.cos(a - b))},${n(cy + r * Math.sin(a - b))} ${n(cx + R * Math.cos(a))},${n(cy + R * Math.sin(a))} ${n(cx + r * Math.cos(a + b))},${n(cy + r * Math.sin(a + b))}" fill="${PR.mustard}" stroke="${PR.ink}" stroke-width="1"/>`;
+      }
+      return rays + `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(cs * .29)}" fill="${PR.wall}" stroke="${PR.ink}" stroke-width="2"/>` + txt(cx, cy + cs * .02, "G", cs * .36, PR.cream, this.font);
+    },
+    plank(mx, my, cs, up) { const L = cs * 1.06, T = Math.max(7, cs * .2); return { w: up ? T : L, h: up ? L : T, L, T }; },
+    door(mx, my, cs, up, left, max) {
+      const p = this.plank(mx, my, cs, up), r = Math.max(8, cs * .19), e = p.L / 2 - p.T * .55;
+      const nails = [-e, e].map(o => `<circle cx="${n(up ? mx : mx + o)}" cy="${n(up ? my + o : my)}" r="${n(Math.max(1, cs * .025))}" fill="${PR.ink}"/>`).join("");
+      const crack = left / max < .5 ? (up ? `<polyline points="${n(mx - p.T / 2)},${n(my - r - 6)} ${n(mx + 1)},${n(my - r - 3)} ${n(mx - 1)},${n(my - r - 1)}" fill="none" stroke="${PR.ink}" stroke-width="1.5"/>`
+        : `<polyline points="${n(mx - r - 6)},${n(my - p.T / 2)} ${n(mx - r - 3)},${n(my + 1)} ${n(mx - r - 1)},${n(my - 1)}" fill="none" stroke="${PR.ink}" stroke-width="1.5"/>`) : "";
+      return `<rect x="${n(mx - p.w / 2)}" y="${n(my - p.h / 2)}" width="${n(p.w)}" height="${n(p.h)}" rx="1.5" fill="${PR.teak}" stroke="${PR.ink}" stroke-width="1.5"/>` + nails + crack +
+        `<circle cx="${n(mx)}" cy="${n(my)}" r="${n(r)}" fill="${PR.cream}" stroke="${PR.ink}" stroke-width="2"/>` + txt(mx, my + r * .05, left, r * 1.05, PR.ink, this.font);
+    },
+    broken(mx, my, cs, up) {
+      const p = this.plank(mx, my, cs, up), a = p.T, b = p.T * .7;
+      const st = up ? [[mx - a / 2, my - p.L / 2, a, b], [mx - a / 2, my + p.L / 2 - b, a, b]] : [[mx - p.L / 2, my - a / 2, b, a], [mx + p.L / 2 - b, my - a / 2, b, a]];
+      return st.map(([x, y, w, h]) => `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="1" fill="${PR.teak}" stroke="${PR.ink}" stroke-width="1.5"/>`).join("");
+    },
+    gate(mx, my, cs, up, suit) {
+      const p = this.plank(mx, my, cs, up), r = cs * .24, col = PR.suit[suit];
+      return `<rect x="${n(mx - p.w / 2)}" y="${n(my - p.h / 2)}" width="${n(p.w)}" height="${n(p.h)}" rx="3" fill="${PR.cream}" stroke="${col}" stroke-width="2.5"/>` +
+        `<circle cx="${n(mx)}" cy="${n(my)}" r="${n(r)}" fill="${col}" stroke="${PR.ink}" stroke-width="2"/>` + txt(mx, my + r * .05, GLYPH[suit], r * 1.3, PR.cream, "system-ui");
+    },
+    prize(x, y, cs) {
+      const cx = x + cs / 2, cy = y + cs / 2, o = Math.max(1.5, cs * .04);
+      return `<polygon points="${star(cx + o, cy + o, cs * .34, cs * .15)}" fill="${PR.wall}"/><polygon points="${star(cx, cy, cs * .34, cs * .15)}" fill="${PR.mustard}" stroke="${PR.ink}" stroke-width="1.5" stroke-linejoin="round"/>`;
+    },
+    token(cx, cy, cs, who = 0, small = false) {
+      const k = small ? .62 : 1, r = cs * .27 * k, col = PR.tok[who], o = Math.max(1.5, cs * .05 * k);
+      const shape = (x, y, fill, extra) => who === 0 ? `<circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="${fill}" ${extra}/>`
+        : who === 1 ? `<rect x="${n(x - r)}" y="${n(y - r)}" width="${n(2 * r)}" height="${n(2 * r)}" rx="${n(r * .3)}" fill="${fill}" ${extra}/>`
+        : `<polygon points="${poly(x, y, r * 1.1, 6, 0)}" fill="${fill}" ${extra}/>`;
+      return shape(cx + o, cy + o, "rgba(43,42,38,.35)", "") + shape(cx, cy, col, `stroke="${PR.ink}" stroke-width="2" stroke-linejoin="round"`) +
+        `<ellipse cx="${n(cx - r * .3)}" cy="${n(cy - r * .35)}" rx="${n(r * .35)}" ry="${n(r * .2)}" fill="#fff" opacity=".4"/>`;
+    },
+    choice(x, y, cs) { return `<rect x="${n(x + 4)}" y="${n(y + 4)}" width="${n(cs - 8)}" height="${n(cs - 8)}" rx="${n(cs * .14)}" fill="none" stroke="${PR.ink}" stroke-width="2.5" stroke-dasharray="5 4"/>`; },
+  };
+
+  // ---------- Look C: vector arcade ----------
+  const NE = { bg: "#0A0E1F", wall: "#3CF2FF", core: "#E6FFFF", outer: "#FF4FD8", gold: "#FFD447", amber: "#FFB020",
+    suit: { S: "#E8ECFF", H: "#FF4D6D", D: "#4DA3FF", C: "#3DDC84" }, tok: ["#FFD447", "#34E0A1", "#B48CFF"] };
+  const G = `filter="url(#ne-glow)"`;
+  const neon = {
+    key: "neon", name: "C · Vector arcade", font: "Orbitron, sans-serif", bg: NE.bg,
+    blurb: "An early-80s arcade screen: glowing lines on near-black, a magenta border, a laser barrier for each door and geometric pieces. Feels like a cabinet in a dark room.",
+    retro: ["Neon lines with a bright core and a soft glow", "Laser barriers for doors, emitters left when broken", "Scanlines in the fog", "Orbitron for numbers"],
+    modern: ["Every glow has a solid core, so lines read even with the blur off", "Start is a play arrow and the goal a diamond portal, no letters", "Spades glow white, since black can't show on dark", "Bots differ by shape (disc, square, triangle)", "Leaves the green felt; the light theme would need a paper version"],
+    swatches: [NE.bg, NE.wall, NE.outer, NE.gold, NE.amber, NE.suit.H, NE.suit.D, NE.suit.C, NE.tok[2]],
+    defs: () => `<filter id="ne-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` +
+      `<pattern id="ne-scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="1.2" fill="#7F9CFF" opacity=".12"/></pattern>`,
+    floor(x, y, cs, fog) {
+      return fog ? `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="#03050C"/><rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="url(#ne-scan)"/>`
+        : `<rect x="${x + 1.5}" y="${y + 1.5}" width="${cs - 3}" height="${cs - 3}" rx="3" fill="#5A82FF" opacity=".07"/><circle cx="${x}" cy="${y}" r="1.1" fill="#9AB4FF" opacity=".5"/>`;
+    },
+    walls(segs, cs, outer) {
+      const d = segPath(segs), w = outer ? Math.max(3, cs * .07) : Math.max(2.2, cs * .05);
+      return `<path d="${d}" stroke="${outer ? NE.outer : NE.wall}" stroke-width="${n(w)}" stroke-linecap="round" fill="none" ${G}/>` +
+        `<path d="${d}" stroke="${outer ? "#FFD6F5" : NE.core}" stroke-width="${n(w * .35)}" stroke-linecap="round" fill="none"/>`;
+    },
+    start(x, y, cs) {
+      const cx = x + cs / 2, cy = y + cs / 2, i = cs * .17;
+      return `<rect x="${n(x + i)}" y="${n(y + i)}" width="${n(cs - 2 * i)}" height="${n(cs - 2 * i)}" rx="4" fill="${NE.wall}" fill-opacity=".14" stroke="${NE.wall}" stroke-width="2" ${G}/>` +
+        `<polygon points="${n(cx - cs * .1)},${n(cy - cs * .15)} ${n(cx + cs * .15)},${n(cy)} ${n(cx - cs * .1)},${n(cy + cs * .15)}" fill="${NE.core}" ${G}/>`;
+    },
+    goal(x, y, cs) {
+      const cx = x + cs / 2, cy = y + cs / 2;
+      return `<polygon points="${poly(cx, cy, cs * .44, 4)}" fill="none" stroke="${NE.gold}" stroke-width="2" ${G}/><polygon points="${poly(cx, cy, cs * .3, 4)}" fill="none" stroke="${NE.gold}" stroke-width="1.5" opacity=".7"/>` +
+        `<polygon points="${poly(cx, cy, cs * .16, 4)}" fill="${NE.gold}" ${G}/>`;
+    },
+    badge(mx, my, cs, t, col) {
+      const w = Math.max(18, cs * (String(t).length > 1 ? .44 : .32)), h = Math.max(13, cs * .3);
+      return `<rect x="${n(mx - w / 2)}" y="${n(my - h / 2)}" width="${n(w)}" height="${n(h)}" rx="4" fill="${NE.bg}" stroke="${col}" stroke-width="1.5" ${G}/>` + txt(mx, my + 1, t, h * .62, col, this.font);
+    },
+    door(mx, my, cs, up, left, max) {
+      const L = cs * .96, a = up ? [mx, my - L / 2, mx, my + L / 2] : [mx - L / 2, my, mx + L / 2, my];
+      return `<line x1="${n(a[0])}" y1="${n(a[1])}" x2="${n(a[2])}" y2="${n(a[3])}" stroke="${NE.amber}" stroke-width="${n(Math.max(3, cs * .07))}" stroke-dasharray="${left / max < .5 ? "2 6" : "6 3"}" ${G}/>` + this.broken(mx, my, cs, up) + this.badge(mx, my, cs, left, NE.amber);
+    },
+    broken(mx, my, cs, up) {
+      const L = cs * .5, e = Math.max(3, cs * .09), t = Math.max(4, cs * .1);
+      return [-1, 1].map(s => up ? `<rect x="${n(mx - t / 2)}" y="${n(my + s * L - (s > 0 ? e : 0))}" width="${n(t)}" height="${n(e)}" rx="1" fill="${NE.amber}" ${G}/>`
+        : `<rect x="${n(mx + s * L - (s > 0 ? e : 0))}" y="${n(my - t / 2)}" width="${n(e)}" height="${n(t)}" rx="1" fill="${NE.amber}" ${G}/>`).join("");
+    },
+    gate(mx, my, cs, up, suit) {
+      const L = cs * .96, col = NE.suit[suit], s = cs * .5, a = up ? [mx, my - L / 2, mx, my + L / 2] : [mx - L / 2, my, mx + L / 2, my];
+      return `<line x1="${n(a[0])}" y1="${n(a[1])}" x2="${n(a[2])}" y2="${n(a[3])}" stroke="${col}" stroke-width="2.5" ${G}/>` +
+        `<rect x="${n(mx - s / 2)}" y="${n(my - s / 2)}" width="${n(s)}" height="${n(s)}" rx="${n(cs * .1)}" fill="${NE.bg}" stroke="${col}" stroke-width="2" ${G}/>` + txt(mx, my + 1, GLYPH[suit], s * .66, col, "system-ui");
+    },
+    prize(x, y, cs) { const cx = x + cs / 2, cy = y + cs / 2; return `<polygon points="${star(cx, cy, cs * .34, cs * .15)}" fill="${NE.gold}" fill-opacity=".2" stroke="${NE.gold}" stroke-width="2" stroke-linejoin="round" ${G}/>`; },
+    token(cx, cy, cs, who = 0, small = false) {
+      const r = cs * .25 * (small ? .65 : 1), col = NE.tok[who];
+      const body = who === 0 ? `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}"` : who === 1 ? `<rect x="${n(cx - r * .9)}" y="${n(cy - r * .9)}" width="${n(r * 1.8)}" height="${n(r * 1.8)}" rx="2"`
+        : `<polygon points="${poly(cx, cy + r * .15, r * 1.2, 3)}"`;
+      return `${body} fill="${col}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round" ${G}/>`;
+    },
+    choice(x, y, cs) {
+      const i = 4, L = cs * .22; let d = "";
+      for (const [ax, ay, sx, sy] of [[x + i, y + i, 1, 1], [x + cs - i, y + i, -1, 1], [x + i, y + cs - i, 1, -1], [x + cs - i, y + cs - i, -1, -1]]) d += `M${n(ax + sx * L)} ${n(ay)}H${n(ax)}V${n(ay + sy * L)}`;
+      return `<path d="${d}" stroke="${NE.wall}" stroke-width="2.5" fill="none" stroke-linecap="round" ${G}/>`;
+    },
+  };
+
+  const LOOKS = [pixel, print, neon];
+
+  // A maze patch: w × h cells with passages as [cell, cell] pairs; extra() draws on top.
+  function patch(st, w, h, passages, extra = () => "", opts = {}) {
+    const cs = opts.cs || 55, pad = Math.max(6, Math.round(cs * .14));
+    const X = (i) => pad + (i % w) * cs, Y = (i) => pad + Math.floor(i / w) * cs, cx = (i) => X(i) + cs / 2, cy = (i) => Y(i) + cs / 2;
+    const open = new Set(passages.map(([a, b]) => Math.min(a, b) + ":" + Math.max(a, b)));
+    const segs = [];
+    for (let i = 0; i < w * h; i++) {
+      const x = i % w, y = Math.floor(i / w);
+      if (x + 1 < w && !open.has(i + ":" + (i + 1))) segs.push([X(i) + cs, Y(i), X(i) + cs, Y(i) + cs]);
+      if (y + 1 < h && !open.has(i + ":" + (i + w))) segs.push([X(i), Y(i) + cs, X(i) + cs, Y(i) + cs]);
+    }
+    const W = cs * w + pad * 2, H = cs * h + pad * 2, R = pad + cs * w, B = pad + cs * h;
+    const border = [[pad, pad, R, pad], [R, pad, R, B], [pad, B, R, B], [pad, pad, pad, B]];
+    let s = `<defs>${st.defs()}</defs><rect width="${W}" height="${H}" rx="10" fill="${st.bg}"/>`;
+    for (let i = 0; i < w * h; i++) s += st.floor(X(i), Y(i), cs, (opts.fog || []).includes(i), i % w, Math.floor(i / w));
+    s += st.walls(segs, cs, false) + st.walls(border, cs, true) + extra(cs, X, Y, cx, cy);
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"${st.crisp ? ` shape-rendering="crispEdges"` : ""}>${s}</svg>`;
+  }
+  const mid = (a, b, cx, cy) => [(cx(a) + cx(b)) / 2, (cy(a) + cy(b)) / 2];
+  const item = (name, svg, note = "") => `<div class="item">${svg}<div class="name">${name}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
+
+  const corner = (st, cs) => patch(st, 4, 3, [[0, 1], [1, 2], [2, 3], [3, 7], [7, 6], [6, 5], [5, 9], [9, 10], [10, 11], [0, 4], [4, 8], [6, 10]],
+    (cs, X, Y, cx, cy) => st.start(X(8), Y(8), cs) + st.goal(X(3), Y(3), cs) + st.door(...mid(2, 3, cx, cy), cs, true, 20, 20) +
+      st.gate(...mid(6, 10, cx, cy), cs, false, "H") + st.gate(...mid(0, 4, cx, cy), cs, false, "S") + st.prize(X(11), Y(11), cs) +
+      st.token(cx(5), cy(5), cs, 0) + st.token(cx(1), cy(1), cs, 1), { cs });
+
+  function pieces(st) {
+    return [
+      ["Floor, walls and tokens", [
+        item("Corridor, fork and dead ends", patch(st, 3, 2, [[0, 1], [1, 2], [1, 4], [2, 5]])),
+        item("Open floor", patch(st, 2, 2, [[0, 1], [0, 2], [1, 3], [2, 3]]), "The grid still shows"),
+        item("You and two bots", patch(st, 3, 1, [[0, 1], [1, 2]], (cs, X, Y, cx, cy) => [0, 1, 2].map(k => st.token(cx(k), cy(k), cs, k)).join("")), "Shape and colour both differ"),
+        item("Sharing a cell", patch(st, 1, 1, [], (cs, X, Y, cx, cy) => st.token(cx(0) - cs * .2, cy(0), cs, 0, true) + st.token(cx(0) + cs * .2, cy(0), cs, 2, true))),
+      ]],
+      ["Start, goal and prize", [
+        item("Start", patch(st, 1, 1, [], (cs, X, Y) => st.start(X(0), Y(0), cs))),
+        item("Goal", patch(st, 1, 1, [], (cs, X, Y) => st.goal(X(0), Y(0), cs))),
+        item("Prize", patch(st, 1, 1, [], (cs, X, Y) => st.prize(X(0), Y(0), cs))),
+        item("Fork choice", patch(st, 3, 2, [[0, 1], [1, 2], [1, 4]], (cs, X, Y, cx, cy) => st.token(cx(1), cy(1), cs) + st.choice(X(0), Y(0), cs) + st.choice(X(2), Y(2), cs) + st.choice(X(4), Y(4), cs))),
+      ]],
+      ["Doors and gates", [
+        item("Door, 20 of 20", patch(st, 2, 1, [[0, 1]], (cs, X, Y, cx, cy) => st.door(...mid(0, 1, cx, cy), cs, true, 20, 20))),
+        item("Door, 7 of 20", patch(st, 1, 2, [[0, 1]], (cs, X, Y, cx, cy) => st.door(...mid(0, 1, cx, cy), cs, false, 7, 20)), "Damage shows as well as the number"),
+        item("Broken door", patch(st, 2, 1, [[0, 1]], (cs, X, Y, cx, cy) => st.broken(...mid(0, 1, cx, cy), cs, true))),
+        item("Gates ♠ ♥ ♦ ♣", patch(st, 5, 1, [[0, 1], [1, 2], [2, 3], [3, 4]], (cs, X, Y, cx, cy) => ["S", "H", "D", "C"].map((s, k) => st.gate(...mid(k, k + 1, cx, cy), cs, true, s)).join(""))),
+      ]],
+      ["Fog and the whole maze", [
+        item("Seen and unseen", patch(st, 4, 2, [[0, 1], [1, 2], [2, 3], [1, 5]], (cs, X, Y, cx, cy) => st.token(cx(0), cy(0), cs), { fog: [3, 6, 7] })),
+        item("Corner at 27 pt", corner(st, 27), "Whole-maze size"),
+      ]],
+    ];
+  }
+
+  document.getElementById("compare").innerHTML = LOOKS.map(st => `<figure>${corner(st, 55)}<figcaption>${st.name}</figcaption></figure>`).join("");
+  document.getElementById("looks").innerHTML = LOOKS.map(st => `
+    <section class="look" id="${st.key}">
+      <h2>${st.name}</h2>
+      <p>${st.blurb}</p>
+      <div class="swatches">${st.swatches.map(c => `<span style="background:${c}" title="${c}"></span>`).join("")}</div>
+      <p class="fontline">Numbers and labels: <span style="font-family:${st.font};color:var(--text)">0123456789 S G</span></p>
+      <div class="cols">
+        <div><h3>What makes it retro</h3><ul class="tight">${st.retro.map(t => `<li>${t}</li>`).join("")}</ul></div>
+        <div><h3>Modern considerations</h3><ul class="tight">${st.modern.map(t => `<li>${t}</li>`).join("")}</ul></div>
+      </div>
+      ${pieces(st).map(([h, items]) => `<h3>${h}</h3><div class="row">${items.join("")}</div>`).join("")}
+    </section>`).join("");
+})();
+</script>
+</body>
+</html>

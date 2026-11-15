@@ -2,6 +2,19 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.7.0 — 2026-11-14
+
+### Added
+- Crib Maze Beta for Mac: play a match turn on the 4 × 4 grid with your hand, crib and starter around it. Drag across touching cards, or tap them and tap the last one again.
+- The beta shows what a set would score as you trace, lights the cards in combos, and breaks down each score.
+- Swappers, bombs, jokers, edge power, the 90-second timer and prizes work as in the match turn mock (rules r15).
+- Each score plays its breakdown as in the mock: a SINGLE or MULTI banner, combos counted one by one over the cards, edge power, left-over costs and power-ups. Tap to skip, or turn it off or speed it up in the side panel.
+- Cards fall, drop in from the stock, swap and blow up with animations, so you can follow where they go.
+- Pick a seed to replay a deal, or try the strong hand. Each finished turn is saved as a record you can open from the side panel.
+- Maze retro looks mock: three retro styles for the maze tiles and pieces to choose from.
+- Neon asset gallery: the chosen vector arcade look for the table, jokers and the maze, with a page that tracks every asset. Cards keep their original faces, which read better.
+- Crib Maze Beta uses the neon table colours, with the original cards on top.
+
 ## 0.6.0 — 2026-11-14
 
 ### Added

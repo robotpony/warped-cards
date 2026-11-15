@@ -1,0 +1,5 @@
+# Swift build output
+swift/.build/
+swift/.build-*/
+swift/App/CribMaze.xcodeproj/
+.DS_Store

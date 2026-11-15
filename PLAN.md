@@ -42,10 +42,12 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 
 Build plan phases A to D in `ARCHITECTURE.md`.
 
-- [ ] Foundations: package, app targets, version stamping, checks (A)
-- [ ] Classic cribbage counting written fresh against shared fixtures, as the baseline (B)
+- [x] Foundations: package, app targets, version stamping, checks (A)
+- [x] Classic cribbage counting written fresh against shared fixtures, as the baseline (B)
 - [ ] GameRecord: records, replay, counts (C)
-- [ ] Crib Maze rules, bots (random, greedy, planning), simulator at 1x, 100x, 1000x and flat out (D)
+- [x] Match turn rules r15 in Swift, tested against the spec (D)
+- [x] Match turn bots and `cribmaze-sim` (D)
+- [ ] Classic cribbage hands, pegging and bots in Swift (D)
 - [ ] Stats reports and graphs (`stats.md` › Scoring curves)
 
 ## Phase 6 · Maze, prizes and shop design
@@ -77,7 +79,9 @@ Build plan phases A to D in `ARCHITECTURE.md`.
 ## Phase 10 · Swift app
 
 - [x] Agree the architecture, tools and libraries ([ARCHITECTURE.md](ARCHITECTURE.md), [LIBRARIES.md](LIBRARIES.md))
-- [ ] Mac beta, playable match turn (`ARCHITECTURE.md` › Build plan E)
+- [x] Mac beta, playable match turn (`ARCHITECTURE.md` › Build plan E), without effects yet
+- [x] Breakdown playback and card movement in the beta
+- [ ] Joker reveals, and the begin and end effects, in the beta (`ARCHITECTURE.md` › Effects)
 - [ ] Beta tools: records, replay, stats, animation lab, tuning (F)
 - [ ] The rest of a round, as each part's design settles (G)
 - [ ] iOS, and TestFlight for sharing the beta (H)

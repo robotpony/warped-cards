@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neon Assets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Russo+One&display=swap">
+<link rel="stylesheet" href="gallery.css">
+<style>
+  .thumb svg.maze { display: block; }
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 14px; }
+  .summary span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; }
+  .summary b { font-family: "Russo One", sans-serif; margin-right: 6px; }
+  .pal { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .pal div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; display: flex; gap: 10px; align-items: center; }
+  .pal i { width: 30px; height: 30px; border-radius: 7px; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .pal small { color: var(--muted); display: block; }
+  td.used { color: var(--muted); font-size: 13px; max-width: 280px; }
+</style>
+</head>
+<body>
+<main>
+  <nav><b>NEON</b><a href="index.html" aria-current="page">Assets</a><a href="cards.html">Cards</a><a href="maze.html">Maze</a></nav>
+  <h1>Neon asset tracker</h1>
+  <p class="muted">Look C, "vector arcade", chosen by Bruce on 2026-11-14, for everything around the cards: table, board, tray, maze, HUDs, banners and effects. Card faces stay the original light cards (<code>design/cards/cards.js</code>); the neon faces were dropped the same day as too hard to read. Every visual asset the games draw, with its neon version and status. When a mock adds a piece, add a row here. Code: <code>design/neon/</code> (<code>neon-core.js</code>, <code>neon-cards.js</code>, <code>neon-maze.js</code>); the app reads <code>palette.json</code> and <code>shapes.json</code>, written by <code>node design/neon/export.js</code>; checks run with <code>node --test design/neon/</code>.</p>
+  <div class="summary" id="summary"></div>
+
+  <h2>Rules for every neon asset</h2>
+  <ul class="tight">
+    <li>Glowing lines and shapes on near-black. Every glow has a solid core, so it reads with the blur off, at 27 pt, and under Reduce Motion.</li>
+    <li>Colour is never the only cue: suits keep their shape, bots their silhouette, jokers their symbol, doors their number.</li>
+    <li>Lines and icons reach 3:1 on the screen. Anything drawn on a card face follows <code>cards.js</code> contrast (4.5:1 on the light face). Markers that sit over a card's edge carry a dark outline so they read on both.</li>
+    <li>Shapes are path data in a 20 × 20 box (<code>shapes.json</code>), never font glyphs, so the app draws the same thing.</li>
+    <li>Russo One for numbers and short labels only. Rules and UI text stay in Saira Semi Condensed.</li>
+  </ul>
+
+  <h2>Palette</h2>
+  <div class="pal" id="pal"></div>
+
+  <h2>Assets</h2>
+  <div class="scroll"><table id="assets"></table></div>
+</main>
+
+<script src="../cards/cards.js"></script>
+<script src="neon-core.js"></script>
+<script src="neon-cards.js"></script>
+<script src="neon-maze.js"></script>
+<script>
+(() => {
+  const N = window.WarpedNeon, C = window.WarpedNeonCards, O = window.WarpedCards, A = window.WarpedNeonMaze, P = N.P, $ = (id) => document.getElementById(id);
+  const cards = (...svgs) => svgs.map(s => `<div class="card">${s}</div>`).join("");
+  const tile = (fn, w = 1) => { const cs = 40, W = cs * w + 8, H = cs + 8; return `<svg class="maze" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${A.defs()}</defs><rect width="${W}" height="${H}" rx="6" fill="${P.bg}"/>${fn(cs, 4, 4)}</svg>`; };
+  const sw = (c) => `<span class="swatch" style="background:${c}"></span>`;
+  const F = (r, s) => O.front({ rank: r, suit: s });
+
+  // status: done (neon v1 drawn), ph (drawn, placeholder design), todo (not drawn yet).
+  const ROWS = [
+    ["Cards", "Standard deck, 52 cards", cards(F("A", "S"), F("10", "H"), F("Q", "D"), F("5", "C")), "WarpedCards.front()", "Every game: board, hand, crib, starter", "orig", "Light faces on the neon table (Bruce, 2026-11-14)"],
+    ["Cards", "Face cards J, Q, K", cards(F("J", "H"), F("Q", "S"), F("K", "C")), "WarpedCards.front()", "Every game", "ph", "Letters until the face-art phase"],
+    ["Cards", "Docs forms (corner, inline)", cards(O.front({ rank: "7", suit: "D", form: "abbrev" }), O.front({ rank: "7", suit: "D", form: "abbrev", layout: "inline" })), "WarpedCards.front()", "Rules docs and diagrams", "orig", ""],
+    ["Cards", "Card back: crosshatch", cards(O.back()), "WarpedCards.back()", "Stock, deal-in, reveal flips", "orig", "More backs come in the card-back phase"],
+    ["Jokers", "Amber and teal jokers", cards(O.joker("amber"), O.joker("teal")), "WarpedCards.joker()", "Stock; reveal", "orig", ""],
+    ["Jokers", "Swapper and bomb", cards(O.special("swap"), O.special("bomb")), "WarpedCards.special()", "Tray, board, prizes", "orig", ""],
+    ["Extra cards", "Title and blank cards", cards(O.extra("title"), O.extra("blank")), "WarpedCards.extra()", "Stock; reveal", "orig", ""],
+    ["Prizes", "+5 steps, item, nothing", "", "reveal.css › .item-face", "Reveal, tray", "ph", "Light card-style faces in CSS for now; draw them in cards.js style (needs cards.js contrast)"],
+    ["Markers", "New card star", C.keptStar(22), "keptStar()", "Cards a joker made", "done", ""],
+    ["Markers", "Edge power pill", C.pill("×1.5", P.cyan, 16), "pill()", "Powered edge cards", "done", ""],
+    ["Markers", "Starter tag", C.pill("STARTER", P.gold, 14, false), "pill(…, false)", "Under the starter", "done", ""],
+    ["Markers", "Edge ring, lit combo", `<span class="muted" style="font-size:12px">CSS glow</span>`, "cards.html › Markers", "Match turn", "done", "Gold ring for edge cards, cyan glow while tracing"],
+    ["Items", "Jump, key, steps, unknown", ["jump", "key", "steps", "item"].map(k => C.itemIcon(k, 32)).join(""), "itemIcon()", "Maze walk tray, match turn tray", "done", "Item rules are still placeholders"],
+    ["Items", "Swapper and bomb buttons", ["swap", "bomb"].map(k => C.itemIcon(k, 32)).join(""), "itemIcon()", "Match turn tray", "done", ""],
+    ["Maze", "Floor, walls, outer wall", tile((cs, x, y) => A.floor(x, y, cs) + A.floor(x + cs, y, cs) + A.walls(`M${x + cs} ${y}v${cs}`, cs) + A.outerWall(x, y, cs * 2, cs, cs), 2), "floor(), walls(), outerWall()", "Maze walk", "done", "maze.html"],
+    ["Maze", "Start and goal", tile((cs, x, y) => A.start(x, y, cs) + A.goal(x + cs, y, cs), 2), "start(), goal()", "Maze walk", "done", ""],
+    ["Maze", "Doors (whole, damaged, broken)", tile((cs, x, y) => A.door(x + cs, y + cs / 2, cs, true, 20) + A.door(x + 2 * cs, y + cs / 2, cs, true, 7) + A.brokenDoor(x + 3 * cs, y + cs / 2, cs, true), 4), "door(), brokenDoor()", "Maze walk", "done", ""],
+    ["Maze", "Suit gates", tile((cs, x, y) => ["S", "H", "D", "C"].map((s, k) => A.gate(x + (k + 1) * cs, y + cs / 2, cs * .8, true, s)).join(""), 5), "gate()", "Maze walk", "done", ""],
+    ["Maze", "Tokens: you and two bots", tile((cs, x, y) => [0, 1, 2].map(k => A.token(x + cs * (k + .5), y + cs / 2, cs, { who: k })).join(""), 3), "token({ who })", "Maze walk; pegging on the maze", "done", "Bot colours and shapes proposed"],
+    ["Maze", "Prize, fork choice, route", tile((cs, x, y) => A.prize(x, y, cs) + A.choice(x + cs, y, cs, 0) + A.route([[x + 2.2 * cs, y + cs / 2], [x + 2.8 * cs, y + cs / 2]], []), 3), "prize(), choice(), route()", "Maze walk", "done", ""],
+    ["Maze", "Fog", tile((cs, x, y) => A.floor(x, y, cs) + A.floor(x + cs, y, cs, true), 2), "floor(…, true)", "Maze walk", "done", ""],
+    ["Maze", "Goal pointer", tile((cs, x, y) => A.pointer(x + cs / 2, y + cs / 2 + 2, 45, "G", 34)), "pointer()", "Maze walk", "done", ""],
+    ["Screens", "Reveal stage (shuffle, wheel, die, rays)", "", "reveal.js, reveal.css", "Joker mock, match turn", "todo", "Still the felt look; restyle in neon"],
+    ["Screens", "Match turn HUD (steps, timer, buttons, feed)", "", "match-turn.html", "Match turn", "todo", "A sketch is on cards.html › On the phone"],
+    ["Screens", "Score breakdown banner", "", "match-turn.html", "Match turn", "todo", ""],
+    ["Screens", "Maze walk HUD (plays, items, legend)", "", "maze-walk.html", "Maze walk", "todo", ""],
+    ["Cards", "Face art for J, Q, K", "", "", "Every game", "todo", "Face-art phase"],
+    ["Brand", "App icon and title screen", "", "", "Mac beta, iOS", "todo", ""],
+    ["Dropped", "Neon card faces: deck, back, jokers, specials, extras, prize faces", cards(C.front({ rank: "10", suit: "H" }), C.back(), C.joker("amber"), C.prize("steps")), "neon-cards.js", "Nowhere", "drop", "Too hard to read (Bruce, 2026-11-14). Kept for reference on cards.html"],
+  ];
+  const label = { done: "Neon v1", orig: "cards.js", ph: "Placeholder", todo: "Not drawn", drop: "Dropped" };
+  const count = (s) => ROWS.filter(r => r[5] === s).length;
+  $("summary").innerHTML = `<span><b>${ROWS.length}</b>assets</span><span><b>${count("done")}</b>neon v1</span><span><b>${count("orig")}</b>original cards</span><span><b>${count("ph")}</b>placeholders</span><span><b>${count("todo")}</b>not drawn</span><span><b>${count("drop")}</b>dropped</span>`;
+  $("assets").innerHTML = `<tr><th>Group</th><th>Asset</th><th>Neon</th><th>Call</th><th>Used in</th><th>Status</th><th>Note</th></tr>` +
+    ROWS.map(([g, name, thumb, call, used, st, note]) => `<tr><td class="muted">${g}</td><td><b>${name}</b></td><td><div class="thumb">${thumb || "<span class=muted>–</span>"}</div></td><td><code>${call}</code></td><td class="used">${used}</td><td><span class="status ${st}">${label[st]}</span></td><td class="used">${/\.html$/.test(note) ? `<a href="${note}">${note}</a>` : note}</td></tr>`).join("");
+
+  const PAL = [["Screen", P.bg, "Background everywhere"], ["Panel", P.panel, "Buttons, plates"], ["Card face", P.face, "Every card front"], ["Rim", P.rim, "Card edges"],
+    ["Text", P.text, "UI text"], ["Muted", P.muted, "Secondary text"], ["Cyan", P.cyan, "Walls, edge power, lit combos"], ["Magenta", P.magenta, "Outer wall, card back"],
+    ["Gold", P.gold, "You, the goal, prizes, the starter"], ["Door", P.door, "Laser doors"], ["Spades", P.suit.S, "Light, so it shows on dark"], ["Hearts", P.suit.H, ""],
+    ["Diamonds", P.suit.D, ""], ["Clubs", P.suit.C, ""], ["Amber joker", P.joker.amber, "Star"], ["Teal joker", P.joker.teal, "Moon"], ["Special joker", P.joker.special, "Swapper, bomb"],
+    ["Bot 1", P.tokens[1], "Square token"], ["Bot 2", P.tokens[2], "Triangle token"]];
+  $("pal").innerHTML = PAL.map(([name, c, role]) => `<div><i style="background:${c}"></i><span><b>${name}</b> <code>${c}</code><small>${role}</small></span></div>`).join("");
+})();
+</script>
+</body>
+</html>

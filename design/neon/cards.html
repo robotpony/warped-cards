@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neon Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Russo+One&display=swap">
+<link rel="stylesheet" href="gallery.css">
+<style>
+  .item-face { width: 100%; height: 100%; display: grid; place-items: center; text-align: center; font: 700 16px/1.1 "Saira Semi Condensed", system-ui, sans-serif;
+               background: #FFFDF7; color: #A85A00; border: 2px solid #A85A00; border-radius: 6px; }
+  .item-face.dash { border-style: dashed; } .item-face small { display: block; font-size: 11px; font-weight: 600; }
+  /* Markers on cards, as the match turn would place them. */
+  .mk { position: absolute; }
+  .mk.power { top: -9px; right: -12px; }
+  .mk.kept { top: -7px; right: -7px; }
+  .starter-demo { transform: rotate(-5deg); }
+  .mk.tag { bottom: -14px; left: 50%; transform: translateX(-50%) rotate(5deg); }
+  .ring { border-radius: 5px; box-shadow: 0 0 0 2px var(--gold), 0 0 12px 2px rgba(255,212,71,.55); }
+  .lit { border-radius: 5px; box-shadow: 0 0 0 2px var(--cyan), 0 0 18px 6px rgba(60,242,255,.6); transform: translateY(-6px) scale(1.05); }
+  .phone { width: 413px; height: 600px; border-radius: 48px; border: 10px solid #000; background: var(--bg); position: relative; overflow: hidden;
+           padding: 56px 16px 20px; box-shadow: 0 0 0 1px #2E3A66; flex: none; }
+  .phone::before { content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 120px; height: 32px; background: #000; border-radius: 18px; }
+  .phone .board { display: grid; grid-template-columns: repeat(5, 64px); gap: 5px; justify-content: center; --cw: 64px; }
+  .phone .hud { display: flex; justify-content: space-between; font: 15px "Russo One", sans-serif; color: var(--gold); margin: 0 6px 12px; text-shadow: 0 0 8px rgba(255,212,71,.5); }
+  .phone .hud span:last-child { color: var(--cyan); text-shadow: 0 0 8px rgba(60,242,255,.5); }
+  .phone .fan { display: flex; justify-content: center; margin-top: 22px; --cw: 64px; }
+  .phone .fan .card + .card { margin-left: -24px; }
+</style>
+</head>
+<body>
+<main>
+  <nav><b>NEON</b><a href="index.html">Assets</a><a href="cards.html" aria-current="page">Cards</a><a href="maze.html">Maze</a></nav>
+  <h1>Cards on the neon table</h1>
+  <p class="muted">2026-11-14. The cards keep their original light faces (<code>design/cards/cards.js</code>) on the neon table; the neon faces were too hard to read (Bruce, 2026-11-14) and sit at the bottom for reference. Neon is for everything around the cards: the markers, the tray and the HUD.</p>
+
+  <div class="controls">
+    <label>Card width <input type="range" id="cw" min="26" max="120" step="1" value="64"><output id="cwo">64 pt</output></label>
+    <button class="btn" data-w="26">Docs 26</button><button class="btn" data-w="64">Game 64</button><button class="btn" data-w="84">Reveal 84</button>
+  </div>
+
+  <h2>The deck</h2>
+  <p class="muted">The original faces on the neon screen colour. J, Q and K are letters until the face-art phase.</p>
+  <div class="deck" id="deck"></div>
+
+  <h2>Docs forms</h2>
+  <p class="muted">For rules and diagrams: corner (fans) and inline (grids).</p>
+  <div class="row" id="abbrev"></div>
+
+  <h2>Back, jokers and extra cards</h2>
+  <div class="row" id="specials"></div>
+
+  <h2>Prize faces</h2>
+  <p class="muted">What a joker, title or blank card turns into when it isn't a card. For now these are the light CSS faces from <code>reveal.css</code>; they need drawing in the cards.js style. A card a joker makes keeps a gold star, outlined so it reads on the light face and the dark table.</p>
+  <div class="row" id="prizes"></div>
+
+  <h2>Tray and item icons</h2>
+  <p class="muted">44 pt buttons, the smallest comfortable tap size. Special jokers use violet, items gold, the jump cyan.</p>
+  <div class="row" id="items"></div>
+
+  <h2>Markers on cards</h2>
+  <div class="row" id="markers" style="gap:28px 30px;padding-top:12px"></div>
+
+  <h2>On the phone</h2>
+  <p class="muted">A match turn board at real size (1 px = 1 pt), with the hand below. The HUD numbers are Russo One.</p>
+  <div class="row"><div class="phone" id="phone"></div></div>
+
+  <h2>Contrast</h2>
+  <p class="muted">Card faces follow <code>cards.js</code> (4.5:1 on the light face). Here: the neon colours used around the cards, against the table and against the light face they overlap. They all fail on the face, which gives the rule: <b>neon never draws straight onto a card face</b>. Markers sit over the card's edge as filled pills with dark text, or carry a dark outline (the star), and glows go around the card, not on it.</p>
+  <div class="scroll"><table id="contrast"></table></div>
+
+  <h2>Dropped: the neon faces</h2>
+  <p class="muted">Kept for reference only (<code>neon-cards.js</code>). Not used anywhere.</p>
+  <div class="row" id="dropped" style="opacity:.8"></div>
+</main>
+
+<script src="../cards/cards.js"></script>
+<script src="neon-core.js"></script>
+<script src="neon-cards.js"></script>
+<script>
+(() => {
+  const C = window.WarpedNeonCards, O = window.WarpedCards, N = window.WarpedNeon, P = N.P, $ = (id) => document.getElementById(id);
+  const card = (svg, extra = "", cls = "") => `<div class="card ${cls}">${svg}${extra}</div>`;
+  const item = (name, html, note = "") => `<div class="item">${html}<div class="name">${name}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
+  const setW = (w) => { document.documentElement.style.setProperty("--cw", w + "px"); $("cw").value = w; $("cwo").textContent = w + " pt"; };
+  $("cw").addEventListener("input", (e) => setW(e.target.value));
+  document.querySelectorAll("[data-w]").forEach(b => b.addEventListener("click", () => setW(b.dataset.w)));
+
+  $("deck").innerHTML = ["S", "H", "D", "C"].map(s => O.RANKS.map(r => card(O.front({ rank: r, suit: s }))).join("")).join("");
+  $("abbrev").innerHTML = [["A", "S"], ["10", "H"], ["Q", "D"], ["5", "C"]].map(([r, s]) => item(`${r}${N.SUIT_NAME[s][0]} corner`, card(O.front({ rank: r, suit: s, form: "abbrev" }))) +
+    item(`${r}${N.SUIT_NAME[s][0]} inline`, card(O.front({ rank: r, suit: s, form: "abbrev", layout: "inline" })))).join("");
+  $("specials").innerHTML = [
+    item("Back: crosshatch", card(O.back()), "Until the card-back phase"),
+    item(O.JOKERS.amber.name, card(O.joker("amber"))), item(O.JOKERS.teal.name, card(O.joker("teal"))),
+    item(O.SPECIALS.swap.name, card(O.special("swap")), O.SPECIALS.swap.note), item(O.SPECIALS.bomb.name, card(O.special("bomb")), O.SPECIALS.bomb.note),
+    item(O.EXTRAS.title.name, card(O.extra("title"))), item(O.EXTRAS.blank.name, card(O.extra("blank"))),
+  ].join("");
+  const face = (big, small, dashed) => `<div class="card"><div class="item-face${dashed ? " dash" : ""}">${big}<small>${small}</small></div></div>`;
+  $("prizes").innerHTML = [
+    item("A new card", card(O.front({ rank: "5", suit: "H" }), `<span class="mk kept">${C.keptStar(18)}</span>`), "Kept for the game: gold star"),
+    item("+5 steps", face("+5", "steps"), "reveal.css, placeholder"), item("An item", face("ITEM", "?", true), "reveal.css, placeholder"), item("Nothing", face("none", ""), "reveal.css, placeholder"),
+  ].join("");
+  $("items").innerHTML = Object.entries(C.ITEMS).map(([k, it]) => item(it.name, C.itemIcon(k, 44))).join("") +
+    item("With a count", C.itemIcon("jump", 44, "+3"), "Jump 3 ahead") + item("At 64 pt", C.itemIcon("bomb", 64));
+  $("markers").innerHTML = [
+    item("Edge power", card(O.front({ rank: "J", suit: "S" }), `<span class="mk power">${C.pill("×1.5", P.cyan, 16)}</span>`, "ring"), C.MARKERS.power.note),
+    item("Edge card ring", card(O.front({ rank: "7", suit: "D" }), "", "ring"), C.MARKERS.edge.note),
+    item("Lit combo", card(O.front({ rank: "8", suit: "C" }), "", "lit"), C.MARKERS.lit.note),
+    item("Starter", card(O.front({ rank: "4", suit: "H" }), `<span class="mk tag">${C.pill("STARTER", P.gold, 14, false)}</span>`, "starter-demo ring"), C.MARKERS.starter.note),
+    item("New card star", card(O.front({ rank: "K", suit: "C" }), `<span class="mk kept">${C.keptStar(18)}</span>`), C.MARKERS.kept.note),
+  ].join("");
+
+  // Phone: a 4 × 5 board, then the hand.
+  const deal = [["9", "H"], ["5", "S"], ["K", "D"], ["3", "C"], ["J", "H"], ["6", "D"], ["Q", "S"], ["2", "H"], ["7", "C"], ["A", "D"],
+    ["10", "C"], ["4", "S"], ["8", "D"], ["5", "H"], ["Q", "C"], ["3", "D"], ["K", "S"], ["6", "C"], ["9", "S"], ["2", "D"]];
+  const lit = new Set([1, 6, 11]);
+  $("phone").innerHTML = `<div class="hud"><span>STEPS 24</span><span>0:42</span></div><div class="board">` +
+    deal.map(([r, s], i) => card(i === 13 ? O.joker("teal") : i === 18 ? O.special("bomb") : O.front({ rank: r, suit: s }), "", lit.has(i) ? "lit" : "")).join("") +
+    `</div><div class="fan">${[["5", "D"], ["10", "H"], ["J", "C"], ["4", "S"]].map(([r, s], i) => card(O.front({ rank: r, suit: s }), i === 2 ? `<span class="mk power">${C.pill("×1.5", P.cyan, 16)}</span>` : "", "ring")).join("")}</div>`;
+
+  const FACE = O.FACE.face;
+  const rows = [["Gold (starter tag, rings, star)", P.gold], ["Cyan (edge power, lit combos)", P.cyan], ["Text", P.text], ["Muted text", P.muted], ["Magenta", P.magenta], ["Star outline", "#2B2A26"]];
+  const cell = (r, need) => `<td class="${r >= need ? "pass" : "fail"}">${r.toFixed(2)}:1</td>`;
+  $("contrast").innerHTML = `<tr><th>Colour</th><th>Hex</th><th>On the table ${P.bg} (3:1)</th><th>On a card face ${FACE} (3:1)</th></tr>` + rows.map(([name, c]) =>
+    `<tr><td><span class="swatch" style="background:${c}"></span>${name}</td><td><code>${c}</code></td>${cell(N.contrast(c, P.bg), 3)}${cell(N.contrast(c, FACE), 3)}</tr>`).join("");
+  $("dropped").innerHTML = [["A", "S"], ["10", "H"], ["Q", "D"], ["7", "C"]].map(([r, s]) => item(r + N.SUIT_NAME[s][0], card(C.front({ rank: r, suit: s })))).join("") +
+    [C.back(), C.joker("amber"), C.joker("teal"), C.special("swap"), C.special("bomb"), C.extra("title"), C.prize("steps")].map(svg => item("", card(svg))).join("");
+})();
+</script>
+</body>
+</html>

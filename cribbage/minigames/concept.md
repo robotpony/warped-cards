@@ -294,6 +294,8 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-14 | Bouncing off a gate of the wrong suit costs one step; the rest of the play walks back the way it came. This also means every play ends, even between two gates of other suits |
 | 2026-11-14 | Shifting walls are removed for now (supersedes 2026-11-13). The maze stays fixed, so with a scrolling view the route from start to goal is always a known number of steps |
 | 2026-11-14 | The scale problem (match turns score far more steps than the route is long) is deferred; the maze walk mock keeps its settings for trying fixes later ([maze-inspiration.md](maze-inspiration.md) › Ideas) |
+| 2026-11-14 | The look is vector arcade: neon lines on near-black (look C of [mocks/maze-retro.html](mocks/maze-retro.html)), for cards, jokers and the maze. The asset set lives in `design/neon/`, tracked in its gallery pages; mocks and the app switch over once each part is confirmed |
+| 2026-11-14 | Cards keep their original faces (`design/cards/cards.js`) over the neon colours. Neon cards were far too hard to read; neon stays for the table, board, tray, maze and effects |
 
 ## Open questions
 
