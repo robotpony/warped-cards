@@ -287,7 +287,7 @@ A beta window that plays any cue, or any cue sheet from a record, on a test boar
 
 | Target | Bundle ID | Links | For |
 |---|---|---|---|
-| Crib Maze Beta | `ca.robotpony.cribmaze.beta` | Engine, GameFX, GameRecord, CribMazeStats, beta tools | Bruce and testers: play, record, replay, tune |
+| Noddy Yookerspiel (the beta) | `ca.robotpony.cribmaze.beta` | Engine, GameFX, GameRecord, CribMazeStats, beta tools | Bruce and testers: play, record, replay, tune |
 | Crib Maze | `ca.robotpony.cribmaze` | Engine, GameFX | Players |
 
 Two targets, not one target with a flag: a release build can't reach tracking code by mistake, because it isn't linked. The targets share every scene; the beta target adds its tools and wires a `RecordWriter` into GameSession at its one composition root. They install side by side with different bundle IDs. Both start as Mac apps, on macOS 26; the iOS destinations, on iOS 26, get added to the same targets later.
@@ -342,7 +342,7 @@ swift/
     GameRecord/  CribMazeStats/  GameFX/  cribmaze-sim/
   Tests/ ................... one test target per module
   App/
-    project.yml ............ XcodeGen: Crib Maze, Crib Maze Beta
+    project.yml ............ XcodeGen: Crib Maze, Noddy Yookerspiel
     Shared/ ................ scenes, presenter, GameSession
     Beta/ .................. records, replay, stats, animation lab, tuning
     Resources/ ............. sounds, haptic patterns, card art

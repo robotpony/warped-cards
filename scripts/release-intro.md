@@ -5,4 +5,4 @@
 - Scored grid cards clear and new ones drop in. Hand, crib and starter cards stay and power up, multiplying the sets they're in.
 - Use power jokers (the swapper and the bomb) to rework the board, and race the clock. Your best set wins a prize.
 
-Tap the HAND, CRIB, STARTER or POWER JOKERS tag in the game to learn more, and the gear for settings.
+Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the card counter, to learn more. Tap the top of the screen or the bar along the bottom for settings.

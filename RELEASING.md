@@ -5,7 +5,7 @@ How Crib Maze for Mac gets from a commit to a free download on [GitHub releases]
 ## What ships
 
 - **Crib Maze** (`ca.robotpony.cribmaze`), the release target: no records, no beta tools. It's a free demo, posted as a pre-release while the version is below 1.0.
-- Crib Maze Beta isn't posted. Testers build it, or get it through TestFlight once the iOS version exists.
+- Noddy Yookerspiel, the beta, isn't posted. Testers build it, or get it through TestFlight once the iOS version exists.
 - One zip per version, `Crib-Maze-<version>-mac.zip`, signed with the Developer ID certificate (team 7J49PFSP65), notarized by Apple and stapled, so it opens without warnings on macOS 26 or later.
 
 ## One-time setup

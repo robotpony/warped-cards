@@ -2,11 +2,28 @@
 
 Free card game demos, with the specs, simulations and tests behind them. Each game is 1 player against 1 or 2 bots, on one standard 52-card deck.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="docs/images/turn.png" width="260" alt="A match turn: a 4 by 4 grid of cards, the crib down the side, the hand along the bottom, the starter in the corner, and the power jokers below"></td>
+    <td><img src="docs/images/pick.png" width="260" alt="Four cards picked across the top row, with the line under the board previewing fifteen, fifteen, pair and a double run for 12"></td>
+    <td><img src="docs/images/breakdown.png" width="260" alt="The score breakdown: the picked cards and the starter in a row over a tally of each combo and its points"></td>
+  </tr>
+  <tr>
+    <td>A fresh match turn</td>
+    <td>Picking a set of 4</td>
+    <td>The score's breakdown</td>
+  </tr>
+</table>
+
+Rendered from the beta (seed 2) with `--snapshot`; see `swift/App/Beta/Snapshot.swift`.
+
 ## Games
 
 | Game | What it is | Status |
 |---|---|---|
-| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.9.0 (match turns only), match rules r18, rules draft 5 |
+| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.9.2 (match turns only), match rules r18, rules draft 5 |
 | Classic cribbage | The classic game, sharing Crib Maze's engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -17,7 +34,7 @@ The demos are free. Released builds will be posted on the GitHub releases page:
 
 Nothing is released yet; [RELEASING.md](RELEASING.md) covers how builds get there (signed and notarized by Apple). Until then:
 
-- **Mac:** build Crib Maze Beta yourself (see Build and play).
+- **Mac:** build the beta, Noddy Yookerspiel, yourself (see Build and play).
 - **iPhone and iPad:** testers will get the beta through TestFlight once the iOS version is ready.
 
 ## Build and play
@@ -25,7 +42,7 @@ Nothing is released yet; [RELEASING.md](RELEASING.md) covers how builds get ther
 You need macOS 26, Xcode 27 (Swift 6.4) and XcodeGen (`brew install xcodegen`).
 
 ```sh
-scripts/debug.sh                 # build Crib Maze Beta (Debug) and open it
+scripts/debug.sh                 # build Noddy Yookerspiel (Debug) and open it
 scripts/debug.sh release         # the same, in Release
 scripts/debug.sh -- --demo       # watch the medium bot play turn after turn
 scripts/debug.sh -- --demo --slow
@@ -35,7 +52,7 @@ In Claude Code, `/debug` and `/debug-release` run the same script.
 
 How to play a match turn: drag across 2 to 4 touching cards and let go. Every card you pick should be part of a combo (fifteens, pairs, runs, flushes, his nobs). The starter counts with every set for free. Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the card counter, to read what each one does. Tap the step count at the top, or the bar along the bottom, to open the settings. The full rules are in [rules.md](cribbage/minigames/rules.md).
 
-The beta saves each finished turn as a JSON record in `~/Library/Application Support/Crib Maze Beta/records/`. It sends nothing anywhere, and release builds don't record at all.
+The beta saves each finished turn as a JSON record in `~/Library/Application Support/Noddy Yookerspiel/records/`. It sends nothing anywhere, and release builds don't record at all.
 
 ### Simulator
 
@@ -53,7 +70,7 @@ Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.9.0: **51 tests, all passing** (31 Swift, 20 JS).
+State on 2026-11-15, version 0.9.2: **51 tests, all passing** (31 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -80,7 +97,7 @@ node --test cribbage/minigames/            # JS tests
 
 ## Mocks
 
-The HTML mocks open straight from disk: see [mocks/README.md](cribbage/minigames/mocks/README.md). Crib Maze Beta replaced the match turn mock on 2026-11-15; `match-turn.html` stays frozen at r16. The maze walk, maze tiles and jokers mocks are still live.
+The HTML mocks open straight from disk: see [mocks/README.md](cribbage/minigames/mocks/README.md). The beta (Noddy Yookerspiel) replaced the match turn mock on 2026-11-15; `match-turn.html` stays frozen at r16. The maze walk, maze tiles and jokers mocks are still live.
 
 ## Docs
 
@@ -100,7 +117,7 @@ cribbage/minigames/
 swift/
   Sources/      GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, cribmaze-sim
   Tests/        Swift tests
-  App/          Crib Maze Beta and the release app (XcodeGen: project.yml)
+  App/          Noddy Yookerspiel (the beta) and the release app (XcodeGen: project.yml)
 design/         card renderer and the neon asset set
 scripts/        check.sh (all checks), debug.sh (build and run the beta)
 ```

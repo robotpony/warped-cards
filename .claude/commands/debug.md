@@ -1,6 +1,6 @@
 # /debug
 
-Build Crib Maze Beta as it stands and run it, for review.
+Build Noddy Yookerspiel (the Crib Maze beta) as it stands and run it, for review.
 
 Run: scripts/debug.sh [-- flags]
 

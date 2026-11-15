@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 5, 2026-11-15. Match turns follow match rules r17. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 5, 2026-11-15. Match turns follow match rules r18. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -68,7 +68,7 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-These are match rules r17, the version in the [match turn mock](mocks/match-turn.html). Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r18, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -103,7 +103,7 @@ A turn at a glance:
 Drag across touching cards and let go, or tap them one by one and tap the last one again. Drag back to undo the last card.
 
 - Cards touch their 8 neighbours, diagonals included. Hand, crib and starter cards follow the same rule.
-- A set picks 2 to 4 cards, plus the starter, which joins for free. The card counter beside the help line shows how many you've picked. Later, some combos, jokers and prizes will raise the limit for a while.
+- A set picks 2 to 4 cards, plus the starter, which joins for free. The card counter in the bar along the bottom shows how many you've picked. Later, some combos, jokers and prizes will raise the limit for a while.
 - Every set MUST include at least one grid card. Your hand, crib and starter can't score on their own.
 - The same set of cards can't score twice in a turn.
 

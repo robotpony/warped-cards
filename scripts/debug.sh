@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build Crib Maze Beta as it stands and run it, for review.
+# Build Noddy Yookerspiel (the Crib Maze beta) as it stands and run it, for review.
 #   scripts/debug.sh              Debug build
 #   scripts/debug.sh release      Release build (separate derived data)
 #   scripts/debug.sh -- --demo    pass launch flags (stderr goes to swift/.build-app/debug.log)
@@ -11,7 +11,7 @@ CONFIG=Debug
 if [ "${1:-}" = "release" ]; then CONFIG=Release; shift; fi
 [ "${1:-}" = "--" ] && shift
 SCHEME=CribMazeBeta
-APP="Crib Maze Beta"
+APP="Noddy Yookerspiel"
 DERIVED=swift/.build-app
 [ "$CONFIG" = Release ] && DERIVED=swift/.build-app-release
 LOG=swift/.build-app-$CONFIG.log

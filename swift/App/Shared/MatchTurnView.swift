@@ -59,8 +59,8 @@ struct PhoneView: View {
                 .padding(.vertical, -4)   // one tight line, so the power jokers sit close under the board
             bottom   // power jokers, close under the board
                 .hintBlink(session.hinting(.powerJokers))
-            // The card counter and timer, on a lighter bar along the bottom edge.
-            topLine
+            // The footer: the card counter and clock, on a lighter bar along the bottom edge.
+            footer
                 .padding(.horizontal, 30).padding(.top, 12).padding(.bottom, 20)
                 .frame(maxWidth: .infinity)
                 .background(Theme.panel)
@@ -95,9 +95,12 @@ struct PhoneView: View {
     /// Settings, the last score, this turn's log and (in the beta) diagnostics.
     private func openSettings() { if !session.playback.active { showSettings = true } }
 
-    private var topLine: some View {
+    private var footer: some View {
         HStack(alignment: .center) {
+            // Tapping the counter explains it; the rest of the bar opens the settings.
             PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true)
+                .contentShape(Rectangle())
+                .onTapGesture { if !session.blocked { session.info = .counter } }
             Spacer()
             TurnClock(session: session)
         }

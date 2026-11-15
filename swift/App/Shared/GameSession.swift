@@ -385,8 +385,14 @@ final class GameSession {
         let app = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") + " (" + (Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?") + ")"
         let rec = Record(rulesVersion: MatchTurn.rulesVersion, seed: seed, dealer: t.state.dealer, app: app, actions: actions, rolls: t.dice.rolls, events: events)
         do {
-            let dir = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-                .appendingPathComponent("Crib Maze Beta/records", isDirectory: true)
+            let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let dir = support.appendingPathComponent("\(Edition.name)/records", isDirectory: true)
+            // The beta was called Crib Maze Beta until 0.9.1: bring its records along once.
+            let old = support.appendingPathComponent("Crib Maze Beta/records", isDirectory: true)
+            if Edition.isBeta, !FileManager.default.fileExists(atPath: dir.path), FileManager.default.fileExists(atPath: old.path) {
+                try FileManager.default.createDirectory(at: dir.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileManager.default.moveItem(at: old, to: dir)
+            }
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd-HHmmss"
             let url = dir.appendingPathComponent("match-\(f.string(from: Date()))-seed\(seed).json")

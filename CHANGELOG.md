@@ -2,6 +2,22 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.9.2 — 2026-11-15
+
+### Fixed
+
+- Tapping the card counter explains it again; the rest of the bottom bar still opens the settings.
+
+### Changed
+
+- The README has screenshots, and the plan, to-do list, rules and release notes are tidied for the current beta.
+
+## 0.9.1 — 2026-11-15
+
+### Changed
+
+- The beta is now called Noddy Yookerspiel. Its saved turn records move to the new name's folder the first time it saves a turn.
+
 ## 0.9.0 — 2026-11-15
 
 ### Added

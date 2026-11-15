@@ -1,6 +1,6 @@
 # /debug-release
 
-Build Crib Maze Beta in Release and run it, for checking speed and animation smoothness.
+Build Noddy Yookerspiel (the Crib Maze beta) in Release and run it, for checking speed and animation smoothness.
 
 Run: scripts/debug.sh release [-- flags]
 
