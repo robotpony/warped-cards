@@ -44,7 +44,8 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 ## Phase 7 · Tuning
 
 - [ ] Tune with simulation until the numbers hold up (`stats.md` › Targets)
-- [ ] Design what raises the pick limit for a while: combos, jokers, prizes (`engine.md` › Pick limit)
+- [ ] Balance the reach joker: it dominates when used at once (`concept.md` › Decisions, 2026-11-15)
+- [ ] Design what else raises the pick limit for a while: combos, prizes (`engine.md` › Pick limit)
 - [ ] Tune the stuck-board grace (25 s) and hints from playtests (`rules.md` › Ending the turn)
 
 ## Phase 8 · Face-card art

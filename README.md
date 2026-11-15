@@ -23,7 +23,7 @@ Rendered from the beta (seed 2) with `--snapshot`; see `swift/App/Beta/Snapshot.
 
 | Game | What it is | Status |
 |---|---|---|
-| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.9.2 (match turns only), match rules r18, rules draft 5 |
+| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.10.0 (match turns only), match rules r19, rules draft 5 |
 | Classic cribbage | The classic game, sharing Crib Maze's engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -70,7 +70,7 @@ Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.9.2: **51 tests, all passing** (31 Swift, 20 JS).
+State on 2026-11-15, version 0.10.0: **55 tests, all passing** (35 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -81,6 +81,7 @@ State on 2026-11-15, version 0.9.2: **51 tests, all passing** (31 Swift, 20 JS).
 | CribMaze › Match turn | 7 | Same seed, same turn; setup; rejected traces; scoring; the left-over warning and cost; scripted replay; special jokers |
 | CribMaze › Starter joins (r16) | 4 | The starter counts with every set, is free under the card counter, and is named in a score only when it scores; off by default in older configs |
 | CribMaze › Hand flushes (r18) | 3 | 4 picked cards of one suit flush whatever the starter; no 3-card flushes; the starter never costs a set points |
+| CribMaze › Reach joker (r19) | 4 | A reach raises the pick limit until it's over; reaches stack and roll the same for the same seed; a bigger set scores only under a reach; config checks |
 | CribMaze › Bots | 4 | Every level plays whole turns with only legal moves; the same seed plays the same turn; each seat has its own dice stream; perfect finds the best set |
 | CribMaze › Engine rules | 1 | The engine never calls the clock, system randomness or UI code |
 | JS › Fixtures | 5 | `dice.json`, `counting.json`, `classic-hands.json` and `pegging.json` agree with the reference code; the config files pass the load checks |

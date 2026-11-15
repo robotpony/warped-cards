@@ -2,6 +2,12 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.10.0 — 2026-11-15
+
+### Added
+
+- A new power joker, the reach. Tap it and sets can pick more cards for a while: usually 1 more for about 20 seconds. The card counter shows the extra cards in violet, with a little clock for the time left. You start with one, and prizes can win more.
+
 ## 0.9.2 — 2026-11-15
 
 ### Fixed

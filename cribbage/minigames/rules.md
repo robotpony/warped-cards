@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 5, 2026-11-15. Match turns follow match rules r18. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 5, 2026-11-15. Match turns follow match rules r19. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -68,7 +68,7 @@ After pegging, the cards go back to their owners' hands.
 
 In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-These are match rules r18, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r19, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -81,7 +81,7 @@ Match board (one player's turn)
   . . . .   C        S  the starter
   H H H H   S
 
-  Power jokers: [swapper x2] [bomb x1] [ ] [ ]
+  Power jokers: [swapper x2] [bomb x1] [reach x1] [ ]
 ```
 
 A turn at a glance:
@@ -103,7 +103,7 @@ A turn at a glance:
 Drag across touching cards and let go, or tap them one by one and tap the last one again. Drag back to undo the last card.
 
 - Cards touch their 8 neighbours, diagonals included. Hand, crib and starter cards follow the same rule.
-- A set picks 2 to 4 cards, plus the starter, which joins for free. The card counter in the bar along the bottom shows how many you've picked. Later, some combos, jokers and prizes will raise the limit for a while.
+- A set picks 2 to 4 cards, plus the starter, which joins for free. The card counter in the bar along the bottom shows how many you've picked. A reach joker raises the limit for a while; later, some combos and prizes may too.
 - Every set MUST include at least one grid card. Your hand, crib and starter can't score on their own.
 - The same set of cards can't score twice in a turn.
 
@@ -200,8 +200,9 @@ Special jokers are jokers that carry an action. The ones you hold are your power
 |---|---|
 | Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places |
 | Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing |
+| Reach | Tap it and it works at once: sets can pick more cards for a while. Usually 1 more card for about 20 seconds; sometimes 2 more, or 10 to 45 seconds (to tune). Reaches stack. The card counter shows the extra cards in violet, with a little clock for the time left |
 
-You start the game with 2 swappers and 1 bomb (to tune). You get more from prizes, jokers and the shop.
+You start the game with 2 swappers, 1 bomb and 1 reach (to tune). You get more from prizes, jokers and the shop.
 
 - Special jokers you start with, win as prizes or buy last the whole game; what you don't use carries over to your next turn.
 - Special jokers made by a joker's reveal last only for that round.

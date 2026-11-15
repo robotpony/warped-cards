@@ -4,6 +4,8 @@
 //
 // Turn i plays from seed + i, bot seat 0, starting tray from config, warned set
 // (bots count as already warned). Config defaults to ../cribbage/minigames/config.
+// Bots have no clock, so a reach joker ends after as many actions as a person would make in its
+// seconds: one per `trace` milliseconds of timing.json's human profile.
 import CribMaze
 import CribMazeBots
 import Foundation
@@ -52,7 +54,7 @@ struct Tally {
     var cleared = 0
     var prizes: [String: Int] = [:]
     var noPrize = 0
-    var actions = 0, swaps = 0, bombs = 0
+    var actions = 0, swaps = 0, bombs = 0, reaches = 0, reachScores = 0
     var best: [Int] = []
     var fromPower = 0, scores = 0, starterIn = 0, flush4 = 0, flush5 = 0
 }
@@ -62,15 +64,35 @@ let config: Config
 do { config = try Config.load(from: URL(fileURLWithPath: o.config)) } catch { usage("config: \(error)") }
 guard let bot = MatchBot(config: config, id: o.level) else { usage("no bot level \(o.level) in bots.json") }
 
+// A person's pace, for timing reach jokers (timing.json › profiles.human.trace).
+let traceMs: Double = {
+    let url = URL(fileURLWithPath: o.config).appendingPathComponent("timing.json")
+    guard let d = try? Data(contentsOf: url), let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+          let p = j["profiles"] as? [String: Any], let h = p["human"] as? [String: Any], let ms = h["trace"] as? Double else { return 4000 }
+    return ms
+}()
+
 var t = Tally()
 let started = Date()
 for i in 0..<o.turns {
     var (turn, events) = MatchTurn.start(config: config, setup: TurnSetup(seed: o.seed &+ UInt64(i), dealer: o.dealer, warned: true))
+    var reachEnds: [Int: Int] = [:]   // reach id -> the action count it ends at
+    var acted = 0
     while !turn.state.over {
         var dice = turn.dice
         let action = bot.choose(turn, dice: &dice)
         turn.dice = dice
-        do { events += try turn.apply(action) } catch {
+        do {
+            let ev = try turn.apply(action)
+            events += ev
+            acted += 1
+            for e in ev { if case .reach(let id, _, let seconds, _, _) = e { reachEnds[id] = acted + max(1, Int((Double(seconds) * 1000 / traceMs).rounded(.up))) } }
+            if !turn.state.reaches.isEmpty, ev.contains(where: { if case .score = $0 { return true }; return false }) { t.reachScores += 1 }
+            for (id, end) in reachEnds where end <= acted && !turn.state.over {
+                reachEnds[id] = nil
+                events += try turn.apply(.reachOver(id: id))
+            }
+        } catch {
             FileHandle.standardError.write(Data("cribmaze-sim: seed \(o.seed &+ UInt64(i)): illegal action \(action): \(error)\n".utf8))
             exit(1)
         }
@@ -82,7 +104,7 @@ for i in 0..<o.turns {
         case .turnEnd(let reason, let totals):
             t.steps.append(totals.steps)
             if reason == "board_cleared" { t.cleared += 1 }
-            t.swaps += totals.swaps; t.bombs += totals.bombs
+            t.swaps += totals.swaps; t.bombs += totals.bombs; t.reaches += totals.reaches
             t.best.append(totals.best ?? 0); t.fromPower += totals.stepsFromEdgePower
         case .score(let positions, _, let combos, _, _, _, _, _, _, _, _, _):
             t.scores += 1; if positions.contains("s") { t.starterIn += 1 }
@@ -105,7 +127,7 @@ print("steps per turn   mean \(String(format: "%.1f", mean)) · min \(sorted.fir
 print("boards cleared   \(t.cleared) (\(String(format: "%.1f", 100 * Double(t.cleared) / n))%)")
 let tiers = ["common", "rare", "epic"].map { "\($0) \(t.prizes[$0, default: 0])" }.joined(separator: " · ")
 print("prizes           \(tiers) · none \(o.turns - t.prizes.values.reduce(0, +))")
-print("per turn         actions \(String(format: "%.1f", Double(t.actions) / n)) · swaps \(String(format: "%.2f", Double(t.swaps) / n)) · bombs \(String(format: "%.2f", Double(t.bombs) / n))")
+print("per turn         actions \(String(format: "%.1f", Double(t.actions) / n)) · swaps \(String(format: "%.2f", Double(t.swaps) / n)) · bombs \(String(format: "%.2f", Double(t.bombs) / n)) · reaches \(String(format: "%.2f", Double(t.reaches) / n)) · scores under a reach \(t.reachScores)")
 let bs = t.best.sorted()
 let bp = { (q: Double) in bs[min(bs.count - 1, Int(q * Double(bs.count)))] }
 print("best set         mean \(String(format: "%.1f", Double(bs.reduce(0, +)) / n)) · p10 \(bp(0.1)) · p25 \(bp(0.25)) · median \(bp(0.5)) · p75 \(bp(0.75)) · p90 \(bp(0.9))")

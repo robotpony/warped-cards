@@ -30,7 +30,7 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var stepsFromEdgePower = 0
     public var best: Int?
     public var scores = 0, singles = 0, multis = 0
-    public var rejected = 0, warnings = 0, swaps = 0, bombs = 0, drawn = 0
+    public var rejected = 0, warnings = 0, swaps = 0, bombs = 0, reaches = 0, drawn = 0
     public var penaltyTotal = 0, leftOverTotal = 0
     public var stepsBySuit: [String: Int] = [:]
     public var stepsWithEdge = 0, stepsWithoutEdge = 0
@@ -47,6 +47,9 @@ public enum MatchEvent: Codable, Sendable, Equatable {
     case extraDrawn(card: CardRef, outcome: String, tier: String, prize: String, goes: String, cell: String)
     case swap(line: [String], before: [CardRef], after: [CardRef], source: String)
     case bomb(target: String, shape: String, cleared: [CardRef], source: String)
+    /// A reach joker raises the pick limit by `cards` until the app sends `reachOver` after `seconds`.
+    case reach(id: Int, cards: Int, seconds: Int, pickLimit: Int, source: String)
+    case reachOver(id: Int, pickLimit: Int)
     case stockOut(reason: String, cardsLeftOnGrid: Int)
     case noSetsLeft(stockLeft: Int, tray: [String: Int])
     case boardCleared(kind: String, amount: Int)
@@ -59,6 +62,9 @@ public enum MatchAction: Codable, Sendable, Equatable {
     /// source: nil for the tray, or the board position of a swapper.
     case swap(line: [Pos], source: Pos?)
     case bomb(target: Pos, source: Pos?)
+    case reach(source: Pos?)
+    /// The engine has no clock: the app (or the simulator) ends a reach when its time is up.
+    case reachOver(id: Int)
     case endTurn
     case timeUp
 }
@@ -84,12 +90,17 @@ public struct MatchState: Codable, Sendable, Equatable {
     public var stockOut = false, dead = false, over = false
     public var endReason: String?
     public var nextMadeID = 200, nextSpecialID = 300
+    /// Reach jokers in effect: each adds cards to the pick limit until its reachOver.
+    public var reaches: [ActiveReach] = []
+    public var nextReachID = 1
     public var totals = TurnTotals()
 
     public func card(_ p: Pos) -> Card? { cells[p] }
     public var gridEmpty: Bool { Board.grid.allSatisfy { cells[$0] == nil } }
     public var cardsOnGrid: Int { Board.grid.filter { cells[$0] != nil }.count }
 }
+
+public struct ActiveReach: Codable, Sendable, Equatable { public let id: Int, cards: Int, seconds: Int }
 
 /// Inputs for a standalone turn (engine.md › Standalone turn).
 public struct TurnSetup: Codable, Sendable {
@@ -124,7 +135,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r18"
+    public static let rulesVersion = "match-r19"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -296,16 +307,20 @@ public struct MatchTurn: Sendable {
 
     /// Whether any connected set of 2 to maxSet could score above 0 now.
     public func anySetScores() -> Bool {
-        for set in Self.sets(maxSize: r.maxSet) where traceProblem(set) == nil {
+        for set in Self.sets(maxSize: pickLimit) where traceProblem(set) == nil {
             if let v = value(of: set), !v.count.combos.isEmpty, v.points > 0 { return true }
         }
         return false
     }
 
-    // Only sizes up to 5 (the rules' maxSet) are cached: size 7 alone took over a second to build at launch.
+    // Sizes up to 5 (maxSet plus the starter) are cached at first use; size 6, for a reach joker,
+    // only when one is used. Size 7 alone took over a second to build.
     private static let setsCache: [[[Pos]]] = (0...5).map { $0 >= 2 ? Board.connectedSets(maxSize: $0) : [] }
+    private static let sets6 = Board.connectedSets(maxSize: 6)
     /// Every connected set up to maxSize, in position order.
-    public static func sets(maxSize: Int) -> [[Pos]] { maxSize <= 5 ? setsCache[max(0, maxSize)] : Board.connectedSets(maxSize: maxSize) }
+    public static func sets(maxSize: Int) -> [[Pos]] {
+        maxSize <= 5 ? setsCache[max(0, maxSize)] : maxSize == 6 ? sets6 : Board.connectedSets(maxSize: maxSize)
+    }
 
     // MARK: Tracing
 
@@ -313,9 +328,9 @@ public struct MatchTurn: Sendable {
     /// Whether the starter counts with every set (r16).
     public var starterJoins: Bool { (r.starterJoins ?? false) && state.cells[Board.starter]?.isPlaying == true }
 
-    /// How many cards a set may pick now. For now it's always `maxSet`; later some combos, jokers
-    /// and prizes raise it for a while, and the engine will track that here.
-    public var pickLimit: Int { r.maxSet }
+    /// How many cards a set may pick now: `maxSet`, plus the cards from reach jokers in effect.
+    /// Later some combos and prizes may raise it too.
+    public var pickLimit: Int { r.maxSet + state.reaches.reduce(0) { $0 + $1.cards } }
 
     /// The cards a trace picks, which `maxSet` limits: with r16 the starter is free, traced or not.
     public func picked(_ ps: [Pos]) -> [Pos] { starterJoins ? ps.filter { $0 != Board.starter } : ps }
@@ -386,6 +401,8 @@ public struct MatchTurn: Sendable {
         case .trace(let ps): return trace(ps)
         case .swap(let line, let source): return try swap(line, source)
         case .bomb(let target, let source): return try bomb(target, source)
+        case .reach(let source): return try reach(source)
+        case .reachOver(let id): return try reachOver(id)
         case .endTurn: return end("player")
         case .timeUp:
             guard r.timerSeconds > 0 else { throw IllegalAction("the timer is off") }
@@ -503,6 +520,27 @@ public struct MatchTurn: Sendable {
         ev += resolveExtras()
         ev += afterAction()
         return ev
+    }
+
+    mutating func reach(_ source: Pos?) throws -> [MatchEvent] {
+        guard let cfg = config.rules.specials.reach else { throw IllegalAction("this config has no reach joker") }
+        try useSpecial("reach", from: source)
+        let cards = dice.pick(cfg.cardsWeights, stream: "special", purpose: "reach_cards")
+        let seconds = dice.pick(cfg.secondsWeights, stream: "special", purpose: "reach_seconds")
+        let id = state.nextReachID; state.nextReachID += 1
+        state.reaches.append(ActiveReach(id: id, cards: cards, seconds: seconds))
+        state.totals.reaches += 1
+        var ev: [MatchEvent] = [.reach(id: id, cards: cards, seconds: seconds, pickLimit: pickLimit, source: source.map(Board.name) ?? "tray")]
+        if let s = source { ev.append(clearAndRefill([s])) }
+        ev += resolveExtras()
+        ev += afterAction()
+        return ev
+    }
+
+    mutating func reachOver(_ id: Int) throws -> [MatchEvent] {
+        guard let i = state.reaches.firstIndex(where: { $0.id == id }) else { throw IllegalAction("no reach \(id) in effect") }
+        state.reaches.remove(at: i)
+        return [.reachOver(id: id, pickLimit: pickLimit)] + afterAction()
     }
 
     // MARK: Ending

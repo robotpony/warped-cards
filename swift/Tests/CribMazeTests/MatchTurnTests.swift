@@ -64,7 +64,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(Board.crib.allSatisfy { t.state.cells[$0] == nil })
         #expect(Board.grid.allSatisfy { t.state.cells[$0]?.isPlaying == true })   // extras resolved
         guard case .turnStart(_, let dealer, let hand, _, _, _, _, _, _, _, let tray) = ev[0] else { Issue.record("first event"); return }
-        #expect(!dealer && hand.count == 4 && tray == ["swapper": 2, "bomb": 1])
+        #expect(!dealer && hand.count == 4 && tray == ["swapper": 2, "bomb": 1, "reach": 1])
     }
 
     @Test func traceRejections() throws {
@@ -252,3 +252,50 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
     }
 }
 
+
+/// r19: the reach joker raises the pick limit until the app (or the simulator) ends it.
+@Suite struct ReachJokerTests {
+    func turn(seed: UInt64 = 1) throws -> MatchTurn {
+        MatchTurn.start(config: try loadConfig(), setup: TurnSetup(seed: seed, tray: ["reach": 2])).0
+    }
+
+    @Test func reachRaisesThePickLimitUntilItsOver() throws {
+        var t = try turn()
+        let base = t.pickLimit
+        let ev = try t.apply(.reach(source: nil))
+        guard case .reach(let id, let cards, let seconds, let limit, let source) = ev[0] else { Issue.record("no reach event"); return }
+        let cfg = t.config.rules.specials.reach!
+        #expect(cfg.cards.map { $0[0] }.contains(cards) && cfg.seconds.map { $0[0] }.contains(seconds))
+        #expect(limit == base + cards && t.pickLimit == base + cards && source == "tray")
+        #expect(t.state.tray["reach"] == 1 && t.state.totals.reaches == 1)
+        let over = try t.apply(.reachOver(id: id))
+        guard case .reachOver(id, let after) = over[0] else { Issue.record("no reachOver event"); return }
+        #expect(after == base && t.pickLimit == base)
+        #expect(throws: IllegalAction.self) { try t.apply(.reachOver(id: id)) }   // already over
+    }
+
+    @Test func reachesStackAndRollTheSameForTheSameSeed() throws {
+        var a = try turn(seed: 7), b = try turn(seed: 7)
+        let e1 = try a.apply(.reach(source: nil)) + a.apply(.reach(source: nil))
+        let e2 = try b.apply(.reach(source: nil)) + b.apply(.reach(source: nil))
+        #expect(e1 == e2)
+        #expect(a.pickLimit == a.config.rules.match.maxSet + a.state.reaches.map(\.cards).reduce(0, +) && a.state.reaches.count == 2)
+        #expect(throws: IllegalAction.self) { try a.apply(.reach(source: nil)) }   // the tray is empty
+    }
+
+    @Test func aSetOverTheBaseLimitScoresOnlyUnderAReach() throws {
+        var t = try turn()
+        let five = MatchTurn.sets(maxSize: 6).first { t.picked($0).count == t.pickLimit + 1 && !$0.contains(where: { t.state.cells[$0]?.isSpecial ?? true }) && $0.contains(where: Board.isGrid) }!
+        #expect(t.traceProblem(five) == "size")
+        while t.pickLimit < t.picked(five).count { _ = try t.apply(.reach(source: nil)) }
+        #expect(t.traceProblem(five) == nil)
+    }
+
+    @Test func configChecksTheReachTables() throws {
+        var c = try loadConfig()
+        c.rules.specials.reach?.cards = [[3, 10]]   // 4 + 3 is over 6
+        #expect(throws: ConfigError.self) { try c.validate() }
+        c.rules.specials.reach = nil
+        #expect(throws: ConfigError.self) { try c.validate() }
+    }
+}

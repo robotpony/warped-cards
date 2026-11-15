@@ -45,6 +45,15 @@ public struct RulesConfig: Codable, Sendable, Equatable {
         public var known: [String]
         public var start: [String: Int]
         public var bombShape: String
+        /// The reach joker (r19): how many extra cards a set may pick, and for how many seconds,
+        /// each a weighted list of [value, weight] pairs.
+        public var reach: Reach?
+    }
+    public struct Reach: Codable, Sendable, Equatable {
+        public var cards: [[Int]]
+        public var seconds: [[Int]]
+        public var cardsWeights: [(Int, Int)] { cards.map { ($0[0], $0[1]) } }
+        public var secondsWeights: [(Int, Int)] { seconds.map { ($0[0], $0[1]) } }
     }
     public var version: Int
     public var rulesVersion: String
@@ -121,6 +130,14 @@ public struct Config: Codable, Sendable, Equatable {
         for (k, t) in jokers.tables {
             try weights(t, "jokers.tables.\(k)")
             for (o, _) in t.entries where jokers.outcomes[o] == nil { try fail("jokers.tables.\(k) names unknown outcome \(o)") }
+        }
+        if rules.specials.known.contains("reach") {
+            guard let reach = rules.specials.reach else { try fail("specials.reach is missing, but reach is a known special") }
+            for (name, list) in [("cards", reach.cards), ("seconds", reach.seconds)] {
+                if list.isEmpty { try fail("specials.reach.\(name): no entries") }
+                for pair in list where pair.count != 2 || pair[0] < 1 || pair[1] < 1 { try fail("specials.reach.\(name): each entry is [value, weight], both 1 or more") }
+            }
+            if m.maxSet + (reach.cards.map { $0[0] }.max() ?? 0) > 6 { try fail("specials.reach.cards: maxSet plus the most extra cards must be 6 or less") }
         }
         if !["plus", "square"].contains(rules.specials.bombShape) { try fail("specials.bombShape must be plus or square") }
         if !["add", "each"].contains(m.edgePower.combine) { try fail("edgePower.combine must be add or each") }

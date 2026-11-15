@@ -98,7 +98,9 @@ struct PhoneView: View {
     private var footer: some View {
         HStack(alignment: .center) {
             // Tapping the counter explains it; the rest of the bar opens the settings.
-            PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true)
+            PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true,
+                        extra: session.pickLimit - (session.config?.rules.match.maxSet ?? session.pickLimit),
+                        reach: session.reachFraction)
                 .contentShape(Rectangle())
                 .onTapGesture { if !session.blocked { session.info = .counter } }
             Spacer()
@@ -161,8 +163,10 @@ struct PhoneView: View {
                     if i < known.count {
                         let kind = known[i]
                         TrayCard(kind: kind, count: session.state?.tray[kind] ?? 0, w: 72,
-                                 armed: session.mode == (kind == "swapper" ? .swap : .bomb) && session.armedSource == nil) {
-                            tapTray(kind, kind == "swapper" ? .swap : .bomb)
+                                 armed: kind != "reach" && session.mode == (kind == "swapper" ? .swap : .bomb) && session.armedSource == nil) {
+                            if kind == "reach" {
+                                if !session.over, (session.state?.tray[kind] ?? 0) > 0, session.mode == .trace { session.arm(kind) }
+                            } else { tapTray(kind, kind == "swapper" ? .swap : .bomb) }
                         }
                     } else {
                         RoundedRectangle(cornerRadius: 6)
@@ -217,7 +221,9 @@ struct TrayCard: View {
         .animation(.easeOut(duration: Motion.t(0.12)), value: armed)
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
-        .help(kind == "swapper" ? "Swapper: reverses a straight line of 2 to 4 grid cards" : "Bomb: clears a card and its neighbours, without scoring")
+        .help(["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
+               "bomb": "Bomb: clears a card and its neighbours, without scoring",
+               "reach": "Reach: sets can pick more cards for a while"][kind] ?? kind)
     }
 }
 
@@ -438,14 +444,27 @@ struct SidePanel: View {
 struct PickCounter: View {
     let count: Int, limit: Int
     var leading = false
+    /// Slots a reach joker adds, drawn in violet, and the share of its time left (nil: none in effect).
+    var extra = 0
+    var reach: Double?
     var body: some View {
         VStack(alignment: leading ? .leading : .trailing, spacing: 4) {
             HStack(spacing: 4) {
                 ForEach(0..<limit, id: \.self) { i in
+                    let added = i >= limit - extra
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(i < count ? (count == limit ? Theme.gold : Theme.cyan) : Theme.feltText.opacity(0.14))
-                        .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Theme.feltText.opacity(i < count ? 0 : 0.3), lineWidth: 1))
+                        .fill(i < count ? (count == limit ? Theme.gold : Theme.cyan) : (added ? Theme.violet.opacity(0.35) : Theme.feltText.opacity(0.14)))
+                        .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(added ? Theme.violet : Theme.feltText.opacity(i < count ? 0 : 0.3), lineWidth: added ? 1.5 : 1))
                         .frame(width: 9, height: 13)
+                }
+                if let reach {
+                    // The reach's time left: a violet wedge that empties as it runs out.
+                    ZStack {
+                        Circle().fill(Theme.violet.opacity(0.18))
+                        Wedge(fraction: reach).fill(Theme.violet).animation(.linear(duration: 1), value: reach)
+                        Circle().strokeBorder(Theme.violet, lineWidth: 1.5)
+                    }
+                    .frame(width: 13, height: 13).padding(.leading, 2)
                 }
             }
             Text("CARDS \(count) / \(limit)").font(Theme.font(11, .bold)).tracking(0.6).monospacedDigit()
@@ -507,11 +526,12 @@ struct InfoCard: View {
             return ("Power jokers", ["Special jokers you've won, kept all game.",
                                   "Swapper: tap it, then trace a straight line of 2 to 4 grid cards to reverse it.",
                                   "Bomb: tap it, then tap a grid card. It clears that card and its neighbours, without scoring.",
+                                  "Reach: tap it and sets can pick more cards for a while, usually 1 more for about 20 seconds. The card counter shows the extra cards and the time left.",
                                   "Tap an armed joker again to put it back."])
         case .counter:
             return ("Cards per set", ["A set picks 2 to \(session.pickLimit) cards. The pips fill as you pick, and turn gold at the limit.",
                                       "The starter is free: it joins every set without using a pip.",
-                                      "Some combos, jokers and prizes will raise the limit for a while."])
+                                      "A reach joker adds violet pips for a while; the little violet clock beside them shows its time left. Later, some combos and prizes may raise the limit too."])
         }
     }
 }

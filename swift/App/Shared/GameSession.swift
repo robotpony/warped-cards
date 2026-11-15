@@ -95,7 +95,7 @@ final class GameSession {
         c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
         seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
         seedText = ""
-        playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil
+        playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
         let strong = settings.hand == "strong"
         let setup = TurnSetup(seed: seed, dealer: settings.dealer,
                               fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil)
@@ -169,6 +169,7 @@ final class GameSession {
         drawnPerColumn = drawn
         if animate { withAnimation(.easeOut(duration: Motion.t(0.3))) { turn = t } } else { turn = t }
         for e in ev { describe(e) }
+        watchReaches()
         if t.state.over { finish() } else { watchDeadBoard() }
     }
 
@@ -209,8 +210,9 @@ final class GameSession {
     }
 
     private var pendingSource: Pos? { get { armedSource } set { armedSource = newValue } }
-    /// Tapping a special joker on the board arms it.
+    /// Tapping a special joker on the board arms it. A reach joker needs no target, so it's used at once.
     func arm(_ kind: String, from source: Pos? = nil) {
+        if kind == "reach" { selection = []; send(.reach(source: source)); return }
         pendingSource = source
         mode = kind == "swapper" ? .swap : .bomb
         show(kind == "swapper" ? "Trace a straight line to reverse it" : "Tap a grid card to blast it")
@@ -290,6 +292,34 @@ final class GameSession {
 
     // MARK: Timer
 
+    /// Seconds left on each reach joker in effect, by its ID. They count down on their own clock,
+    /// which waits while a move plays, like the turn's, and runs with the turn's timer off too.
+    private(set) var reachLeft: [Int: (left: Int, total: Int)] = [:]
+    /// The share of time left on the reach that ends first, for the card counter; nil with none in effect.
+    var reachFraction: Double? {
+        reachLeft.values.min { $0.left < $1.left }.map { Double(max(0, $0.left)) / Double(max(1, $0.total)) }
+    }
+    private var reachTask: Task<Void, Never>?
+
+    private func watchReaches() {
+        for r in turn?.state.reaches ?? [] where reachLeft[r.id] == nil { reachLeft[r.id] = (r.seconds, r.seconds) }
+        for id in reachLeft.keys where !(turn?.state.reaches.contains { $0.id == id } ?? false) { reachLeft[id] = nil }
+        guard !reachLeft.isEmpty, reachTask == nil else { return }
+        reachTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let self, !Task.isCancelled, !self.over else { self?.reachTask = nil; return }
+                if self.busy || self.warning != nil || self.info != nil { continue }
+                for (id, r) in self.reachLeft { self.reachLeft[id] = (r.left - 1, r.total) }
+                if let done = self.reachLeft.first(where: { $0.value.left <= 0 })?.key {
+                    self.reachLeft[done] = nil
+                    self.send(.reachOver(id: done))
+                }
+                if self.reachLeft.isEmpty { self.reachTask = nil; return }
+            }
+        }
+    }
+
     private func startTimer() {
         timerTask?.cancel()
         guard secondsLeft > 0 else { return }
@@ -362,8 +392,12 @@ final class GameSession {
             line("Swapped \(faces(before))  to  \(faces(after))")
         case .bomb(_, _, let cleared, _): line("Bomb: cleared \(faces(cleared))")
         case .stockOut(let reason, _): line((reason == "stock_empty" ? "Stock empty" : "Card budget used") + ": play out the board")
+        case .reach(_, let cards, let seconds, let limit, _):
+            line("Reach: +\(cards) card\(cards == 1 ? "" : "s") for \(seconds) s (sets pick up to \(limit))")
+            show("Reach: +\(cards) card\(cards == 1 ? "" : "s") for \(seconds) s")
+        case .reachOver(_, let limit): line("Reach over: sets pick up to \(limit) again")
         case .noSetsLeft(_, let tray):
-            show(tray.values.contains { $0 > 0 } ? "No sets score: use a swapper or bomb, or end the turn" : "No sets score: end the turn")
+            show(tray.values.contains { $0 > 0 } ? "No sets score: use a power joker" : "No sets score")
         case .boardCleared(_, let amount): line("Board cleared! +\(amount) steps", prize: true)
         case .prizeWon(let tier, let best, _, let special): line("Prize: \(tier) (best set \(best)), wins a \(special)", prize: true)
         case .turnEnd(let reason, let totals):

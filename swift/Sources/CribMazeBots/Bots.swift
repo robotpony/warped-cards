@@ -23,16 +23,18 @@ public struct MatchBot: Sendable {
         self.init(level: l, seat: seat)
     }
 
-    /// The bot's next action. Only legal actions: a trace, a swap, a bomb or end turn.
+    /// The bot's next action. Only legal actions: a trace, a reach, a swap, a bomb or end turn.
     public func choose(_ turn: MatchTurn, dice: inout Dice) -> MatchAction {
         let s = turn.state
         // 1. The best set, if it scores.
         if let b = bestSet(turn, dice: &dice) { return .trace(positions: b.positions) }
-        // 2. A swapper, on the board first, then the tray.
+        // 2. A reach joker, which may open a bigger set, before changing the board.
+        if s.reaches.isEmpty, let source = specialSource("reach", s) { return .reach(source: source.pos) }
+        // 3. A swapper, on the board first, then the tray.
         if let source = specialSource("swapper", s), let line = bestSwap(turn, excluding: source.pos, dice: &dice) {
             return .swap(line: line, source: source.pos)
         }
-        // 3. A bomb, on the board first, then the tray, if the grid isn't empty.
+        // 4. A bomb, on the board first, then the tray, if the grid isn't empty.
         if let source = specialSource("bomb", s), !s.gridEmpty {
             var at: Pos?, most = -1
             for p in Board.grid where s.cells[p] != nil {
@@ -41,7 +43,7 @@ public struct MatchBot: Sendable {
             }
             if let at { return .bomb(target: at, source: source.pos) }
         }
-        // 4. Nothing to do.
+        // 5. Nothing to do.
         return .endTurn
     }
 
@@ -69,7 +71,7 @@ public struct MatchBot: Sendable {
     /// Perfect: every set in position order. Highest points, then the larger set, then the first found.
     func bestOfAll(_ turn: MatchTurn, only touching: Set<Pos>? = nil) -> FoundSet? {
         var best: FoundSet?
-        for set in MatchTurn.sets(maxSize: turn.config.rules.match.maxSet) {
+        for set in MatchTurn.sets(maxSize: turn.pickLimit) {
             if let t = touching, !set.contains(where: t.contains) { continue }
             guard let pts = scores(turn, set) else { continue }
             if let b = best, pts < b.points || (pts == b.points && set.count <= b.positions.count) { continue }
@@ -87,7 +89,9 @@ public struct MatchBot: Sendable {
         dice.shuffle(&pos, stream: stream, purpose: "starts")
         let fraction = level.starts ?? 1
         let n = max(1, Int((Double(pos.count) * fraction).rounded(.toNearestOrAwayFromZero)))
-        let depth = min(level.depth ?? turn.config.rules.match.maxSet, turn.config.rules.match.maxSet)
+        // A reach joker lets every level look one card further for each extra card.
+        let extra = turn.pickLimit - turn.config.rules.match.maxSet
+        let depth = min((level.depth ?? turn.config.rules.match.maxSet) + extra, turn.pickLimit)
         var best: FoundSet?
         var path: [Pos] = []
         var mask: UInt32 = 0

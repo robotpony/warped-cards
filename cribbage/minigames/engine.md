@@ -101,6 +101,8 @@ Each action names the player and carries the clock time (`clockMs`) from the ses
 | `trace` | positions, in the order traced | Turn not over |
 | `swap` | line of grid positions; source: `tray` or the board position of a swapper | Turn not over; the player has the swapper |
 | `bomb` | target grid position; source: `tray` or the board position of a bomb | Turn not over; the player has the bomb; the target holds a card |
+| `reach` | source: `tray` or the board position of a reach joker | Turn not over; the player has the reach joker (r19) |
+| `reach_over` | id of a reach in effect | Turn not over; that reach is in effect. Sent by the session when the reach's seconds are up |
 | `end_turn` | none | Turn not over |
 | `time_up` | none | Turn not over and the timer is on; sent by the session |
 
@@ -137,7 +139,7 @@ With `starterJoins` and `handFlush`, two more rules apply:
 
 #### Pick limit
 
-The pick limit is how many cards a set may pick. It's `maxSet` for now. Later, some combos, jokers and prizes will raise it for a while; the engine MUST keep it in turn state so the app can show it.
+The pick limit is how many cards a set may pick: `maxSet`, plus the cards of each reach joker in effect (see Reach). Later, some combos and prizes may raise it too. The engine MUST keep the reaches in turn state so the app can show the limit. `maxSet` plus the most cards a reach can add MUST be 6 or less (checked on load).
 
 | Combos | Left over | Warned before? | Result |
 |---|---|---|---|
@@ -172,6 +174,15 @@ The blast is the target cell plus its neighbours: the 4 beside it (`plus`) or al
 
 - From the tray: the tray loses one bomb.
 - Emit `bomb` with the cleared cards, refill, resolve extra cards, run the after-action checks. A bomb scores nothing.
+
+### Reach (r19)
+
+1. Use up the reach joker, as for a swap.
+2. Roll how many cards it adds from `specials.reach.cards`, then for how many seconds from `specials.reach.seconds` (stream `special`, purposes `reach_cards` and `reach_seconds`).
+3. Add it to the reaches in effect, with the next reach ID (from 1). The pick limit is `maxSet` plus the cards of every reach in effect, so reaches stack.
+4. Emit `reach`. A reach joker used from the board clears and refills its cell, as for a swap. Then check the board (Checks), since a higher limit can open up a set.
+
+The engine has no clock. The session counts each reach's seconds, pausing as the turn's timer does, and sends `reach_over` when they run out. `reach_over` removes that reach, emits `reach_over` with the new pick limit, and checks the board again, since a lower limit can leave no sets. The simulator, which has no clock either, ends a reach after as many bot actions as a person would make in its seconds: one per `timing.json` › `profiles.human.trace` milliseconds, rounded up.
 
 ### End turn and time up
 
@@ -213,7 +224,7 @@ Run after setup and after every action that changed the board, in this order:
 
 1. If nothing more can be drawn and `stockOut` isn't set yet: set it, emit `stock_out` (reason `stock_empty` or `budget_used`).
 2. If every grid cell is empty: end the turn with reason `board_cleared`.
-3. Otherwise check whether any set can score: any connected set of 2 to `maxSet` positions, holding no special joker, with at least one grid card, not yet scored, whose points (after the left-over cost) are above 0. If none and `dead` wasn't set, emit `no_sets_left`. Set `dead` to the result.
+3. Otherwise check whether any set can score: any connected set of 2 to the pick limit (see Pick limit) positions, holding no special joker, with at least one grid card, not yet scored, whose points (after the left-over cost) are above 0. If none and `dead` wasn't set, emit `no_sets_left`. Set `dead` to the result.
 
 ## Ending the turn
 
@@ -259,6 +270,8 @@ Every event names its type and carries the fields below. Cards appear as `{id, c
 | `swap` | line, before, after, source |
 | `bomb` | target, shape, cleared, source |
 | `stock_out` | reason, cardsLeftOnGrid |
+| `reach` | id, cards, seconds, pickLimit, source |
+| `reach_over` | id, pickLimit |
 | `no_sets_left` | stockLeft, tray |
 | `board_cleared` | bonus kind and amount |
 | `prize_won` | tier, bestPoints, bestCards, special |
@@ -283,6 +296,7 @@ Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle r
 | `deal` | Match turn: `shuffle` (the 52), `joker_count`, `joker_kind` per joker, `shuffle` (the stock). Classic: `shuffle` and `cut_for_deal` per cut at the start, then `shuffle` and `cut` each hand |
 | `reveal` | Per extra card: `outcome:<kind>`, then `made_card` or `special_kind` if the outcome needs one |
 | `board` | `stock_insert` |
+| `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19) |
 | `prize` | `prize_special` |
 | `bot.<seat>` | A bot's own choices (see Bots) |
 
@@ -299,9 +313,10 @@ A bot sees the player's view (no hidden cards: the stock order is hidden) and re
 Each bot turn repeats until the turn is over:
 
 1. Find the best set (below). If one scores above 0, trace it.
-2. Otherwise, if it has a swapper (on the board first, then the tray), find the best swap: try every pair of touching grid cells that both hold a card, leaving out a board swapper's own cell (each cell, then its neighbours to the right, below, below-right and below-left), swap them in a copy, and find the best set. Take the swap that opens the highest score; on a tie, the first pair tried. If one opens a score above 0, swap.
-3. Otherwise, if it has a bomb (on the board first, then the tray) and the grid isn't empty, bomb the cell whose blast clears the most cards (the first in position order on a tie).
-4. Otherwise, end the turn.
+2. Otherwise, if no reach is in effect and it has a reach joker (on the board first, then the tray), use it (r19).
+3. Otherwise, if it has a swapper (on the board first, then the tray), find the best swap: try every pair of touching grid cells that both hold a card, leaving out a board swapper's own cell (each cell, then its neighbours to the right, below, below-right and below-left), swap them in a copy, and find the best set. Take the swap that opens the highest score; on a tie, the first pair tried. If one opens a score above 0, swap.
+4. Otherwise, if it has a bomb (on the board first, then the tray) and the grid isn't empty, bomb the cell whose blast clears the most cards (the first in position order on a tie).
+5. Otherwise, end the turn.
 
 Bots count as already warned about cards left over.
 
@@ -313,6 +328,7 @@ Finding the best set, by level (`bots.json`):
 The traced search MUST run in this order, so every port draws the same rolls and breaks ties the same way:
 
 - A walk is depth first. At each step it tries the next cards in the shuffled order, not position order, and checks each path as it reaches it.
+- With a reach in effect, a walk may go one card deeper for each extra card it adds, up to the pick limit; `all` searches every set up to the pick limit.
 - Each search shuffles afresh. In step 2, every candidate swap, in pair order, gets its own traced search on its copy of the board, with its own `starts` shuffle. A swap search therefore draws one shuffle per pair tried.
 - Search `all` draws nothing from `bot.<seat>`.
 
@@ -437,26 +453,27 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r18 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r19 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r18",
+  "rulesVersion": "match-r19",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 150 },
-    "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 60], ["bomb", 40]] }
+    "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
   },
   "specials": {
-    "known": ["swapper", "bomb"],
-    "start": { "swapper": 2, "bomb": 1 },
-    "bombShape": "plus"
+    "known": ["swapper", "bomb", "reach"],
+    "start": { "swapper": 2, "bomb": 1, "reach": 1 },
+    "bombShape": "plus",
+    "reach": { "cards": [[1, 85], [2, 15]], "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]] }
   }
 }
 ```

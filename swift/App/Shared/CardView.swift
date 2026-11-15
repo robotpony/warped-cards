@@ -58,6 +58,18 @@ struct CardFace: View {
                 p.move(to: .init(x: 13, y: 30)); p.addLine(to: .init(x: 35, y: 30)); p.addLine(to: .init(x: 30, y: 25))
                 p.move(to: .init(x: 37, y: 42)); p.addLine(to: .init(x: 15, y: 42)); p.addLine(to: .init(x: 20, y: 47))
             }.stroke(Theme.joker, style: StrokeStyle(lineWidth: 3.2 * u, lineCap: .round, lineJoin: .round))
+        } else if kind == "reach" {
+            // A card, and a dashed extra card with a plus: one more card for a while.
+            UnitShape { p in p.addRoundedRect(in: CGRect(x: 10, y: 24, width: 17, height: 24), cornerSize: CGSize(width: 2, height: 2)) }
+                .stroke(Theme.joker, lineWidth: 2.4 * u)
+            UnitShape { p in p.addRoundedRect(in: CGRect(x: 23, y: 29, width: 17, height: 24), cornerSize: CGSize(width: 2, height: 2)) }
+                .fill(Theme.face)
+            UnitShape { p in p.addRoundedRect(in: CGRect(x: 23, y: 29, width: 17, height: 24), cornerSize: CGSize(width: 2, height: 2)) }
+                .stroke(Theme.joker, style: StrokeStyle(lineWidth: 2 * u, dash: [3 * u, 2 * u]))
+            UnitShape { p in
+                p.move(to: .init(x: 31.5, y: 35.5)); p.addLine(to: .init(x: 31.5, y: 46.5))
+                p.move(to: .init(x: 26, y: 41)); p.addLine(to: .init(x: 37, y: 41))
+            }.stroke(Color(hex: 0xE00000), style: StrokeStyle(lineWidth: 2.8 * u, lineCap: .round))
         } else {
             UnitShape { p in p.addEllipse(in: CGRect(x: 12, y: 29, width: 22, height: 22)) }.fill(Theme.ink)
             UnitShape { p in p.addRoundedRect(in: CGRect(x: 27, y: 25, width: 6, height: 5), cornerSize: CGSize(width: 1, height: 1),

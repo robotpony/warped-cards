@@ -55,7 +55,7 @@ func playBotTurn(_ config: Config, level: String, seed: UInt64, dealer: Bool, ma
             #expect(a.events == b.events)
             var d = a.turn.dice
             let streams = Set(d.takeRolls().map(\.stream))
-            #expect(streams.isSubset(of: ["deal", "reveal", "board", "prize", "bot.0"]))
+            #expect(streams.isSubset(of: ["deal", "reveal", "board", "special", "prize", "bot.0"]))
         }
     }
 
