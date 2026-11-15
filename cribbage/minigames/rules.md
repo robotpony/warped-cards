@@ -81,14 +81,14 @@ Match board (one player's turn)
   . . . .   C        S  the starter
   H H H H   S
 
-  Tray: [swapper x2] [bomb x1] ............ End turn
+  Power jokers: [swapper x2] [bomb x1] .... End turn
 ```
 
 A turn at a glance:
 
 1. Trace a set of 2 to 5 touching cards. It scores at once, counted like a cribbage hand.
 2. Scored grid cards clear and the stock refills the grid. Your hand, crib and starter stay and power up.
-3. Use special jokers from your tray to change the board.
+3. Use your power jokers to change the board.
 4. When the stock runs out, play out the cards that are left.
 5. The turn ends on the timer, a cleared board, or when you choose. Your best score wins a prize.
 
@@ -193,7 +193,7 @@ Every score plays out part by part, like counting a hand aloud: the set's name a
 
 #### Special jokers
 
-Special jokers are jokers that carry an action. You hold them in a tray below the board, or find them on the board. Tap one to arm it; tap it again to cancel.
+Special jokers are jokers that carry an action. The ones you hold are your power jokers, kept below the board; others turn up on the board. Tap one to arm it; tap it again to cancel.
 
 | Card | What it does |
 |---|---|
@@ -215,7 +215,7 @@ When an extra card lands on the board, play and the timer pause and it turns int
 1. The card lifts off the board and the screen dims.
 2. Something random happens: a shuffle, a wheel or a die of that card's face.
 3. The prize is revealed. The rarer the prize, the bigger the reveal: a plain card flips quietly, a scoring card glints, and the rarest prizes swell, glow and throw rays.
-4. The prize flies to where it goes: the card's spot on the board, the stock, your tray or your step count.
+4. The prize flies to where it goes: the card's spot on the board, the stock, your power jokers or your step count.
 
 The first time you meet each kind, it's named with a one-line hint. A tap skips the rest of the reveal. Computer players' reveals aren't shown.
 
@@ -223,12 +223,12 @@ Players never see the chances or the list of possible prizes. Each kind rolls on
 
 | Card | Prizes |
 |---|---|
-| Amber joker | 90% a card, 9% a scoring card, 1% an item for your tray |
+| Amber joker | 90% a card, 9% a scoring card, 1% an item for your power jokers |
 | Teal joker | 80% a card, 15% a scoring card, 5% a special joker shuffled into this turn's stock |
-| Title card, blank card | A third each: a new 5, a special joker for your tray, or 5 steps (placeholders) |
+| Title card, blank card | A third each: a new 5, a special joker for your power jokers, or 5 steps (placeholders) |
 
 - A card is a new card of any rank and suit, made by the joker and placed in its spot. A scoring card is a new 5 or 10-value card (10, J, Q, K). Cards a joker makes are marked ★ and stay in the deck for the rest of the game.
-- The teal joker's special joker is picked from every known special joker (the swapper and bomb so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your tray.
+- The teal joker's special joker is picked from every known special joker (the swapper and bomb so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your power jokers.
 - When the prize doesn't go to the board, the stock fills the card's spot. If the stock is empty, the spot stays empty.
 
 Not designed yet: items; the title and blank card prizes; how many jokers a round can have (n); each special joker type's own rules; and what happens when an extra card is dealt into a hand or the crib, cut as the starter or played in pegging.
@@ -243,7 +243,7 @@ Not designed yet: items; the title and blank card prizes; how many jokers a roun
 | The timer runs out | The turn ends |
 | You choose End turn | The turn ends |
 
-At the end, your best score wins one prize: a special joker for your tray. A bigger best score wins a better tier: common below 25 steps, rare from 25, epic from 31 (to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
+At the end, your best score wins one prize: a special joker for your power jokers. A bigger best score wins a better tier: common below 25 steps, rare from 25, epic from 31 (to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
 
 Your token doesn't move during the turn. Each scoring set becomes a bundle of steps with a suit, and after the turn you walk them through the maze (not designed yet).
 
@@ -338,7 +338,8 @@ Game, round, stage, turn, minigame and match turn are defined in How a game fits
 | Multi | A set worth two or more combos |
 | Power level | How often an edge card has scored this turn; multiplies the sets it's in later |
 | Joker | A card outside the standard 52 that does something. Each joker is one kind: the amber and teal jokers turn into a prize when drawn; special jokers carry an action |
-| Special joker | A joker kept in the tray for one action: the swapper reverses a line, the bomb clears cards |
+| Special joker | A joker that carries one action: the swapper reverses a line, the bomb clears cards |
+| Power jokers | The special jokers you hold, below the board, kept all game. Tap one to arm it |
 | Extra cards | The 4 cards beyond the standard 52: the amber and teal jokers, the title card and the blank card |
 | Reveal | The short show when an extra card turns into a prize. It hides the chances; rarer prizes get bigger reveals |
 | Door | A barrier in the maze that takes steps to knock down |

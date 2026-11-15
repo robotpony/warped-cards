@@ -66,7 +66,7 @@ Each position has board coordinates: grid `g(r,c)` is (r, c), crib `c(i)` is (i,
 | drawn | Cards drawn from the stock this turn (for the card budget) |
 | power | Power level per edge card ID, all 0 at the start |
 | steps | This turn's steps (can go below 0). There are no pips (r15) |
-| tray | Special jokers the player holds, by kind, plus items |
+| tray | Special jokers the player holds, by kind, plus items. Players see it as "power jokers" (rules.md); the engine keeps the name `tray` |
 | scoredSets | Each scored set, as its sorted card IDs |
 | best | The turn's best score so far (points and card IDs) |
 | warned | Whether this player has seen the left-over warning (see Left-over warning) |

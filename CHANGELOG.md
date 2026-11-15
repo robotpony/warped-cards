@@ -6,7 +6,7 @@ warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
 ### Changed
 - A match turn's timer starts at 180 seconds (was 90).
-- The tray's tag reads POWER JOKERS.
+- The tray is now called power jokers, on screen and in the rules.
 - Crib Maze (the version for players) no longer shows the animation diagnostics, which are for testing.
 
 ## 0.8.1 — 2026-11-15

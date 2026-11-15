@@ -301,7 +301,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | A set still needs 2 picked cards: one card plus the starter isn't a set |
 | 2026-11-15 | Tuned for r16: edge power capped at ×1.5 (was ×2), prizes rare from 25 steps and epic from 31 (were 8 and 16). Medium bot, 1,000 dealer turns: 284 steps a turn (r15 was 251, r16 at ×2 was 361), prizes 59% common, 27% rare, 14% epic (was 100% epic). Non-dealer medium: 235 steps, 69/19/12. Weak dealer: 183 steps, all common. Strong dealer: 358 steps, 98% epic. With no edge power at all, 197 steps. The starter is in 84% of scored sets |
 | 2026-11-15 | The match turn timer defaults to 180 seconds (was 90) |
-| 2026-11-15 | The tray's on-screen tag is POWER JOKERS |
+| 2026-11-15 | Players call the tray "power jokers": the on-screen tag and the rules say so. The engine and config keep the name `tray` |
 | 2026-11-15 | Releases: Crib Maze for Mac, signed with Developer ID and notarized, posted as free pre-release demos on GitHub releases ([RELEASING.md](../../RELEASING.md)) |
 | 2026-11-15 | A card counter shows how many cards a set can pick (the pick limit, `maxSet` for now). Some combos, jokers and prizes will raise it for a while; not designed yet |
 | 2026-11-15 | A score's breakdown plays over a row of its cards, flown up from the board with the starter on the right, so it always sits in the same place instead of away from the set. It waits for a tap at the end, and each line shows its cards. The mock still plays over the board |
