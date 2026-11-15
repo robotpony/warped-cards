@@ -264,6 +264,8 @@ enum RowLayout {
 /// The breakdown's banner, card row, tally panel and floating points, drawn over the board.
 struct BreakdownOverlay: View {
     let pb: Playback
+    /// The tally's natural height. A long breakdown (many fifteens, say) scales down to stay on the board.
+    @State private var tallyH: CGFloat = 0
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -276,7 +278,13 @@ struct BreakdownOverlay: View {
                 if let b = pb.banner { banner(b).transition(.scale(scale: 0.9).combined(with: .opacity).combined(with: .offset(y: -8))) }
             }
             .frame(width: BoardLayout.width, height: RowLayout.bannerH)
-            tally.frame(width: BoardLayout.width).offset(y: RowLayout.tallyTop)
+            let room = BoardLayout.height - RowLayout.tallyTop + 8
+            tally.frame(width: BoardLayout.width)
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { tallyH = $0 }
+                .scaleEffect(tallyH > room ? room / tallyH : 1, anchor: .top)
+                .animation(.easeOut(duration: Motion.t(0.2)), value: tallyH > room)
+                .offset(y: RowLayout.tallyTop)
             ForEach(Array(pb.row.enumerated()), id: \.element) { i, p in
                 if let card = pb.rowCards[p] { RowCard(p: p, card: card, index: i, pb: pb) }
             }

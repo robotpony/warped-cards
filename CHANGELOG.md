@@ -2,6 +2,20 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.8.4 — 2026-11-15
+
+### Changed
+- There's no End turn button. A turn ends when the timer runs out, the board is cleared, or no sets are left. If you still hold power jokers, you get 25 seconds to use one first.
+- The power jokers panel fills the width, with bigger cards and empty slots for jokers you haven't found yet. The step count is bigger.
+- The card counter, timer and gear move to a lighter bar along the bottom, under the power jokers, which now sit close under the board. The line under the board is a single line, and the game is only as tall as it needs to be.
+- The timer is a clock with no numbers: a green wedge grows until it fills the circle. It turns orange in the last 10% of the time, pulses orange while a stuck board waits for a power joker, turns red when the turn is over, and is grey with the timer off.
+- The gear's settings are in three tabs: Game (next turn, the last score and this turn's log), Advanced and Animation. The seed field shows the current seed; type another to replay it.
+- The stock shows as a number in a gold badge on the deck. "Your match turn" and "Stock" are gone from the top line.
+- The turn's log of scores moves behind the gear, and the help line under the board is gone. That line now only shows what a trace would score, an armed joker's next step, or that no sets are left.
+
+### Fixed
+- A long score breakdown, with many fifteens, shrinks to fit on the board instead of spilling past it.
+
 ## 0.8.3 — 2026-11-15
 
 ### Changed

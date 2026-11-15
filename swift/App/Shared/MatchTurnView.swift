@@ -5,6 +5,8 @@ import SwiftUI
 
 struct MatchTurnView: View {
     @Bindable var session: GameSession
+    /// The phone's height as laid out (it's as tall as its content); an estimate until measured.
+    @State private var phoneH: CGFloat = PhoneView.height
 
     var body: some View {
         if let err = session.loadError {
@@ -12,10 +14,12 @@ struct MatchTurnView: View {
         } else {
             // The phone is always drawn at its full size, so nothing reflows or gets cut off; on a
             // screen too short for it, the whole phone scales down. The window fits it exactly.
-            let s = PhoneView.fitScale
+            let s = PhoneView.fitScale(phoneH)
             PhoneView(session: session)
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { phoneH = $0 }
                 .scaleEffect(s, anchor: .topLeading)
-                .frame(width: PhoneView.width * s, height: PhoneView.height * s, alignment: .topLeading)
+                .frame(width: PhoneView.width * s, height: phoneH * s, alignment: .topLeading)
                 .padding(PhoneView.margin)
                 .background(Theme.page)
             .background(FrameMeterHost(meter: session.meter))
@@ -27,38 +31,42 @@ struct MatchTurnView: View {
 /// 121-step track, the board, the help line, the feed, then the tray and End turn.
 struct PhoneView: View {
     let session: GameSession
-    var height: CGFloat = PhoneView.height
     @State private var showSettings = false
 
     static let width: CGFloat = BoardLayout.width + 2 * 16 + 18
-    static let height: CGFloat = 872
+    static let height: CGFloat = 800   // a first guess; the phone is as tall as its content
     static let margin: CGFloat = 20
 
     /// 1, or less when the screen can't fit the phone plus the window's title bar and margins.
-    @MainActor static var fitScale: CGFloat {
-        guard let screen = NSScreen.main?.visibleFrame.height else { return 1 }
-        return min(1, (screen - 32 - 2 * margin) / height)
+    @MainActor static func fitScale(_ h: CGFloat) -> CGFloat {
+        guard let screen = NSScreen.main?.visibleFrame.height, h > 0 else { return 1 }
+        return min(1, (screen - 32 - 2 * margin) / h)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            topLine
             stepsRow
             track
             BoardView(session: session).padding(.top, 9).frame(maxWidth: .infinity)
-            HStack(alignment: .top, spacing: 10) {
-                Text(session.pickMessage)
-                    .font(Theme.font(14, session.dead && session.selection.isEmpty && session.mode == .trace ? .semibold : .medium))
-                    .foregroundStyle(session.dead && session.selection.isEmpty && session.mode == .trace ? Theme.gold : Theme.feltText.opacity(0.9))
-                    .lineLimit(2).frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .topLeading)
-                PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit)
-                    .onTapGesture { if !session.busy { session.info = .counter } }
-            }
-            feed
-            bottom
+            // What the trace would score, or what an armed joker or a dead board needs; empty otherwise.
+            // The turn's log lives behind the gear.
+            Text(session.pickMessage)
+                .font(Theme.font(14, session.dead && session.selection.isEmpty && session.mode == .trace ? .semibold : .medium))
+                .foregroundStyle(session.dead && session.selection.isEmpty && session.mode == .trace ? Theme.gold : Theme.feltText.opacity(0.9))
+                .lineLimit(1).minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: 20, maxHeight: 20, alignment: .leading)
+                .padding(.vertical, -4)   // one tight line, so the power jokers sit close under the board
+            bottom   // power jokers, close under the board
+            // The card counter, timer and gear, on a lighter bar along the bottom edge.
+            topLine
+                .padding(.horizontal, 30).padding(.top, 12).padding(.bottom, 20)
+                .frame(maxWidth: .infinity)
+                .background(Theme.panel)
+                .overlay(alignment: .top) { Rectangle().fill(Theme.rim).frame(height: 1) }
+                .padding(.horizontal, -16).padding(.top, 4)
         }
-        .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 20)
-        .frame(width: Self.width, height: height)
+        .padding(.horizontal, 16).padding(.top, 14)
+        .frame(width: Self.width)
         .foregroundStyle(Theme.feltText)
         .background(Theme.felt)
         .overlay {   // tap anywhere to skip the breakdown
@@ -76,18 +84,17 @@ struct PhoneView: View {
     }
 
     private var topLine: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(session.settings.dealer ? "Your match turn · dealer" : "Your match turn")
+        HStack(alignment: .center) {
+            PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true)
+                .onTapGesture { if !session.blocked { session.info = .counter } }
             Spacer()
-            Text(session.settings.timer ? "\(max(0, session.secondsLeft)) s" : "no timer").monospacedDigit()
-            Spacer()
-            Text("Stock \(session.turn?.drawable ?? 0)").monospacedDigit()
+            TurnClock(session: session)
             // Settings, the last score, this turn's feed and (in the beta) diagnostics, out of the way.
             Image(systemName: "gearshape.fill").font(.system(size: 15)).padding(.leading, 10)
                 .contentShape(Rectangle())
                 .onTapGesture { showSettings.toggle() }
                 .help("Settings")
-                .popover(isPresented: $showSettings, arrowEdge: .bottom) {
+                .popover(isPresented: $showSettings, arrowEdge: .top) {
                     SidePanel(session: session).frame(width: 340, height: 620)
                 }
         }
@@ -97,7 +104,7 @@ struct PhoneView: View {
     private var stepsRow: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(session.state?.steps ?? 0)").font(Theme.font(34, .bold)).contentTransition(.numericText())
+                Text("\(session.state?.steps ?? 0)").font(Theme.font(44, .bold)).contentTransition(.numericText())
                     .foregroundStyle(session.playback.bump ? Theme.gold : Theme.feltText)
                     .scaleEffect(session.playback.bump ? 1.25 : 1, anchor: .leading)
                     .animation(.snappy, value: session.state?.steps)
@@ -106,8 +113,16 @@ struct PhoneView: View {
             Spacer()
             // The stock, face down; an empty outline once it runs out.
             HStack(spacing: 8) {
-                Text("Seed \(String(session.seed))").font(Theme.font(12, .medium)).opacity(0.5)
-                if (session.turn?.drawable ?? 0) > 0 { CardBack(width: 46) }
+                // The stock's count sits on the deck in a gold badge.
+                if (session.turn?.drawable ?? 0) > 0 {
+                    CardBack(width: 46).overlay(alignment: .bottomTrailing) {
+                        Text("\(session.turn?.drawable ?? 0)").font(Theme.font(13, .bold)).monospacedDigit()
+                            .padding(.horizontal, 5).frame(minWidth: 24, minHeight: 22)
+                            .background(Capsule().fill(Theme.gold).shadow(color: Theme.gold.opacity(0.5), radius: 3)).foregroundStyle(Theme.ink)
+                            .offset(x: 8, y: 6)
+                    }
+                    .help("Cards left in the stock")
+                }
                 else { RoundedRectangle(cornerRadius: 5).strokeBorder(Theme.feltText.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [4, 3])).frame(width: 46, height: 46 * 1.4) }
             }
         }
@@ -126,27 +141,32 @@ struct PhoneView: View {
         .help("Progress along a 121-step main route")
     }
 
-    private var feed: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            ForEach(Array(session.feed.prefix(6).enumerated()), id: \.element.id) { i, l in
-                Text(l.text).lineLimit(2)
-                .font(Theme.font(14, i == 0 ? .semibold : .regular))
-                .foregroundStyle(l.prize ? Theme.gold : Theme.feltText)
+    private var bottom: some View {
+        // Power jokers across the full width: one slot per known kind, then empty holes for
+        // the kinds still to come. No End turn: the timer, or a board with no sets left, ends it.
+        let known = session.config?.rules.specials.known ?? ["swapper", "bomb"]
+        let slots = max(4, known.count)
+        return HStack(spacing: 0) {
+            ForEach(0..<slots, id: \.self) { i in
+                Group {
+                    if i < known.count {
+                        let kind = known[i]
+                        TrayCard(kind: kind, count: session.state?.tray[kind] ?? 0, w: 72,
+                                 armed: session.mode == (kind == "swapper" ? .swap : .bomb) && session.armedSource == nil) {
+                            tapTray(kind, kind == "swapper" ? .swap : .bomb)
+                        }
+                    } else {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Theme.violet.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Theme.felt.opacity(0.5)))
+                            .frame(width: 72, height: 72 * 1.4)
+                            .help("An empty slot for a power joker you haven't found yet")
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
-        .clipped()
-        .layoutPriority(-1)   // the feed takes what's left and never grows the screen
-    }
-
-    private var bottom: some View {
-        HStack(alignment: .bottom, spacing: 16) {
-            // The tray: special jokers on a bed of their own, tagged POWER JOKERS like the hand's tag.
-            HStack(spacing: 22) {
-                TrayCard(kind: "swapper", count: session.state?.tray["swapper"] ?? 0, armed: session.mode == .swap && session.armedSource == nil) { tapTray("swapper", .swap) }
-                TrayCard(kind: "bomb", count: session.state?.tray["bomb"] ?? 0, armed: session.mode == .bomb && session.armedSource == nil) { tapTray("bomb", .bomb) }
-            }
-            .padding(.horizontal, 14).padding(.top, 18).padding(.bottom, 12)
+            .padding(.horizontal, 8).padding(.top, 20).padding(.bottom, 14)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.panel))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.violet.opacity(0.5), lineWidth: 1))
             .overlay(alignment: .top) {
@@ -154,10 +174,6 @@ struct PhoneView: View {
                     .background(Capsule().fill(Theme.violet)).foregroundStyle(Theme.felt).offset(y: -8)
                     .onTapGesture { if !session.blocked { session.info = .tray } }
             }
-            Spacer()
-            EndTurnButton(nudge: session.dead && !session.over) { session.send(.endTurn) }
-        }
-        .frame(minHeight: 112, alignment: .bottom)
     }
 
     private func tapTray(_ kind: String, _ m: InputMode) {
@@ -168,8 +184,9 @@ struct PhoneView: View {
 
 /// A special joker in the tray: a small card, a stack when there's more than one, and a count.
 struct TrayCard: View {
-    let kind: String, count: Int, armed: Bool
+    let kind: String, count: Int
     var w: CGFloat = 58
+    let armed: Bool
     let action: () -> Void
     var body: some View {
         let card = Card(id: 0, kind: .special(kind), rank: 0, suit: nil)
@@ -192,26 +209,6 @@ struct TrayCard: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
         .help(kind == "swapper" ? "Swapper: reverses a straight line of 2 to 4 grid cards" : "Bomb: clears a card and its neighbours, without scoring")
-    }
-}
-
-/// The mock's ghost button; it turns gold and pulses when no sets are left.
-struct EndTurnButton: View {
-    let nudge: Bool
-    let action: () -> Void
-    @State private var pulse = false
-    var body: some View {
-        Text("End turn").font(Theme.font(15, .semibold))
-            .padding(.horizontal, 14).padding(.vertical, 9)
-            .background(RoundedRectangle(cornerRadius: 10).fill(nudge ? Theme.gold : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(nudge ? Theme.gold : Theme.feltText.opacity(0.4), lineWidth: 1))
-            .foregroundStyle(nudge ? Theme.ink : Theme.feltText)
-            .scaleEffect(nudge && pulse ? 1.06 : 1)
-            .contentShape(Rectangle()).onTapGesture(perform: action)
-            .onChange(of: nudge, initial: true) { _, on in
-                pulse = false
-                if on { withAnimation(.easeInOut(duration: Motion.t(0.6)).repeatForever(autoreverses: true)) { pulse = true } }
-            }
     }
 }
 
@@ -311,77 +308,115 @@ struct SummaryView: View {
     }
 }
 
+/// The settings behind the gear, in three tabs: the game (next turn, the last score and this
+/// turn's log), advanced options, and animation.
 struct SidePanel: View {
     @Bindable var session: GameSession
+    @State private var tab = Tab.game
+    enum Tab: Hashable { case game, advanced, animation }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Edition.name).font(.headline)
-                    Text("Match turn, rules \(MatchTurn.rulesVersion), app \(version)").font(.caption).foregroundStyle(.secondary)
-                }
-                GroupBox("Next turn") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle("Dealer: crib down the side", isOn: $session.settings.dealer)
-                        Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
-                        Toggle("Play each score's breakdown (tap to skip)", isOn: $session.settings.breakdown)
-                        Picker("Breakdown speed", selection: $session.timing.base) {
-                            Text("Slow (1.2 s)").tag(1200.0); Text("Medium (0.9 s)").tag(900.0); Text("Quick (0.6 s)").tag(600.0); Text("Practised (0.4 s)").tag(400.0)
-                        }
-                        Picker("Hand", selection: $session.settings.hand) { Text("Random").tag("random"); Text("Strong (4♥ 5♣ 6♦ J♠, 5♠)").tag("strong") }
-                        Picker("Card budget", selection: $session.settings.budget) { Text("Whole stock").tag(0); Text("12").tag(12); Text("16").tag(16); Text("24").tag(24) }
-                        HStack {
-                            TextField("Seed (blank: random)", text: $session.seedText).textFieldStyle(.roundedBorder).onSubmit { session.newTurn() }
-                            Button("New turn") { session.newTurn() }
-                        }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }
-                if let b = session.breakdown {
-                    GroupBox("Last score: " + b.cards.joined(separator: " ")) {
-                        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 2) {
-                            ForEach(Array(b.lines.enumerated()), id: \.offset) { _, l in GridRow { Text(l.0); Text("\(l.1)").monospacedDigit() } }
-                            if b.percent > 100 { GridRow { Text("Edge power ×\(Double(b.percent) / 100, format: .number)"); Text("\(b.points + b.cost)").monospacedDigit() } }
-                            if b.cost > 0 { GridRow { Text("\(b.leftOver) left over"); Text("−\(b.cost)").monospacedDigit() } }
-                            Divider()
-                            GridRow { Text("Steps").bold(); Text("\(b.points)").bold().monospacedDigit() }
-                        }.frame(maxWidth: .infinity, alignment: .leading).font(.callout)
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Edition.name).font(.headline)
+                Text("Match turn, rules \(MatchTurn.rulesVersion), app \(version)").font(.caption).foregroundStyle(.secondary)
+            }
+            Picker("", selection: $tab) {
+                Text("Game").tag(Tab.game); Text("Advanced").tag(Tab.advanced); Text("Animation").tag(Tab.animation)
+            }
+            .pickerStyle(.segmented).labelsHidden()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    switch tab {
+                    case .game: game
+                    case .advanced: advanced
+                    case .animation: animation
                     }
                 }
-                GroupBox("This turn") {
-                    VStack(alignment: .leading, spacing: 3) {
-                        ForEach(session.feed.prefix(8)) { l in   // capped: the whole turn's list made each move slower
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(l.text).font(.callout)
-                                Spacer()
-                                if let p = l.points { Text(p >= 0 ? "+\(p)" : "\(p)").monospacedDigit().foregroundStyle(p >= 0 ? Color.primary : Color.red) }
-                            }
-                        }
-                        if session.feed.isEmpty { Text("Drag across 2 to \(session.pickLimit) touching cards.").foregroundStyle(.secondary) }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }
-                if Edition.isBeta { GroupBox("Animation diagnostics") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle("Slow motion (5× slower)", isOn: $session.slowMotion)
-                        TimelineView(.periodic(from: .now, by: 1)) { _ in
-                            Text("\(Int(session.meter.fps.rounded())) fps · \(session.meter.hitches) hitches during moves · worst \(Int(session.meter.worstMs)) ms")
-                                .font(.callout.monospacedDigit())
-                        }
-                        Button("Reset count") { session.meter.reset() }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                } }
-                if let url = session.savedRecord {
-                    Button("Show the turn record") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.link)
-                }
-                Text("How to play: drag across touching cards (diagonals count), or tap cards and tap the last again. Every set needs a grid card. Hand, crib and starter cards stay and power up.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }.padding(16)
+            }
         }
+        .padding(16)
         // Neon: the panel colours from palette.json, with the Mac's dark controls tinted cyan.
         .background(Theme.panel)
         .environment(\.colorScheme, .dark)
         .tint(Theme.cyan)
         .foregroundStyle(Theme.feltText)
     }
+
+    @ViewBuilder private var game: some View {
+        GroupBox("Next turn") {
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("Dealer: crib down the side", isOn: $session.settings.dealer)
+                Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
+                Picker("Hand", selection: $session.settings.hand) { Text("Random").tag("random"); Text("Strong (4♥ 5♣ 6♦ J♠, 5♠)").tag("strong") }
+                HStack {
+                    // The field shows this turn's seed; type another to replay it, or leave it blank for a random deal.
+                    TextField("Seed", text: $session.seedText, prompt: Text("Seed \(String(session.seed)) · blank: random"))
+                        .textFieldStyle(.roundedBorder).monospacedDigit().onSubmit { session.newTurn() }
+                    Button("New turn") { session.newTurn() }
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
+        if let b = session.breakdown {
+            GroupBox("Last score: " + b.cards.joined(separator: " ")) {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 2) {
+                    ForEach(Array(b.lines.enumerated()), id: \.offset) { _, l in GridRow { Text(l.0); Text("\(l.1)").monospacedDigit() } }
+                    if b.percent > 100 { GridRow { Text("Edge power ×\(Double(b.percent) / 100, format: .number)"); Text("\(b.points + b.cost)").monospacedDigit() } }
+                    if b.cost > 0 { GridRow { Text("\(b.leftOver) left over"); Text("−\(b.cost)").monospacedDigit() } }
+                    Divider()
+                    GridRow { Text("Steps").bold(); Text("\(b.points)").bold().monospacedDigit() }
+                }.frame(maxWidth: .infinity, alignment: .leading).font(.callout)
+            }
+        }
+        GroupBox("This turn") {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(session.feed.prefix(8)) { l in   // capped: the whole turn's list made each move slower
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(l.text).font(.callout)
+                        Spacer()
+                        if let p = l.points { Text(p >= 0 ? "+\(p)" : "\(p)").monospacedDigit().foregroundStyle(p >= 0 ? Color.primary : Color.red) }
+                    }
+                }
+                if session.feed.isEmpty { Text("Drag across 2 to \(session.pickLimit) touching cards.").foregroundStyle(.secondary) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder private var advanced: some View {
+        GroupBox("Next turn") {
+            Picker("Card budget", selection: $session.settings.budget) { Text("Whole stock").tag(0); Text("12").tag(12); Text("16").tag(16); Text("24").tag(24) }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        if let url = session.savedRecord {
+            Button("Show the turn record") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.link)
+        }
+        Text("How to play: drag across touching cards (diagonals count), or tap cards and tap the last again. Every set needs a grid card. Hand, crib and starter cards stay and power up.")
+            .font(.caption).foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder private var animation: some View {
+        GroupBox("Score breakdown") {
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("Play each score's breakdown (tap to skip)", isOn: $session.settings.breakdown)
+                Picker("Speed", selection: $session.timing.base) {
+                    Text("Slow (1.2 s)").tag(1200.0); Text("Medium (0.9 s)").tag(900.0); Text("Quick (0.6 s)").tag(600.0); Text("Practised (0.4 s)").tag(400.0)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
+        if Edition.isBeta {
+            GroupBox("Diagnostics") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Slow motion (5× slower)", isOn: $session.slowMotion)
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        Text("\(Int(session.meter.fps.rounded())) fps · \(session.meter.hitches) hitches during moves · worst \(Int(session.meter.worstMs)) ms")
+                            .font(.callout.monospacedDigit())
+                    }
+                    Button("Reset count") { session.meter.reset() }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
     private var version: String {
         let i = Bundle.main.infoDictionary
         return "\(i?["CFBundleShortVersionString"] as? String ?? "?") (\(i?["CFBundleVersion"] as? String ?? "?"))"
@@ -392,8 +427,9 @@ struct SidePanel: View {
 /// Room for more: a later rule can raise the limit for a while.
 struct PickCounter: View {
     let count: Int, limit: Int
+    var leading = false
     var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: leading ? .leading : .trailing, spacing: 4) {
             HStack(spacing: 4) {
                 ForEach(0..<limit, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 2)
@@ -467,5 +503,67 @@ struct InfoCard: View {
                                       "The starter is free: it joins every set without using a pip.",
                                       "Some combos, jokers and prizes will raise the limit for a while."])
         }
+    }
+}
+
+/// The turn's clock: no numbers, a solid wedge that grows until it fills the circle.
+/// Green while time runs, orange in the last 10%, orange and pulsing while a stuck board
+/// counts down its grace, red when the turn is over, grey with no timer.
+struct TurnClock: View {
+    let session: GameSession
+    @State private var pulse = false
+
+    enum Look { case running, warning, stuck, done, off }
+
+    static let green = Color(hex: 0x39E07A), orange = Color(hex: 0xFF9F1C), red = Color(hex: 0xFF4D4D)
+
+    var body: some View {
+        let total = session.turn?.config.rules.match.timerSeconds ?? 0
+        let look: Look = session.over ? .done
+            : session.graceLeft != nil ? .stuck
+            : total == 0 ? .off
+            : session.secondsLeft * 10 <= total ? .warning : .running
+        let filled: Double = switch look {
+        case .done: 1
+        case .stuck: 1 - Double(session.graceLeft ?? 0) / Double(GameSession.graceSeconds)
+        case .off: 0
+        default: total > 0 ? 1 - Double(max(0, session.secondsLeft)) / Double(total) : 0
+        }
+        let colour: Color = switch look {
+        case .running: Self.green
+        case .warning, .stuck: Self.orange
+        case .done: Self.red
+        case .off: Theme.feltText.opacity(0.3)
+        }
+        ZStack {
+            Circle().fill(colour.opacity(0.15))
+            Wedge(fraction: filled).fill(colour)
+                .animation(.linear(duration: 1), value: filled)   // grows smoothly between ticks
+            Circle().strokeBorder(colour, lineWidth: 2)
+        }
+        .frame(width: 30, height: 30)
+        .opacity(look == .stuck && pulse ? 0.35 : 1)
+        .shadow(color: look == .off ? .clear : colour.opacity(0.5), radius: 4)
+        .animation(.easeOut(duration: 0.3), value: look)
+        .onChange(of: look == .stuck, initial: true) { _, stuck in
+            pulse = false
+            if stuck { withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { pulse = true } }
+        }
+        .help(look == .off ? "No timer" : look == .stuck ? "No sets left: use a power joker before the clock fills" : "\(max(0, session.secondsLeft)) s left")
+    }
+}
+
+/// A pie wedge from 12 o'clock, clockwise, `fraction` of the circle.
+struct Wedge: Shape {
+    var fraction: Double
+    var animatableData: Double { get { fraction } set { fraction = newValue } }
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        guard fraction > 0 else { return p }
+        let c = CGPoint(x: r.midX, y: r.midY), rad = min(r.width, r.height) / 2
+        p.move(to: c)
+        p.addArc(center: c, radius: rad, startAngle: .degrees(-90), endAngle: .degrees(-90 + 360 * min(1, fraction)), clockwise: false)
+        p.closeSubpath()
+        return p
     }
 }

@@ -6,7 +6,7 @@ Free card game demos, with the specs, simulations and tests behind them. Each ga
 
 | Game | What it is | Status |
 |---|---|---|
-| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.8.3 (match turns only), match rules r17, rules draft 5 |
+| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.8.4 (match turns only), match rules r17, rules draft 5 |
 | Classic cribbage | The classic game, sharing Crib Maze's engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -53,7 +53,7 @@ Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.8.3: **48 tests, all passing** (28 Swift, 20 JS).
+State on 2026-11-15, version 0.8.4: **48 tests, all passing** (28 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|

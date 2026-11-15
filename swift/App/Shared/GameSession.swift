@@ -69,6 +69,11 @@ final class GameSession {
     var seed: UInt64 = 1
     var seedText = ""
     private var timerTask: Task<Void, Never>?
+    private var deadTask: Task<Void, Never>?
+    /// Seconds before a board with no sets left ends the turn, while power jokers could still help.
+    private(set) var graceLeft: Int?
+    /// How long a stuck board waits for a power joker (there's no End turn button).
+    static let graceSeconds = 25
     private var toastTask: Task<Void, Never>?
 
     init() {
@@ -89,7 +94,7 @@ final class GameSession {
         c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
         seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
         seedText = ""
-        playback.reset(); info = nil
+        playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil
         let strong = settings.hand == "strong"
         let setup = TurnSetup(seed: seed, dealer: settings.dealer,
                               fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil)
@@ -163,7 +168,32 @@ final class GameSession {
         drawnPerColumn = drawn
         if animate { withAnimation(.easeOut(duration: Motion.t(0.3))) { turn = t } } else { turn = t }
         for e in ev { describe(e) }
-        if t.state.over { finish() }
+        if t.state.over { finish() } else { watchDeadBoard() }
+    }
+
+    /// No End turn button: a board with no sets left ends the turn by itself. With no power
+    /// jokers it ends at once (after a beat); with some, the player gets a few seconds to use one.
+    func watchDeadBoard() {
+        deadTask?.cancel(); graceLeft = nil
+        guard let t = turn, t.state.dead, !t.state.over else { return }
+        let hasJokers = t.state.tray.values.contains { $0 > 0 }
+        deadTask = Task { [weak self] in
+            guard let self else { return }
+            if !hasJokers {
+                try? await Task.sleep(for: .milliseconds(Motion.ms(1500)))
+                while self.busy { try? await Task.sleep(for: .milliseconds(100)) }
+                if !Task.isCancelled, self.turn?.state.dead == true, !self.over { self.send(.endTurn) }
+                return
+            }
+            self.graceLeft = Self.graceSeconds
+            while !Task.isCancelled, let left = self.graceLeft {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, !self.over, self.turn?.state.dead == true else { self.graceLeft = nil; return }
+                if self.busy || self.mode != .trace || self.warning != nil || self.info != nil { continue }   // waits while a joker is armed
+                if left <= 1 { self.graceLeft = nil; self.send(.endTurn); return }
+                self.graceLeft = left - 1
+            }
+        }
     }
 
     func submit(_ ps: [Pos]) {
@@ -216,8 +246,11 @@ final class GameSession {
         if mode == .swap && selection.isEmpty { return "Swapper armed: trace a straight line of 2 to 4 grid cards to reverse it. Tap the swapper again to cancel." }
         guard let t = turn else { return "" }
         if selection.isEmpty {
-            if t.state.dead { return "No sets left on the board. " + (t.state.tray.values.contains { $0 > 0 } ? "Use a swapper or bomb, or end the turn." : "End the turn to finish.") }
-            return "Drag across touching cards and let go. Cards in a combo light up; cards left over cost steps."
+            if t.state.dead {
+                if graceLeft != nil { return "No sets left. Use a power joker before the clock fills." }
+                return "No sets left on the board. The turn is over."
+            }
+            return ""   // help moves to an intro or help page later
         }
         let cards = selection.compactMap { t.state.cells[$0] }
         var msg = cards.map(\.face).joined(separator: " ") + "  (sum \(cards.filter(\.isPlaying).reduce(0) { $0 + $1.value }))"

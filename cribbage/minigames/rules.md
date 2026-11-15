@@ -81,7 +81,7 @@ Match board (one player's turn)
   . . . .   C        S  the starter
   H H H H   S
 
-  Power jokers: [swapper x2] [bomb x1] .... End turn
+  Power jokers: [swapper x2] [bomb x1] [ ] [ ]
 ```
 
 A turn at a glance:
@@ -90,7 +90,7 @@ A turn at a glance:
 2. Scored grid cards clear and the stock refills the grid. Your hand, crib and starter stay and power up.
 3. Use your power jokers to change the board.
 4. When the stock runs out, play out the cards that are left.
-5. The turn ends on the timer, a cleared board, or when you choose. Your best score wins a prize.
+5. The turn ends on the timer, a cleared board, or a board with no sets left. Your best score wins a prize.
 
 #### Setting up
 
@@ -241,7 +241,7 @@ Not designed yet: items; the title and blank card prizes; how many jokers a roun
 | No set on the board can score | The game says so. Use a special joker, or end your turn |
 | You clear the board (every grid card gone) | The turn ends with a clear-board bonus (to tune; the mock gives 10 steps) |
 | The timer runs out | The turn ends |
-| You choose End turn | The turn ends |
+| No sets are left on the board | With no power jokers, the turn ends. With some, you have 25 seconds to use one (to tune), shown on the clock; a joker that opens up a set stops the count |
 
 At the end, your best score wins one prize: a special joker for your power jokers. A bigger best score wins a better tier: common below 25 steps, rare from 25, epic from 31 (to tune). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
 
