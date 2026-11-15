@@ -12,7 +12,7 @@ APP="Crib Maze"
 TEAM=7J49PFSP65
 PROFILE=${NOTARY_PROFILE:-warped-cards-notary}
 # Outside swift/: an archive whose build folder sits inside the package folder fails to resolve modules.
-OUT=.build-release
+OUT="$PWD/.build-release"   # absolute: a relative build folder also breaks module resolution in archives
 VERSION=$(sed -n 's/^ *MARKETING_VERSION: "\(.*\)"/\1/p' swift/App/project.yml)
 ZIP="$OUT/Crib-Maze-$VERSION-mac.zip"
 NOTES="$OUT/notes-$VERSION.md"
