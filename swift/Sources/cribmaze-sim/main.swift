@@ -65,6 +65,7 @@ struct Tally {
 }
 
 if CommandLine.arguments.dropFirst().first == "discard" { runDiscard(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
+if CommandLine.arguments.dropFirst().first == "principles" { runPrinciples(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 let o = parse(Array(CommandLine.arguments.dropFirst()))
 let config: Config
 do { config = try Config.load(from: URL(fileURLWithPath: o.config)) } catch { usage("config: \(error)") }

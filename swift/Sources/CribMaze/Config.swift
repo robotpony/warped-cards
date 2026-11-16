@@ -82,6 +82,18 @@ public struct JokersConfig: Codable, Sendable, Equatable {
     public var madeWeights: [(Int, Int)] { (madeMultiplier ?? []).map { ($0[0], $0[1]) } }
 }
 
+/// hints.json: what each discard principle is worth on the grid, as measured by
+/// `cribmaze-sim principles`, and the least worth a principle needs to be shown.
+public struct HintsConfig: Codable, Sendable, Equatable {
+    public struct Discard: Codable, Sendable, Equatable {
+        public var measured: String
+        public var worth: Weights
+        public var minWorth: Int
+    }
+    public var version: Int
+    public var discard: Discard
+}
+
 public struct BotsConfig: Codable, Sendable, Equatable {
     public struct MatchLevel: Codable, Sendable, Equatable { public var id: String, search: String; public var depth: Int?; public var starts: Double? }
     public struct ClassicLevel: Codable, Sendable, Equatable { public var id: String, discard: String, peg: String }
@@ -100,9 +112,10 @@ public struct Config: Codable, Sendable, Equatable {
     public var rules: RulesConfig
     public var jokers: JokersConfig
     public var bots: BotsConfig
+    public var hints: HintsConfig?
 
-    public init(rules: RulesConfig, jokers: JokersConfig, bots: BotsConfig) throws {
-        self.rules = rules; self.jokers = jokers; self.bots = bots
+    public init(rules: RulesConfig, jokers: JokersConfig, bots: BotsConfig, hints: HintsConfig? = nil) throws {
+        self.rules = rules; self.jokers = jokers; self.bots = bots; self.hints = hints
         try validate()
     }
 
@@ -113,7 +126,9 @@ public struct Config: Codable, Sendable, Equatable {
             let url = folder.appendingPathComponent(name)
             do { return try d.decode(T.self, from: Data(contentsOf: url)) } catch { throw ConfigError(description: "\(name): \(error)") }
         }
-        return try Config(rules: read("rules.json"), jokers: read("jokers.json"), bots: read("bots.json"))
+        // hints.json is optional: without it, no discard principle is shown.
+        let hints: HintsConfig? = FileManager.default.fileExists(atPath: folder.appendingPathComponent("hints.json").path) ? try read("hints.json") : nil
+        return try Config(rules: read("rules.json"), jokers: read("jokers.json"), bots: read("bots.json"), hints: hints)
     }
 
     /// The checks on load (engine.md › Config). A bad file fails loudly.

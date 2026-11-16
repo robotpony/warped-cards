@@ -44,7 +44,8 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 ## Phase 6b · Game flow
 
 - [ ] Title, Options and Start screens (`concept.md` › A round)
-- [ ] Deal and discard screen, untimed, with a discard hint (`concept.md` › Hints)
+- [ ] Deal and discard screen, untimed, with a principle hint (`concept.md` › Discard principles)
+- [ ] Playtest the discard principles, and prove or drop the flush one with data (`config/hints.json`)
 - [ ] Bots' grid turns as a sequence of results before yours, hands face down (`rules.md` › Match turns)
 - [ ] Jokers dealt into a hand: wild, with a power each (`rules.md` › A joker dealt into a hand)
 - [ ] Simulate grid power carrying into pegging (`rules.md` › Pegging on the maze)

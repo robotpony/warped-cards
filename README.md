@@ -82,13 +82,13 @@ swift build -c release --product cribmaze-sim
 .build/release/cribmaze-sim run --level medium --turns 1000 --seed 1 --dealer --reach early
 ```
 
-Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs come from runs like this; [concept.md](cribbage/minigames/concept.md) › Decisions lists them with their dates. `--reach early` has bots play the reach joker as soon as they hold one, instead of only when stuck; [stats.md](cribbage/minigames/stats.md) › Reach joker lists what to measure.
+Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs come from runs like this; [concept.md](cribbage/minigames/concept.md) › Decisions lists them with their dates. `--reach early` has bots play the reach joker as soon as they hold one, instead of only when stuck; [stats.md](cribbage/minigames/stats.md) › Reach joker lists what to measure. Two more commands look at the discard: `cribmaze-sim discard --hand 5H,5C,JD,QS,3C,9H` rates all 15 keeps by classic count and by grid steps, and `cribmaze-sim principles --deals 200` measures what each discard principle is worth on the grid ([concept.md](cribbage/minigames/concept.md) › Hints).
 
 ## Tests
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.11.0: **56 tests, all passing** (36 Swift, 20 JS).
+State on 2026-11-15, version 0.11.0: **58 tests, all passing** (38 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -101,6 +101,7 @@ State on 2026-11-15, version 0.11.0: **56 tests, all passing** (36 Swift, 20 JS)
 | CribMaze › Hand flushes (r18) | 3 | 4 picked cards of one suit flush whatever the starter; no 3-card flushes; the starter never costs a set points |
 | CribMaze › Reach joker (r19) | 4 | A reach raises the pick limit until it's over; reaches stack and roll the same for the same seed; a bigger set scores only under a reach; config checks |
 | CribMaze › Made multipliers (r20) | 1 | Joker-made cards carry a multiplier from the table, and it multiplies their sets on top of edge power, within its cap |
+| CribMaze › Discard principles | 2 | Each principle finds its cards in a deal; a hint shows the most valuable principle that's proven to pay |
 | CribMaze › Bots | 4 | Every level plays whole turns with only legal moves; the same seed plays the same turn; each seat has its own dice stream; perfect finds the best set |
 | CribMaze › Engine rules | 1 | The engine never calls the clock, system randomness or UI code |
 | JS › Fixtures | 5 | `dice.json`, `counting.json`, `classic-hands.json` and `pegging.json` agree with the reference code; the config files pass the load checks |

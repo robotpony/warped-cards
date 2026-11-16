@@ -330,3 +330,26 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(made > 0 && scored > 0)
     }
 }
+
+/// Discard principles (concept.md › Hints): which apply to a deal, and which one a hint shows.
+@Suite struct PrincipleTests {
+    func deal(_ s: String) -> [Card] { s.split(separator: " ").compactMap { Card.parse(String($0)) } }
+
+    @Test func principlesFindTheirCards() {
+        let hits = Dictionary(Principles.applying(to: deal("4H 5C 6D 6S KC 9D")).map { ($0.principle, $0.cards.map(\.notation)) }, uniquingKeysWith: { a, _ in a })
+        #expect(hits[.keepFives] == ["5C"])
+        #expect(hits[.runMiddle] == ["5C"])
+        #expect(hits[.twoWays] != nil && hits[.noFlushChase] == nil)
+        let flush = Principles.applying(to: deal("2H 4H 8H QH 5C KS")).first { $0.principle == .noFlushChase }
+        #expect(flush?.cards.count == 4)
+        #expect(Principles.follows(deal("4H QH 5C KS"), flush!) && !Principles.follows(deal("2H 4H 8H QH"), flush!))
+    }
+
+    @Test func aHintShowsTheMostValuableProvenPrinciple() throws {
+        let hints = try #require(try loadConfig().hints).discard
+        let best = Principles.best(for: deal("4H 5C 6D 6S KC 9D"), hints: hints)
+        #expect(best?.principle == .twoWays)
+        // The flush principle isn't shown: it hasn't been shown to pay.
+        #expect(Principles.best(for: deal("2H 4H 8H QH 7C KS"), hints: hints)?.principle != .noFlushChase)
+    }
+}

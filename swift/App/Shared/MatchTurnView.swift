@@ -543,7 +543,7 @@ struct InfoCard: View {
     }
 }
 
-/// The turn's clock: no numbers, a solid wedge that grows until it fills the circle.
+/// The turn's clock: a solid wedge that grows until it fills the circle, with the seconds shown for the last 10.
 /// Green while time runs, orange in the last 10%, orange and pulsing while a stuck board
 /// counts down its grace, red when the turn is over, grey with no timer.
 struct TurnClock: View {
@@ -556,15 +556,18 @@ struct TurnClock: View {
 
     static let green = Color(hex: 0x39E07A), orange = Color(hex: 0xFF9F1C), red = Color(hex: 0xFF4D4D)
 
-    /// How urgent the breath is, from 0 (calm, over half the time left) to 4 (the last 5%).
+    /// How urgent the breath is, from 0 (calm, over half the time left) to 3 (the last 5%). The last
+    /// level is held at about 75% of full intensity: from 10 s, the seconds show instead.
     static func urgency(left: Int, total: Int) -> Int {
         guard total > 0 else { return 0 }
         let f = Double(max(0, left)) / Double(total)
-        return f > 0.5 ? 0 : f > 0.25 ? 1 : f > 0.1 ? 2 : f > 0.05 ? 3 : 4
+        return f > 0.5 ? 0 : f > 0.25 ? 1 : f > 0.1 ? 2 : 3
     }
     /// Each level's half-breath in seconds, and how far the clock swells.
-    static let period: [Double] = [2.0, 1.4, 0.9, 0.55, 0.35]
-    static let depth: [CGFloat] = [0.05, 0.07, 0.10, 0.13, 0.17]
+    static let period: [Double] = [2.0, 1.4, 0.9, 0.55]
+    static let depth: [CGFloat] = [0.05, 0.07, 0.10, 0.13]
+    /// From this many seconds left, the clock shows them.
+    static let countdownFrom = 10
 
     var body: some View {
         let total = session.turn?.config.rules.match.timerSeconds ?? 0
@@ -589,6 +592,12 @@ struct TurnClock: View {
             Wedge(fraction: filled).fill(colour)
                 .animation(.linear(duration: 1), value: filled)   // grows smoothly between ticks
             Circle().strokeBorder(colour, lineWidth: 2)
+            if look == .running || look == .warning, session.secondsLeft <= Self.countdownFrom {
+                Text("\(max(0, session.secondsLeft))").font(Theme.font(14, .bold)).monospacedDigit()
+                    .foregroundStyle(.white).shadow(color: .black.opacity(0.6), radius: 2)
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.snappy, value: session.secondsLeft)
+            }
         }
         .frame(width: 30, height: 30)
         // While the clock runs it breathes, so it reads as alive, and the breath quickens and deepens

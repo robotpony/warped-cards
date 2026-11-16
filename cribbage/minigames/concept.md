@@ -186,6 +186,20 @@ Classic advice against grid play (2026-11-15, `cribmaze-sim discard`, non-dealer
 
 So classic advice is a good guide, except that it overrates hand flushes and underrates 5s.
 
+#### Discard principles
+
+Hints show a principle and the cards it's about, never the cards to throw (decided 2026-11-15): we don't know the game's balance well enough to coach, and classic cribbage knowledge may not carry over. Each principle has to earn its place with data. The code is `swift/Sources/CribMaze/Principles.swift`; the measured worth is in `config/hints.json`, and a hint shows the applying principle worth the most, if it's worth at least `minWorth` (5 steps).
+
+| Principle | Hint | Applies to | Worth on the grid | Best keep follows it |
+|---|---|---|---|---|
+| Two ways | "These cards score two ways, in a run and a fifteen. Both pay every time." | 28% of deals | +41 steps | 82% |
+| Keep 5s | "Keep your 5s: every ten-card on the grid makes 15 with them." | 42% | +31 | 91% |
+| Connectors | "Hand cards power up each time they score. Keep the ones that combine most." | 81% | +24 | 83% |
+| Run middles | "A run needs its middle cards. The grid won't fill them for you." | 36% | +20 | 88% |
+| Don't chase the flush | "A flush scores once. Cards that combine score again and again." | 12% | −3 (not shown to pay) | 86% |
+
+Worth is the mean grid steps a turn of the keeps that follow the principle, less the keeps that don't, per deal (2026-11-15, match rules r20, `cribmaze-sim principles`, 240 random deals, 16 grid samples a keep, medium bot, non-dealer). The flush principle isn't shown until playtests or a bigger run prove it. Next: playtest the hints on the deal screen and compare people's keeps with and without them.
+
 ## Bots
 
 Bots are full players. They win prizes, fill power slots, shop and add to the deck exactly as the human does. Their match turns aren't played out on screen; the player sees each result. Each bot decides its discard, pegging, forks, which sets to trace, when to use special jokers, and prize use.

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "discard": {
+    "measured": "2026-11-15 · match-r20 · 240 random deals · 16 grid samples a keep · medium bot · cribmaze-sim principles",
+    "worth": [["twoWays", 41], ["keepFives", 31], ["connectors", 24], ["runMiddle", 20], ["noFlushChase", -3]],
+    "minWorth": 5
+  }
+}
