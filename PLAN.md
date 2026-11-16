@@ -77,7 +77,7 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 
 ## Phase 10 · Swift app
 
-- [ ] First human playtest of the beta (`playtests/plan.md`)
+- [ ] First human playtest of the beta, a whole game once the maze plays (`playtests/plan.md`)
 - [ ] Publish the first release on GitHub, after the first playtest (`RELEASING.md`)
 - [ ] Joker reveals, and the begin and end effects, in the beta (`ARCHITECTURE.md` › Effects)
 - [ ] More hints: an idle player, a missed set, a joker never used (`swift/App/Shared/Hints.swift`)
