@@ -175,6 +175,17 @@ Next is the discard, which is untimed (decided 2026-11-15). Ideas under discussi
 - How it's worked out: score every way to keep 4 of the 6 (15 ways) over every possible starter (46), plus a crib estimate, as classic discard advice does. That's the classic value, not the grid value: the grid also uses grid cards and edge power, so check how well one predicts the other first (stats.md › Other stats, "Does the hand still matter?").
 - Levels: off, subtle (blink after a pause), coaching (explain each choice). A setting, on Options; subtle is the default (decided 2026-11-15).
 
+Classic advice against grid play (2026-11-15, `cribmaze-sim discard`, non-dealer, medium bot, 300 paired samples a keep; grid gaps under about 6 steps are noise). The classic value is the hand's mean count over the 46 starters; the grid value is mean steps a turn.
+
+| Deal | Classic's best keep | Grid's view | What it shows |
+|---|---|---|---|
+| 5♥ 5♣ J♦ Q♠ 3♣ 9♥ | 5 5 J Q (12.7) | Ties with 5 5 J 3 (338 vs 343). 5 5 3 9 is classic's 10th but the grid's 6th | Keep the 5s: they make fifteens with every grid ten |
+| 4♥ 5♣ 6♦ 6♠ K♣ 9♦ | 4 5 6 6 (15.4) | Agrees (351, clear first). 6 6 K 9 drops from 8th to 13th | Runs need their middle cards; the grid can't supply them reliably |
+| 2♥ 4♥ 8♥ Q♥ 5♣ K♠ | 4♥ Q♥ 5♣ K♠ (6.7) | Agrees on first, but the heart flush (classic 2nd, 6.3) is the grid's 12th (220 vs 261) | A hand flush is a one-off 4 points; flexible cards score again and again |
+| A♣ 2♦ 3♥ 7♠ 8♠ 9♦ | A 2 3 9 (8.1) | The top 6 keeps are all within noise (276 to 281) | When classic values are close, the grid doesn't care |
+
+So classic advice is a good guide, except that it overrates hand flushes and underrates 5s.
+
 ## Bots
 
 Bots are full players. They win prizes, fill power slots, shop and add to the deck exactly as the human does. Their match turns aren't played out on screen; the player sees each result. Each bot decides its discard, pegging, forks, which sets to trace, when to use special jokers, and prize use.
