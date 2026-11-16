@@ -41,6 +41,14 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 - [ ] Door strengths and placement; rules so far in `rules.md` › Doors
 - [ ] Branches, traps, fog, generator (`concept.md` › The maze)
 
+## Phase 6b · Game flow
+
+- [ ] Title, Options and Start screens (`concept.md` › A round)
+- [ ] Deal and discard screen, untimed, with a discard hint (`concept.md` › Hints)
+- [ ] Bots' grid turns as a sequence of results before yours, hands face down (`rules.md` › Match turns)
+- [ ] Jokers dealt into a hand: wild, with a power each (`rules.md` › A joker dealt into a hand)
+- [ ] Simulate grid power carrying into pegging (`rules.md` › Pegging on the maze)
+
 ## Phase 7 · Tuning
 
 - [ ] Tune with simulation until the numbers hold up (`stats.md` › Targets)

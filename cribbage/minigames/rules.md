@@ -4,7 +4,7 @@ Status: draft 5, 2026-11-15. Match turns follow match rules r19. Values marked "
 
 ## Overview
 
-Crib Maze is cribbage on a maze. You build a hand, throw to the crib and peg to 31 as in cribbage, but every point you score moves your token through a maze instead of along a pegboard. Then, instead of counting your hand, you play it in a quick match game: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Prizes along the way add cards and powers to the game.
+Crib Maze (in the app, Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage. Then, instead of counting your hand, you play it in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
 
 The first token to reach the goal wins.
 
@@ -17,7 +17,7 @@ The first token to reach the goal wins.
 ```
 Game ............................ until a token reaches the goal
   Round ......................... one deal; the deal then passes left
-    Stage ....................... deal and discard, cut, pegging, match turns, shop
+    Stage ....................... deal and discard, cut, match turns, pegging, shop
       Turn ...................... one player's go within a stage
 ```
 
@@ -25,11 +25,11 @@ Game ............................ until a token reaches the goal
 |---|---|
 | Game | From setup until a token reaches the goal. Special jokers won as prizes, power slots, cards a joker made, and prizes in the deck last the whole game |
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
-| Stage | One part of a round. In order: deal and discard, cut the starter, pegging, match turns, the shop |
+| Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, pegging on the maze, the shop |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
 | Play | One go on the maze: a pegging score or a scored set, walked as its steps. Players take turns making plays, as in pegging (concept.md, 2026-11-14; the maze walk rules are still to be written) |
 | Minigame | A game played in a stage in place of a classic cribbage step. The match game is the first: it replaces counting your hand. More may follow |
-| Match turn | One player's turn of the match game. Your steps from it are walked through the maze right after |
+| Match turn | One player's turn of the match game, on the scoring grid. Its sets are walked through the maze as plays during pegging |
 
 ## Classic rules we use
 
@@ -56,17 +56,11 @@ The crib belongs to the dealer and always has 4 cards.
 
 Cut and turn up the starter as in classic cribbage. If it's a Jack, the dealer scores his heels: 2 steps, moved at once.
 
-### 3. Pegging
+### 3. Match turns: the scoring grid
 
-Peg as in classic cribbage. The player to the dealer's left plays first, and the count runs up to 31. With three players, play passes to the left; a player who can't play says "go" and sits out until the count starts again. The last player to play before the count starts again scores the go (or the 31).
+In classic cribbage you'd count your hand after pegging. In Crib Maze, each player takes a match turn on the scoring grid instead, before pegging, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-Every point you peg is one step, moved right away, before the next card is played. See Moving through the maze.
-
-After pegging, the cards go back to their owners' hands.
-
-### 4. Match turns
-
-In classic cribbage you'd count your hand now. In Crib Maze, each player takes a match turn instead, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
+The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
 These are match rules r19, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
@@ -233,6 +227,17 @@ Players never see the chances or the list of possible prizes. Each kind rolls on
 - The teal joker's special joker is picked from every known special joker (the swapper and bomb so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your power jokers.
 - When the prize doesn't go to the board, the stock fills the card's spot. If the stock is empty, the spot stays empty.
 
+##### A joker dealt into a hand
+
+A joker dealt into your hand (or the crib, or cut as the starter) is wild: it counts as whatever card scores best in each set, as in joker cribbage. Each joker also carries one power, which is enabled, and recharged, each time a set with the joker in it scores (decided 2026-11-15; the details are to design):
+
+| Power | What it does |
+|---|---|
+| Reach | Hand size +1 for a while |
+| Multiplier | A multiplier on the next set |
+| Time | Seconds added to the clock |
+| Surprise | A random item or power joker |
+
 Not designed yet: items; the title and blank card prizes; how many jokers a round can have (n); each special joker type's own rules; and what happens when an extra card is dealt into a hand or the crib, cut as the starter or played in pegging.
 
 #### Ending the turn
@@ -250,6 +255,17 @@ At the end, your best score wins one prize: a special joker for your power joker
 Your token doesn't move during the turn. Each scoring set becomes a bundle of steps with a suit, and after the turn you walk them through the maze (not designed yet).
 
 Computer players' match turns aren't played out on screen: you see each result (steps, best set and prize).
+
+### 4. Pegging on the maze
+
+Peg as in classic cribbage. The player to the dealer's left plays first, and the count runs up to 31. With three players, play passes to the left; a player who can't play says "go" and sits out until the count starts again. The last player to play before the count starts again scores the go (or the 31).
+
+Every point you peg is one step, moved right away, before the next card is played. See Moving through the maze.
+
+- Your scoring grid results come with you. The sets you scored are walked on the maze as plays, and players take turns making them, as in pegging (as in the [maze walk mock](mocks/maze-walk.html) v4). How plays and pegged cards take turns: to design.
+- Power carries over. A hand card's power level from the scoring grid multiplies the points it pegs (to tune; it needs simulator numbers first).
+
+After pegging, the cards go back to their owners' hands.
 
 ### 5. The shop
 

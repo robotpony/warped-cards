@@ -38,10 +38,13 @@ Three things change:
 ```
 Round
 
-  Deal and discard ..... as in classic cribbage (2 or 3 players)
+  Title, Options, Start  once a game: players and bot levels, game length, timer, hints
+  Deal and discard ..... as in classic cribbage (2 or 3 players); untimed
   Cut the starter ...... a Jack gives the dealer 2 steps (his heels)
-  Pegging .............. classic play to 31; each point is a step, moved at once
-  Match turns .......... one per player, in show order; points are steps
+  Match turns .......... the scoring grid, one per player, in show order: bots'
+                         results first, as a sequence, then yours
+  Pegging .............. on the maze: classic play to 31, each point a step; grid
+                         sets are walked as plays; grid power multiplies pegging
   Next round ........... the deal passes left
 ```
 
@@ -160,6 +163,17 @@ There's one shared deck, so prizes work on two layers:
 - Player layer: powers and saved cards you keep for yourself, in power slots.
 
 Which prizes go to which layer, and how they balance, is open.
+
+## Hints
+
+Hints nudge a player who seems stuck. The app has the hooks (`swift/App/Shared/Hints.swift`): each hint is a case with a rule for when it shows, and the place it points at blinks. The first one blinks the power jokers when no sets are left.
+
+Next is the discard, which is untimed (decided 2026-11-15). Ideas under discussion:
+
+- When: only after the player hesitates (say 8 seconds), or on request, never by default.
+- What: highlight the 2 cards a strong player would throw, and say why in one line ("keeps a double run; a 5 is good in your own crib").
+- How it's worked out: score every way to keep 4 of the 6 (15 ways) over every possible starter (46), plus a crib estimate, as classic discard advice does. That's the classic value, not the grid value: the grid also uses grid cards and edge power, so check how well one predicts the other first (stats.md › Other stats, "Does the hand still matter?").
+- Levels: off, subtle (blink after a pause), coaching (explain each choice). A setting, on Options.
 
 ## Bots
 
@@ -306,6 +320,11 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | Flushes count like a classic hand (match rules r18): 4 picked cards of one suit score 4 whatever the starter, 5 with a matching starter, and there are no 3-card flushes. The starter is optional, so it never costs a set points. Before, the joining starter made off-suit 4-card flushes impossible. 1,000 turns, seed 1, dealer: flushes rise from 2.8% to 8.9% of medium-bot scores (9.3% strong); mean steps a turn go from 274.4 to 276.7 (medium) and 286.2 to 287.7 (strong); prizes barely move (medium rare 27.5%, epic 13.5%). The weak bot sees 4-card flushes only (7.7% of its scores) and still wins only common prizes |
 | 2026-11-15 | New power joker, the reach (match rules r19): it raises the hand size (the cards a set can pick) for a while, rolled from config (+1 card 85%, +2 15%; 20 s 60%, 10, 30 or 45 s otherwise). Reaches stack. Everyone starts with 1, and it joins the prize table at weight 25 (swapper 45, bomb 30). 1,000 turns, seed 1, dealer, with bots using it only when stuck: barely any change (medium 278.4 steps a turn, was 276.7; epic 13.9%, was 13.5%). With bots using it at once, it dominates: medium 348.3 steps, epic 97.2%, best set mean 46.0 (was 26.2); weak bots reach 24.5% epic. It needs a cost or a limit before release (to decide) |
 | 2026-11-15 | The Mac beta is called Noddy Yookerspiel. The player app keeps the name Crib Maze, and the Xcode scheme and bundle ID stay `CribMazeBeta` and `ca.robotpony.cribmaze.beta` |
+| 2026-11-15 | The flow of a game: Title, Options, Start, then each round deals, the player picks the crib, the starter is cut, the scoring grid is played, then pegging on the maze, with the grid's results. The scoring grid now comes before pegging (it came after, like the show); the grid never uses up hand cards, so nothing needs undoing. The pegboard replacement is the pegging maze |
+| 2026-11-15 | Computer players' grid turns show first, in show order (non-dealer first), as a quick sequence of results with hands face down until after pegging, so pegging keeps its guesswork and the player knows what to beat |
+| 2026-11-15 | Grid power carries into pegging: a hand card's power level multiplies what it pegs (simulate before tuning). Grid sets are walked on the maze as plays, taken in turns as in the maze walk mock v4 |
+| 2026-11-15 | A joker dealt into a hand, the crib or as the starter is wild, as in joker cribbage, and carries one power that is enabled and recharged each time a set with it scores: reach (hand size +1 for a while), a multiplier, added time, or a random item or joker. Details to design |
+| 2026-11-15 | Picking the crib is untimed. It's the first place for hints (see Hints) |
 | 2026-11-15 | Players call the tray "power jokers": the on-screen tag and the rules say so. The engine and config keep the name `tray` |
 | 2026-11-15 | Releases: Crib Maze for Mac, signed with Developer ID and notarized, posted as free pre-release demos on GitHub releases ([RELEASING.md](../../RELEASING.md)) |
 | 2026-11-15 | A card counter shows how many cards a set can pick (the pick limit, `maxSet` for now). Some combos, jokers and prizes will raise it for a while; not designed yet |
