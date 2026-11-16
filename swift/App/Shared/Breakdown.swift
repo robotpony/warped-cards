@@ -196,13 +196,24 @@ extension GameSession {
         }
         // Edge power multiplies the combos: each powered card lights with its multiplier, then the set's applies.
         let powered = sel.filter { Board.isEdge($0) && old.power[$0] > 0 }
+        // With levels that add (rules: edgePower.combine "add"), each card adds its share, shown as
+        // +0.2; then the cap, if the sum passes it. Otherwise each card multiplies (×1.2).
+        let ep = config?.rules.match.edgePower
+        let adds = ep?.combine != "each"
         for p in powered {
             withAnimation(.spring(duration: Motion.t(0.25))) { pb.litPower = [p] }
-            let m = multiplierText(old.power[p])
+            let m = adds ? "+" + String(format: "%g", Double((ep?.percentPerLevel ?? 10) * old.power[p]) / 100) : multiplierText(old.power[p])
             pb.float([p], m, "edge power", .power)
             pb.line(p == Board.starter ? "Starter power" : "Edge power", m, "", .power, cards: [card(p)].compactMap { $0 })
             await pb.wait(stepMs())
             withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.litPower = [] }
+        }
+        if adds, let ep, ep.capPercent > 0, !powered.isEmpty {
+            let sum = 100 + ep.percentPerLevel * powered.map { old.power[$0] }.reduce(0, +)
+            if sum > ep.capPercent {
+                pb.line("Power cap: \(multiplierText(percent: sum)) is held at", multiplierText(percent: ep.capPercent), "", .power)
+                await pb.wait(stepMs())
+            }
         }
         // r20: each joker-made card in the set adds its own multiplier.
         let madeIn = sel.filter { old.cells[$0]?.percent != nil }
