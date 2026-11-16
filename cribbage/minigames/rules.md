@@ -228,7 +228,7 @@ Players never see the chances or the list of possible prizes. Each kind rolls on
 | Title card, blank card | A third each: a new 5, a special joker for your power jokers, or 5 steps (placeholders) |
 
 - A card is a new card of any rank and suit, made by the joker and placed in its spot. A scoring card is a new 5 or 10-value card (10, J, Q, K). Cards a joker makes are marked ★ and stay in the deck for the rest of the game. Each one also carries its own multiplier, shown on its chip: usually small (×1.05 or ×1.1), sometimes up to ×3 (to tune). It multiplies every set the card is in, on top of edge power.
-- The teal joker's special joker is picked from every known special joker (the swapper and bomb so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your power jokers.
+- The teal joker's special joker is picked from every known special joker (the swapper, bomb and reach so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your power jokers.
 - When the prize doesn't go to the board, the stock fills the card's spot. If the stock is empty, the spot stays empty.
 
 ##### A joker dealt into a hand
