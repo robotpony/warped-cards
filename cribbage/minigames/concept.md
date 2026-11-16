@@ -46,7 +46,8 @@ Round
                          results first, as a sequence, then yours
   Shop ................. after the scoring grid, before pegging
   Pegging .............. on the maze: classic play to 31, each point a step; grid
-                         sets are walked as plays; grid power multiplies pegging
+                         points open gates, hit switches and shift the maze;
+                         grid power multiplies pegging
   Next round ........... the deal passes left; hands repeat until a player
                          exits the maze
 ```
@@ -69,7 +70,7 @@ Maze sketch (real mazes are generated)
   + fork   P prize cell   ♥ ♠ ♦ ♣ suit gate
 ```
 
-- The main route is 61 steps (short game) or 121 (standard), so games run about as long as classic cribbage.
+- A game runs 5 to 13 hands. The maze's size, circular paths and gates are scaled to that (decided 2026-11-15; the 61 and 121 step routes were the first draft).
 - Branches leave the main route at a fork and rejoin it later. A branch may be shorter or longer, and it may hold gates, prizes or traps.
 - Suit gates open only for steps scored by a card of that suit. Steps that hit a gate of the wrong suit bounce you back. Special doors stop you instead.
 - Fog hides the maze beyond a few cells of each token. Cells anyone has seen stay revealed.
@@ -134,8 +135,8 @@ A round, as the player sees it
     end ..... board cleared, or not
     > transition: the shop
   Shop
-    > transition: the step total carries over to the maze
-  Pegging on the maze, with the grid's sets walked as plays
+    > transition: the grid's points carry over to the maze
+  Pegging on the maze, with the grid's points spent on gates, switches and shifts
     > transition: the deal passes left
 ```
 
@@ -369,6 +370,8 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | Shared deck or each player's own: undecided, so it's a setting (`deck.shared`, on by default; Advanced › Deck building in the beta) |
 | 2026-11-15 | Deck edits, first cut (match rules r23). A game is 3 turns (`game.turns`, to tune), the deal alternating. The deck lasts the game: made cards join it, and a new burn joker takes a grid card out of it for the game, down to 40 cards. Everyone starts with 1 burn; it joins the prize table at weight 20. Power jokers and each turn's prize carry over. Bots don't burn yet. `cribmaze-sim game`, medium bot, 300 games, seed 1: turns score 672, 709 and 1,048 steps (2,429 a game); with a fresh deck each turn, 672, 506 and 743 (1,921). So the lasting deck lifts turns 2 and 3 by about 40%, mostly through made cards' multipliers (181 steps of turn 3). Carrying power jokers over changes almost nothing (bots use them only when stuck). The deck ends the game at 57 cards, 5 of them made. Epic prizes rise from 21% in turn 1 to 31% in turn 3. Prizes and made multipliers need retuning for a game, not a turn |
 | 2026-11-15 | The shape of a game (Bruce): title sequence to the menu, start a game, cut for first dealer, then hands repeat (deal, scoring grid, shop, pegging on the maze) until a player exits the maze. The shop comes after the scoring grid, before pegging. The 3-turn game (`game.turns`, r23) is a stand-in until the maze is built |
+| 2026-11-15 | A game runs 5 to 13 hands. Maze size, circular paths and gates are scaled for a typical game in that range. Grid points are spent opening gates, hitting switches and shifting the maze; pegging moves the tokens, so both matter. How the split works: to design |
+| 2026-11-15 | The 3-turn game doesn't stay as a test mode: the maze replaces it shortly, and the game becomes hands until a player exits the maze. Made and burned cards last the whole game, across every hand. GameRecord comes next on the engine track, before more deck edits. The first human playtest follows a plan (`playtests/plan.md`), and the first GitHub release waits on it |
 | 2026-11-15 | The maze will change, to be more of a board game with circular paths; its place in the round stays the same. Game length comes from the maze's size, its circular paths and clearing its gates. Gates take points or suits to open, or special jokers, which can be played during pegging on the maze |
 
 ## Open questions
@@ -377,9 +380,9 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 2. How many power slots, and how do you get more?
 3. Can tokens get in each other's way at a gate or a fork?
 4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 180-second timer (raised from 90 on 2026-11-15) leave a person room to clear the board?
-5. Edge power: is ×1.5 a level, levels added, capped at ×2 right? Bot tests so far (mocks/README.md › Match turn v9) say the cap matters most; the simulator should settle it.
-6. Doors: how strong and how many? This decides how much of a match score becomes distance.
-7. With match scores far above pegging, does pegging still matter? Doors treat both the same, so pegging may need its own edge.
+5. Edge power has no cap since r21. Does a cap come back as a mechanic the player can see and change with jokers, and how big do scores get over 5 to 13 hands?
+6. Gates, switches and shifts: what each costs in grid points or suits, which special jokers open which gates, and how a hand's grid points are split between them.
+7. Pegging moves the tokens and grid points work the maze (2026-11-15). Is a hand's pegging enough movement to finish in 5 to 13 hands, and does grid power multiplying pegging keep the two in step?
 8. The maze walk: how choosing bundle order plays, holding steps back, and how long it can take.
 9. The shop: what you pay with now that pips are gone (steps, prizes or something new), what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps or a prize, and how big?
@@ -391,13 +394,14 @@ Two tracks run side by side: design, so we can think about how the game plays an
 
 | Phase | Track | What | Status |
 |---|---|---|---|
-| 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; kept in step with decisions |
-| 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Ideation done |
-| 3 | Design | First mocks, clickable HTML in an iPhone frame. Cards (v2), match turn (v9, rules r15, with the score breakdown, joker reveals and begin and end effects), jokers (v3). The prize pick, shop, maze walk and pegging on the maze move to phase 6 | Done, but for playtests |
-| 4 | Engine | Engine spec: data model, event log, bot interface, sim clock | After 3 is planned |
-| 5 | Engine | Swift engine, bots, simulator and stats reports; classic cribbage as the baseline ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases A to D) | After 4 |
-| 6 | Design | Maze, prizes and shop: doors, prizes and power slots, door types, branches, traps, fog, generator; mocks of the prize pick, shop, maze walk, pegging on the maze and transitions between mini games | After 5 |
-| 7 | Both | Tune with simulation until the numbers hold up | After 5 |
+| 1 | Design | Rules draft ([rules.md](rules.md)) | Draft done; match rules r23, kept in step with decisions |
+| 2 | Engine | Stats and simulator ideation ([stats.md](stats.md)) | Done |
+| 3 | Design | First mocks: cards, the match turn (frozen at r16), breakdown, effects, jokers, joker reveals. The beta is the match turn mock from 0.8.0 on | Done |
+| 4 | Engine | Engine spec: match turn, the game, classic baseline, config, fixtures ([engine.md](engine.md)) | Done; kept in step |
+| 5 | Engine | Swift engine, bots and simulator. The match turn and its bots are done; GameRecord (next), the game as hands, classic pegging and stats reports are open ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases C and D) | In progress |
+| 6 | Design | The maze, more of a board game: circular paths, gates, switches, shifts and prize cells, sized for 5 to 13 hands; pegging on the maze; the shop; the prize pick; transitions | Next on the design track |
+| 6b | Design | Game flow and deck building: title, menu, cut for first dealer, deal, deck edits, wild jokers | In progress |
+| 7 | Both | Tune with simulation and playtests against [stats.md](stats.md) › Targets | After 5 and 6 |
 | 8 | Design | Face-card art: full graphics for J, Q and K (letters until then) | Not scheduled |
 | 9 | Design | Card backs: design more backs (crosshatch until then) | Not scheduled |
-| 10 | App | Mac beta app, then iOS ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases E to I) | Beta after 5; iOS after 7 |
+| 10 | App | Mac beta (Noddy Yookerspiel), the first GitHub release after the first playtest, then iOS ([ARCHITECTURE.md](../../ARCHITECTURE.md) phases E to I) | Beta in progress; iOS after 7 |

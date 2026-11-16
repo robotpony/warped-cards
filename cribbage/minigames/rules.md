@@ -27,9 +27,9 @@ Game ............................ until a token reaches the goal
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
 | Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, the shop, pegging on the maze |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
-| Play | One go on the maze: a pegging score or a scored set, walked as its steps. Players take turns making plays, as in pegging (concept.md, 2026-11-14; the maze walk rules are still to be written) |
+| Play | One go on the maze: a pegging score, walked as its steps, or grid points spent on a gate, a switch or a shift. Players take turns, as in pegging (how: to design) |
 | Minigame | A game played in a stage in place of a classic cribbage step. The match game is the first: it replaces counting your hand. More may follow |
-| Match turn | One player's turn of the match game, on the scoring grid. Its sets are walked through the maze as plays during pegging |
+| Match turn | One player's turn of the match game, on the scoring grid. Its points are spent on the maze during pegging |
 
 ## Classic rules we use
 
@@ -37,7 +37,7 @@ Dealing, discarding, cutting the starter, his heels and pegging all follow class
 
 ## Setup
 
-1. Make a maze for the chosen length. All tokens start on the start cell.
+1. Make a maze sized so a typical game runs 5 to 13 hands. All tokens start on the start cell.
 2. Shuffle the deck. Each player cuts, and the lowest card deals first.
 3. Every player starts with empty power slots. How many: not designed yet.
 
@@ -277,20 +277,20 @@ Peg as in classic cribbage. The player to the dealer's left plays first, and the
 
 Every point you peg is one step, moved right away, before the next card is played. See Moving through the maze.
 
-- Your scoring grid results come with you. The sets you scored are walked on the maze as plays, and players take turns making them, as in pegging (as in the [maze walk mock](mocks/maze-walk.html) v4). How plays and pegged cards take turns: to design.
+- Your scoring grid points come with you. You spend them opening gates, hitting switches and shifting the maze, while pegging moves your token. How the points are spent, and how that takes turns with pegging: to design.
 - Power carries over. A hand card's power level from the scoring grid multiplies the points it pegs (to tune; it needs simulator numbers first).
 
 After pegging, the cards go back to their owners' hands.
 
 ### 6. Next round
 
-All cards, including any prize cards added to the deck, go back into the deck, and the deck is shuffled. The deal passes to the left.
+All cards go back into the deck, and the deck is shuffled. The deck lasts the whole game: cards a joker made stay in it, and burned cards stay out, hand after hand. The deal passes to the left.
 
 ## Moving through the maze
 
 The maze rules below are a first draft. The maze will change to be more of a board game, with circular paths. Its place in the round stays the same, and the game still ends when a token exits the maze. Game length comes from the maze's size, its circular paths and its gates.
 
-Gates take points or suits to open, or a special joker. You can play special jokers during pegging on the maze. Which jokers open which gates: not designed yet.
+Gates take points or suits to open, or a special joker. You can play special jokers during pegging on the maze. Your grid points open gates, hit switches and shift the maze; pegging moves your token. Which jokers open which gates, and what switches and shifts do: not designed yet.
 
 - One point is one step, and you must take every step.
 - At a fork, choose a branch. The main route always stays open. A branch may be shorter or longer than the main route, and it may hold gates, prizes or traps.

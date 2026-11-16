@@ -81,7 +81,7 @@ These back up the curves with specific checks.
 
 | Question | Stat |
 |---|---|
-| Is the game the right length? | Rounds per game; modelled time per game |
+| Is the game the right length? | Hands per game (target 5 to 13); modelled time per game |
 | Is it fair by seat? | Win rate by seat and by first dealer |
 | Is the match turn too strong or weak? | Match steps vs pegging steps per round; sets, singles and multis per turn; steps lost to doors |
 | Does the hand still matter? | Link between a hand's classic value and its match-turn steps; how often the best discard differs from classic's |
@@ -112,12 +112,13 @@ Each turn record from the beta has a `deal`: the 6 dealt, the 2 thrown, the bot'
 
 ## Targets
 
-These are placeholders until we've measured classic cribbage in our own simulator:
+Set 2026-11-15 (concept.md › Decisions). A hand is one round: one deal, with every stage played once.
 
-- Game length within about 20% of classic for the same target (61 or 121), in rounds and in modelled time.
+- Game length: a typical game runs 5 to 13 hands. At least 90% of games between medium bots SHOULD end in that range (a starting figure, to revisit with playtests). The maze's size, circular paths and gates are the dials.
 - No seat wins more than a few points above a fair share (50% with 2 players, 33% with 3).
-- Pegging and match turns each give a real share of steps; neither SHOULD dominate.
+- Pegging moves the tokens and grid points work the maze (gates, switches, shifts). Neither SHOULD decide a game alone: a player who wins every grid but pegs worse SHOULD NOT always win, and the reverse.
 - Prizes SHOULD change results often enough to matter, but a player with no prizes SHOULD still be able to win.
+- Classic cribbage stays the baseline for pegging and hands, measured in our own simulator. It no longer sets the game's length.
 
 ## App telemetry
 

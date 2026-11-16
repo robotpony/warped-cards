@@ -20,7 +20,7 @@ How Crib Maze for Mac gets from a commit to a free download on [GitHub releases]
 
 ## Each release
 
-1. Playtest the build you mean to ship (`scripts/debug.sh release`).
+1. Playtest the build you mean to ship (`scripts/debug.sh release`). The first release waits on the first human playtest ([playtests/plan.md](cribbage/minigames/playtests/plan.md)).
 2. Bump `MARKETING_VERSION` in `swift/App/project.yml` and write the version's section at the top of `CHANGELOG.md`, for players, in on-screen names. The script refuses to run if the two disagree. The release notes are `scripts/release-intro.md` (what the game is; keep it current) followed by that section.
 3. Check the docs say what the build does: `README.md` (games table, test count), `rules.md` (rules version), `PLAN.md`.
 4. Run `scripts/check.sh`, then commit.

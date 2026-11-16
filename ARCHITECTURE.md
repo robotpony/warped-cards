@@ -362,11 +362,11 @@ Each phase ends with something that runs. Phases A to D are engine work and can 
 |---|---|---|
 | A · Foundations | `swift/` package and XcodeGen project with both targets, version stamping, `scripts/check.sh` (format, build, test), the banned-calls test | Both apps launch to an empty window showing their versions |
 | B · Cards and counting | Engine spec first draft; GameKit (protocol, Dice, Step), CardKit, CribbageKit counting written fresh; port `scoring.test.js` to shared fixtures; config loading and checks | Swift and JS pass the same fixtures |
-| C · Records | GameRecord writer, reader, replayer, counts; `cribmaze-sim replay` | A toy game records, verifies and replays in scripted mode |
-| D · Match turn engine | CribMaze match turn at the current rules (r15), jokers and reveals, special jokers, config; bots at every level; `cribmaze-sim run` and `report` | 10,000 bot turns run clean; bot numbers match the mock's within noise |
+| C · Records | Next on the engine track (2026-11-15). GameRecord writer, reader, replayer, counts; `cribmaze-sim replay` | A toy game records, verifies and replays in scripted mode |
+| D · Match turn engine | CribMaze match turn at the rules of the time (r15; r23 now), jokers and reveals, special jokers, config; bots at every level; `cribmaze-sim run` and `report` | 10,000 bot turns run clean; bot numbers match the mock's within noise |
 | E · Mac beta, playable | Effects spike (`Effect requirements`), then the match turn scene, GameSession, presenter, basic GameFX (breakdown, joker reveal, sounds), recording on | Bruce plays a match turn and finds its record |
 | F · Beta tools | Records browser, replay viewer, stats dashboard (Swift Charts), animation lab, tuning panel | A playtest can be replayed, graphed and its effects retuned without code |
-| G · The rest of a round | Deal and discard, cut, pegging, maze walk, shop, transitions, each as its design settles | A full game plays to the goal |
+| G · The rest of a round | Deal and discard, cut, pegging, maze walk, shop, transitions, each as its design settles | A full game plays until a player exits the maze |
 | H · iOS | iOS destinations, touch input, Core Haptics, layout and card size for phones | The beta runs on an iPhone |
 | I · Release | Release target polish, resume, App Store setup | Not scheduled |
 
