@@ -353,3 +353,29 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(Principles.best(for: deal("2H 4H 8H QH 7C KS"), hints: hints)?.principle != .noFlushChase)
     }
 }
+
+/// The deal before a match turn: 6 each, 2 each to the crib, the bot keeping its best classic hand.
+@Suite struct DealTests {
+    @Test func aDealSetsUpTheTurnWithTheKeptHandsAndCrib() throws {
+        let c = try loadConfig()
+        let d = Deal.deal(seed: 9)
+        #expect(d == Deal.deal(seed: 9))
+        #expect(Set((d.player + d.bot + [d.starter]).map(\.id)).count == 13)
+        let mine = Array(d.player.suffix(2)), bot = Deal.classicKeep(d.bot)
+        #expect(bot.keep.count == 4 && bot.thrown.count == 2)
+        for dealer in [true, false] {
+            let (t, _) = MatchTurn.start(config: c, setup: Deal.setup(seed: 9, dealer: dealer, dealt: d, thrown: mine, botThrown: bot.thrown))
+            #expect(Board.hand.map { t.state.cells[$0]!.id } == d.player.prefix(4).map(\.id))
+            #expect(t.state.cells[Board.starter]?.id == d.starter.id)
+            if dealer { #expect(Set(Board.crib.map { t.state.cells[$0]!.id }) == Set((mine + bot.thrown).map(\.id))) }
+            // Nothing dealt is in the stock or on the grid.
+            let onBoard = Board.grid.compactMap { t.state.cells[$0]?.id } + t.state.stock.map(\.id)
+            #expect(Set(onBoard).isDisjoint(with: (d.player + d.bot + [d.starter]).map(\.id)))
+        }
+    }
+
+    @Test func classicKeepTakesTheBestHand() {
+        let six = "4H 5C 6D 6S KC 9D".split(separator: " ").compactMap { Card.parse(String($0)) }
+        #expect(Set(Deal.classicKeep(six).thrown.map(\.notation)) == ["KC", "9D"])
+    }
+}

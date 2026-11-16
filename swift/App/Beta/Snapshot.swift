@@ -12,6 +12,7 @@ import SwiftUI
         // `--demo [--slow]`: the medium bot plays turn after turn with full animation, for recording with Instruments.
         if args.contains("--demo") {
             session.settings.timer = false
+            session.settings.deal = false
             session.slowMotion = args.contains("--slow")
             session.playback.autoContinue = true   // the demo doesn't wait for taps
             session.newTurn(seed: value("--seed").flatMap(UInt64.init) ?? 42)
@@ -30,6 +31,17 @@ import SwiftUI
         guard let out = value("--snapshot") else { return }
         session.animate = false
         if args.contains("--crib-off") { session.settings.dealer = false }
+        // `--deal [--pick 5H,5C] [--hint]`: render the deal screen instead of the turn.
+        session.settings.deal = args.contains("--deal")
+        if args.contains("--deal") {
+            session.newTurn(seed: value("--seed").flatMap(UInt64.init) ?? 42)
+            for n in (value("--pick") ?? "").split(separator: ",") {
+                if let c = session.dealing?.dealt.player.first(where: { $0.notation == String(n) }) { session.togglePick(c) }
+            }
+            if args.contains("--hint") { session.showHint(asked: true) }
+            render(session, to: out)
+            exit(0)
+        }
         session.newTurn(seed: value("--seed").flatMap(UInt64.init) ?? 42)
         for set in (value("--trace") ?? "").split(separator: ";") { session.submit(positions(set)) }
         if let kind = value("--arm") { session.arm(kind) }

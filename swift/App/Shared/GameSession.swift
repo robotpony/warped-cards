@@ -27,6 +27,18 @@ struct TurnSettings: Equatable {
     var budget = 0        // 0 is the whole stock
     var breakdown = true  // play each score's breakdown; off is a quick flash
     var hints = true      // nudge the player when they seem stuck (Hints.swift)
+    var deal = true       // deal 6 and pick 2 for the crib before each turn
+}
+
+/// The deal before a turn: your 6, the 2 you've picked for the crib, and the hint, if one showed.
+struct DealState {
+    let dealt: Dealt
+    var picked: [Card] = []
+    let started = Date()
+    var changed = Date()
+    var hint: PrincipleHit?
+    var hintAt: Date?
+    var asked = false
 }
 
 @MainActor @Observable
@@ -87,18 +99,92 @@ final class GameSession {
     }
 
     var state: MatchState? { turn?.state }
-    var over: Bool { turn?.state.over ?? true }
+    var over: Bool { dealing == nil && (turn?.state.over ?? true) }
+
+    // MARK: Deal
+
+    /// The deal in progress, before the turn starts; nil once you've thrown to the crib.
+    private(set) var dealing: DealState?
+    /// What the deal was, for the turn's record.
+    private(set) var dealRecord: DealRecord?
+    private var hintTask: Task<Void, Never>?
+    /// How long a pause before a discard hint shows (concept.md › Hints: subtle).
+    static let hintAfter: TimeInterval = 8
+
+    struct DealRecord: Encodable {
+        let dealt: [String], thrown: [String], botThrown: [String], starter: String
+        let hint: String?, hintCards: [String], hintAsked: Bool, hintAfterMs: Int?, decideMs: Int
+    }
+
+    /// Picks or unpicks a card for the crib; at most 2.
+    func togglePick(_ card: Card) {
+        guard var d = dealing else { return }
+        if let i = d.picked.firstIndex(of: card) { d.picked.remove(at: i) } else if d.picked.count < 2 { d.picked.append(card) }
+        d.changed = Date()
+        dealing = d
+    }
+
+    /// Shows the deal's hint now (asked for, or after a pause).
+    func showHint(asked: Bool = false) {
+        guard var d = dealing, d.hint == nil, let h = config?.hints?.discard else { return }
+        d.hint = Principles.best(for: d.dealt.player, hints: h)
+        d.hintAt = Date(); d.asked = asked
+        dealing = d
+        if d.hint == nil && asked { show("Nothing stands out: keep cards that work together") }
+    }
+
+    private func watchHint() {
+        hintTask?.cancel()
+        hintTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let self, let d = self.dealing, d.hint == nil else { return }
+                guard self.settings.hints else { continue }
+                if Date().timeIntervalSince(d.changed) >= Self.hintAfter { self.showHint(); return }
+            }
+        }
+    }
+
+    /// Throws the 2 picked cards to the crib and starts the turn.
+    func throwToCrib() {
+        guard let d = dealing, d.picked.count == 2, let c = config else { return }
+        hintTask?.cancel()
+        let bot = Deal.classicKeep(d.dealt.bot, scoring: c.rules.scoring)
+        let ms = { (t: Date) in Int(t.timeIntervalSince(d.started) * 1000) }
+        dealRecord = DealRecord(dealt: d.dealt.player.map(\.notation), thrown: d.picked.map(\.notation), botThrown: bot.thrown.map(\.notation),
+                                starter: d.dealt.starter.notation, hint: d.hint?.principle.rawValue, hintCards: d.hint?.cards.map(\.notation) ?? [],
+                                hintAsked: d.asked, hintAfterMs: d.hintAt.map(ms), decideMs: ms(Date()))
+        dealing = nil
+        begin(Deal.setup(seed: seed, dealer: settings.dealer, dealt: d.dealt, thrown: d.picked, botThrown: bot.thrown))
+    }
+
+    // MARK: Turn
 
     func newTurn(seed fixed: UInt64? = nil) {
+        guard config != nil else { return }
+        seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
+        seedText = ""
+        dealRecord = nil; hintTask?.cancel()
+        let strong = settings.hand == "strong"
+        if settings.deal && !strong {
+            // Deal first: the turn starts once you've thrown to the crib.
+            timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
+            turn = nil; events = []; actions = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
+            playback.reset()
+            dealing = DealState(dealt: Deal.deal(seed: seed))
+            watchHint()
+            return
+        }
+        dealing = nil
+        begin(TurnSetup(seed: seed, dealer: settings.dealer,
+                        fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil))
+    }
+
+    private func begin(_ setup: TurnSetup) {
         guard var c = config else { return }
         c.rules.match.cardBudget = settings.budget
         c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
-        seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
-        seedText = ""
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
-        let strong = settings.hand == "strong"
-        let setup = TurnSetup(seed: seed, dealer: settings.dealer,
-                              fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil)
         let (t, ev) = MatchTurn.start(config: c, setup: setup)
         turn = t; events = ev; actions = []; feed = []; breakdown = nil; mode = .trace; savedRecord = nil; selection = []; armedSource = nil; warning = nil; toast = nil
         for e in ev { describe(e) }
@@ -414,10 +500,11 @@ final class GameSession {
         guard Edition.isBeta, let t = turn else { return }
         struct Record: Encodable {
             let rulesVersion: String, seed: UInt64, dealer: Bool, app: String
+            let deal: DealRecord?
             let actions: [MatchAction]; let rolls: [Roll]; let events: [MatchEvent]
         }
         let app = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") + " (" + (Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?") + ")"
-        let rec = Record(rulesVersion: MatchTurn.rulesVersion, seed: seed, dealer: t.state.dealer, app: app, actions: actions, rolls: t.dice.rolls, events: events)
+        let rec = Record(rulesVersion: MatchTurn.rulesVersion, seed: seed, dealer: t.state.dealer, app: app, deal: dealRecord, actions: actions, rolls: t.dice.rolls, events: events)
         do {
             let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             let dir = support.appendingPathComponent("\(Edition.name)/records", isDirectory: true)

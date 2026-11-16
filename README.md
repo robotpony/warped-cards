@@ -40,7 +40,7 @@ Rendered from the beta (seed 2) with `--snapshot`; see `swift/App/Beta/Snapshot.
 
 | Game | What it is | Status |
 |---|---|---|
-| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.11.0 (the scoring grid only), match rules r20, rules draft 5 |
+| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.12.0 (the deal and the scoring grid), match rules r20, rules draft 5 |
 | Classic cribbage | The classic game, sharing the same engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -67,7 +67,7 @@ scripts/debug.sh -- --demo --slow
 
 In Claude Code, `/debug` and `/debug-release` run the same script.
 
-How to play a match turn: drag across 2 to 4 touching cards and let go. Every card you pick should be part of a combo (fifteens, pairs, runs, flushes, his nobs). The starter counts with every set for free. Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the hand size counter, to read what each one does. Tap the step count at the top, or the bar along the bottom, to open the settings. The full rules are in [rules.md](cribbage/minigames/rules.md).
+How to play: pick 2 of your 6 cards for the crib (tap Hint if you want a nudge), then on the grid, drag across 2 to 4 touching cards and let go. Every card you pick should be part of a combo (fifteens, pairs, runs, flushes, his nobs). The starter counts with every set for free. Tap the HAND, CRIB, STARTER or POWER JOKERS tag, or the hand size counter, to read what each one does. Tap the step count at the top, or the bar along the bottom, to open the settings. The full rules are in [rules.md](cribbage/minigames/rules.md).
 
 The beta saves each finished turn as a JSON record in `~/Library/Application Support/Noddy Yookerspiel/records/`. It sends nothing anywhere, and release builds don't record at all.
 
@@ -88,7 +88,7 @@ Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.11.0: **58 tests, all passing** (38 Swift, 20 JS).
+State on 2026-11-15, version 0.12.0: **60 tests, all passing** (40 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -102,6 +102,7 @@ State on 2026-11-15, version 0.11.0: **58 tests, all passing** (38 Swift, 20 JS)
 | CribMaze › Reach joker (r19) | 4 | A reach raises the pick limit until it's over; reaches stack and roll the same for the same seed; a bigger set scores only under a reach; config checks |
 | CribMaze › Made multipliers (r20) | 1 | Joker-made cards carry a multiplier from the table, and it multiplies their sets on top of edge power, within its cap |
 | CribMaze › Discard principles | 2 | Each principle finds its cards in a deal; a hint shows the most valuable principle that's proven to pay |
+| CribMaze › Deal | 2 | A deal sets up the turn with the kept hand, the crib and the starter, keeping every dealt card out of the stock; the bot keeps its best classic hand |
 | CribMaze › Bots | 4 | Every level plays whole turns with only legal moves; the same seed plays the same turn; each seat has its own dice stream; perfect finds the best set |
 | CribMaze › Engine rules | 1 | The engine never calls the clock, system randomness or UI code |
 | JS › Fixtures | 5 | `dice.json`, `counting.json`, `classic-hands.json` and `pegging.json` agree with the reference code; the config files pass the load checks |

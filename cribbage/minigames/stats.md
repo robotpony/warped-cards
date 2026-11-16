@@ -106,6 +106,10 @@ Graph, by rules version and by player or bot level, against the odds in force:
 
 `cribmaze-sim run --reach early` has bots play a reach as soon as they hold one; `--reach stuck` (the default) only when no set scores. The two bound what a person might do. The first runs, on 2026-11-15, are in `concept.md` › Decisions.
 
+### Discard hints
+
+Each turn record from the beta has a `deal`: the 6 dealt, the 2 thrown, the bot's throw, the starter, the hint shown (its principle and cards, whether it was asked for, and when), and how long the pick took. To test the principles, compare the grid steps of turns where the player followed the hint's principle with turns where they didn't, and turns with a hint against turns without one (hints off, or thrown before the pause).
+
 ## Targets
 
 These are placeholders until we've measured classic cribbage in our own simulator:

@@ -120,6 +120,10 @@ public struct TurnSetup: Codable, Sendable {
     /// Fixed cards for tests and scenarios: a hand (4) and a starter, in fixture notation.
     public var fixedHand: [String]?
     public var fixedStarter: String?
+    /// From a deal (Deal.setup): the crib's 4 cards, and the other player's kept hand, which stays
+    /// out of the stock. Without them, both come off the top of the shuffled deck.
+    public var fixedCrib: [String]?
+    public var held: [String]?
     public init(seed: UInt64, dealer: Bool = true, tray: [String: Int]? = nil, warned: Bool = false, fixedHand: [String]? = nil, fixedStarter: String? = nil) {
         self.seed = seed; self.dealer = dealer; self.tray = tray; self.warned = warned; self.fixedHand = fixedHand; self.fixedStarter = fixedStarter
     }
@@ -172,8 +176,9 @@ public struct MatchTurn: Sendable {
             hand = Array(deck.prefix(4)); deck.removeFirst(4)
             starter = deck.removeFirst()
         }
-        let crib = Array(deck.prefix(4)); deck.removeFirst(4)
-        deck.removeFirst(4)   // the other player's hand
+        let crib: [Card]
+        if let fc = setup.fixedCrib { crib = fc.map(take) } else { crib = Array(deck.prefix(4)); deck.removeFirst(4) }
+        if let h = setup.held { _ = h.map(take) } else { deck.removeFirst(4) }   // the other player's hand
         // Jokers for the round, then the configured extras, at the end of the deck.
         let j = config.jokers
         let jokerCount = j.perRound.min + dice.below(j.perRound.max - j.perRound.min + 1, stream: "deal", purpose: "joker_count")

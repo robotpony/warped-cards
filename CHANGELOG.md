@@ -2,6 +2,12 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.12.0 — 2026-11-15
+
+### Added
+
+- Each turn starts with a deal: 6 cards, and you pick 2 for the crib. It's untimed. Pause, or tap Hint, and a hint names one thing to look for and blinks the cards it's about. It never tells you what to throw. Turn the deal off in the settings to go straight to the grid.
+
 ## 0.11.0 — 2026-11-15
 
 ### Added

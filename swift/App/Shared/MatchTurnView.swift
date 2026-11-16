@@ -88,6 +88,7 @@ struct PhoneView: View {
         .overlay { if let left = session.warning { WarningCard(left: left, cost: session.config?.rules.match.leftOverCost ?? 2) { session.dismissWarning() } } }
         .overlay { if let topic = session.info { InfoCard(topic: topic, session: session) { session.info = nil } } }
         .overlay { if session.over { SummaryView(session: session) } }
+        .overlay { if session.dealing != nil { DealView(session: session) } }
         .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Color(hex: 0x111111), lineWidth: 10).padding(-5))
     }
@@ -380,6 +381,7 @@ struct SidePanel: View {
             VStack(alignment: .leading, spacing: 6) {
                 Toggle("Dealer: crib down the side", isOn: $session.settings.dealer)
                 Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
+                Toggle("Deal: pick your crib cards first", isOn: $session.settings.deal)
                 Toggle("Hints when you're stuck", isOn: $session.settings.hints)
                 Picker("Hand", selection: $session.settings.hand) { Text("Random").tag("random"); Text("Strong (4♥ 5♣ 6♦ J♠, 5♠)").tag("strong") }
                 HStack {
@@ -633,5 +635,78 @@ struct Wedge: Shape {
         p.addArc(center: c, radius: rad, startAngle: .degrees(-90), endAngle: .degrees(-90 + 360 * min(1, fraction)), clockwise: false)
         p.closeSubpath()
         return p
+    }
+}
+
+/// The deal before a turn: your 6 cards, pick 2 for the crib. Untimed. After a pause (or on
+/// request), a hint names one principle and blinks the cards it's about; it never says what to
+/// throw (concept.md › Discard principles).
+struct DealView: View {
+    let session: GameSession
+    var body: some View {
+        if let d = session.dealing {
+            let dealer = session.settings.dealer
+            let hinted = Set(d.hint?.cards.map(\.id) ?? [])
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Your deal").font(Theme.font(28, .bold)).foregroundStyle(Theme.cyan).shadow(color: Theme.cyan.opacity(0.6), radius: 6)
+                Text(dealer ? "Throw 2 cards to your crib. It sits down the side of your grid." : "Throw 2 cards to the bot's crib. Keep the 4 that will score best on your grid.")
+                    .font(Theme.font(15, .regular)).foregroundStyle(Theme.feltText.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+                Grid(horizontalSpacing: 12, verticalSpacing: 18) {
+                    ForEach(0..<2, id: \.self) { row in
+                        GridRow {
+                            ForEach(0..<3, id: \.self) { col in
+                                let card = d.dealt.player[row * 3 + col]
+                                let picked = d.picked.contains(card)
+                                CardFace(card: card, width: 104)
+                                    .hintBlink(hinted.contains(card.id), cornerRadius: 8)
+                                    .overlay(alignment: .top) {
+                                        if picked {
+                                            Text("CRIB").font(Theme.font(10, .bold)).tracking(0.8).padding(.horizontal, 6).frame(height: 16)
+                                                .background(Capsule().fill(Theme.gold)).foregroundStyle(Theme.ink).offset(y: -8)
+                                        }
+                                    }
+                                    .overlay { if picked { RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.gold, lineWidth: 3) } }
+                                    .opacity(picked ? 0.75 : 1)
+                                    .offset(y: picked ? -10 : 0)
+                                    .animation(.snappy(duration: Motion.t(0.2)), value: picked)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { session.togglePick(card) }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity).padding(.top, 8)
+                // The hint: one principle, never the answer.
+                Group {
+                    if let h = d.hint {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "lightbulb.fill").foregroundStyle(Theme.gold)
+                            Text(h.principle.line).font(Theme.font(15, .medium)).fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.panel))
+                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.gold.opacity(0.6), lineWidth: 1))
+                        .transition(.opacity)
+                    } else {
+                        Text("Hint").font(Theme.font(13, .semibold)).foregroundStyle(Theme.feltText.opacity(0.7))
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .overlay(Capsule().strokeBorder(Theme.feltText.opacity(0.3), lineWidth: 1))
+                            .contentShape(Capsule()).onTapGesture { session.showHint(asked: true) }
+                    }
+                }
+                .animation(.easeOut(duration: Motion.t(0.3)), value: d.hint?.principle)
+                Spacer()
+                let ready = d.picked.count == 2
+                Text(ready ? "Throw to the crib" : "Pick \(2 - d.picked.count) more")
+                    .font(Theme.font(16, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(ready ? Theme.gold : Theme.feltText.opacity(0.12)))
+                    .foregroundStyle(ready ? Theme.ink : Theme.feltText.opacity(0.6))
+                    .contentShape(Rectangle()).onTapGesture { if ready { session.throwToCrib() } }
+            }
+            .padding(.horizontal, 24).padding(.top, 56).padding(.bottom, 28)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(Theme.felt)
+            .foregroundStyle(Theme.feltText)
+        }
     }
 }

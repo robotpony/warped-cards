@@ -52,6 +52,8 @@ Dealing, discarding, cutting the starter, his heels and pegging all follow class
 
 The crib belongs to the dealer and always has 4 cards.
 
+Picking your crib cards is untimed. If you pause, a hint may name one principle and blink the cards it's about, such as "Keep your 5s: every ten-card on the grid makes 15 with them." It never tells you what to throw. Tap Hint to see it sooner; turn hints off in the settings.
+
 ### 2. Cut the starter
 
 Cut and turn up the starter as in classic cribbage. If it's a Jack, the dealer scores his heels: 2 steps, moved at once.

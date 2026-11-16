@@ -83,14 +83,24 @@ Inputs: the seed, config, whether the player is the dealer, the player's tray, a
 
 1. Build the standard 52 in ID order. Shuffle it (stream `deal`, purpose `shuffle`).
 2. If fixed cards are given, take them out of the deck in the order given. Otherwise deal the hand (the top 4) and then the starter (the next card).
-3. Deal the crib (the next 4). A non-dealer's crib cards are still removed, so the stock is the same size either way, but the crib stays empty on their board.
-4. Remove the next 4 cards: the other player's hand.
+3. Deal the crib: the fixed crib if given, else the next 4. A non-dealer's crib cards are still removed, so the stock is the same size either way, but the crib stays empty on their board.
+4. Remove the other player's hand: the held cards if given, else the next 4.
 5. Decide the jokers: a count from `jokers.perRound` (stream `deal`, purpose `joker_count`), then each joker's kind from `jokers.kinds` weights (purpose `joker_kind`, one draw per joker). Add them, then the configured extras (`title`, `blank`), to the end of the deck, giving IDs in that order.
 6. Shuffle the remaining deck, extras included (stream `deal`, purpose `shuffle`). This is the stock.
 7. Fill the grid from the top of the stock, row by row (g00 first). These draws count toward the card budget.
 8. Emit `turn_start`. Then resolve any extra cards on the grid (see Extra cards), then run the after-action checks.
 
 Later: in a full game, the round's shuffle decides the jokers (rules r14), and each match turn shuffles every card not in a hand, the crib or the starter.
+
+### The deal (2 players)
+
+Before a turn, the player is dealt 6 and throws 2 to the crib (rules.md › Deal and discard).
+
+1. Build the standard 52 in ID order and shuffle it (stream `round`, purpose `shuffle`). The player's 6 are cards 0 to 5, the bot's 6 are 6 to 11, and the starter is card 12.
+2. The player picks 2 to throw, untimed. The bot keeps its best classic hand: for each of the 15 ways to keep 4, the mean classic count over the 46 starters the deal leaves (hand flushes and his nobs count; no crib estimate), first found on a tie.
+3. Start the turn with the player's kept 4 as the fixed hand, the starter, the crib as fixed cards (the dealer's throw first) and the bot's kept 4 as held cards.
+
+The deal's hint (concept.md › Discard principles) is app behaviour, not an action; the beta records it with the turn.
 
 ## Actions
 
@@ -293,6 +303,7 @@ Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle r
 
 | Stream | Purposes, in the order they happen |
 |---|---|
+| `round` | The deal before a turn: `shuffle` (the 52) |
 | `deal` | Match turn: `shuffle` (the 52), `joker_count`, `joker_kind` per joker, `shuffle` (the stock). Classic: `shuffle` and `cut_for_deal` per cut at the start, then `shuffle` and `cut` each hand |
 | `reveal` | Per extra card: `outcome:<kind>`, then `made_card` (and `made_multiplier`, r20) or `special_kind` if the outcome needs one |
 | `board` | `stock_insert` |
