@@ -19,6 +19,11 @@ public enum Deal {
     /// of the player's deck.
     public static func deal(seed: UInt64, deck given: [Card]? = nil, botDeck: [Card]? = nil) -> Dealt {
         var dice = Dice(seed: seed)
+        return deal(dice: &dice, deck: given, botDeck: botDeck)
+    }
+
+    /// The same deal, drawn from a game's dice so the record keeps its rolls.
+    public static func deal(dice: inout Dice, deck given: [Card]? = nil, botDeck: [Card]? = nil) -> Dealt {
         var deck = given ?? (0..<52).map { Card(standard: $0) }
         dice.shuffle(&deck, stream: "round", purpose: "shuffle")
         guard var own = botDeck else { return Dealt(player: Array(deck[0..<6]), bot: Array(deck[6..<12]), starter: deck[12]) }

@@ -1,6 +1,7 @@
 // The app's game state: a game of match turns (its deck lasts the game), the turn being played,
 // the player's input mode and the timer.
-// The engine decides everything; this only sends actions and keeps the events.
+// The engine decides everything; this only sends actions and keeps the events. The game runs
+// through GameKit's GameRun, so every step can go to a recorder (the beta's GameRecord file).
 import CardKit
 import CribMaze
 import CribMazeBots
@@ -61,7 +62,14 @@ final class GameSession {
     private(set) var gameAtTurnStart: MatchGame?
     private(set) var turn: MatchTurn?
     private(set) var events: [MatchEvent] = []
-    private(set) var actions: [MatchAction] = []
+    /// The game as the engine has it: always current, while `turn` shows what's been presented.
+    private(set) var run: GameRun<CribMazeGame>?
+    /// Where steps go besides the screen: the beta's record file; none in release or snapshots.
+    private var recorder: (any GameRecorder)?
+    /// Game time starts at the game's start.
+    private var startedAt = ContinuousClock.now
+    /// The demo bot's own dice, apart from the game's.
+    private var botDice = Dice(seed: 1)
     private(set) var feed: [FeedLine] = []
     private(set) var breakdown: Breakdown?
     private(set) var toast: String?
@@ -129,7 +137,7 @@ final class GameSession {
     /// How long a pause before a discard hint shows (concept.md › Hints: subtle).
     static let hintAfter: TimeInterval = 8
 
-    struct DealRecord: Encodable {
+    struct DealRecord: Codable {
         let dealt: [String], thrown: [String], botThrown: [String], starter: String
         let hint: String?, hintCards: [String], hintAsked: Bool, hintAfterMs: Int?, decideMs: Int
     }
@@ -173,8 +181,9 @@ final class GameSession {
                                 starter: d.dealt.starter.notation, hint: d.hint?.principle.rawValue, hintCards: d.hint?.cards.map(\.notation) ?? [],
                                 hintAsked: d.asked, hintAfterMs: d.hintAt.map(ms), decideMs: ms(Date()))
         dealing = nil
-        guard let g = game else { return }
-        begin(g.setup(dealt: d.dealt, thrown: d.picked, botThrown: bot.thrown))
+        guard let step = act(.discard(thrown: d.picked.map(CardRef.init))) else { return }
+        recorder?.note("deal_hint", dealRecord)
+        begin(step)
     }
 
     // MARK: Turn
@@ -185,7 +194,11 @@ final class GameSession {
         seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
         seedText = ""
         c.rules.deck = .init(shared: settings.sharedDeck, minSize: c.rules.deck?.minSize)
-        game = MatchGame(config: c, seed: seed, firstDealer: settings.dealer)
+        let (r, opening) = GameRun<CribMazeGame>.start(.init(c, firstDealer: settings.dealer), seed: seed, players: [.human(0), .bot(1, level: "classic")])
+        run = r; game = r.state.game; startedAt = .now; botDice = Dice(seed: seed); savedRecord = nil
+        recorder = Edition.isBeta && animate ? Recording.recorder() : nil   // snapshots (animate off) save no records
+        recorder?.started(r)
+        recorder?.record(opening)
         startTurn()
     }
     /// The old name, for the snapshot tools: a new game.
@@ -195,90 +208,103 @@ final class GameSession {
     func nextTurn() { guard moreTurns, over else { return }; startTurn() }
 
     private func startTurn() {
-        guard config != nil, let g = game else { return }
-        gameAtTurnStart = g
+        guard config != nil, let g = run?.state.game else { return }
+        game = g; gameAtTurnStart = g
         dealRecord = nil; hintTask?.cancel()
         let strong = settings.hand == "strong"
-        if settings.deal && !strong {
+        let options = CribMazeGame.HandOptions(deal: settings.deal && !strong, fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil,
+                                               cardBudget: settings.budget, timerSeconds: settings.timer ? nil : 0)
+        guard let step = act(.startHand(options)) else { return }
+        if case .dealing(let dealt, let botThrown, _) = run?.state.stage {
             // Deal first: the turn starts once you've thrown to the crib.
             timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
-            turn = nil; events = []; actions = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
+            turn = nil; events = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
             playback.reset()
-            let dealt = g.deal()
-            dealing = DealState(dealt: dealt, botThrown: Deal.classicKeep(dealt.bot, scoring: config?.rules.scoring ?? Scoring()).thrown)
+            dealing = DealState(dealt: dealt, botThrown: botThrown)
             watchHint()
             return
         }
         dealing = nil
-        begin(g.setup(fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil))
+        begin(step)
     }
 
-    private func begin(_ setup: TurnSetup) {
-        guard var c = config else { return }
-        c.rules.match.cardBudget = settings.budget
-        c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
+    /// Shows the turn a step started.
+    private func begin(_ step: Step<CribMazeGame>) {
+        guard let t = run?.state.turn else { return }
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
-        let (t, ev) = MatchTurn.start(config: c, setup: setup)
-        turn = t; events = ev; actions = []; feed = []; breakdown = nil; mode = .trace; savedRecord = nil; selection = []; armedSource = nil; warning = nil; toast = nil
+        let ev = step.events.compactMap(\.matchEvent)
+        turn = t; events = ev; feed = []; breakdown = nil; mode = .trace; selection = []; armedSource = nil; warning = nil; toast = nil
         for e in ev { describe(e) }
-        secondsLeft = c.rules.match.timerSeconds
+        secondsLeft = t.config.rules.match.timerSeconds
         startTimer()
+    }
+
+    /// Sends an action to the engine, stamped with the game time, and hands the step to the recorder.
+    private func act(_ action: CribMazeGame.Action, by player: PlayerID? = 0) -> Step<CribMazeGame>? {
+        guard var r = run else { return nil }
+        let d = ContinuousClock.now - startedAt
+        let ms = Int(d.components.seconds) * 1000 + Int(d.components.attoseconds / 1_000_000_000_000_000)
+        do {
+            let step = try r.send(action, by: player, clockMs: ms)
+            run = r
+            recorder?.record(step)
+            if let result = r.result { recorder?.ended(result) }
+            savedRecord = recorder?.url
+            return step
+        } catch {
+            show("\(error)")
+            return nil
+        }
     }
 
     // MARK: Input
 
     /// One move by a bot, through the same path as the player's (used by the demo).
     func botMove(_ id: String = "medium") {
-        guard !busy, warning == nil, info == nil, var t = turn, !t.state.over, let c = config, let bot = MatchBot(config: c, id: id) else { return }
-        var d = t.dice
-        let a = bot.choose(t, dice: &d)
-        t.dice = d
-        turn = t
-        send(a)
+        guard !busy, warning == nil, info == nil, let t = turn, !t.state.over, let c = config, let bot = MatchBot(config: c, id: id) else { return }
+        send(bot.choose(t, dice: &botDice))
     }
 
     func send(_ action: MatchAction) {
         guard !busy, let old = turn, !old.state.over else { return }
-        var t = old
-        do {
-            let ev = try t.apply(action)
-            actions.append(action); events += ev
-            // What pops first: the scored set, or the cards a bomb hits.
-            var hit: Set<Pos> = [], bomb = false
-            for e in ev {
-                if case .score(let ps, _, _, _, _, _, _, _, _, _, _, _) = e { hit = Set(ps.compactMap(Board.parse)) }
-                if case .bomb(_, _, let cleared, _) = e {
-                    let ids = Set(cleared.map(\.id)); bomb = true
-                    hit = Set((0..<Board.count).filter { old.state.cells[$0].map { ids.contains($0.id) } ?? false })
-                }
-                if case .burn(let target, _, _, _) = e, let p = Board.parse(target) { hit = [p]; bomb = true }
+        // The timer, a reach running out and a stuck board are the session's, not the player's.
+        let player: PlayerID? = switch action { case .timeUp, .reachOver, .endTurn: nil; default: 0 }
+        guard let step = act(.match(action), by: player), let t = run?.state.turn else { return }
+        let ev = step.events.compactMap(\.matchEvent)
+        events += ev
+        // What pops first: the scored set, or the cards a bomb hits.
+        var hit: Set<Pos> = [], bomb = false
+        for e in ev {
+            if case .score(let ps, _, _, _, _, _, _, _, _, _, _, _) = e { hit = Set(ps.compactMap(Board.parse)) }
+            if case .bomb(_, _, let cleared, _) = e {
+                let ids = Set(cleared.map(\.id)); bomb = true
+                hit = Set((0..<Board.count).filter { old.state.cells[$0].map { ids.contains($0.id) } ?? false })
             }
-            guard animate, !hit.isEmpty else { commit(t, ev); return }
-            if !bomb, settings.breakdown, let score = ev.first(where: { if case .score = $0 { return true }; return false }) {
-                busy = true; selection = []
-                Task { [weak self] in
-                    guard let self else { return }
-                    await self.playBreakdown(score, before: old.state)
-                    withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.reset() }
-                    self.commit(t, ev)
-                    withAnimation(.spring(duration: Motion.t(0.26))) { self.playback.bump = true }
-                    try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
-                    withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.bump = false }
-                    self.busy = false
-                }
-                return
-            }
-            busy = true; flash = hit; flashIsBomb = bomb
+            if case .burn(let target, _, _, _) = e, let p = Board.parse(target) { hit = [p]; bomb = true }
+        }
+        guard animate, !hit.isEmpty else { commit(t, ev); return }
+        if !bomb, settings.breakdown, let score = ev.first(where: { if case .score = $0 { return true }; return false }) {
+            busy = true; selection = []
             Task { [weak self] in
-                try? await Task.sleep(for: .milliseconds(Motion.ms(bomb ? 380 : 340)))
                 guard let self else { return }
-                self.flash = []
+                await self.playBreakdown(score, before: old.state)
+                withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.reset() }
                 self.commit(t, ev)
+                withAnimation(.spring(duration: Motion.t(0.26))) { self.playback.bump = true }
                 try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
+                withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.bump = false }
                 self.busy = false
             }
-        } catch {
-            show("\(error)")
+            return
+        }
+        busy = true; flash = hit; flashIsBomb = bomb
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(Motion.ms(bomb ? 380 : 340)))
+            guard let self else { return }
+            self.flash = []
+            self.commit(t, ev)
+            try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
+            self.busy = false
         }
     }
 
@@ -537,41 +563,12 @@ final class GameSession {
         }
     }
 
-    // MARK: Records (beta only: local files)
+    // MARK: Game end
 
     private func finish() {
         timerTask?.cancel()
-        guard let t = turn else { return }
-        // The turn's made and burned cards change the game's deck; its power jokers and prize carry on.
-        if var g = game, !g.over, g.results.count == (gameAtTurnStart?.results.count ?? 0) { g.finish(t, events: events); game = g }
-        guard Edition.isBeta, animate else { return }   // snapshots (animate off) save no records
-        struct GameInfo: Encodable { let seed: UInt64, turn: Int, turns: Int, shared: Bool, deckSize: Int, made: [CardRef], burned: [CardRef] }
-        struct Record: Encodable {
-            let rulesVersion: String, seed: UInt64, dealer: Bool, app: String
-            let game: GameInfo?
-            let deal: DealRecord?
-            let actions: [MatchAction]; let rolls: [Roll]; let events: [MatchEvent]
-        }
-        let app = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") + " (" + (Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?") + ")"
-        let info = game.map { g in GameInfo(seed: g.seed, turn: g.results.count, turns: g.turns, shared: g.shared, deckSize: g.deck.count,
-                                             made: g.deck.made.map(CardRef.init), burned: g.deck.burned.map(CardRef.init)) }
-        let turnSeed = gameAtTurnStart?.turnSeed ?? seed
-        let rec = Record(rulesVersion: MatchTurn.rulesVersion, seed: turnSeed, dealer: t.state.dealer, app: app, game: info, deal: dealRecord, actions: actions, rolls: t.dice.rolls, events: events)
-        do {
-            let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let dir = support.appendingPathComponent("\(Edition.name)/records", isDirectory: true)
-            // The beta was called Crib Maze Beta until 0.9.1: bring its records along once.
-            let old = support.appendingPathComponent("Crib Maze Beta/records", isDirectory: true)
-            if Edition.isBeta, !FileManager.default.fileExists(atPath: dir.path), FileManager.default.fileExists(atPath: old.path) {
-                try FileManager.default.createDirectory(at: dir.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.moveItem(at: old, to: dir)
-            }
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd-HHmmss"
-            let url = dir.appendingPathComponent("match-\(f.string(from: Date()))-seed\(seed)-turn\(game?.results.count ?? 1).json")
-            let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-            try enc.encode(rec).write(to: url)
-            savedRecord = url
-        } catch { show("Couldn't save the record: \(error.localizedDescription)") }
+        // The engine has finished the hand: the turn's made and burned cards are in the game's deck,
+        // its power jokers and prize carry on. The record was written as the game was played.
+        game = run?.state.game
     }
 }

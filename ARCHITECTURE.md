@@ -71,27 +71,31 @@ Bots use the same path. A bot picks an action from its view of the game, and Gam
 Each game implements one protocol from GameKit. Classic cribbage and Crib Maze share it, so the simulator can run either.
 
 ```swift
-public protocol GameRules: Sendable {
+public protocol GameRules {
     associatedtype Config: Codable & Sendable   // rules options, tuning values
-    associatedtype State: Codable & Sendable    // everything, hidden cards included
-    associatedtype Action: Codable & Sendable   // a choice by a player, or the clock
+    associatedtype State: Sendable              // everything, hidden cards included
+    associatedtype Action: Codable & Sendable   // a choice by a player, or the session
     associatedtype Event: Codable & Sendable    // something that happened
+    associatedtype Result: Codable & Sendable   // how a finished game came out
 
     static var gameID: String { get }           // "crib-maze"
-    static var rulesVersion: String { get }     // "match-r14"
+    static var rulesVersion: String { get }     // "match-r23"
 
     static func start(_ config: Config, players: [PlayerSeat], dice: inout Dice) -> (State, [Event])
-    static func legalActions(_ state: State, for player: PlayerID) -> [Action]
-    static func apply(_ action: Action, by player: PlayerID, to state: inout State, dice: inout Dice) throws -> [Event]
-    static func view(_ state: State, for player: PlayerID) -> PlayerView<Self>
+    static func apply(_ action: Action, by player: PlayerID?, to state: inout State, dice: inout Dice) throws -> [Event]
+    static func hand(of state: State) -> Int?       // the hand (round, stage) the game is in
+    static func result(of state: State) -> Result?  // nil until the game is over
 }
 ```
+
+Built in phase C (0.15.0). `legalActions` and `view` come when the bots and the presenter move onto the protocol; the bots still take a `MatchTurn`. `State` isn't `Codable` yet: nothing stores it, since resume replays the actions. `player` is nil for the session's own actions (`timeUp`, `reachOver`, a stuck board's `endTurn`).
 
 A step is the unit everything else consumes:
 
 ```swift
 public struct Step<G: GameRules>: Codable, Sendable {
-    public let seq: Int
+    public let seq: Int            // 1 is the opening step
+    public let hand: Int?          // the hand the game is in after this step
     public let clockMs: Int        // game time, from GameSession's clock
     public let player: PlayerID?
     public let action: G.Action?   // nil for the opening step
@@ -99,6 +103,10 @@ public struct Step<G: GameRules>: Codable, Sendable {
     public let events: [G.Event]
 }
 ```
+
+`GameRun<G>` in GameKit holds a game's state and dice and turns each action into a step: it numbers the steps, keeps only the rolls the action drew, and leaves the state as it was when an action is illegal. The beta, the simulator and the replayer all play through it.
+
+Crib Maze plays as `CribMazeGame`, a game of hands (`engine.md` › The game as steps). Each hand is a deal and a match turn now; pegging and the maze join the same hand as they're built, so a record holds 5 to 13 hands without a format change.
 
 ### Rules for the engine
 
@@ -181,10 +189,12 @@ public protocol StepObserver<G>: AnyObject {
 
 // GameRecord
 public final class RecordWriter<G: GameRules>: StepObserver { ... }   // writes JSON Lines
-public struct RecordReader<G: GameRules> { ... }                       // reads one file or a folder
+public enum RecordReader<G: GameRules> { ... }                         // reads one file or a folder
 public struct Replayer<G: GameRules> { ... }                           // verify, scripted, step through
 public struct Counts { ... }                                           // events by type, rolls by purpose
 ```
+
+`gameEnded` takes the game's own `G.Result`. GameRecord never reads the clock: the writer is handed one, so tests write byte-identical records. In the app, GameSession doesn't name GameRecord: it hands steps to a small `GameRecorder` the beta target provides (`App/Beta/Recording.swift`) and the release target leaves out. The beta holds a game's first steps back until the player makes a choice, so the game the app opens on launch leaves no file.
 
 ### File format
 
@@ -209,6 +219,17 @@ One JSON Lines file per game, written as the game is played and flushed after ev
 - Event names follow the tables in `stats.md` › Event log, so records and the mocks' logs read the same way.
 - Files live in the beta app's container, under `Records/<YYYY-MM-DD>/<time>-<game>.jsonl`. The beta app can reveal them in Finder or export a set into `playtests/`.
 
+As built (format 1, 0.15.0):
+
+- Keys are camelCase, as the Swift types and `engine.md`'s field names are: `clockMs`, `{"turnStart": …}`. Event names match `stats.md` › Event log by meaning, not by case. JSON keys are sorted, so the same game writes the same bytes; `kind` isn't first on the line.
+- The seed is decimal text (`"seed":"12345"`), the number the beta shows, since JSON numbers lose precision past 2^53.
+- A roll is `{"stream","purpose","n","value"}`, a draw below n, as `engine.md` › Dice reports it.
+- The header's `config` is the config files as the game ran them, plus `firstDealer`. Each hand's own settings (deal on or off, fixed cards, card budget, timer) ride on its `startHand` action, since the beta's settings can change between hands.
+- `{"kind":"note","after":<seq>,"name":…,"data":…}` lines hold app behaviour that isn't an action, such as the deal's hint (`deal_hint`). Replays skip them.
+- A record without an end line is a game that was left, or is still going. A last line cut short by a crash is dropped and the rest is kept.
+- The beta writes under Application Support/Noddy Yookerspiel/Records. Its old per-turn records (`match-….json`, 0.8.0 to 0.14.0) stay in the same folder, untouched: they lack the config and each action's own events, so they can't be replayed, and GameRecord doesn't read them.
+- `cribmaze-sim record` writes bot games in the same format; the golden replays in `cribbage/minigames/fixtures/records/` are made with it.
+
 ### Replay
 
 | Mode | How | Used for |
@@ -218,6 +239,8 @@ One JSON Lines file per game, written as the game is played and flushed after ev
 | Watch | Run either mode through the presenter, step by step or at speed | Reviewing a playtest in the beta app |
 
 A record from another rules version MAY still replay in scripted mode, but stats MUST NOT pool records across rules versions (`stats.md` › Mock playtests).
+
+`cribmaze-sim replay <file or folder>... [--scripted] [--counts]` checks records from the command line and exits 1 if any differ; it says which step and which roll or event, and notes a record made under other rules. In scripted mode `Dice` hands back the recorded rolls and, at the first one out of step, says where and carries on from the seed, so the replay reports it instead of stopping. Each Crib Maze hand starts its dice again from the hand's seed (`Dice.reseed`); scripted dice carry on through their script.
 
 ### Stats
 
@@ -362,7 +385,7 @@ Each phase ends with something that runs. Phases A to D are engine work and can 
 |---|---|---|
 | A · Foundations | `swift/` package and XcodeGen project with both targets, version stamping, `scripts/check.sh` (format, build, test), the banned-calls test | Both apps launch to an empty window showing their versions |
 | B · Cards and counting | Engine spec first draft; GameKit (protocol, Dice, Step), CardKit, CribbageKit counting written fresh; port `scoring.test.js` to shared fixtures; config loading and checks | Swift and JS pass the same fixtures |
-| C · Records | Next on the engine track (2026-11-15). GameRecord writer, reader, replayer, counts; `cribmaze-sim replay` | A toy game records, verifies and replays in scripted mode |
+| C · Records | Done in 0.15.0 (2026-11-16). GameRecord writer, reader, replayer, counts; `cribmaze-sim replay` and `record`; the beta writes through it | A toy game records, verifies and replays in scripted mode |
 | D · Match turn engine | CribMaze match turn at the rules of the time (r15; r23 now), jokers and reveals, special jokers, config; bots at every level; `cribmaze-sim run` and `report` | 10,000 bot turns run clean; bot numbers match the mock's within noise |
 | E · Mac beta, playable | Effects spike (`Effect requirements`), then the match turn scene, GameSession, presenter, basic GameFX (breakdown, joker reveal, sounds), recording on | Bruce plays a match turn and finds its record |
 | F · Beta tools | Records browser, replay viewer, stats dashboard (Swift Charts), animation lab, tuning panel | A playtest can be replayed, graphed and its effects retuned without code |
@@ -389,6 +412,8 @@ Each phase ends with something that runs. Phases A to D are engine work and can 
 | 2026-11-14 | Swift Testing for all tests; macOS 26 and iOS 26 minimum |
 | 2026-11-14 | The beta is local Mac builds; TestFlight comes with iOS |
 | 2026-11-14 | Classic counting is written fresh for this game, against shared fixtures. ScorekeepCore's `Cribbage.swift` MAY be read where it helps; we compare notes as the engine grows |
+| 2026-11-16 | A record is one game of hands, not one match turn; each step carries its hand. Each hand's settings ride on its `startHand` action |
+| 2026-11-16 | Old per-turn beta records (before 0.15.0) are left as they are, not converted: they can't be replayed |
 
 ## Card counting: why fresh
 

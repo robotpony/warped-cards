@@ -55,4 +55,25 @@ struct DiceFixture: Decodable {
         var s = Dice(scripted: d.takeRolls(), seed: 0)
         #expect((0..<5).map { _ in s.below(10, stream: "deal", purpose: "x") } == a)
     }
+
+    /// A hand starts its dice again from its own seed; scripted dice carry on through their script.
+    @Test func reseedStartsEveryStreamAgain() {
+        var a = Dice(seed: 1)
+        _ = a.below(100, stream: "deal", purpose: "x")
+        a.reseed(99)
+        var b = Dice(seed: 99)
+        #expect(a.below(1000, stream: "deal", purpose: "x") == b.below(1000, stream: "deal", purpose: "x"))
+        #expect(a.seed == 99)
+    }
+
+    /// A script that's out of step says where, and the draws carry on from the seed.
+    @Test func scriptProblemsAreReported() {
+        var s = Dice(scripted: [Roll(stream: "deal", purpose: "x", n: 10, value: 3)], seed: 0)
+        #expect(s.below(10, stream: "deal", purpose: "x") == 3 && s.scriptProblem == nil && s.scriptLeft == 0)
+        _ = s.below(10, stream: "deal", purpose: "x")
+        #expect(s.scriptProblem?.contains("ran out") == true)
+        var t = Dice(scripted: [Roll(stream: "deal", purpose: "x", n: 10, value: 3)], seed: 0)
+        _ = t.below(5, stream: "deal", purpose: "x")
+        #expect(t.scriptProblem?.contains("below 10") == true)
+    }
 }

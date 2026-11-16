@@ -115,7 +115,24 @@ A game is `game.turns` match turns (3 for now). The deck lasts the game: deck bu
 
 Each finished turn keeps a result: turn, dealer, steps, best, prize tier and special, the cards made and burned, and the deck size after.
 
-The deal's hint (concept.md › Discard principles) is app behaviour, not an action; the beta records it with the turn.
+The deal's hint (concept.md › Discard principles) is app behaviour, not an action; the beta records it beside the steps, as a note.
+
+### The game as steps
+
+A whole game also runs one action at a time, so it can be recorded and replayed (ARCHITECTURE.md › GameRecord). A game is a sequence of hands. Each hand is the deal (or fixed cards) and then a match turn; pegging and the maze will join each hand as they're specced.
+
+| Game action | Fields | Allowed when |
+|---|---|---|
+| `startHand` | options: deal (on or off), fixed hand and starter, card budget, timer seconds, warned | Before the first hand, or after a hand that didn't end the game |
+| `discard` | thrown: the player's 2 cards, as `{id, card}` | During the deal; both cards from the player's 6 |
+| a match turn action | as in Actions below | During the hand's match turn |
+
+1. The game starts with the game's seed and emits `game_start` (hands, shared, firstDealer, deckSize).
+2. `startHand` starts every dice stream again from the hand's seed (The game › Seeds) and emits `hand_start` (hand, seed, dealer, deckSize, options). With the deal on and no fixed cards, it deals (The deal, drawing from these dice) and emits `deal` (player, bot, starter). Otherwise the match turn starts at once, with the fixed cards or off the top of the deck.
+3. `discard` throws the player's 2; the bot throws by its best classic keep. It emits `discard` (kept, thrown, botKept, botThrown), then starts the match turn with the hand's options.
+4. When the match turn ends, the hand ends: `hand_end` (the turn's result). After the last hand, `game_end` (hands, steps).
+
+A hand's options are the app's settings when it starts, so they ride on the action, not in the config. Because every hand starts its dice from its own seed, a hand plays exactly as the same turn does when the deal and the turn are run on their own.
 
 ## Actions
 
@@ -324,7 +341,7 @@ Each game has a 64-bit seed. Each stream is its own generator:
 4. A weighted pick from integer weights draws below the total weight and walks the entries in the order given, taking the first whose running total passes the draw.
 5. A shuffle is Fisher-Yates from the end: for i from the last index down to 1, draw j below i + 1 and swap i and j.
 
-Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle reports one roll per swap step. The reference is `mocks/dice.js`; `fixtures/dice.json` holds its values for every port to match.
+A game's dice can start every stream again from a new seed, as each hand does (The game as steps). Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle reports one roll per swap step. The reference is `mocks/dice.js`; `fixtures/dice.json` holds its values for every port to match.
 
 | Stream | Purposes, in the order they happen |
 |---|---|

@@ -68,29 +68,51 @@ public struct DiceStream: Sendable {
 
 /// All of a game's streams. Every draw is logged as a Roll; the caller drains them per step.
 public struct Dice: Sendable {
-    public let seed: UInt64
+    public private(set) var seed: UInt64
     private var streams: [String: DiceStream] = [:]
     public private(set) var rolls: [Roll] = []
     /// Scripted mode: rolls handed back in order instead of drawn (replays across generator changes).
     private var script: [Roll]?
+    private var scriptAt = 0
+    /// In scripted mode, the first draw that didn't match the script (or ran past its end). From
+    /// then on draws come from the seed, so a replay can finish and report it.
+    public private(set) var scriptProblem: String?
 
     public init(seed: UInt64) { self.seed = seed }
     public init(scripted rolls: [Roll], seed: UInt64) { self.seed = seed; script = rolls }
 
+    public var isScripted: Bool { script != nil }
+    /// Scripted rolls not handed back yet.
+    public var scriptLeft: Int { (script?.count ?? 0) - scriptAt }
+
+    /// Starts every stream again from a new seed, as a game does at each hand (engine.md › The
+    /// game › Seeds). Scripted dice carry on through their script.
+    public mutating func reseed(_ newSeed: UInt64) {
+        seed = newSeed
+        streams = [:]
+    }
+
     public mutating func below(_ n: Int, stream: String, purpose: String) -> Int {
-        let value: Int
-        if script != nil {
-            guard let r = script?.first else { preconditionFailure("script ran out of rolls") }
-            script?.removeFirst()
-            precondition(r.stream == stream && r.purpose == purpose && r.n == n, "script out of step at \(stream)/\(purpose)")
-            value = r.value
-        } else {
+        var value: Int?
+        if let script, scriptProblem == nil {
+            if scriptAt < script.count {
+                let r = script[scriptAt]
+                if r.stream == stream && r.purpose == purpose && r.n == n && r.value < n {
+                    value = r.value; scriptAt += 1
+                } else {
+                    scriptProblem = "roll \(scriptAt + 1): the script has \(r.stream)/\(r.purpose) below \(r.n), the game drew \(stream)/\(purpose) below \(n)"
+                }
+            } else {
+                scriptProblem = "roll \(scriptAt + 1): the script ran out at \(stream)/\(purpose)"
+            }
+        }
+        if value == nil {
             var st = streams[stream] ?? DiceStream(gameSeed: seed, name: stream)
             value = st.below(n)
             streams[stream] = st
         }
-        rolls.append(Roll(stream: stream, purpose: purpose, n: n, value: value))
-        return value
+        rolls.append(Roll(stream: stream, purpose: purpose, n: n, value: value!))
+        return value!
     }
 
     /// A weighted pick from integer weights, in the order given.

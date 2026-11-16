@@ -2,6 +2,12 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.15.0 — 2026-11-16
+
+### Changed
+
+- Each game is now saved as one record, written as you play, instead of one file per turn. Settings › Advanced › Show the game record finds it. Records from earlier builds stay where they were.
+
 ## 0.14.0 — 2026-11-15
 
 ### Added

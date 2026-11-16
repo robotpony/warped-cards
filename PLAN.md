@@ -29,7 +29,7 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 
 ## Phase 5 · Swift engine and simulator
 
-- [ ] GameRecord: records, replay, counts; next, before more deck edits (`ARCHITECTURE.md` › C)
+- [x] GameRecord: records, replay, counts; next, before more deck edits (`ARCHITECTURE.md` › C, 0.15.0)
 - [ ] The game as hands until a player exits the maze, replacing the 3-turn game (`engine.md` › The game)
 - [ ] Classic cribbage hands, pegging and bots in Swift (`ARCHITECTURE.md` › D)
 - [ ] Bots that burn, and bots' grid turns that change the deck (`rules.md` › Match turns)

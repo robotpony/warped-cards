@@ -499,7 +499,7 @@ struct SidePanel: View {
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
         if let url = session.savedRecord {
-            Button("Show the turn record") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.link)
+            Button("Show the game record") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.link)
         }
         Text("How to play: drag across touching cards (diagonals count), or tap cards and tap the last again. Every set needs a grid card. Hand, crib and starter cards stay and power up.")
             .font(.caption).foregroundStyle(.secondary)

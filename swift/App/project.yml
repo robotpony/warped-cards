@@ -11,7 +11,7 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
-    MARKETING_VERSION: "0.14.0"
+    MARKETING_VERSION: "0.15.0"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_IDENTITY: "-"
@@ -45,10 +45,16 @@ targetTemplates:
         script: |
           n=$(git -C "$SRCROOT" rev-list --count HEAD 2>/dev/null || echo 1)
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $n" "$TARGET_BUILD_DIR/$INFOPLIST_PATH"
+          c=$(git -C "$SRCROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)
+          /usr/libexec/PlistBuddy -c "Set :GitCommit $c" "$TARGET_BUILD_DIR/$INFOPLIST_PATH" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :GitCommit string $c" "$TARGET_BUILD_DIR/$INFOPLIST_PATH"
 targets:
   CribMazeBeta:
     templates: [App]
     sources: [Beta]
+    dependencies:
+      # GameRecord: the beta only (ARCHITECTURE.md › GameRecord).
+      - package: CribMazeEngine
+        product: GameRecord
     settings:
       base:
         PRODUCT_NAME: "Noddy Yookerspiel"

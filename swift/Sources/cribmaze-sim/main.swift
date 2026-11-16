@@ -2,6 +2,8 @@
 //
 //   cribmaze-sim run --level medium --turns 1000 --seed 1 [--dealer] [--reach stuck|early] [--config <folder>]
 //   cribmaze-sim game --games 500 [--level medium] [--own] [--burn none|dead]   (Game.swift)
+//   cribmaze-sim record --games 3 [--seed 1] [--out <folder>]                    (Record.swift)
+//   cribmaze-sim replay <file or folder>... [--scripted] [--counts]             (Record.swift)
 //
 // Turn i plays from seed + i, bot seat 0, starting tray from config, warned set
 // (bots count as already warned). Config defaults to ../cribbage/minigames/config.
@@ -24,6 +26,9 @@ struct Options {
 func usage(_ why: String? = nil) -> Never {
     if let why { FileHandle.standardError.write(Data("cribmaze-sim: \(why)\n".utf8)) }
     print("usage: cribmaze-sim run --level <perfect|strong|medium|weak> --turns <n> --seed <n> [--dealer] [--reach stuck|early] [--config <folder>]")
+    print("       cribmaze-sim game --games <n> [--level <id>] [--seed <n>] [--own] [--burn none|weak] [--fresh-tray] [--fresh-deck] [--config <folder>]")
+    print("       cribmaze-sim record --games <n> [--seed <n>] [--level <id>] [--out <folder or file.jsonl>] [--config <folder>]")
+    print("       cribmaze-sim replay <file or folder>... [--scripted] [--counts]")
     exit(why == nil ? 0 : 2)
 }
 
@@ -67,6 +72,8 @@ struct Tally {
 
 if CommandLine.arguments.dropFirst().first == "discard" { runDiscard(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "game" { runGame(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
+if CommandLine.arguments.dropFirst().first == "record" { runRecord(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
+if CommandLine.arguments.dropFirst().first == "replay" { runReplay(Array(CommandLine.arguments.dropFirst(2))) }
 if CommandLine.arguments.dropFirst().first == "principles" { runPrinciples(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 let o = parse(Array(CommandLine.arguments.dropFirst()))
 let config: Config
@@ -75,12 +82,7 @@ guard var bot = MatchBot(config: config, id: o.level) else { usage("no bot level
 bot.reachEarly = o.reachEarly
 
 // A person's pace, for timing reach jokers (timing.json › profiles.human.trace).
-let traceMs: Double = {
-    let url = URL(fileURLWithPath: o.config).appendingPathComponent("timing.json")
-    guard let d = try? Data(contentsOf: url), let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-          let p = j["profiles"] as? [String: Any], let h = p["human"] as? [String: Any], let ms = h["trace"] as? Double else { return 4000 }
-    return ms
-}()
+let traceMs = humanTraceMs(o.config)
 
 var t = Tally()
 let started = Date()
