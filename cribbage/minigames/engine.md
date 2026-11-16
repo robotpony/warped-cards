@@ -79,10 +79,10 @@ There are two ways in. A full game sets up each match turn from the round (to be
 
 ### Standalone turn
 
-Inputs: the seed, config, whether the player is the dealer, the player's tray, and optionally fixed cards (a hand and starter) for tests and scenarios.
+Inputs: the seed, config, whether the player is the dealer, the player's tray, optionally the game's deck (r23), and optionally fixed cards (a hand and starter) for tests and scenarios.
 
-1. Build the standard 52 in ID order. Shuffle it (stream `deal`, purpose `shuffle`).
-2. If fixed cards are given, take them out of the deck in the order given. Otherwise deal the hand (the top 4) and then the starter (the next card).
+1. Take the game's deck in ID order, or the standard 52 without one. Shuffle it (stream `deal`, purpose `shuffle`).
+2. If fixed cards are given, take them out of the deck in the order given. A fixed card the deck doesn't hold (burned, or from the other player's own deck) is used as given. Otherwise deal the hand (the top 4) and then the starter (the next card).
 3. Deal the crib: the fixed crib if given, else the next 4. A non-dealer's crib cards are still removed, so the stock is the same size either way, but the crib stays empty on their board.
 4. Remove the other player's hand: the held cards if given, else the next 4.
 5. Decide the jokers: a count from `jokers.perRound` (stream `deal`, purpose `joker_count`), then each joker's kind from `jokers.kinds` weights (purpose `joker_kind`, one draw per joker). Add them, then the configured extras (`title`, `blank`), to the end of the deck, giving IDs in that order.
@@ -90,15 +90,30 @@ Inputs: the seed, config, whether the player is the dealer, the player's tray, a
 7. Fill the grid from the top of the stock, row by row (g00 first). These draws count toward the card budget.
 8. Emit `turn_start`. Then resolve any extra cards on the grid (see Extra cards), then run the after-action checks.
 
-Later: in a full game, the round's shuffle decides the jokers (rules r14), and each match turn shuffles every card not in a hand, the crib or the starter.
+The turn's deck size starts at the deck's card count. New made cards take IDs from 200, after the highest made card already in the deck, so a made card keeps its ID for the whole game.
+
+Later: in a full game, the round's shuffle decides the jokers (rules r14).
 
 ### The deal (2 players)
 
 Before a turn, the player is dealt 6 and throws 2 to the crib (rules.md › Deal and discard).
 
-1. Build the standard 52 in ID order and shuffle it (stream `round`, purpose `shuffle`). The player's 6 are cards 0 to 5, the bot's 6 are 6 to 11, and the starter is card 12.
+1. Take the game's deck in ID order (the standard 52 without one) and shuffle it (stream `round`, purpose `shuffle`). The player's 6 are cards 0 to 5, the bot's 6 are 6 to 11, and the starter is card 12.
+   With own decks (`deck.shared` false), the player's 6 are cards 0 to 5 and the starter is card 6. The bot's 6 come from its own deck, less those 7 cards by ID, shuffled (stream `round`, purpose `bot_shuffle`).
 2. The player picks 2 to throw, untimed. The bot keeps its best classic hand: for each of the 15 ways to keep 4, the mean classic count over the 46 starters the deal leaves (hand flushes and his nobs count; no crib estimate), first found on a tie.
-3. Start the turn with the player's kept 4 as the fixed hand, the starter, the crib as fixed cards (the dealer's throw first) and the bot's kept 4 as held cards.
+3. Start the turn with the player's kept 4 as the fixed hand, the starter, the crib as fixed cards (the dealer's throw first) and the bot's kept 4 as held cards. From a game's deck, the setup MUST carry the cards themselves, not their notation, since made cards share notation with standard ones.
+
+### The game (r23)
+
+A game is `game.turns` match turns (3 for now). The deck lasts the game: deck building (concept.md › Decisions, 2026-11-15).
+
+- **Deck.** Starts as the standard 52. When a turn ends, every card made in it joins the deck, and every card burned in it leaves. The deck holds its cards in ID order and keeps a list of burned cards.
+- **Own decks.** With `deck.shared` false, the player and the bot each have a deck. Bots don't play grid turns yet, so every change goes into the player's deck, and the bot's stays standard.
+- **Seeds.** Turn 1 uses the game's seed, so a one-turn game plays as a standalone turn from the same seed. Turn n after that uses FNV-1a 64 of the text `<seed>/turn<n>`.
+- **Dealer.** The player deals turn 1 when the game says so; the deal then alternates.
+- **Power jokers.** The tray starts from `specials.start`. A turn starts with the tray the last one ended with, plus the special joker its prize won.
+
+Each finished turn keeps a result: turn, dealer, steps, best, prize tier and special, the cards made and burned, and the deck size after.
 
 The deal's hint (concept.md › Discard principles) is app behaviour, not an action; the beta records it with the turn.
 
@@ -113,6 +128,7 @@ Each action names the player and carries the clock time (`clockMs`) from the ses
 | `bomb` | target grid position; source: `tray` or the board position of a bomb | Turn not over; the player has the bomb; the target holds a card |
 | `reach` | source: `tray` or the board position of a reach joker | Turn not over; the player has the reach joker (r19) |
 | `reach_over` | id of a reach in effect | Turn not over; that reach is in effect. Sent by the session when the reach's seconds are up |
+| `burn` | target grid position; source: `tray` or the board position of a burn joker | Turn not over; the player has the burn joker; the target holds a playing card; the deck is above `deck.minSize` (r23) |
 | `end_turn` | none | Turn not over |
 | `time_up` | none | Turn not over and the timer is on; sent by the session |
 
@@ -193,6 +209,14 @@ The blast is the target cell plus its neighbours: the 4 beside it (`plus`) or al
 4. Emit `reach`. A reach joker used from the board clears and refills its cell, as for a swap. Then check the board (Checks), since a higher limit can open up a set.
 
 The engine has no clock. The session counts each reach's seconds, pausing as the turn's timer does, and sends `reach_over` when they run out. `reach_over` removes that reach, emits `reach_over` with the new pick limit, and checks the board again, since a lower limit can leave no sets. The simulator, which has no clock either, ends a reach after as many bot actions as a person would make in its seconds: one per `timing.json` › `profiles.human.trace` milliseconds, rounded up.
+
+### Burn (r23)
+
+1. Use up the burn joker, as for a swap. A burn joker on the board can't burn itself.
+2. Add the target's card to the turn's burned cards, and lower the deck size by 1.
+3. Emit `burn` with the target, its card, the new deck size and the source. Clear the target (and a board source's cell), refill, resolve extra cards, run the after-action checks. A burn scores nothing.
+
+The deck size is the game deck's count, plus cards made this turn, less cards burned. A burn MUST NOT take it below `deck.minSize` (25 without one: a turn needs 2 hands, a crib, the starter and a full grid). When the turn ends, burned cards leave the game's deck (see The game).
 
 ### End turn and time up
 
@@ -282,10 +306,11 @@ Every event names its type and carries the fields below. Cards appear as `{id, c
 | `stock_out` | reason, cardsLeftOnGrid |
 | `reach` | id, cards, seconds, pickLimit, source |
 | `reach_over` | id, pickLimit |
+| `burn` | target, card, deckSize, source |
 | `no_sets_left` | stockLeft, tray |
 | `board_cleared` | bonus kind and amount |
 | `prize_won` | tier, bestPoints, bestCards, special |
-| `turn_end` | reason, steps, steps from edge power, best, scores, rejected, swaps, bombs, drawn, penalty total, left-over total, steps by suit, steps from sets with and without edge cards |
+| `turn_end` | reason, steps, steps from edge power, best, scores, rejected, swaps, bombs, drawn, penalty total, left-over total, steps by suit, steps from sets with and without edge cards, burns, cards made |
 
 These names follow `stats.md` › Event log, with the turn's details added. `stats.md` will be brought in step once the Swift engine settles them.
 
@@ -464,33 +489,34 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r22 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r23 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r20",
+  "rulesVersion": "match-r23",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
-    "prize": { "rareAt": 40, "epicAt": 70, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
+    "prize": { "rareAt": 40, "epicAt": 70, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20]] }
   },
-  "deck": { "shared": true },
+  "game": { "turns": 3 },
+  "deck": { "shared": true, "minSize": 40 },
   "specials": {
-    "known": ["swapper", "bomb", "reach"],
-    "start": { "swapper": 2, "bomb": 1, "reach": 1 },
+    "known": ["swapper", "bomb", "reach", "burn"],
+    "start": { "swapper": 2, "bomb": 1, "reach": 1, "burn": 1 },
     "bombShape": "plus",
     "reach": { "cards": [[1, 85], [2, 15]], "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]] }
   }
 }
 ```
 
-`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
+`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `game.turns` (r23) is how many match turns a game has; missing means 1. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 

@@ -1,6 +1,7 @@
 // cribmaze-sim: plays match turns with bots and prints the numbers.
 //
 //   cribmaze-sim run --level medium --turns 1000 --seed 1 [--dealer] [--reach stuck|early] [--config <folder>]
+//   cribmaze-sim game --games 500 [--level medium] [--own] [--burn none|dead]   (Game.swift)
 //
 // Turn i plays from seed + i, bot seat 0, starting tray from config, warned set
 // (bots count as already warned). Config defaults to ../cribbage/minigames/config.
@@ -65,6 +66,7 @@ struct Tally {
 }
 
 if CommandLine.arguments.dropFirst().first == "discard" { runDiscard(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
+if CommandLine.arguments.dropFirst().first == "game" { runGame(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "principles" { runPrinciples(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 let o = parse(Array(CommandLine.arguments.dropFirst()))
 let config: Config

@@ -65,7 +65,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(Board.crib.allSatisfy { t.state.cells[$0] == nil })
         #expect(Board.grid.allSatisfy { t.state.cells[$0]?.isPlaying == true })   // extras resolved
         guard case .turnStart(_, let dealer, let hand, _, _, _, _, _, _, _, let tray) = ev[0] else { Issue.record("first event"); return }
-        #expect(!dealer && hand.count == 4 && tray == ["swapper": 2, "bomb": 1, "reach": 1])
+        #expect(!dealer && hand.count == 4 && tray == ["swapper": 2, "bomb": 1, "reach": 1, "burn": 1])
     }
 
     @Test func traceRejections() throws {

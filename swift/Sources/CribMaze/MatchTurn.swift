@@ -1,4 +1,4 @@
-// The match turn (engine.md, match rules r15). Given a state, an action and
+// The match turn (engine.md, match rules r23). Given a state, an action and
 // the dice, it returns the new state and the events. No clock, no files, no
 // randomness of its own.
 import CardKit
@@ -33,6 +33,8 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var best: Int?
     public var scores = 0, singles = 0, multis = 0
     public var rejected = 0, warnings = 0, swaps = 0, bombs = 0, reaches = 0, drawn = 0
+    /// Deck edits (r23): cards burned out of the deck, and cards made into it, this turn.
+    public var burns = 0, made = 0
     public var penaltyTotal = 0, leftOverTotal = 0
     public var stepsBySuit: [String: Int] = [:]
     public var stepsWithEdge = 0, stepsWithoutEdge = 0
@@ -59,6 +61,8 @@ public enum MatchEvent: Codable, Sendable, Equatable {
     /// A reach joker raises the pick limit by `cards` until the app sends `reachOver` after `seconds`.
     case reach(id: Int, cards: Int, seconds: Int, pickLimit: Int, source: String)
     case reachOver(id: Int, pickLimit: Int)
+    /// A burn joker (r23) takes a grid card out of the deck for the rest of the game.
+    case burn(target: String, card: CardRef, deckSize: Int, source: String)
     case stockOut(reason: String, cardsLeftOnGrid: Int)
     case noSetsLeft(stockLeft: Int, tray: [String: Int])
     case boardCleared(kind: String, amount: Int)
@@ -74,6 +78,8 @@ public enum MatchAction: Codable, Sendable, Equatable {
     case reach(source: Pos?)
     /// The engine has no clock: the app (or the simulator) ends a reach when its time is up.
     case reachOver(id: Int)
+    /// Burns the grid card at `target` out of the deck for the game.
+    case burn(target: Pos, source: Pos?)
     case endTurn
     case timeUp
 }
@@ -102,6 +108,11 @@ public struct MatchState: Codable, Sendable, Equatable {
     /// Reach jokers in effect: each adds cards to the pick limit until its reachOver.
     public var reaches: [ActiveReach] = []
     public var nextReachID = 1
+    /// Deck edits (r23): cards made this turn, which join the game's deck when it ends, cards
+    /// burned out of it, and the deck's size now (the game's deck, plus made, less burned).
+    public var made: [Card] = []
+    public var burned: [Card] = []
+    public var deckSize = 52
     public var totals = TurnTotals()
 
     public func card(_ p: Pos) -> Card? { cells[p] }
@@ -124,9 +135,22 @@ public struct TurnSetup: Codable, Sendable {
     /// out of the stock. Without them, both come off the top of the shuffled deck.
     public var fixedCrib: [String]?
     public var held: [String]?
+    /// A game's deck (r23): the cards this turn shuffles, made cards included and burned cards gone.
+    /// Without it, a standard 52-card deck.
+    public var deck: [Card]?
+    /// The dealt cards themselves, for a deal from a game's deck, where made cards share notation
+    /// and the other player's cards may come from their own deck. They win over the notation fields.
+    public var dealt: DealtCards?
     public init(seed: UInt64, dealer: Bool = true, tray: [String: Int]? = nil, warned: Bool = false, fixedHand: [String]? = nil, fixedStarter: String? = nil) {
         self.seed = seed; self.dealer = dealer; self.tray = tray; self.warned = warned; self.fixedHand = fixedHand; self.fixedStarter = fixedStarter
     }
+}
+
+/// The cards a deal gave out: kept hand, crib (dealer's throw first), the other player's kept
+/// hand and the starter.
+public struct DealtCards: Codable, Sendable, Equatable {
+    public var hand: [Card], crib: [Card], held: [Card], starter: Card
+    public init(hand: [Card], crib: [Card], held: [Card], starter: Card) { self.hand = hand; self.crib = crib; self.held = held; self.starter = starter }
 }
 
 /// What a set would score, without changing anything.
@@ -150,7 +174,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r22"
+    public static let rulesVersion = "match-r23"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -162,23 +186,29 @@ public struct MatchTurn: Sendable {
     /// Starts a standalone turn. Pass scripted dice to replay recorded rolls.
     public static func start(config: Config, setup: TurnSetup, dice scripted: Dice? = nil) -> (MatchTurn, [MatchEvent]) {
         var dice = scripted ?? Dice(seed: setup.seed)
-        var deck = (0..<52).map { Card(standard: $0) }
+        let gameDeck = setup.deck ?? (0..<52).map { Card(standard: $0) }
+        var deck = gameDeck
         dice.shuffle(&deck, stream: "deal", purpose: "shuffle")
-        func take(_ text: String) -> Card {
-            let want = Card.parse(text)!
-            let i = deck.firstIndex { $0.id == want.id }!
+        // A fixed card comes out of the deck; one the deck doesn't hold (burned, or from the other
+        // player's own deck) is used as given.
+        func take(_ want: Card) -> Card {
+            guard let i = deck.firstIndex(where: { $0.id == want.id }) else { return want }
             return deck.remove(at: i)
         }
-        let hand: [Card], starter: Card
-        if let fh = setup.fixedHand, let fs = setup.fixedStarter {
-            hand = fh.map(take); starter = take(fs)
+        func take(_ text: String) -> Card { take(Card.parse(text)!) }
+        let hand: [Card], starter: Card, crib: [Card]
+        if let d = setup.dealt {
+            hand = d.hand.map(take); starter = take(d.starter); crib = d.crib.map(take); _ = d.held.map(take)
         } else {
-            hand = Array(deck.prefix(4)); deck.removeFirst(4)
-            starter = deck.removeFirst()
+            if let fh = setup.fixedHand, let fs = setup.fixedStarter {
+                hand = fh.map(take); starter = take(fs)
+            } else {
+                hand = Array(deck.prefix(4)); deck.removeFirst(4)
+                starter = deck.removeFirst()
+            }
+            if let fc = setup.fixedCrib { crib = fc.map(take) } else { crib = Array(deck.prefix(4)); deck.removeFirst(4) }
+            if let h = setup.held { _ = h.map(take) } else { deck.removeFirst(4) }   // the other player's hand
         }
-        let crib: [Card]
-        if let fc = setup.fixedCrib { crib = fc.map(take) } else { crib = Array(deck.prefix(4)); deck.removeFirst(4) }
-        if let h = setup.held { _ = h.map(take) } else { deck.removeFirst(4) }   // the other player's hand
         // Jokers for the round, then the configured extras, at the end of the deck.
         let j = config.jokers
         let jokerCount = j.perRound.min + dice.below(j.perRound.max - j.perRound.min + 1, stream: "deal", purpose: "joker_count")
@@ -191,9 +221,12 @@ public struct MatchTurn: Sendable {
         var cells = [Card?](repeating: nil, count: 25)
         for i in 0..<4 { cells[16 + i] = hand[i]; if setup.dealer { cells[20 + i] = crib[i] } }
         cells[Board.starter] = starter
-        let st = MatchState(dealer: setup.dealer, cells: cells, stock: deck,
+        var st = MatchState(dealer: setup.dealer, cells: cells, stock: deck,
                             power: [Int](repeating: config.rules.match.edgePower.start, count: 25),
                             tray: setup.tray ?? config.rules.specials.start, warned: setup.warned)
+        st.deckSize = gameDeck.count
+        // Made cards keep their IDs for the game, so new ones follow the highest already made.
+        st.nextMadeID = max(200, (gameDeck.filter { $0.kind == .made }.map(\.id).max() ?? 199) + 1)
         var t = MatchTurn(config: config, state: st, dice: dice)
         var ev: [MatchEvent] = []
         // Fill the grid from the top of the stock, row by row.
@@ -272,6 +305,8 @@ public struct MatchTurn: Sendable {
                 // r20: a made card carries a small multiplier, mostly close to ×1.
                 let pct = j.madeMultiplier == nil ? nil : dice.pick(j.madeWeights, stream: "reveal", purpose: "made_multiplier")
                 made = Card(id: state.nextMadeID, kind: .made, rank: base.rank, suit: base.suit, percent: pct); state.nextMadeID += 1
+                // r23: a made card joins the game's deck when the turn ends.
+                state.made.append(made!); state.deckSize += 1; state.totals.made += 1
                 prize = made!.notation
             } else if o.special != nil {
                 let known = config.rules.specials.known
@@ -427,6 +462,7 @@ public struct MatchTurn: Sendable {
         case .bomb(let target, let source): return try bomb(target, source)
         case .reach(let source): return try reach(source)
         case .reachOver(let id): return try reachOver(id)
+        case .burn(let target, let source): return try burn(target, source)
         case .endTurn: return end("player")
         case .timeUp:
             guard r.timerSeconds > 0 else { throw IllegalAction("the timer is off") }
@@ -571,6 +607,22 @@ public struct MatchTurn: Sendable {
         return [.reachOver(id: id, pickLimit: pickLimit)] + afterAction()
     }
 
+    /// Whether the deck can lose another card to a burn joker: it stays at `deck.minSize` or more.
+    public var canBurn: Bool { state.deckSize > (config.rules.deck?.minSize ?? 25) }
+
+    mutating func burn(_ target: Pos, _ source: Pos?) throws -> [MatchEvent] {
+        guard Board.isGrid(target), let card = state.cells[target], card.isPlaying else { throw IllegalAction("a burn needs a playing card on the grid") }
+        if let s = source, s == target { throw IllegalAction("a burn can't burn itself") }
+        guard canBurn else { throw IllegalAction("the deck is at its smallest (\(state.deckSize) cards)") }
+        try useSpecial("burn", from: source)
+        state.burned.append(card); state.deckSize -= 1; state.totals.burns += 1
+        var ev: [MatchEvent] = [.burn(target: Board.name(target), card: CardRef(card), deckSize: state.deckSize, source: source.map(Board.name) ?? "tray")]
+        ev.append(clearAndRefill(([target] + (source.map { [$0] } ?? [])).sorted()))
+        ev += resolveExtras()
+        ev += afterAction()
+        return ev
+    }
+
     // MARK: Ending
 
     mutating func end(_ reason: String) -> [MatchEvent] {
@@ -597,9 +649,9 @@ public struct MatchTurn: Sendable {
 extension MatchState {
     // Tuples aren't Equatable or Codable, so best lives in two stored fields.
     enum CodingKeys: String, CodingKey {
-        case dealer, cells, stock, drawn, power, steps, tray, items, scoredSets, bestPoints, bestCards, warned, stockOut, dead, over, endReason, nextMadeID, nextSpecialID, totals
+        case dealer, cells, stock, drawn, power, steps, tray, items, scoredSets, bestPoints, bestCards, warned, stockOut, dead, over, endReason, nextMadeID, nextSpecialID, made, burned, deckSize, totals
     }
     public static func == (a: MatchState, b: MatchState) -> Bool {
-        a.cells == b.cells && a.stock == b.stock && a.steps == b.steps && a.power == b.power && a.tray == b.tray && a.scoredSets == b.scoredSets && a.over == b.over && a.totals == b.totals
+        a.cells == b.cells && a.stock == b.stock && a.steps == b.steps && a.power == b.power && a.tray == b.tray && a.scoredSets == b.scoredSets && a.over == b.over && a.made == b.made && a.burned == b.burned && a.totals == b.totals
     }
 }

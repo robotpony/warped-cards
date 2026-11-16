@@ -36,7 +36,7 @@ Engine (Swift package, no UI)
   GameKit ........... game protocols, seeded dice, steps, clock time
   CardKit ........... cards, ranks, suits, decks, jokers
   CribbageKit ....... classic counting and pegging rules
-  CribMaze .......... Crib Maze rules: match turn, jokers, config loading
+  CribMaze .......... Crib Maze rules: match turn, the game and its deck, jokers, config loading
   CribMazeBots ...... bots, from random to perfect
 
 GameRecord (Swift package target, reusable)                  [beta app only]

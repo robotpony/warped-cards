@@ -58,6 +58,21 @@ struct CardFace: View {
                 p.move(to: .init(x: 13, y: 30)); p.addLine(to: .init(x: 35, y: 30)); p.addLine(to: .init(x: 30, y: 25))
                 p.move(to: .init(x: 37, y: 42)); p.addLine(to: .init(x: 15, y: 42)); p.addLine(to: .init(x: 20, y: 47))
             }.stroke(Theme.joker, style: StrokeStyle(lineWidth: 3.2 * u, lineCap: .round, lineJoin: .round))
+        } else if kind == "burn" {
+            // A flame: an outer tongue in red, an inner one in gold.
+            UnitShape { p in
+                p.move(to: .init(x: 25, y: 18)); p.addCurve(to: .init(x: 36, y: 40), control1: .init(x: 29, y: 26), control2: .init(x: 37, y: 30))
+                p.addCurve(to: .init(x: 25, y: 52), control1: .init(x: 36, y: 47), control2: .init(x: 31, y: 52))
+                p.addCurve(to: .init(x: 14, y: 40), control1: .init(x: 19, y: 52), control2: .init(x: 14, y: 47))
+                p.addCurve(to: .init(x: 20, y: 29), control1: .init(x: 14, y: 35), control2: .init(x: 17, y: 32))
+                p.addCurve(to: .init(x: 25, y: 18), control1: .init(x: 21, y: 25), control2: .init(x: 23, y: 21)); p.closeSubpath()
+            }.fill(Color(hex: 0xE00000))
+            UnitShape { p in
+                p.move(to: .init(x: 25, y: 31)); p.addCurve(to: .init(x: 30, y: 44), control1: .init(x: 28, y: 36), control2: .init(x: 31, y: 39))
+                p.addCurve(to: .init(x: 25, y: 50), control1: .init(x: 30, y: 48), control2: .init(x: 28, y: 50))
+                p.addCurve(to: .init(x: 20, y: 44), control1: .init(x: 22, y: 50), control2: .init(x: 20, y: 48))
+                p.addCurve(to: .init(x: 25, y: 31), control1: .init(x: 20, y: 39), control2: .init(x: 23, y: 36)); p.closeSubpath()
+            }.fill(Color(hex: 0xF2B705))
         } else if kind == "reach" {
             // A card, and a dashed extra card with a plus: one more card for a while.
             UnitShape { p in p.addRoundedRect(in: CGRect(x: 10, y: 24, width: 17, height: 24), cornerSize: CGSize(width: 2, height: 2)) }

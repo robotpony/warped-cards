@@ -37,7 +37,7 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 - [ ] Maze walk with real match turn sets, bots on the same maze (`concept.md` › The maze walk)
 - [ ] Pegging on the maze mock, after maze inspiration
 - [ ] Transitions between mini games, and bonus effects (`concept.md` › Transitions and effects)
-- [ ] Multi-turn match: power jokers carry over between turns (`rules.md` › Special jokers)
+- [x] Multi-turn match: power jokers carry over between turns (`rules.md` › The deck lasts the game)
 - [ ] Door strengths and placement; rules so far in `rules.md` › Doors
 - [ ] Branches, traps, fog, generator (`concept.md` › The maze)
 
@@ -45,6 +45,10 @@ Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run sid
 
 - [ ] Title, Options and Start screens (`concept.md` › A round)
 - [x] Deal and discard screen, untimed, with a principle hint (`concept.md` › Discard principles)
+- [x] Deck edits, first cut: a 3-turn game, made cards stay, the burn joker, the deck shown (`engine.md` › The game)
+- [ ] More deck edits: paint, nudge, clone, forge, merge, badges (`mocks/joker-inventory.html`)
+- [ ] Retune prizes and made multipliers for a 3-turn game, where later turns score about 40% more (`concept.md` › Decisions, r23)
+- [ ] Bots that burn, and bots playing grid turns that change the deck (`rules.md` › Match turns)
 - [ ] Grow the joker inventory (`mocks/joker-inventory.html`) and pick the first chips and new jokers to build
 - [x] Retune prize thresholds for r21 (r22: rare 40, epic 70)
 - [ ] Playtest the discard principles, and prove or drop the flush one with data (`config/hints.json`)

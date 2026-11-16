@@ -1,4 +1,5 @@
-// Beta only: `--snapshot <png> [--seed N] [--trace g30,g31;g00,g01] [--select g10,g11] [--arm swapper|bomb] [--crib-off] [--end]`
+// Beta only: `--snapshot <png> [--seed N] [--turn N] [--trace g30,g31;g00,g01] [--select g10,g11] [--arm swapper|bomb|burn]
+// [--burn g11] [--play] [--crib-off] [--end]` (and `--deal [--pick 5H,5C] [--hint]`, `--breakdown g31,g21`)
 // renders the play screen to a PNG and quits. Used to check the screen from scripts, where screen capture isn't available.
 import AppKit
 import CribMaze
@@ -35,6 +36,7 @@ import SwiftUI
         session.settings.deal = args.contains("--deal")
         if args.contains("--deal") {
             session.newTurn(seed: value("--seed").flatMap(UInt64.init) ?? 42)
+            advance(session, to: value("--turn").flatMap(Int.init) ?? 1)
             for n in (value("--pick") ?? "").split(separator: ",") {
                 if let c = session.dealing?.dealt.player.first(where: { $0.notation == String(n) }) { session.togglePick(c) }
             }
@@ -43,7 +45,11 @@ import SwiftUI
             exit(0)
         }
         session.newTurn(seed: value("--seed").flatMap(UInt64.init) ?? 42)
+        advance(session, to: value("--turn").flatMap(Int.init) ?? 1)
         for set in (value("--trace") ?? "").split(separator: ";") { session.submit(positions(set)) }
+        // `--burn g11`: burn that grid card. `--play`: the medium bot plays the rest of the turn.
+        if let cell = value("--burn"), let p = Board.parse(cell) { session.arm("burn"); session.submit([p]) }
+        if args.contains("--play") { session.dismissWarning(); while !session.over { session.botMove(); session.dismissWarning() } }
         if let kind = value("--arm") { session.arm(kind) }
         if let sel = value("--select") { session.selection = positions(Substring(sel)) }
         if args.contains("--end") { session.send(.endTurn) }
@@ -63,6 +69,20 @@ import SwiftUI
         }
         render(session, to: out)
         exit(0)
+    }
+
+    /// `--turn N`: the medium bot plays the game's turns before turn N (throwing its best classic
+    /// keep at each deal), so the deck shows what those turns made.
+    static func advance(_ session: GameSession, to turn: Int) {
+        while let g = session.game, g.turn < turn, !g.over {
+            if let d = session.dealing {
+                for c in Deal.classicKeep(d.dealt.player).thrown { session.togglePick(c) }
+                session.throwToCrib()
+            }
+            session.dismissWarning()
+            while !session.over { session.botMove(); session.dismissWarning() }
+            if session.moreTurns { session.nextTurn() } else { break }
+        }
     }
 
     static func render(_ session: GameSession, to out: String) {

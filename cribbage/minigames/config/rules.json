@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rulesVersion": "match-r22",
+  "rulesVersion": "match-r23",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4,
@@ -12,12 +12,13 @@
     "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
-    "prize": { "rareAt": 40, "epicAt": 70, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
+    "prize": { "rareAt": 40, "epicAt": 70, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20]] }
   },
-  "deck": { "shared": true },
+  "game": { "turns": 3 },
+  "deck": { "shared": true, "minSize": 40 },
   "specials": {
-    "known": ["swapper", "bomb", "reach"],
-    "start": { "swapper": 2, "bomb": 1, "reach": 1 },
+    "known": ["swapper", "bomb", "reach", "burn"],
+    "start": { "swapper": 2, "bomb": 1, "reach": 1, "burn": 1 },
     "bombShape": "plus",
     "reach": {
       "cards": [[1, 85], [2, 15]],

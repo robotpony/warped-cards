@@ -83,7 +83,7 @@ struct BoardView: View {
         .contentShape(Rectangle())
         .gesture(drag)
         .onContinuousHover { phase in
-            if case .active = phase, session.mode == .bomb { NSCursor.crosshair.set() } else { NSCursor.arrow.set() }
+            if case .active = phase, session.mode.targetsACard { NSCursor.crosshair.set() } else { NSCursor.arrow.set() }
         }
     }
 
@@ -167,7 +167,7 @@ struct BoardView: View {
 
     private func tap(_ p: Pos, _ card: Card) {
         var sel = session.selection
-        if session.mode == .bomb { session.submit([p]); session.selection = []; return }
+        if session.mode.targetsACard { session.submit([p]); session.selection = []; return }
         if card.isSpecial, session.mode == .trace, case .special(let kind) = card.kind { session.selection = []; session.arm(kind, from: p); return }
         if sel.last == p {
             if sel.count >= 2 { session.submit(sel) }

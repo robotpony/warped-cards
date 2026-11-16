@@ -2,6 +2,20 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.14.0 — 2026-11-15
+
+### Added
+
+- A game is now 3 turns, and the deal alternates. Next turn starts the next one; New game starts over.
+- The deck lasts the game. Cards a joker makes stay in it, so you or the bot can be dealt them in later turns.
+- A new power joker, Burn: tap a grid card to take it out of the deck for the rest of the game. You start with 1, and prizes can win more. The deck can't go below 40 cards.
+- The deck shows on the deal screen and after each turn: its size, the cards made into it and the cards burned out of it, with this turn's changes outlined.
+- Your power jokers carry over from turn to turn, and each turn's prize joins them.
+
+### Changed
+
+- The Shared deck switch now works. Off, the cards you make or burn change only your own deck. It takes effect at the next game.
+
 ## 0.13.0 — 2026-11-15
 
 ### Added

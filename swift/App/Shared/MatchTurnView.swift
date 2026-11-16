@@ -163,11 +163,11 @@ struct PhoneView: View {
                     if i < known.count {
                         let kind = known[i]
                         TrayCard(kind: kind, count: session.state?.tray[kind] ?? 0, w: 72,
-                                 armed: kind != "reach" && session.mode == (kind == "swapper" ? .swap : .bomb) && session.armedSource == nil,
+                                 armed: InputMode.arming(kind).map { session.mode == $0 } == true && session.armedSource == nil,
                                  countdown: kind == "reach" ? session.reachFraction : nil) {
                             if kind == "reach" {
                                 if !session.over, (session.state?.tray[kind] ?? 0) > 0, session.mode == .trace { session.arm(kind) }
-                            } else { tapTray(kind, kind == "swapper" ? .swap : .bomb) }
+                            } else if let m = InputMode.arming(kind) { tapTray(kind, m) }
                         }
                     } else {
                         RoundedRectangle(cornerRadius: 6)
@@ -241,7 +241,8 @@ struct TrayCard: View {
         .onTapGesture(perform: action)
         .help(["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
                "bomb": "Bomb: clears a card and its neighbours, without scoring",
-               "reach": "Reach: hand size +1 (sometimes +2) for about 20 seconds"][kind] ?? kind)
+               "reach": "Reach: hand size +1 (sometimes +2) for about 20 seconds",
+               "burn": "Burn: takes a grid card out of the deck for the rest of the game"][kind] ?? kind)
     }
 }
 
@@ -291,42 +292,58 @@ struct Toast: View {
     }
 }
 
-/// The end-of-turn overlay, over the whole screen like the mock's.
+/// The end-of-turn overlay, over the whole screen like the mock's: the turn's numbers, the game so
+/// far, and the deck as it goes into the next turn.
 struct SummaryView: View {
     let session: GameSession
     var body: some View {
         let t = session.state?.totals
+        let g = session.game
         VStack(alignment: .leading, spacing: 10) {
+            if let g { Text(g.over ? "GAME OVER" : "TURN \(g.results.count) OF \(g.turns)").font(Theme.font(11, .bold)).tracking(0.8).opacity(0.7) }
             Text(endTitle).font(Theme.font(24, .bold)).foregroundStyle(Theme.cyan).shadow(color: Theme.cyan.opacity(0.6), radius: 6)
             Text("\(session.state?.steps ?? 0) steps").font(Theme.font(48, .bold)).foregroundStyle(Theme.gold)
                 .shadow(color: Theme.gold.opacity(0.6), radius: 10)
             if let t {
                 Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
                     row("Sets scored", "\(t.scores)")
-                    row("Sets with 2 or more combos", "\(t.multis)")
                     row("Best set", t.best.map(String.init) ?? "none")
                     row("Steps from edge power", GameSession.signed(t.stepsFromEdgePower))
                     row("Cards left over", GameSession.signed(-(t.leftOverTotal + t.penaltyTotal)))
                     if t.clearBonus > 0 { row("Clear-board bonus", "+\(t.clearBonus)") }
-                    row("Swaps, bombs", "\(t.swaps), \(t.bombs)")
-                    row("Cards drawn", "\(t.drawn)")
+                    row("Swaps, bombs, burns", "\(t.swaps), \(t.bombs), \(t.burns)")
+                    if let g, g.results.count > 1 { row("Game so far", "\(g.steps) steps") }
                 }.font(Theme.font(15, .regular))
             }
             if let prize { Text(prize).font(Theme.font(17, .semibold)).foregroundStyle(Theme.gold).padding(.top, 4) }
+            if let g { DeckPanel(deck: g.deck, shared: g.shared, changes: lastChanges).padding(.top, 6) }
             Spacer()
             HStack(spacing: 8) {
-                pbtn("Same seed", ghost: true) { session.newTurn(seed: session.seed) }
-                pbtn("New turn", ghost: false) { session.newTurn() }
+                if session.moreTurns {
+                    pbtn("Next turn", ghost: false) { session.nextTurn() }
+                } else {
+                    pbtn("Same seed", ghost: true) { session.newGame(seed: session.seed) }
+                    pbtn("New game", ghost: false) { session.newGame() }
+                }
             }
         }
-        .padding(.horizontal, 24).padding(.top, 70).padding(.bottom, 24)
+        .padding(.horizontal, 24).padding(.top, 56).padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Theme.overlay)
         .foregroundStyle(Theme.feltText)
     }
+    /// The cards this turn made and burned, to mark in the deck.
+    private var lastChanges: (made: Set<Int>, burned: Set<Int>) {
+        guard let r = session.game?.results.last else { return ([], []) }
+        return (Set(r.made.map(\.id)), Set(r.burned.map(\.id)))
+    }
     private var endTitle: String { ["player": "Turn over", "timer": "Time's up", "board_cleared": "Board cleared!"][session.state?.endReason ?? ""] ?? "Turn over" }
     private var prize: String? {
-        for e in session.events.reversed() { if case .prizeWon(let tier, _, _, let special) = e { return "\(tier.capitalized) prize: a \(special)" } }
+        for e in session.events.reversed() {
+            if case .prizeWon(let tier, _, _, let special) = e {
+                return "\(tier.capitalized) prize: a \(special)" + (session.moreTurns ? ", for your power jokers" : "")
+            }
+        }
         return nil
     }
     private func row(_ a: String, _ b: String) -> some View {
@@ -338,6 +355,58 @@ struct SummaryView: View {
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(ghost ? Theme.feltText.opacity(0.4) : .clear, lineWidth: 1))
             .foregroundStyle(ghost ? Theme.feltText : Theme.felt)
             .contentShape(Rectangle()).onTapGesture(perform: action)
+    }
+}
+
+/// The deck as it stands: its size, the cards made into it and the cards burned out of it. Deck
+/// building needs the deck to be visible, between turns and on the deal screen.
+struct DeckPanel: View {
+    let deck: GameDeck
+    let shared: Bool
+    /// Cards to mark as new this turn.
+    var changes: (made: Set<Int>, burned: Set<Int>) = ([], [])
+    var compact = false
+    static let w: CGFloat = 34
+
+    var body: some View {
+        let made = deck.made, burned = deck.burned
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text(shared ? "THE DECK" : "YOUR DECK").font(Theme.font(10, .bold)).tracking(0.8)
+                    .padding(.horizontal, 6).frame(height: 16).background(Capsule().fill(Theme.feltText)).foregroundStyle(Theme.felt)
+                Text("\(deck.count) cards").font(Theme.font(14, .semibold)).monospacedDigit()
+                if !made.isEmpty { Text("· \(made.count) made").font(Theme.font(13, .regular)).opacity(0.75) }
+                if !burned.isEmpty { Text("· \(burned.count) burned").font(Theme.font(13, .regular)).opacity(0.75) }
+            }
+            if made.isEmpty && burned.isEmpty {
+                if !compact { Text("A standard 52. Cards jokers make stay in it for the game, and burned cards stay out.").font(Theme.font(13, .regular)).opacity(0.6).fixedSize(horizontal: false, vertical: true) }
+            } else {
+                // At most `shown` cards fit across; the rest are counted.
+                let shown = 14, extra = made.count + burned.count - shown
+                let madeShown = Array(made.prefix(shown)), burnedShown = Array(burned.prefix(max(0, shown - madeShown.count)))
+                HStack(spacing: 5) {
+                        ForEach(madeShown, id: \.id) { c in mini(c, new: changes.made.contains(c.id)) }
+                        if !madeShown.isEmpty && !burnedShown.isEmpty { Rectangle().fill(Theme.feltText.opacity(0.25)).frame(width: 1, height: Self.w * 1.2).padding(.horizontal, 3) }
+                        ForEach(burnedShown, id: \.id) { c in
+                            mini(c, new: changes.burned.contains(c.id)).opacity(0.45)
+                                .overlay { Image(systemName: "xmark").font(.system(size: 16, weight: .heavy)).foregroundStyle(Color(hex: 0xE00000)) }
+                        }
+                        if extra > 0 { Text("+\(extra)").font(Theme.font(13, .semibold)).opacity(0.7) }
+                }.padding(.vertical, 8).padding(.horizontal, 2)
+            }
+        }
+    }
+
+    private func mini(_ c: Card, new: Bool) -> some View {
+        CardFace(card: c, width: Self.w)
+            .overlay(alignment: .bottom) {
+                if let p = c.percent {
+                    Text(String(format: "×%g", Double(p) / 100)).font(Theme.font(9, .bold)).padding(.horizontal, 3).frame(height: 12)
+                        .background(Capsule().fill(Theme.violet)).foregroundStyle(Theme.felt).offset(y: 7)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(new ? Theme.gold : .clear, lineWidth: 2).padding(-2))
+            .help(c.kind == .made ? "\(c.face), made by a joker" + (new ? " this turn" : "") : c.face)
     }
 }
 
@@ -377,9 +446,9 @@ struct SidePanel: View {
     }
 
     @ViewBuilder private var game: some View {
-        GroupBox("Next turn") {
+        GroupBox(session.game.map { "Game: turn \($0.over ? $0.turns : $0.turn) of \($0.turns)" } ?? "Game") {
             VStack(alignment: .leading, spacing: 6) {
-                Toggle("Dealer: crib down the side", isOn: $session.settings.dealer)
+                Toggle("You deal the first turn (then it alternates)", isOn: $session.settings.dealer)
                 Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
                 Toggle("Deal: pick your crib cards first", isOn: $session.settings.deal)
                 Toggle("Hints when you're stuck", isOn: $session.settings.hints)
@@ -387,8 +456,8 @@ struct SidePanel: View {
                 HStack {
                     // The field shows this turn's seed; type another to replay it, or leave it blank for a random deal.
                     TextField("Seed", text: $session.seedText, prompt: Text("Seed \(String(session.seed)) · blank: random"))
-                        .textFieldStyle(.roundedBorder).monospacedDigit().onSubmit { session.newTurn() }
-                    Button("New turn") { session.newTurn() }
+                        .textFieldStyle(.roundedBorder).monospacedDigit().onSubmit { session.newGame() }
+                    Button("New game") { session.newGame() }
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -425,7 +494,7 @@ struct SidePanel: View {
         GroupBox("Deck building") {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle("Shared deck", isOn: $session.settings.sharedDeck)
-                Text("On: cards a joker changes go into the one deck everyone is dealt from. Off: each player builds their own. Not in play until deck edits are built.")
+                Text("On: cards a joker makes or burns change the one deck everyone is dealt from. Off: they change only your own deck, and the bot is dealt from its own. Starts with the next game.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -670,8 +739,16 @@ struct DealView: View {
 
     var body: some View {
         if let d = session.dealing {
-            let dealer = session.settings.dealer
+            let dealer = session.dealer
             VStack(spacing: 0) {
+                if let g = session.game {
+                    HStack {
+                        Text("TURN \(g.turn) OF \(g.turns)").font(Theme.font(10, .bold)).tracking(0.8).opacity(0.6)
+                        Spacer()
+                        if g.results.count > 0 { Text("\(g.steps) steps so far").font(Theme.font(12, .semibold)).opacity(0.7) }
+                    }.padding(.bottom, 4)
+                    DeckPanel(deck: g.deck, shared: g.shared, compact: true).frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 8)
+                }
                 botRow(d)
                 Spacer(minLength: 12)
                 cribRow(d, dealer: dealer)
@@ -703,7 +780,7 @@ struct DealView: View {
     private func botRow(_ d: DealState) -> some View {
         let cards = d.dealt.bot.enumerated().filter { !(botIn && d.botThrown.contains($0.element)) }
         return VStack(spacing: 6) {
-            Text(session.settings.dealer ? "BOT" : "BOT · DEALS").font(Theme.font(10, .bold)).tracking(0.8).opacity(0.6)
+            Text(session.dealer ? "BOT" : "BOT · DEALS").font(Theme.font(10, .bold)).tracking(0.8).opacity(0.6)
             HStack(spacing: -18) {
                 ForEach(cards, id: \.element.id) { i, c in
                     let visible = shown > i * 2   // the bot's cards are dealt first, alternating
@@ -774,7 +851,7 @@ struct DealView: View {
                 .transition(.opacity)
             } else {
                 HStack {
-                    Text(session.settings.dealer ? "You deal. Throw 2 to your crib." : "The bot deals. Throw 2 to its crib.")
+                    Text(session.dealer ? "You deal. Throw 2 to your crib." : "The bot deals. Throw 2 to its crib.")
                         .font(Theme.font(14, .regular)).opacity(0.8)
                     Spacer()
                     Text("Hint").font(Theme.font(13, .semibold)).foregroundStyle(Theme.feltText.opacity(0.75))

@@ -60,10 +60,18 @@ public struct RulesConfig: Codable, Sendable, Equatable {
     public var scoring: Scoring
     public var match: Match
     public var specials: Specials
-    /// Deck building (concept.md): whether cards changed by jokers go into the one shared deck
-    /// (true, the default) or into each player's own deck. Not used until deck edits are built.
-    public struct Deck: Codable, Sendable, Equatable { public var shared: Bool; public init(shared: Bool) { self.shared = shared } }
+    /// Deck building (engine.md › The game): whether cards changed by jokers go into the one shared
+    /// deck (true, the default) or into each player's own deck, and the fewest cards a deck may be
+    /// burned down to (missing means no floor but the cards a turn needs).
+    public struct Deck: Codable, Sendable, Equatable {
+        public var shared: Bool
+        public var minSize: Int?
+        public init(shared: Bool, minSize: Int? = nil) { self.shared = shared; self.minSize = minSize }
+    }
     public var deck: Deck?
+    /// A game (r23): how many match turns it has. Missing means 1.
+    public struct Game: Codable, Sendable, Equatable { public var turns: Int }
+    public var game: Game?
 }
 
 public struct JokersConfig: Codable, Sendable, Equatable {
@@ -164,6 +172,9 @@ public struct Config: Codable, Sendable, Equatable {
             }
             if m.maxSet + (reach.cards.map { $0[0] }.max() ?? 0) > 6 { try fail("specials.reach.cards: maxSet plus the most extra cards must be 6 or less") }
         }
+        if let g = rules.game, g.turns < 1 { try fail("game.turns must be 1 or more") }
+        // A turn needs 25 cards: 2 hands of 4, a crib of 4, the starter and a 16-card grid.
+        if let d = rules.deck, let min = d.minSize, min < 25 { try fail("deck.minSize must be 25 or more") }
         if !["plus", "square"].contains(rules.specials.bombShape) { try fail("specials.bombShape must be plus or square") }
         if !["add", "each"].contains(m.edgePower.combine) { try fail("edgePower.combine must be add or each") }
         for l in bots.match where l.search == "traced" && (l.depth == nil || l.starts == nil) { try fail("bots.match.\(l.id): traced needs depth and starts") }

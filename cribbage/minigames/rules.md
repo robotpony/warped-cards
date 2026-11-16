@@ -199,12 +199,19 @@ Special jokers are jokers that carry an action. The ones you hold are your power
 | Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places |
 | Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing |
 | Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter |
+| Burn (flame) | Tap a grid card. It leaves the board and the deck for the rest of the game, scoring nothing. The deck can't be burned below 40 cards (to tune) |
 
-You start the game with 2 swappers, 1 bomb and 1 reach (to tune). You get more from prizes, jokers and the shop.
+You start the game with 2 swappers, 1 bomb, 1 reach and 1 burn (to tune). You get more from prizes, jokers and the shop.
 
 - Special jokers you start with, win as prizes or buy last the whole game; what you don't use carries over to your next turn.
 - Special jokers made by a joker's reveal last only for that round.
 - Each type of special joker will get its own rules (uses, limits), balanced from stats later.
+
+#### The deck lasts the game
+
+The game is about building your deck. A card a joker makes stays in the deck for the rest of the game, and a burned card stays out. Either can then be dealt to anyone, in any turn. The deck shows on the deal screen and between turns: its size, the cards made into it, and the cards burned out of it.
+
+For now a game is 3 turns (to tune), and the deal alternates. Your power jokers carry from turn to turn, and each turn's prize joins them. Whether there's one shared deck or one each is a setting while we decide (shared to start); with one each, what you make or burn changes only yours.
 
 #### Jokers and extra cards
 

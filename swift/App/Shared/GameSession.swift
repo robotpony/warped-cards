@@ -1,4 +1,5 @@
-// The app's game state: one match turn, the player's input mode and the timer.
+// The app's game state: a game of match turns (its deck lasts the game), the turn being played,
+// the player's input mode and the timer.
 // The engine decides everything; this only sends actions and keeps the events.
 import CardKit
 import CribMaze
@@ -9,7 +10,13 @@ import GameKit
 import Observation
 import SwiftUI
 
-enum InputMode: Equatable { case trace, swap, bomb }
+enum InputMode: Equatable {
+    case trace, swap, bomb, burn
+    /// The mode a power joker arms; a reach needs no target, so it has none.
+    static func arming(_ kind: String) -> InputMode? { ["swapper": .swap, "bomb": .bomb, "burn": .burn][kind] }
+    /// Whether a tap on one grid card fires it.
+    var targetsACard: Bool { self == .bomb || self == .burn }
+}
 
 struct FeedLine: Identifiable { let id: Int; let text: String; let points: Int?; var prize = false }
 
@@ -21,7 +28,7 @@ struct Breakdown {
 }
 
 struct TurnSettings: Equatable {
-    var dealer = true
+    var dealer = true     // the player deals the game's first turn; the deal then alternates
     var timer = true
     var hand = "random"   // or "strong"
     var budget = 0        // 0 is the whole stock
@@ -48,6 +55,10 @@ struct DealState {
 final class GameSession {
     private(set) var config: Config?
     private(set) var loadError: String?
+    /// The game: its turns, the deck that lasts it, and the power jokers carried between turns.
+    private(set) var game: MatchGame?
+    /// The game as it was when this turn started, for the summary's deck before and after.
+    private(set) var gameAtTurnStart: MatchGame?
     private(set) var turn: MatchTurn?
     private(set) var events: [MatchEvent] = []
     private(set) var actions: [MatchAction] = []
@@ -98,10 +109,14 @@ final class GameSession {
             guard let folder = Bundle.main.url(forResource: "config", withExtension: nil) else { throw ConfigError(description: "config folder missing from the app") }
             config = try Config.load(from: folder)
         } catch { loadError = "\(error)" }
-        newTurn()
+        newGame()
     }
 
     var state: MatchState? { turn?.state }
+    /// Whether the player deals this turn (it alternates through a game).
+    var dealer: Bool { game?.dealer ?? settings.dealer }
+    /// Whether the game has more turns to play after this one.
+    var moreTurns: Bool { !(game?.over ?? true) }
     var over: Bool { dealing == nil && (turn?.state.over ?? true) }
 
     // MARK: Deal
@@ -158,15 +173,30 @@ final class GameSession {
                                 starter: d.dealt.starter.notation, hint: d.hint?.principle.rawValue, hintCards: d.hint?.cards.map(\.notation) ?? [],
                                 hintAsked: d.asked, hintAfterMs: d.hintAt.map(ms), decideMs: ms(Date()))
         dealing = nil
-        begin(Deal.setup(seed: seed, dealer: settings.dealer, dealt: d.dealt, thrown: d.picked, botThrown: bot.thrown))
+        guard let g = game else { return }
+        begin(g.setup(dealt: d.dealt, thrown: d.picked, botThrown: bot.thrown))
     }
 
     // MARK: Turn
 
-    func newTurn(seed fixed: UInt64? = nil) {
-        guard config != nil else { return }
+    /// Starts a game: its seed (typed, given, or random), the settings it keeps, and its first turn.
+    func newGame(seed fixed: UInt64? = nil) {
+        guard var c = config else { return }
         seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
         seedText = ""
+        c.rules.deck = .init(shared: settings.sharedDeck, minSize: c.rules.deck?.minSize)
+        game = MatchGame(config: c, seed: seed, firstDealer: settings.dealer)
+        startTurn()
+    }
+    /// The old name, for the snapshot tools: a new game.
+    func newTurn(seed fixed: UInt64? = nil) { newGame(seed: fixed) }
+
+    /// The game's next turn, after the summary.
+    func nextTurn() { guard moreTurns, over else { return }; startTurn() }
+
+    private func startTurn() {
+        guard config != nil, let g = game else { return }
+        gameAtTurnStart = g
         dealRecord = nil; hintTask?.cancel()
         let strong = settings.hand == "strong"
         if settings.deal && !strong {
@@ -174,20 +204,18 @@ final class GameSession {
             timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
             turn = nil; events = []; actions = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
             playback.reset()
-            let dealt = Deal.deal(seed: seed)
+            let dealt = g.deal()
             dealing = DealState(dealt: dealt, botThrown: Deal.classicKeep(dealt.bot, scoring: config?.rules.scoring ?? Scoring()).thrown)
             watchHint()
             return
         }
         dealing = nil
-        begin(TurnSetup(seed: seed, dealer: settings.dealer,
-                        fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil))
+        begin(g.setup(fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil))
     }
 
     private func begin(_ setup: TurnSetup) {
         guard var c = config else { return }
         c.rules.match.cardBudget = settings.budget
-        c.rules.deck = .init(shared: settings.sharedDeck)
         c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
         let (t, ev) = MatchTurn.start(config: c, setup: setup)
@@ -223,6 +251,7 @@ final class GameSession {
                     let ids = Set(cleared.map(\.id)); bomb = true
                     hit = Set((0..<Board.count).filter { old.state.cells[$0].map { ids.contains($0.id) } ?? false })
                 }
+                if case .burn(let target, _, _, _) = e, let p = Board.parse(target) { hit = [p]; bomb = true }
             }
             guard animate, !hit.isEmpty else { commit(t, ev); return }
             if !bomb, settings.breakdown, let score = ev.first(where: { if case .score = $0 { return true }; return false }) {
@@ -296,6 +325,9 @@ final class GameSession {
             if MatchTurn.isLine(ps) { mode = .trace; send(.swap(line: ps, source: pendingSource)) } else { show("Trace a straight line of 2 to 4 grid cards") }
         case .bomb:
             if let p = ps.first, Board.isGrid(p) { mode = .trace; send(.bomb(target: p, source: pendingSource)) }
+        case .burn:
+            if let p = ps.first, Board.isGrid(p), turn?.state.cells[p]?.isPlaying == true { mode = .trace; send(.burn(target: p, source: pendingSource)) }
+            else { show("Tap a playing card on the grid to burn it"); return }
         }
         pendingSource = nil; armedSource = nil
     }
@@ -304,9 +336,12 @@ final class GameSession {
     /// Tapping a special joker on the board arms it. A reach joker needs no target, so it's used at once.
     func arm(_ kind: String, from source: Pos? = nil) {
         if kind == "reach" { selection = []; send(.reach(source: source)); return }
+        guard let m = InputMode.arming(kind) else { return }
+        if m == .burn, turn?.canBurn == false { show("The deck is as small as it gets: \(turn?.state.deckSize ?? 0) cards"); return }
         pendingSource = source
-        mode = kind == "swapper" ? .swap : .bomb
-        show(kind == "swapper" ? "Trace a straight line to reverse it" : "Tap a grid card to blast it")
+        mode = m
+        show(["swapper": "Trace a straight line to reverse it", "bomb": "Tap a grid card to blast it",
+              "burn": "Tap a grid card to burn it out of the deck"][kind] ?? "")
     }
     func disarm() { mode = .trace; pendingSource = nil; selection = [] }
 
@@ -337,6 +372,7 @@ final class GameSession {
     /// The line under the board (the mock's pick message).
     var pickMessage: String {
         if mode == .bomb { return "Bomb armed: tap a grid card to blow it up. Tap the bomb again to cancel." }
+        if mode == .burn { return "Burn armed: tap a grid card to take it out of the deck for the game. Tap the burn again to cancel." }
         if mode == .swap && selection.isEmpty { return "Swapper armed: trace a straight line of 2 to 4 grid cards to reverse it. Tap the swapper again to cancel." }
         guard let t = turn else { return "" }
         if selection.isEmpty {
@@ -482,6 +518,9 @@ final class GameSession {
         case .swap(_, let before, let after, _):
             line("Swapped \(faces(before))  to  \(faces(after))")
         case .bomb(_, _, let cleared, _): line("Bomb: cleared \(faces(cleared))")
+        case .burn(_, let card, let size, _):
+            line("Burned \(faces([card])): out of the deck for the game (\(size) cards)")
+            show("Burned \(faces([card])) for the game")
         case .stockOut(let reason, _): line((reason == "stock_empty" ? "Stock empty" : "Card budget used") + ": play out the board")
         case .reach(_, let cards, let seconds, let limit, _):
             line("Reach: hand size +\(cards) for \(seconds) s (now \(limit))")
@@ -502,14 +541,22 @@ final class GameSession {
 
     private func finish() {
         timerTask?.cancel()
-        guard Edition.isBeta, let t = turn else { return }
+        guard let t = turn else { return }
+        // The turn's made and burned cards change the game's deck; its power jokers and prize carry on.
+        if var g = game, !g.over, g.results.count == (gameAtTurnStart?.results.count ?? 0) { g.finish(t, events: events); game = g }
+        guard Edition.isBeta, animate else { return }   // snapshots (animate off) save no records
+        struct GameInfo: Encodable { let seed: UInt64, turn: Int, turns: Int, shared: Bool, deckSize: Int, made: [CardRef], burned: [CardRef] }
         struct Record: Encodable {
             let rulesVersion: String, seed: UInt64, dealer: Bool, app: String
+            let game: GameInfo?
             let deal: DealRecord?
             let actions: [MatchAction]; let rolls: [Roll]; let events: [MatchEvent]
         }
         let app = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") + " (" + (Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?") + ")"
-        let rec = Record(rulesVersion: MatchTurn.rulesVersion, seed: seed, dealer: t.state.dealer, app: app, deal: dealRecord, actions: actions, rolls: t.dice.rolls, events: events)
+        let info = game.map { g in GameInfo(seed: g.seed, turn: g.results.count, turns: g.turns, shared: g.shared, deckSize: g.deck.count,
+                                             made: g.deck.made.map(CardRef.init), burned: g.deck.burned.map(CardRef.init)) }
+        let turnSeed = gameAtTurnStart?.turnSeed ?? seed
+        let rec = Record(rulesVersion: MatchTurn.rulesVersion, seed: turnSeed, dealer: t.state.dealer, app: app, game: info, deal: dealRecord, actions: actions, rolls: t.dice.rolls, events: events)
         do {
             let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             let dir = support.appendingPathComponent("\(Edition.name)/records", isDirectory: true)
@@ -521,7 +568,7 @@ final class GameSession {
             }
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd-HHmmss"
-            let url = dir.appendingPathComponent("match-\(f.string(from: Date()))-seed\(seed).json")
+            let url = dir.appendingPathComponent("match-\(f.string(from: Date()))-seed\(seed)-turn\(game?.results.count ?? 1).json")
             let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]
             try enc.encode(rec).write(to: url)
             savedRecord = url
