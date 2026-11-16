@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rulesVersion": "match-r20",
+  "rulesVersion": "match-r21",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4,
@@ -11,7 +11,7 @@
     "starterJoins": true,
     "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
-    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 150 },
+    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
     "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
   },
   "specials": {

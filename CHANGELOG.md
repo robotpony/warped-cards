@@ -8,9 +8,13 @@ warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
 - Each turn starts with a deal at the table: the bot's cards face down across the top, the crib's 4 spots and the deck in the middle, and your 6 held in a fan along the bottom. Tap 2 to throw them to the crib (tap one there to take it back). Once you throw, the bot's 2 land face down, the starter is cut and turned, and the turn starts. It's untimed. Pause, or tap Hint, and a hint names one thing to look for and blinks the cards it's about. It never tells you what to throw. Turn the deal off in the settings to go straight to the grid.
 
+### Changed
+
+- Edge power has no limit: each level adds another ×0.1 to the sets its card is in, however high it climbs. Scores run much higher, so prizes come easier for now.
+
 ### Fixed
 
-- A score's breakdown shows how edge power adds up: each powered card as +0.2 and so on, then a "Power cap" line when the sum passes ×1.5, so Total multi matches.
+- A score's breakdown shows how edge power adds up: each powered card as +0.2 and so on, so Total multi matches.
 
 ## 0.11.0 — 2026-11-15
 

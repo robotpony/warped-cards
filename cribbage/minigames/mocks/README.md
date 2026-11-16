@@ -225,6 +225,7 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r13 | 2026-11-14 | A special joker from the teal joker is shuffled into this turn's stock; drawn onto the board, it joins the tray (mock v7) |
 | r14 | 2026-11-14 | 0 to n jokers a round, decided at the shuffle (setting; 0 to 2 by default), each amber or teal. Cards a joker makes are new cards, marked ★, kept for the game. A special joker drawn onto the board waits until tapped, can't be part of a set, and is used up where it lies (mock v7) |
 | r20 | 2026-11-15 | Joker-made cards carry a small multiplier (mostly ×1.05 to ×1.25, up to ×3). Edge power grows 10% a level (was 50%), still capped at ×1.5. Noddy Yookerspiel only; the web mock stays at r16 |
+| r21 | 2026-11-15 | Edge power has no cap (was ×1.5). A cap may return as a visible mechanic jokers can change. Noddy Yookerspiel only |
 | r19 | 2026-11-15 | New power joker, the reach: sets pick 1 or 2 more cards for 10 to 45 seconds. Everyone starts with 1. Noddy Yookerspiel only; the web mock stays at r16 |
 | r18 | 2026-11-15 | Flushes count like a classic hand: 4 picked cards of one suit score whatever the starter's suit. The starter never costs a set points. Crib Maze Beta only; the web mock stays at r16 |
 | r17 | 2026-11-15 | A set picks 2 to 4 cards (was 5), plus the starter. Crib Maze Beta only; the web mock stays at r16 |

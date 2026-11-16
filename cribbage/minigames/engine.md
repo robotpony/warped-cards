@@ -477,7 +477,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
-    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 150 },
+    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
     "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
   },
   "specials": {

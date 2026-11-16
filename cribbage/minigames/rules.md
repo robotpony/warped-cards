@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 5, 2026-11-15. Match turns follow match rules r20. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 5, 2026-11-15. Match turns follow match rules r21. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -64,7 +64,7 @@ In classic cribbage you'd count your hand after pegging. In Crib Maze, each play
 
 The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
-These are match rules r20, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r21, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -171,7 +171,7 @@ The set's grid cards clear, the cards above them fall, and the stock fills the g
 Your hand, crib and starter are edge cards. They stay, and they power up. Power multiplies the sets they're in, so there's one score: steps.
 
 - Each edge card starts the turn at power 0.
-- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.1 for each level (level 1 is ×1.1, level 3 is ×1.3), up to ×1.5 (to tune). Each card's chip shows its own multiplier, so you can watch it climb. Round to the nearest step. Cards left over aren't multiplied.
+- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.1 for each level (level 1 is ×1.1, level 3 is ×1.3), with no limit (r21). A cap may come back as a mechanic you can see and change with jokers. Each card's chip shows its own multiplier, so you can watch it climb. Round to the nearest step. Cards left over aren't multiplied.
 - After a set scores, each edge card in it goes up one level. The starter is in a set only when it's part of a combo.
 - Power lasts the turn. Values: to tune (the mock has settings for the step per level, adding or multiplying levels, and the cap).
 
@@ -180,7 +180,7 @@ Your hand, crib and starter are edge cards. They stay, and they power up. Power 
 | 7-8, grid only | none | Fifteen, 2 | ×1 | 2 |
 | 5 from your hand, 10 from the grid | the 5 at level 3 | Fifteen, 2 | ×1.3 | 3 (2.6, rounded) |
 | 5 and 5 from your hand, 5 from the grid | levels 2 + 3 = 5 | Pair royal and fifteen, 8 | ×1.5 | 12 |
-| The same, later in the turn | levels 4 + 4 = 8 | Pair royal and fifteen, 8 | ×1.8, capped at ×1.5 | 12 |
+| The same, later in the turn | levels 4 + 4 = 8 | Pair royal and fifteen, 8 | ×1.8 | 14 (14.4, rounded) |
 | 7-8 from the grid, K from your hand | the K at level 2 | Fifteen, 2; K left over, −2 | ×1.2 on the 2 | 0 |
 | 7-8 from the grid, a joker-made 10★ ×1.25 | none | Fifteen, 2 | ×1.25 | 3 (2.5, rounded) |
 

@@ -23,11 +23,13 @@ Steps from both kinds of play walk your token through a maze in place of a pegbo
 
 <table>
   <tr>
-    <td><img src="docs/images/turn.png" width="260" alt="A match turn: a 4 by 4 grid of cards, the crib down the side, the hand along the bottom, the starter in the corner, and the power jokers below"></td>
-    <td><img src="docs/images/pick.png" width="260" alt="Four cards picked across the top row, with the line under the board previewing fifteen, fifteen, pair and a double run for 12"></td>
-    <td><img src="docs/images/breakdown.png" width="260" alt="The score breakdown: the picked cards and the starter in a row over a tally of each combo and its points"></td>
+    <td><img src="docs/images/deal.png" width="200" alt="The deal: the bot's 6 cards face down at the top, the crib's 4 spots with the ace of hearts thrown in, the deck beside them, a hint, and the player's 5 remaining cards fanned along the bottom"></td>
+    <td><img src="docs/images/turn.png" width="200" alt="A match turn: a 4 by 4 grid of cards, the crib down the side, the hand along the bottom, the starter in the corner, and the power jokers below"></td>
+    <td><img src="docs/images/pick.png" width="200" alt="Four cards picked across the top row, with the line under the board previewing fifteen, fifteen, pair and a double run for 12"></td>
+    <td><img src="docs/images/breakdown.png" width="200" alt="The score breakdown: the picked cards and the starter in a row over a tally of each combo and its points"></td>
   </tr>
   <tr>
+    <td>The deal: pick 2 for the crib</td>
     <td>A fresh match turn</td>
     <td>Picking a set of 4</td>
     <td>The score's breakdown</td>
@@ -40,7 +42,7 @@ Rendered from the beta (seed 2) with `--snapshot`; see `swift/App/Beta/Snapshot.
 
 | Game | What it is | Status |
 |---|---|---|
-| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.12.0 (the deal and the scoring grid), match rules r20, rules draft 5 |
+| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.12.0 (the deal and the scoring grid), match rules r21, rules draft 5 |
 | Classic cribbage | The classic game, sharing the same engine | Engine spec and fixtures; no app yet |
 
 ## Downloads

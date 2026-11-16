@@ -517,7 +517,7 @@ struct InfoCard: View {
     private var text: (String, [String]) {
         let m = session.config?.rules.match
         let pct = m?.edgePower.percentPerLevel ?? 50
-        let power = "Each time it scores, it powers up: every level multiplies the sets it's in by another ×\(session.multiplierText(percent: 100 + pct).dropFirst()), up to \(session.multiplierText(percent: m?.edgePower.capPercent ?? 200))."
+        let power = "Each time it scores, it powers up: every level multiplies the sets it's in by another ×\(session.multiplierText(percent: 100 + pct).dropFirst())\((m?.edgePower.capPercent ?? 0) > 0 ? ", up to " + session.multiplierText(percent: m!.edgePower.capPercent) : ", with no limit")."
         switch topic {
         case .hand:
             return ("Your hand", ["The 4 cards you kept from the deal. They're edge cards: they stay all turn and never clear.",
