@@ -192,7 +192,7 @@ One JSON Lines file per game, written as the game is played and flushed after ev
 
 ```
 {"kind":"header","format":1,"game":"crib-maze","rules":"match-r14",
- "app":"0.4.0","build":57,"commit":"df7ced4","platform":"macOS 26.6",
+ "app":"0.4.0","build":57,"commit":"03155ff","platform":"macOS 26.6",
  "started":"2026-11-14T19:02:03.120-08:00","install":"r-7f3c...",
  "seed":"9c41e2...","config":{...},"players":[{"seat":0,"kind":"human"},{"seat":1,"kind":"bot","level":"medium"}]}
 {"kind":"step","seq":1,"at":"2026-11-14T19:02:03.400-08:00","clock_ms":0,"player":null,
@@ -317,7 +317,7 @@ The release app saves a game in progress as its seed, config and actions, the sa
 |---|---|---|
 | App version | `CHANGELOG.md` top heading, kept in step with `MARKETING_VERSION` in `project.yml` | 0.4.0 |
 | Build | Git commit count, stamped at build time (as Scorekeep does) | 57 |
-| Commit | Short git hash, stamped into Info.plist | df7ced4 |
+| Commit | Short git hash, stamped into Info.plist | 03155ff |
 | Rules version | `CribMaze.rulesVersion`, the same numbering as the mock's `RULES` | match-r14 |
 | Record format | `GameRecord.formatVersion` | 1 |
 
