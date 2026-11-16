@@ -1,6 +1,23 @@
-# Warped Cards
+# Noddy Yookerspiel (Cribbage Jokers)
 
-Free card game demos, with the specs, simulations and tests behind them. Each game is 1 player against 1 or 2 bots, on one standard 52-card deck.
+Cribbage with jokers, made into a video game: 1 player against 1 or 2 bots, on one standard 52-card deck plus a few jokers. You still discard to the crib, peg to 31 and count fifteens, but each round has two kinds of play, a scoring grid and pegging, and the points you make move you along a board that forks and holds prizes. The design docs use its working title, Crib Maze.
+
+This repo, Warped Cards, holds the free card game demos and the specs, simulations and tests behind them.
+
+## How a round plays
+
+Each round starts as classic cribbage: the deal, the discard to the crib, and the cut for the starter. Then come the two kinds of play.
+
+**The scoring grid** replaces counting your hand. Your hand lines the bottom of a 4 × 4 grid of cards, the crib runs down the side when you deal, and the starter sits in the corner.
+
+- Drag across 2 to 4 touching cards, diagonals included. The set scores at once, counted like a cribbage hand: fifteens, pairs, runs, flushes and his nobs. The starter joins every set for free.
+- Scored grid cards clear and new ones drop in from the stock. Your hand, crib and starter stay put and power up each time they score, multiplying the sets they're in.
+- Power jokers change the board: the swapper reverses a line, the bomb clears a patch, and the reach raises your hand size for a while.
+- The turn ends when the clock runs out, the board is cleared, or no sets are left. Your best set wins a prize, another power joker.
+
+**Pegging** plays as in classic cribbage: take turns laying cards, scoring fifteens, pairs and runs as the count runs up to 31. Each point is a step, moved at once.
+
+Steps from both kinds of play walk your token through a maze in place of a pegboard. The scoring grid is playable in the Mac beta; pegging and the maze are designed but not built yet. The full rules are in [rules.md](cribbage/minigames/rules.md).
 
 ## Screenshots
 
@@ -23,8 +40,8 @@ Rendered from the beta (seed 2) with `--snapshot`; see `swift/App/Beta/Snapshot.
 
 | Game | What it is | Status |
 |---|---|---|
-| Crib Maze | Cribbage where your points walk you through a maze instead of up a pegboard. Between pegging rounds, match turns score sets traced across a 4 × 4 grid of cards | Mac beta 0.10.0 (match turns only), match rules r19, rules draft 5 |
-| Classic cribbage | The classic game, sharing Crib Maze's engine | Engine spec and fixtures; no app yet |
+| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.10.0 (the scoring grid only), match rules r19, rules draft 5 |
+| Classic cribbage | The classic game, sharing the same engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
 
