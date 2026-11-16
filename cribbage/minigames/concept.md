@@ -39,13 +39,16 @@ Three things change:
 Round
 
   Title, Options, Start  once a game: players and bot levels, game length, timer, hints
+  Cut for first deal ... once a game: the lowest card deals first
   Deal and discard ..... as in classic cribbage (2 or 3 players); untimed
   Cut the starter ...... a Jack gives the dealer 2 steps (his heels)
   Match turns .......... the scoring grid, one per player, in show order: bots'
                          results first, as a sequence, then yours
+  Shop ................. after the scoring grid, before pegging
   Pegging .............. on the maze: classic play to 31, each point a step; grid
                          sets are walked as plays; grid power multiplies pegging
-  Next round ........... the deal passes left
+  Next round ........... the deal passes left; hands repeat until a player
+                         exits the maze
 ```
 
 Classic rule wording comes from Scorekeep's page, `~/projects/utilities/scorekeep/docs/rules/cribbage.md`. Scorekeep covers 2 players only, so the 3-player deal is defined in our rules.
@@ -53,6 +56,8 @@ Classic rule wording comes from Scorekeep's page, `~/projects/utilities/scorekee
 ## The maze
 
 The maze replaces the pegboard. A pegboard is a track where every point moves you one hole; the maze is that track with forks, gates and prizes.
+
+The maze's mechanics will change: it becomes more of a board game, with circular paths (decided 2026-11-15). What follows is the first draft. Its place in the round stays the same, and a game still ends when a player exits the maze. Game length comes from the maze's size, its circular paths and its gates, not from a turn count.
 
 ```
 Maze sketch (real mazes are generated)
@@ -124,14 +129,14 @@ A round, as the player sees it
 
   Deal and discard
     > transition: the crib slides to the dealer, the starter is cut
-  Pegging on the maze
-    > transition: the maze pulls back, the match board deals in
   Match turn
     begin ... cards fall into place
     end ..... board cleared, or not
+    > transition: the shop
+  Shop
     > transition: the step total carries over to the maze
-  Maze walk
-    > transition: the shop, then the deal passes left
+  Pegging on the maze, with the grid's sets walked as plays
+    > transition: the deal passes left
 ```
 
 Transitions:
@@ -363,6 +368,8 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | Prizes retuned for r22: rare from 40 steps, epic from 70 (were 25 and 31). Medium bot, 1,000 turns, seed 1: dealer 59% common, 25% rare, 15% epic (back near r16's 59/27/14); non-dealer 76/16/8; weak dealer 84/12/4; strong dealer 56/25/19 |
 | 2026-11-15 | Shared deck or each player's own: undecided, so it's a setting (`deck.shared`, on by default; Advanced › Deck building in the beta) |
 | 2026-11-15 | Deck edits, first cut (match rules r23). A game is 3 turns (`game.turns`, to tune), the deal alternating. The deck lasts the game: made cards join it, and a new burn joker takes a grid card out of it for the game, down to 40 cards. Everyone starts with 1 burn; it joins the prize table at weight 20. Power jokers and each turn's prize carry over. Bots don't burn yet. `cribmaze-sim game`, medium bot, 300 games, seed 1: turns score 672, 709 and 1,048 steps (2,429 a game); with a fresh deck each turn, 672, 506 and 743 (1,921). So the lasting deck lifts turns 2 and 3 by about 40%, mostly through made cards' multipliers (181 steps of turn 3). Carrying power jokers over changes almost nothing (bots use them only when stuck). The deck ends the game at 57 cards, 5 of them made. Epic prizes rise from 21% in turn 1 to 31% in turn 3. Prizes and made multipliers need retuning for a game, not a turn |
+| 2026-11-15 | The shape of a game (Bruce): title sequence to the menu, start a game, cut for first dealer, then hands repeat (deal, scoring grid, shop, pegging on the maze) until a player exits the maze. The shop comes after the scoring grid, before pegging. The 3-turn game (`game.turns`, r23) is a stand-in until the maze is built |
+| 2026-11-15 | The maze will change, to be more of a board game with circular paths; its place in the round stays the same. Game length comes from the maze's size, its circular paths and clearing its gates. Gates take points or suits to open, or special jokers, which can be played during pegging on the maze |
 
 ## Open questions
 

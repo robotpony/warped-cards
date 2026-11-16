@@ -17,7 +17,7 @@ The first token to reach the goal wins.
 ```
 Game ............................ until a token reaches the goal
   Round ......................... one deal; the deal then passes left
-    Stage ....................... deal and discard, cut, match turns, pegging, shop
+    Stage ....................... deal and discard, cut, match turns, shop, pegging
       Turn ...................... one player's go within a stage
 ```
 
@@ -25,7 +25,7 @@ Game ............................ until a token reaches the goal
 |---|---|
 | Game | From setup until a token reaches the goal. Special jokers won as prizes, power slots, cards a joker made, and prizes in the deck last the whole game |
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
-| Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, pegging on the maze, the shop |
+| Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, the shop, pegging on the maze |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
 | Play | One go on the maze: a pegging score or a scored set, walked as its steps. Players take turns making plays, as in pegging (concept.md, 2026-11-14; the maze walk rules are still to be written) |
 | Minigame | A game played in a stage in place of a classic cribbage step. The match game is the first: it replaces counting your hand. More may follow |
@@ -267,7 +267,11 @@ Your token doesn't move during the turn. Each scoring set becomes a bundle of st
 
 Computer players' match turns aren't played out on screen: you see each result (steps, best set and prize).
 
-### 4. Pegging on the maze
+### 4. The shop
+
+After the scoring grid, before pegging, you can shop. What you pay with isn't designed yet (pips, the old currency, were removed in match rules r15). The shop sells jokers, and any card you've discovered in any game you've played, such as a special joker you've won or seen in a reveal. The game reveals itself over hundreds of games. What's for sale and the prices: not designed yet.
+
+### 5. Pegging on the maze
 
 Peg as in classic cribbage. The player to the dealer's left plays first, and the count runs up to 31. With three players, play passes to the left; a player who can't play says "go" and sits out until the count starts again. The last player to play before the count starts again scores the go (or the 31).
 
@@ -278,15 +282,15 @@ Every point you peg is one step, moved right away, before the next card is playe
 
 After pegging, the cards go back to their owners' hands.
 
-### 5. The shop
-
-Between rounds, you can shop. What you pay with isn't designed yet (pips, the old currency, were removed in match rules r15). The shop sells jokers, and any card you've discovered in any game you've played, such as a special joker you've won or seen in a reveal. The game reveals itself over hundreds of games. What's for sale and the prices: not designed yet.
-
 ### 6. Next round
 
 All cards, including any prize cards added to the deck, go back into the deck, and the deck is shuffled. The deal passes to the left.
 
 ## Moving through the maze
+
+The maze rules below are a first draft. The maze will change to be more of a board game, with circular paths. Its place in the round stays the same, and the game still ends when a token exits the maze. Game length comes from the maze's size, its circular paths and its gates.
+
+Gates take points or suits to open, or a special joker. You can play special jokers during pegging on the maze. Which jokers open which gates: not designed yet.
 
 - One point is one step, and you must take every step.
 - At a fork, choose a branch. The main route always stays open. A branch may be shorter or longer than the main route, and it may hold gates, prizes or traps.
