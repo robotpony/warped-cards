@@ -1,6 +1,6 @@
 # Crib Maze: Rules
 
-Status: draft 5, 2026-11-15. Match turns follow match rules r19. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 5, 2026-11-15. Match turns follow match rules r20. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -62,7 +62,7 @@ In classic cribbage you'd count your hand after pegging. In Crib Maze, each play
 
 The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
-These are match rules r19, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r20, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -169,16 +169,18 @@ The set's grid cards clear, the cards above them fall, and the stock fills the g
 Your hand, crib and starter are edge cards. They stay, and they power up. Power multiplies the sets they're in, so there's one score: steps.
 
 - Each edge card starts the turn at power 0.
-- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.5 for each level (level 1 is ×1.5), up to ×1.5 (to tune). Round to the nearest step. Cards left over aren't multiplied.
+- A set with powered edge cards multiplies its combos. Add up the power levels of its edge cards; the multiplier is 1 plus 0.1 for each level (level 1 is ×1.1, level 3 is ×1.3), up to ×1.5 (to tune). Each card's chip shows its own multiplier, so you can watch it climb. Round to the nearest step. Cards left over aren't multiplied.
 - After a set scores, each edge card in it goes up one level. The starter is in a set only when it's part of a combo.
 - Power lasts the turn. Values: to tune (the mock has settings for the step per level, adding or multiplying levels, and the cap).
 
 | Set | Edge power | Combos | Multiplier | Steps |
 |---|---|---|---|---|
 | 7-8, grid only | none | Fifteen, 2 | ×1 | 2 |
-| 5 from your hand, 10 from the grid | the 5 at level 1 | Fifteen, 2 | ×1.5 | 3 |
-| 5 and 5 from your hand, 5 from the grid | levels 1 + 1 = 2 | Pair royal and fifteen, 8 | ×2, capped at ×1.5 | 12 |
-| 7-8 from the grid, K from your hand | the K at level 1 | Fifteen, 2; K left over, −2 | ×1.5 on the 2 | 1 |
+| 5 from your hand, 10 from the grid | the 5 at level 3 | Fifteen, 2 | ×1.3 | 3 (2.6, rounded) |
+| 5 and 5 from your hand, 5 from the grid | levels 2 + 3 = 5 | Pair royal and fifteen, 8 | ×1.5 | 12 |
+| The same, later in the turn | levels 4 + 4 = 8 | Pair royal and fifteen, 8 | ×1.8, capped at ×1.5 | 12 |
+| 7-8 from the grid, K from your hand | the K at level 2 | Fifteen, 2; K left over, −2 | ×1.2 on the 2 | 0 |
+| 7-8 from the grid, a joker-made 10★ ×1.25 | none | Fifteen, 2 | ×1.25 | 3 (2.5, rounded) |
 
 Each set's steps carry its most common suit, for suit gates in the maze. A tie carries no suit (see Suit gates).
 
@@ -223,7 +225,7 @@ Players never see the chances or the list of possible prizes. Each kind rolls on
 | Teal joker | 80% a card, 15% a scoring card, 5% a special joker shuffled into this turn's stock |
 | Title card, blank card | A third each: a new 5, a special joker for your power jokers, or 5 steps (placeholders) |
 
-- A card is a new card of any rank and suit, made by the joker and placed in its spot. A scoring card is a new 5 or 10-value card (10, J, Q, K). Cards a joker makes are marked ★ and stay in the deck for the rest of the game.
+- A card is a new card of any rank and suit, made by the joker and placed in its spot. A scoring card is a new 5 or 10-value card (10, J, Q, K). Cards a joker makes are marked ★ and stay in the deck for the rest of the game. Each one also carries its own multiplier, shown on its chip: usually small (×1.05 or ×1.1), sometimes up to ×3 (to tune). It multiplies every set the card is in, on top of edge power.
 - The teal joker's special joker is picked from every known special joker (the swapper and bomb so far) and shuffled into this turn's stock. Drawn onto the board, it waits there until you tap it to use it. It can't be part of a set. If the stock is empty, it goes straight to your power jokers.
 - When the prize doesn't go to the board, the stock fills the card's spot. If the stock is empty, the spot stays empty.
 

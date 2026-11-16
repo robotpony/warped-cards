@@ -25,9 +25,11 @@ public struct Card: Codable, Sendable, Equatable, Hashable {
     public let kind: CardKind
     public let rank: Int      // 1 (A) to 13 (K); 0 for jokers
     public let suit: Suit?
+    /// A card a joker made carries a multiplier, as a whole percent (150 is ×1.5); nil for the rest.
+    public let percent: Int?
 
-    public init(id: Int, kind: CardKind, rank: Int, suit: Suit?) {
-        self.id = id; self.kind = kind; self.rank = rank; self.suit = suit
+    public init(id: Int, kind: CardKind, rank: Int, suit: Suit?, percent: Int? = nil) {
+        self.id = id; self.kind = kind; self.rank = rank; self.suit = suit; self.percent = percent
     }
     /// A standard card from its ID: suit index × 13 + rank − 1.
     public init(standard id: Int) {

@@ -58,6 +58,7 @@ struct Tally {
     var prizes: [String: Int] = [:]
     var noPrize = 0
     var actions = 0, swaps = 0, bombs = 0, reaches = 0
+    var madeScores = 0, stepsFromMade = 0
     var reachCards = 0, reachSeconds = 0, reachScores = 0, reachSteps = 0, bigScores = 0, bigSteps = 0, reachBest: [Int] = []
     var best: [Int] = []
     var fromPower = 0, scores = 0, starterIn = 0, flush4 = 0, flush5 = 0
@@ -110,6 +111,7 @@ for i in 0..<o.turns {
             t.steps.append(totals.steps)
             if reason == "board_cleared" { t.cleared += 1 }
             t.swaps += totals.swaps; t.bombs += totals.bombs; t.reaches += totals.reaches
+            t.madeScores += totals.madeScores; t.stepsFromMade += totals.stepsFromMade
             t.reachCards += totals.reachCards; t.reachSeconds += totals.reachSeconds; t.reachScores += totals.reachScores
             t.reachSteps += totals.reachSteps; t.bigScores += totals.bigScores; t.bigSteps += totals.bigSteps
             if let b = totals.reachBest { t.reachBest.append(b) }
@@ -142,6 +144,7 @@ print("best set         mean \(String(format: "%.1f", Double(bs.reduce(0, +)) / 
 print("edge power       \(String(format: "%.0f", 100 * Double(t.fromPower) / Double(max(1, t.steps.reduce(0, +)))))% of steps · starter in \(t.starterIn) of \(t.scores) scores (\(String(format: "%.0f", 100 * Double(t.starterIn) / Double(max(1, t.scores))))%)")
 print("flushes          4-card \(t.flush4) · 5-card \(t.flush5) · in \(String(format: "%.1f", 100 * Double(t.flush4 + t.flush5) / Double(max(1, t.scores))))% of scores")
 let f1 = { (x: Double) in String(format: "%.1f", x) }
+print("made cards       \(t.madeScores) scores with one · \(f1(Double(t.stepsFromMade) / Double(max(1, t.madeScores)))) steps added each · \(f1(100 * Double(t.stepsFromMade) / Double(max(1, t.steps.reduce(0, +)))))% of steps")
 if t.reaches > 0 {
     print("reach (\(o.reachEarly ? "early" : "when stuck"))  used \(t.reaches) · mean +\(f1(Double(t.reachCards) / Double(t.reaches))) cards for \(f1(Double(t.reachSeconds) / Double(t.reaches))) s · \(t.reachScores) scores under one (\(f1(Double(t.reachSteps) / Double(max(1, t.reachScores)))) steps each) · \(t.bigScores) over \(r.maxSet) cards (\(f1(Double(t.bigSteps) / Double(max(1, t.bigScores)))) each) · \(f1(100 * Double(t.reachSteps) / Double(max(1, t.steps.reduce(0, +)))))% of steps")
 }

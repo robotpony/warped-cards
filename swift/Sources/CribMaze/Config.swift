@@ -75,6 +75,11 @@ public struct JokersConfig: Codable, Sendable, Equatable {
     public var scoringRanks: [Int]
     public var outcomes: [String: Outcome]
     public var tables: [String: Weights]
+    /// A made card's multiplier (r20): [percent, weight] pairs, and the cap on all of a set's made
+    /// cards multiplied together. Missing means made cards carry no multiplier, as in r19.
+    public var madeMultiplier: [[Int]]?
+    public var madeCapPercent: Int?
+    public var madeWeights: [(Int, Int)] { (madeMultiplier ?? []).map { ($0[0], $0[1]) } }
 }
 
 public struct BotsConfig: Codable, Sendable, Equatable {
@@ -123,6 +128,7 @@ public struct Config: Codable, Sendable, Equatable {
         if m.prize.epicAt < m.prize.rareAt { try fail("prize.epicAt must be at least rareAt") }
         try weights(m.prize.special, "prize.special")
         for (k, _) in m.prize.special.entries where !rules.specials.known.contains(k) { try fail("prize.special names unknown \(k)") }
+        for pair in jokers.madeMultiplier ?? [] where pair.count != 2 || pair[0] < 100 || pair[1] < 1 { try fail("jokers.madeMultiplier: each entry is [percent of 100 or more, weight]") }
         if jokers.perRound.min > jokers.perRound.max { try fail("jokers.perRound: min is above max") }
         try weights(jokers.kinds, "jokers.kinds")
         let kinds = jokers.kinds.entries.map(\.0) + jokers.extras

@@ -2,6 +2,17 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.11.0 — 2026-11-15
+
+### Added
+
+- Cards a joker makes carry their own multiplier, usually small (×1.05 to ×1.25) and now and then up to ×3. It shows on the card's chip and multiplies every set the card is in. The score's breakdown shows it as a Joker card line.
+
+### Changed
+
+- Hand, crib and starter cards now power up 10% at a time, up to ×1.5, so each power-up shows. Before, one power-up reached the cap and later ones did nothing.
+- The clock's pulse quickens and deepens as time runs out.
+
 ## 0.10.0 — 2026-11-15
 
 ### Added

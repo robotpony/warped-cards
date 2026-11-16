@@ -18,5 +18,7 @@
     "teal":  [["card", 80], ["scoring", 15], ["power", 5]],
     "title": [["five", 34], ["named", 33], ["steps", 33]],
     "blank": [["five", 34], ["named", 33], ["steps", 33]]
-  }
+  },
+  "madeMultiplier": [[105, 40], [110, 25], [125, 18], [150, 10], [200, 5], [300, 2]],
+  "madeCapPercent": 300
 }

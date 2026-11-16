@@ -11,7 +11,9 @@ import GameKit
 public struct CardRef: Codable, Sendable, Equatable {
     public let id: Int
     public let card: String
-    public init(_ c: Card) { id = c.id; card = c.notation }
+    /// A made card's multiplier (r20); left out of the JSON for every other card.
+    public let percent: Int?
+    public init(_ c: Card) { id = c.id; card = c.notation; percent = c.percent }
 }
 
 public struct ComboOut: Codable, Sendable, Equatable {
@@ -40,6 +42,8 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var reachCards = 0, reachSeconds = 0
     public var reachScores = 0, reachSteps = 0, reachBest: Int?
     public var bigScores = 0, bigSteps = 0
+    /// Made cards' multipliers (r20): sets scored with one, and the steps their multipliers added.
+    public var madeScores = 0, stepsFromMade = 0
 }
 
 public enum MatchEvent: Codable, Sendable, Equatable {
@@ -126,6 +130,8 @@ public struct SetValue: Sendable {
     public let count: Count
     public let comboPoints: Int
     public let percent: Int
+    /// The parts of `percent`: edge power (capped), and made cards' multipliers (r20).
+    public let edgePercent: Int, madePercent: Int
     public let multiplied: Int
     public let leftOver: Int
     public let points: Int
@@ -140,7 +146,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r19"
+    public static let rulesVersion = "match-r20"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -258,7 +264,9 @@ public struct MatchTurn: Sendable {
                     switch makes { case "scoring": return j.scoringRanks.contains(c.rank); case "five": return c.rank == 5; default: return true }
                 }
                 let base = pool[dice.below(pool.count, stream: "reveal", purpose: "made_card")]
-                made = Card(id: state.nextMadeID, kind: .made, rank: base.rank, suit: base.suit); state.nextMadeID += 1
+                // r20: a made card carries a small multiplier, mostly close to ×1.
+                let pct = j.madeMultiplier == nil ? nil : dice.pick(j.madeWeights, stream: "reveal", purpose: "made_multiplier")
+                made = Card(id: state.nextMadeID, kind: .made, rank: base.rank, suit: base.suit, percent: pct); state.nextMadeID += 1
                 prize = made!.notation
             } else if o.special != nil {
                 let known = config.rules.specials.known
@@ -390,9 +398,15 @@ public struct MatchTurn: Sendable {
             percent = 100 + ep.percentPerLevel * levels.reduce(0, +)
         }
         if ep.capPercent > 0 { percent = min(percent, ep.capPercent) }
+        // r20: made cards in the set multiply on top of edge power, together up to their own cap.
+        var made = 100
+        for p in inSet { if let m = state.cells[p]?.percent { made = (made * m + 50) / 100 } }
+        if let cap = config.jokers.madeCapPercent, cap > 0 { made = min(made, cap) }
+        let edgePercent = percent
+        percent = (percent * made + 50) / 100
         let multiplied = (combo * percent + 50) / 100
         let left = cnt.leftOver.filter { $0 != starterAt }.count
-        return SetValue(count: cnt, comboPoints: combo, percent: percent, multiplied: multiplied, leftOver: left,
+        return SetValue(count: cnt, comboPoints: combo, percent: percent, edgePercent: edgePercent, madePercent: made, multiplied: multiplied, leftOver: left,
                         points: multiplied - r.leftOverCost * left, suit: suitOf(Array(cards.map(\.suit).prefix(inSet.count))),
                         counted: ps, inSet: inSet)
     }
@@ -438,7 +452,9 @@ public struct MatchTurn: Sendable {
         let cost = r.leftOverCost * v.leftOver
         state.steps += v.points
         var t = state.totals
-        t.steps += v.points; t.stepsFromEdgePower += v.multiplied - v.comboPoints; t.leftOverTotal += cost
+        let edgeOnly = (v.comboPoints * v.edgePercent + 50) / 100
+        t.steps += v.points; t.stepsFromEdgePower += edgeOnly - v.comboPoints; t.leftOverTotal += cost
+        if v.madePercent > 100 { t.madeScores += 1; t.stepsFromMade += v.multiplied - edgeOnly }
         t.scores += 1; if v.count.combos.count == 1 { t.singles += 1 } else { t.multis += 1 }
         if !state.reaches.isEmpty { t.reachScores += 1; t.reachSteps += v.points; t.reachBest = max(t.reachBest ?? v.points, v.points) }
         if picked(traced).count > r.maxSet { t.bigScores += 1; t.bigSteps += v.points }

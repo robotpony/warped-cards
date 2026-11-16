@@ -229,7 +229,7 @@ final class GameSession {
         return Set(lit.map { v.counted[$0] })   // the starter lights too when it joins a combo
     }
 
-    /// The edge power multiplier for a level, as the engine works it out: ×1.5, ×2.
+    /// The edge power multiplier for a level, as the engine works it out: ×1.1, ×1.2, up to the cap.
     func multiplierText(_ level: Int) -> String {
         let ep = config?.rules.match.edgePower
         var pct = 100 + (ep?.percentPerLevel ?? 50) * level

@@ -96,7 +96,9 @@ struct BoardView: View {
                         inset: inset, dimmed: pb.active && !pb.set.isEmpty && !inset,
                         lit: pb.lit.contains(p), litPower: pb.litPower.contains(p), left: pb.leftOver.contains(p),
                         away: pb.row.contains(p), armedSource: session.armedSource == p,
-                        chipText: level > 0 ? session.multiplierText(level) : nil, chipPulse: pb.litPower.contains(p))
+                        // Edge cards show their power level's multiplier; a joker-made card, its own (r20).
+                        chipText: level > 0 ? session.multiplierText(level) : (state?.cells[p]?.percent).map { session.multiplierText(percent: $0) },
+                        chipPulse: pb.litPower.contains(p))
     }
 
     private var placed: [(p: Pos, card: Card)] {

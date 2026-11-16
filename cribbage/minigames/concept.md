@@ -341,6 +341,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | Releases: Crib Maze for Mac, signed with Developer ID and notarized, posted as free pre-release demos on GitHub releases ([RELEASING.md](../../RELEASING.md)) |
 | 2026-11-15 | A card counter shows how many cards a set can pick (the pick limit, `maxSet` for now). Some combos, jokers and prizes will raise it for a while; not designed yet |
 | 2026-11-15 | A score's breakdown plays over a row of its cards, flown up from the board with the starter on the right, so it always sits in the same place instead of away from the set. It waits for a tap at the end, and each line shows its cards. The mock still plays over the board |
+| 2026-11-15 | Match rules r20. Joker-made cards carry a multiplier (×1.05 40%, ×1.1 25%, ×1.25 18%, ×1.5 10%, ×2 5%, ×3 2%; their product capped at ×3), on top of edge power. Edge power grows 10% a level (was 50%) under the same ×1.5 cap: at 50% one level hit the cap, so later power-ups did nothing (Bruce's playtest). 1,000 turns, seed 1, dealer, medium bot: 269.6 steps a turn (r19 278.4); prizes common 52.5%, rare 29.8%, epic 17.7% (r19 58.6, 27.5, 13.9); edge power 25% of steps. A wider made table (mean ×1.38) gave 31% epic; edge steps of 10 to 25% with caps of ×2 to ×2.5 gave 40 to 91% epic |
 
 ## Open questions
 

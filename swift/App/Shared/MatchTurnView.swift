@@ -550,10 +550,21 @@ struct TurnClock: View {
     let session: GameSession
     @State private var pulse = false
     @State private var breathe = false
+    @State private var urgency = 0
 
     enum Look { case running, warning, stuck, done, off }
 
     static let green = Color(hex: 0x39E07A), orange = Color(hex: 0xFF9F1C), red = Color(hex: 0xFF4D4D)
+
+    /// How urgent the breath is, from 0 (calm, over half the time left) to 4 (the last 5%).
+    static func urgency(left: Int, total: Int) -> Int {
+        guard total > 0 else { return 0 }
+        let f = Double(max(0, left)) / Double(total)
+        return f > 0.5 ? 0 : f > 0.25 ? 1 : f > 0.1 ? 2 : f > 0.05 ? 3 : 4
+    }
+    /// Each level's half-breath in seconds, and how far the clock swells.
+    static let period: [Double] = [2.0, 1.4, 0.9, 0.55, 0.35]
+    static let depth: [CGFloat] = [0.05, 0.07, 0.10, 0.13, 0.17]
 
     var body: some View {
         let total = session.turn?.config.rules.match.timerSeconds ?? 0
@@ -580,14 +591,18 @@ struct TurnClock: View {
             Circle().strokeBorder(colour, lineWidth: 2)
         }
         .frame(width: 30, height: 30)
-        // While the clock runs it breathes, slowly, so it reads as alive; a stuck board pulses faster.
-        .scaleEffect(look == .running || look == .warning ? (breathe ? 1.07 : 0.96) : 1)
+        // While the clock runs it breathes, so it reads as alive, and the breath quickens and deepens
+        // as time runs out; a stuck board pulses instead.
+        .scaleEffect(look == .running || look == .warning ? (breathe ? 1 + Self.depth[urgency] : 1 - Self.depth[urgency] / 2) : 1)
         .opacity(look == .stuck && pulse ? 0.35 : 1)
         .shadow(color: look == .off ? .clear : colour.opacity(0.5), radius: 4)
         .animation(.easeOut(duration: 0.3), value: look)
-        .onChange(of: look == .running || look == .warning, initial: true) { _, running in
-            breathe = false
-            if running { withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) { breathe = true } }   // about a breath: 2 s in, 2 s out
+        .onChange(of: (look == .running || look == .warning) ? Self.urgency(left: session.secondsLeft, total: total) : -1, initial: true) { _, level in
+            var quiet = Transaction(); quiet.disablesAnimations = true
+            withTransaction(quiet) { breathe = false }
+            guard level >= 0 else { return }
+            urgency = level
+            withAnimation(.easeInOut(duration: Self.period[level]).repeatForever(autoreverses: true)) { breathe = true }
         }
         .onChange(of: look == .stuck, initial: true) { _, stuck in
             pulse = false

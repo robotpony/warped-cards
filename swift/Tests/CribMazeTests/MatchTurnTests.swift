@@ -3,6 +3,7 @@ import Foundation
 import GameKit
 import Testing
 @testable import CribMaze
+import CribMazeBots
 
 let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../..").standardized
 let configFolder = repo.appendingPathComponent("cribbage/minigames/config")
@@ -297,5 +298,35 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(throws: ConfigError.self) { try c.validate() }
         c.rules.specials.reach = nil
         #expect(throws: ConfigError.self) { try c.validate() }
+    }
+}
+
+/// r20: a card a joker makes carries a small multiplier, which multiplies the sets it's in.
+@Suite struct MadeMultiplierTests {
+    @Test func madeCardsCarryAMultiplierThatMultipliesTheirSets() throws {
+        let c = try loadConfig()
+        let table = Set(c.jokers.madeWeights.map(\.0))
+        let bot = MatchBot(config: c, id: "medium")!
+        var made = 0, scored = 0
+        for seed in UInt64(1)...25 {
+            var (t, _) = MatchTurn.start(config: c, setup: TurnSetup(seed: seed, warned: true))
+            var steps = 0
+            while !t.state.over && steps < 80 {
+                steps += 1
+                var d = t.dice
+                let a = bot.choose(t, dice: &d)
+                t.dice = d
+                if case .trace(let ps) = a, let v = t.value(of: ps) {
+                    var m = 100
+                    for p in v.inSet { if let pct = t.state.cells[p]?.percent { m = (m * pct + 50) / 100 } }
+                    m = min(m, c.jokers.madeCapPercent ?? m)
+                    #expect(v.madePercent == m && v.percent == (v.edgePercent * m + 50) / 100)
+                    if m > 100 { scored += 1 }
+                }
+                _ = try t.apply(a)
+                for p in Board.grid { if let card = t.state.cells[p], card.kind == .made { #expect(card.percent.map(table.contains) == true); made += 1 } }
+            }
+        }
+        #expect(made > 0 && scored > 0)
     }
 }

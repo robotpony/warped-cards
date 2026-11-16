@@ -151,7 +151,7 @@ The pick limit is how many cards a set may pick: `maxSet`, plus the cards of eac
 
 A score, in order:
 
-1. Multiplier: add up the current power levels of the edge cards in the set. The multiplier, in percent, is 100 + `edgePower.percentPerLevel` × levels, no more than `edgePower.capPercent` (0 means no cap). With `edgePower.combine` set to `each`, every edge card's own multiplier is multiplied together instead, then capped.
+1. Multiplier: add up the current power levels of the edge cards in the set. The multiplier, in percent, is 100 + `edgePower.percentPerLevel` × levels, no more than `edgePower.capPercent` (0 means no cap). With `edgePower.combine` set to `each`, every edge card's own multiplier is multiplied together instead, then capped. Then (r20) each joker-made card in the set multiplies it by its own `percent`, rounded half up after each, with the made cards' product no more than `madeCapPercent`. The `score` event's multiplier is the total.
 2. Points: combo points × multiplier, rounded half up (in integers: (combo × percent + 50) div 100), minus `leftOverCost` × left-over cards. This MAY be 0 or less; the set still scores and clears.
 3. Steps: add the points. Then each edge card in the set goes up `edgePower.step` levels.
 4. Suit: the suit most cards in the set share. A tie for most is no suit.
@@ -206,7 +206,7 @@ For each extra card:
 
 1. Roll its kind's table in `jokers.tables` (stream `reveal`, purpose `outcome:<kind>`).
 2. Make the prize, from the outcome's `makes` or `special`:
-   - A card: build the pool of 52 rank and suit pairs in ID order, filtered by the outcome (any card; a scoring card, which is a rank in `scoringRanks`; or a 5). Pick one (stream `reveal`, purpose `made_card`). It gets the next made-card ID.
+   - A card: build the pool of 52 rank and suit pairs in ID order, filtered by the outcome (any card; a scoring card, which is a rank in `scoringRanks`; or a 5). Pick one (stream `reveal`, purpose `made_card`). It gets the next made-card ID. With `madeMultiplier` (r20), it also gets a multiplier, a percent picked from that table (stream `reveal`, purpose `made_multiplier`), which it keeps for the game. Card references in events carry it as `percent`.
    - A special joker: pick one from `specials.known`, in order (stream `reveal`, purpose `special_kind`).
    - Steps or an item: nothing to draw.
 3. Place it, by the outcome's `goes`:
@@ -294,7 +294,7 @@ Every draw is reported as a roll: stream, purpose, range (n), value. A shuffle r
 | Stream | Purposes, in the order they happen |
 |---|---|
 | `deal` | Match turn: `shuffle` (the 52), `joker_count`, `joker_kind` per joker, `shuffle` (the stock). Classic: `shuffle` and `cut_for_deal` per cut at the start, then `shuffle` and `cut` each hand |
-| `reveal` | Per extra card: `outcome:<kind>`, then `made_card` or `special_kind` if the outcome needs one |
+| `reveal` | Per extra card: `outcome:<kind>`, then `made_card` (and `made_multiplier`, r20) or `special_kind` if the outcome needs one |
 | `board` | `stock_insert` |
 | `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19) |
 | `prize` | `prize_special` |
@@ -453,20 +453,20 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r19 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r20 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r19",
+  "rulesVersion": "match-r20",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
-    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 50, "combine": "add", "capPercent": 150 },
+    "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 150 },
     "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
   },
   "specials": {
@@ -503,7 +503,9 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
     "teal":  [["card", 80], ["scoring", 15], ["power", 5]],
     "title": [["five", 34], ["named", 33], ["steps", 33]],
     "blank": [["five", 34], ["named", 33], ["steps", 33]]
-  }
+  },
+  "madeMultiplier": [[105, 40], [110, 25], [125, 18], [150, 10], [200, 5], [300, 2]],
+  "madeCapPercent": 300
 }
 ```
 

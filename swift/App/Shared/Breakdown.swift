@@ -53,7 +53,7 @@ final class Playback {
     var row: [Pos] = []
     var rowCards: [Pos: Card] = [:]
     var rowOn = false
-    /// Power chips on the row's edge cards (×1.5), updated as they power up.
+    /// Power chips on the row's edge cards (×1.2), updated as they power up.
     var chipText: [Pos: String] = [:]
     /// The total's flight from the tally up to the step counter, in the phone's coordinates.
     var totalAt: CGPoint?
@@ -204,7 +204,17 @@ extension GameSession {
             await pb.wait(stepMs())
             withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.litPower = [] }
         }
-        if !powered.isEmpty {
+        // r20: each joker-made card in the set adds its own multiplier.
+        let madeIn = sel.filter { old.cells[$0]?.percent != nil }
+        for p in madeIn {
+            withAnimation(.spring(duration: Motion.t(0.25))) { pb.litPower = [p] }
+            let m = multiplierText(percent: old.cells[p]!.percent!)
+            pb.float([p], m, "joker card", .power)
+            pb.line("Joker card", m, "", .power, cards: [card(p)].compactMap { $0 })
+            await pb.wait(stepMs())
+            withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.litPower = [] }
+        }
+        if !powered.isEmpty || !madeIn.isEmpty {
             let gain = multiplied - total; total = multiplied
             pb.float(sel, multiplierText(percent: pct), "+\(gain)", .power)
             pb.line("Total multi", multiplierText(percent: pct), "\(total)", .power)
