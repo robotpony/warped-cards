@@ -638,75 +638,192 @@ struct Wedge: Shape {
     }
 }
 
-/// The deal before a turn: your 6 cards, pick 2 for the crib. Untimed. After a pause (or on
-/// request), a hint names one principle and blinks the cards it's about; it never says what to
-/// throw (concept.md › Discard principles).
+/// The deal before a turn, laid out like a table: the bot's cards face down along the top, the
+/// crib's 4 spots and the deck in the middle, and your 6 fanned along the bottom like a held hand.
+/// Cards are dealt one at a time, alternating. Tap a card to throw it to the crib (tap it there to
+/// take it back). Untimed. After a pause (or on Hint), a hint names one principle and blinks the
+/// cards it's about; it never says what to throw (concept.md › Discard principles). Once you
+/// throw, the bot's 2 land face down, the starter is cut and turned, and the turn starts.
 struct DealView: View {
     let session: GameSession
+    @Namespace private var ns
+    /// How many of the 12 cards have been dealt so far.
+    @State private var shown: Int
+    /// After you throw: the bot's throw has landed, then the starter is turned.
+    @State private var botIn = false
+    @State private var starterUp = false
+    @State private var throwing = false
+
+    init(session: GameSession) {
+        self.session = session
+        _shown = State(initialValue: session.animate ? 0 : 12)
+    }
+
+    static let handW: CGFloat = 70, slotW: CGFloat = 54, botW: CGFloat = 44
+
     var body: some View {
         if let d = session.dealing {
             let dealer = session.settings.dealer
-            let hinted = Set(d.hint?.cards.map(\.id) ?? [])
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Your deal").font(Theme.font(28, .bold)).foregroundStyle(Theme.cyan).shadow(color: Theme.cyan.opacity(0.6), radius: 6)
-                Text(dealer ? "Throw 2 cards to your crib. It sits down the side of your grid." : "Throw 2 cards to the bot's crib. Keep the 4 that will score best on your grid.")
-                    .font(Theme.font(15, .regular)).foregroundStyle(Theme.feltText.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
-                Grid(horizontalSpacing: 12, verticalSpacing: 18) {
-                    ForEach(0..<2, id: \.self) { row in
-                        GridRow {
-                            ForEach(0..<3, id: \.self) { col in
-                                let card = d.dealt.player[row * 3 + col]
-                                let picked = d.picked.contains(card)
-                                CardFace(card: card, width: 104)
-                                    .hintBlink(hinted.contains(card.id), cornerRadius: 8)
-                                    .overlay(alignment: .top) {
-                                        if picked {
-                                            Text("CRIB").font(Theme.font(10, .bold)).tracking(0.8).padding(.horizontal, 6).frame(height: 16)
-                                                .background(Capsule().fill(Theme.gold)).foregroundStyle(Theme.ink).offset(y: -8)
-                                        }
-                                    }
-                                    .overlay { if picked { RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.gold, lineWidth: 3) } }
-                                    .opacity(picked ? 0.75 : 1)
-                                    .offset(y: picked ? -10 : 0)
-                                    .animation(.snappy(duration: Motion.t(0.2)), value: picked)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { session.togglePick(card) }
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity).padding(.top, 8)
-                // The hint: one principle, never the answer.
-                Group {
-                    if let h = d.hint {
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "lightbulb.fill").foregroundStyle(Theme.gold)
-                            Text(h.principle.line).font(Theme.font(15, .medium)).fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.panel))
-                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.gold.opacity(0.6), lineWidth: 1))
-                        .transition(.opacity)
-                    } else {
-                        Text("Hint").font(Theme.font(13, .semibold)).foregroundStyle(Theme.feltText.opacity(0.7))
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .overlay(Capsule().strokeBorder(Theme.feltText.opacity(0.3), lineWidth: 1))
-                            .contentShape(Capsule()).onTapGesture { session.showHint(asked: true) }
-                    }
-                }
-                .animation(.easeOut(duration: Motion.t(0.3)), value: d.hint?.principle)
-                Spacer()
-                let ready = d.picked.count == 2
-                Text(ready ? "Throw to the crib" : "Pick \(2 - d.picked.count) more")
-                    .font(Theme.font(16, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(ready ? Theme.gold : Theme.feltText.opacity(0.12)))
-                    .foregroundStyle(ready ? Theme.ink : Theme.feltText.opacity(0.6))
-                    .contentShape(Rectangle()).onTapGesture { if ready { session.throwToCrib() } }
+            VStack(spacing: 0) {
+                botRow(d)
+                Spacer(minLength: 12)
+                cribRow(d, dealer: dealer)
+                Spacer(minLength: 12)
+                hintRow(d)
+                    .padding(.bottom, 10)
+                hand(d)
+                    .padding(.bottom, 28)
+                button(d)
             }
-            .padding(.horizontal, 24).padding(.top, 56).padding(.bottom, 28)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 24).padding(.top, 36).padding(.bottom, 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.felt)
             .foregroundStyle(Theme.feltText)
+            .task { await dealIn() }
         }
+    }
+
+    /// Deals the 12 cards one at a time, the bot first (the dealer deals to the other player first).
+    private func dealIn() async {
+        guard session.animate, shown < 12 else { return }
+        for i in 1...12 {
+            try? await Task.sleep(for: .milliseconds(Motion.ms(90)))
+            withAnimation(.spring(duration: Motion.t(0.3), bounce: 0.2)) { shown = i }
+        }
+    }
+
+    // The bot's 6 (4 once it throws), face down, slightly fanned.
+    private func botRow(_ d: DealState) -> some View {
+        let cards = d.dealt.bot.enumerated().filter { !(botIn && d.botThrown.contains($0.element)) }
+        return VStack(spacing: 6) {
+            Text(session.settings.dealer ? "BOT" : "BOT · DEALS").font(Theme.font(10, .bold)).tracking(0.8).opacity(0.6)
+            HStack(spacing: -18) {
+                ForEach(cards, id: \.element.id) { i, c in
+                    let visible = shown > i * 2   // the bot's cards are dealt first, alternating
+                    CardBack(width: Self.botW)
+                        .matchedGeometryEffect(id: c.id, in: ns)
+                        .rotationEffect(.degrees(Double(i - 2) * 3))
+                        .opacity(visible ? 1 : 0)
+                        .offset(y: visible ? 0 : 60)
+                }
+            }
+            .frame(height: Self.botW * 1.4)
+        }
+    }
+
+    // The crib's 4 spots: 2 for your throw, 2 for the bot's; and the deck, with the starter on top.
+    private func cribRow(_ d: DealState, dealer: Bool) -> some View {
+        VStack(spacing: 10) {
+            Text(dealer ? "YOUR CRIB" : "BOT'S CRIB").font(Theme.font(10, .bold)).tracking(0.8)
+                .padding(.horizontal, 6).frame(height: 16)
+                .background(Capsule().fill(dealer ? Theme.gold : Theme.violet)).foregroundStyle(Theme.felt)
+            HStack(spacing: 10) {
+                ForEach(0..<2, id: \.self) { i in
+                    if i < d.picked.count {
+                        let c = d.picked[i]
+                        CardFace(card: c, width: Self.slotW)
+                            .matchedGeometryEffect(id: c.id, in: ns)
+                            .contentShape(Rectangle())
+                            .onTapGesture { if !throwing { withAnimation(.snappy(duration: Motion.t(0.25))) { session.togglePick(c) } } }
+                    } else { emptySlot }
+                }
+                ForEach(0..<2, id: \.self) { i in
+                    if botIn { CardBack(width: Self.slotW).matchedGeometryEffect(id: d.botThrown[i].id, in: ns) } else { emptySlot.opacity(0.5) }
+                }
+                Spacer(minLength: 6)
+                // The deck; the starter is cut and turned once the crib is full.
+                ZStack {
+                    CardBack(width: Self.slotW)
+                    if starterUp { CardFace(card: d.dealt.starter, width: Self.slotW).transition(.scale(scale: 0.6).combined(with: .opacity)) }
+                }
+                .overlay(alignment: .bottom) {
+                    if starterUp {
+                        Text("STARTER").font(Theme.font(9, .bold)).tracking(0.6).padding(.horizontal, 5).frame(height: 14)
+                            .background(Capsule().fill(Theme.feltText)).foregroundStyle(Theme.felt).offset(y: 8)
+                    }
+                }
+            }
+        }
+    }
+
+    private var emptySlot: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .strokeBorder(Theme.gold.opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+            .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panel.opacity(0.6)))
+            .frame(width: Self.slotW, height: Self.slotW * 1.4)
+    }
+
+    // The hint: one principle, never the answer; or a button to ask for it.
+    @ViewBuilder private func hintRow(_ d: DealState) -> some View {
+        Group {
+            if let h = d.hint {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "lightbulb.fill").foregroundStyle(Theme.gold)
+                    Text(h.principle.line).font(Theme.font(14, .medium)).fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.panel))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.gold.opacity(0.6), lineWidth: 1))
+                .transition(.opacity)
+            } else {
+                HStack {
+                    Text(session.settings.dealer ? "You deal. Throw 2 to your crib." : "The bot deals. Throw 2 to its crib.")
+                        .font(Theme.font(14, .regular)).opacity(0.8)
+                    Spacer()
+                    Text("Hint").font(Theme.font(13, .semibold)).foregroundStyle(Theme.feltText.opacity(0.75))
+                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .overlay(Capsule().strokeBorder(Theme.feltText.opacity(0.3), lineWidth: 1))
+                        .contentShape(Capsule()).onTapGesture { session.showHint(asked: true) }
+                }
+            }
+        }
+        .frame(minHeight: 44)
+        .animation(.easeOut(duration: Motion.t(0.3)), value: d.hint?.principle)
+    }
+
+    // Your hand, fanned like cards held in your hand.
+    private func hand(_ d: DealState) -> some View {
+        let held = d.dealt.player.enumerated().filter { !d.picked.contains($0.element) }
+        let hinted = Set(d.hint?.cards.map(\.id) ?? [])
+        let n = held.count, mid = Double(n - 1) / 2
+        return HStack(spacing: n > 4 ? -18 : -4) {
+            ForEach(Array(held.enumerated()), id: \.element.element.id) { k, pair in
+                let (i, c) = pair
+                let visible = shown > i * 2 + 1   // yours are dealt second, alternating
+                let tilt = (Double(k) - mid) * 5
+                CardFace(card: c, width: Self.handW)
+                    .hintBlink(hinted.contains(c.id), cornerRadius: 8)
+                    .matchedGeometryEffect(id: c.id, in: ns)
+                    .rotationEffect(.degrees(tilt), anchor: .bottom)
+                    .offset(y: abs(Double(k) - mid) * abs(Double(k) - mid) * 3)   // a gentle arc
+                    .opacity(visible ? 1 : 0)
+                    .offset(y: visible ? 0 : -200)
+                    .zIndex(Double(k))
+                    .contentShape(Rectangle())
+                    .onTapGesture { if !throwing && d.picked.count < 2 { withAnimation(.snappy(duration: Motion.t(0.25))) { session.togglePick(c) } } }
+            }
+        }
+        .frame(height: Self.handW * 1.4 + 20)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func button(_ d: DealState) -> some View {
+        let ready = d.picked.count == 2 && !throwing
+        return Text(throwing ? "Cutting the starter…" : ready ? "Throw to the crib" : "Tap \(2 - d.picked.count) card\(d.picked.count == 1 ? "" : "s") for the crib")
+            .font(Theme.font(16, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 10).fill(ready ? Theme.gold : Theme.feltText.opacity(0.12)))
+            .foregroundStyle(ready ? Theme.ink : Theme.feltText.opacity(0.6))
+            .contentShape(Rectangle())
+            .onTapGesture { if ready { Task { await finish() } } }
+    }
+
+    /// The bot throws, the starter is cut and turned, then the turn starts.
+    private func finish() async {
+        throwing = true
+        withAnimation(.spring(duration: Motion.t(0.45), bounce: 0.15)) { botIn = true }
+        try? await Task.sleep(for: .milliseconds(Motion.ms(550)))
+        withAnimation(.spring(duration: Motion.t(0.4), bounce: 0.3)) { starterUp = true }
+        try? await Task.sleep(for: .milliseconds(Motion.ms(900)))
+        session.throwToCrib()
     }
 }

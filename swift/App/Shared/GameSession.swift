@@ -33,6 +33,8 @@ struct TurnSettings: Equatable {
 /// The deal before a turn: your 6, the 2 you've picked for the crib, and the hint, if one showed.
 struct DealState {
     let dealt: Dealt
+    /// The bot's throw, decided up front (its best classic hand); shown face down once you throw.
+    let botThrown: [Card]
     var picked: [Card] = []
     let started = Date()
     var changed = Date()
@@ -147,9 +149,9 @@ final class GameSession {
 
     /// Throws the 2 picked cards to the crib and starts the turn.
     func throwToCrib() {
-        guard let d = dealing, d.picked.count == 2, let c = config else { return }
+        guard let d = dealing, d.picked.count == 2 else { return }
         hintTask?.cancel()
-        let bot = Deal.classicKeep(d.dealt.bot, scoring: c.rules.scoring)
+        let bot = (keep: d.dealt.bot.filter { !d.botThrown.contains($0) }, thrown: d.botThrown)
         let ms = { (t: Date) in Int(t.timeIntervalSince(d.started) * 1000) }
         dealRecord = DealRecord(dealt: d.dealt.player.map(\.notation), thrown: d.picked.map(\.notation), botThrown: bot.thrown.map(\.notation),
                                 starter: d.dealt.starter.notation, hint: d.hint?.principle.rawValue, hintCards: d.hint?.cards.map(\.notation) ?? [],
@@ -171,7 +173,8 @@ final class GameSession {
             timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
             turn = nil; events = []; actions = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
             playback.reset()
-            dealing = DealState(dealt: Deal.deal(seed: seed))
+            let dealt = Deal.deal(seed: seed)
+            dealing = DealState(dealt: dealt, botThrown: Deal.classicKeep(dealt.bot, scoring: config?.rules.scoring ?? Scoring()).thrown)
             watchHint()
             return
         }
