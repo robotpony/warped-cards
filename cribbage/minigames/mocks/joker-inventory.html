@@ -10,12 +10,12 @@
   :root {
     --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
     --card: #FFFDF7; --violet: #7A3FD0; --violet-soft: #EFE6FC; --gold: #E8B84A; --teal: #007C80; --amber: #A85A00;
-    --built: #1E7A45; --designed: #2F64C0; --idea: #8A7A55;
+    --gold-text: #7A5A00; --built: #1E7A45; --designed: #2F64C0; --idea: #8A7A55;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; --violet-soft: #2C2140; --built: #57C98A; --designed: #7FA8F0; --idea: #BFAE84; }
+    :root:not([data-theme="light"]) { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; --violet-soft: #2C2140; --gold-text: #F2CC6B; --built: #57C98A; --designed: #7FA8F0; --idea: #BFAE84; }
   }
-  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; --violet-soft: #2C2140; --built: #57C98A; --designed: #7FA8F0; --idea: #BFAE84; }
+  :root[data-theme="dark"] { --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; --violet-soft: #2C2140; --gold-text: #F2CC6B; --built: #57C98A; --designed: #7FA8F0; --idea: #BFAE84; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
   main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
@@ -52,6 +52,12 @@
   .tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 0 7px; border: 1px solid currentColor; }
   .tag.built { color: var(--built); } .tag.designed { color: var(--designed); } .tag.idea { color: var(--idea); }
   .tag.area { color: var(--muted); }
+  .tag.lasts.game { color: var(--gold-text); border-color: var(--gold); background: color-mix(in srgb, var(--gold) 18%, transparent); }
+  .tag.lasts.turn, .tag.lasts.round { color: var(--muted); border-style: dotted; }
+  .badge { margin: 26px auto 0; min-width: 44px; height: 26px; padding: 0 7px; border-radius: 13px; background: var(--teal); color: #fff; font-weight: 700; font-size: 13px;
+           display: grid; place-items: center; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .card.plain { color: #B3261E; } .card.plain::before { display: none; }
+  .stack .badge { position: absolute; margin: 0; top: -9px; right: -12px; height: 20px; min-width: 0; font-size: 11px; }
   .body .does { margin: 4px 0; }
   .body .meta { font-size: 13px; color: var(--muted); margin: 2px 0 0; }
   .body .links a { color: var(--violet); }
@@ -68,12 +74,15 @@
 <body>
 <main>
   <h1>Joker inventory</h1>
-  <p class="muted">Every joker, chip, extra card and joker-driven mechanic for Noddy Yookerspiel, built or not, in one place to ideate from. Ideas are dashed. The data is in <code>joker-inventory.js</code>: add an idea by adding an entry. Values and rules for built pieces live in <code>config/</code> and <code>rules.md</code>; this page only lists them.</p>
+  <p class="muted">Every joker, chip, badge, deck edit, extra card and joker-driven mechanic for Noddy Yookerspiel, built or not, in one place to ideate from. Ideas are dashed.</p>
+  <p><strong>The game is about deck building.</strong> A joker that changes a card changes the deck for the rest of the game: made cards stay, painted and nudged cards stay changed, burned cards stay gone, and badges stay on their cards. The deck is shared, so anything you build can be dealt to a bot; an owner badge keeps a card's badges for you. Power jokers and chips are the player layer: they're yours, not the deck's.</p>
+  <p class="muted"> The data is in <code>joker-inventory.js</code>: add an idea by adding an entry. Values and rules for built pieces live in <code>config/</code> and <code>rules.md</code>; this page only lists them.</p>
 
   <div class="filters" role="group" aria-label="Filters">
     <div class="grp" id="f-type"><span class="lbl">Type</span></div>
     <div class="grp" id="f-status"><span class="lbl">Status</span></div>
     <div class="grp" id="f-area"><span class="lbl">Area</span></div>
+    <div class="grp" id="f-lasts"><span class="lbl">Lasts</span></div>
     <input id="q" type="search" placeholder="Search names and effects" aria-label="Search">
   </div>
   <p class="muted" id="count"></p>
@@ -81,7 +90,7 @@
   <div id="out"></div>
 
   <h2>How the pieces stack <small>sketch</small></h2>
-  <p class="muted">A chip sits on a joker and changes it. A mechanic sits in the footer, where you can see it, and jokers or chips change it. The power cap below is an idea: off since r21, back only in this form.</p>
+  <p class="muted">A badge sits on a deck card for the game. A chip sits on a joker and changes it. A mechanic sits in the footer, where you can see it, and jokers or chips change it. The power cap below is an idea: off since r21, back only in this form.</p>
   <div class="combo" id="combo"></div>
   <div class="footbar" aria-label="Footer sketch with a power cap">
     <div><div class="pips"><i></i><i></i><i></i><i></i></div>HAND SIZE 0 / 4</div>
@@ -91,23 +100,27 @@
 </main>
 <script src="joker-inventory.js"></script>
 <script>
-  const TYPES = { power: "Power jokers", hand: "Hand jokers", deck: "Deck jokers", extra: "Extra cards", chip: "Chips", mech: "Mechanics" };
+  const TYPES = { edit: "Deck edits", badge: "Badges", deck: "Deck jokers", extra: "Extra cards", hand: "Hand jokers", power: "Power jokers", chip: "Chips", mech: "Mechanics" };
   const TYPE_NOTE = {
     power: "In the tray; tap to use.", hand: "Dealt into a hand, the crib or as the starter: wild, with one power that recharges.",
     deck: "In the stock; rolls a hidden table when it turns up.", extra: "Extra cards in the stock.",
-    chip: "Sit on a joker and change what it does.", mech: "Rules on screen that jokers and chips can change.",
+    chip: "Sit on a joker and change what it does.",
+    edit: "Change, add or remove a card in the shared deck, for the rest of the game.",
+    badge: "Sit on a card in the deck for the rest of the game, helping whoever is dealt it.", mech: "Rules on screen that jokers and chips can change.",
   };
   const STATUS = ["built", "designed", "idea"];
+  const LASTS = ["turn", "round", "game"];
   const AREAS = ["deal", "grid", "pegging", "maze", "any"];
   const inv = window.INVENTORY;
   const byId = Object.fromEntries(inv.map(x => [x.id, x]));
-  const state = { type: new Set(), status: new Set(), area: new Set(), q: "" };
-  try { const s = JSON.parse(localStorage.getItem("joker-inventory-filters") || "null"); if (s) for (const k of ["type", "status", "area"]) state[k] = new Set(s[k]); } catch (e) {}
+  const state = { type: new Set(), status: new Set(), area: new Set(), lasts: new Set(), q: "" };
+  try { const s = JSON.parse(localStorage.getItem("joker-inventory-filters") || "null"); if (s) for (const k of ["type", "status", "area", "lasts"]) state[k] = new Set(s[k]); } catch (e) {}
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function art(x) {
     if (x.type === "chip") return `<div class="chip">${esc(x.glyph)}</div>`;
     if (x.type === "mech") return `<div class="mech">${esc(x.glyph)}</div>`;
+    if (x.type === "badge") return `<div class="badge">${esc(x.glyph)}</div>`;
     const kind = x.type === "extra" ? "CARD" : "JOKER";
     return `<div class="card ${x.type}"><span class="k">${kind}</span><span class="g">${esc(x.glyph)}</span><span class="n">${esc(x.name)}</span></div>`;
   }
@@ -116,7 +129,7 @@
     return `<article class="item ${x.status}" id="${x.id}">
       <div class="art">${art(x)}</div>
       <div class="body">
-        <h3>${esc(x.name)} <span class="tag ${x.status}">${x.status}</span> <span class="tag area">${x.area}</span></h3>
+        <h3>${esc(x.name)} <span class="tag ${x.status}">${x.status}</span> <span class="tag area">${x.area}</span> <span class="tag lasts ${x.lasts}">${x.lasts === "game" ? "whole game" : "one " + x.lasts}</span></h3>
         <p class="does">${esc(x.does)}</p>
         ${x.tune ? `<p class="meta">Tuning: ${esc(x.tune)}</p>` : ""}
         ${x.notes ? `<p class="meta">${esc(x.notes)}</p>` : ""}
@@ -134,10 +147,10 @@
     }
   }
   function render() {
-    try { localStorage.setItem("joker-inventory-filters", JSON.stringify({ type: [...state.type], status: [...state.status], area: [...state.area] })); } catch (e) {}
+    try { localStorage.setItem("joker-inventory-filters", JSON.stringify({ type: [...state.type], status: [...state.status], area: [...state.area], lasts: [...state.lasts] })); } catch (e) {}
     const q = state.q.toLowerCase();
     const shown = inv.filter(x => (!state.type.size || state.type.has(x.type)) && (!state.status.size || state.status.has(x.status))
-      && (!state.area.size || state.area.has(x.area)) && (!q || (x.name + " " + x.does + " " + (x.notes || "")).toLowerCase().includes(q)));
+      && (!state.area.size || state.area.has(x.area)) && (!state.lasts.size || state.lasts.has(x.lasts)) && (!q || (x.name + " " + x.does + " " + (x.notes || "")).toLowerCase().includes(q)));
     const n = s => inv.filter(x => x.status === s).length;
     document.getElementById("count").textContent =
       `Showing ${shown.length} of ${inv.length}: ${n("built")} built, ${n("designed")} designed, ${n("idea")} ideas.`;
@@ -152,11 +165,13 @@
   pills(document.getElementById("f-type"), "type", Object.keys(TYPES), t => TYPES[t].replace(/s$/, "").replace("Mechanic", "Mechanic"));
   pills(document.getElementById("f-status"), "status", STATUS);
   pills(document.getElementById("f-area"), "area", AREAS);
+  pills(document.getElementById("f-lasts"), "lasts", LASTS);
   document.getElementById("q").oninput = e => { state.q = e.target.value; render(); };
 
   // The stacking sketch: a joker with a chip on it, and the chip or joker that would change the cap.
   const fig = (a, b, cap) => `<figure><div class="stack">${art(byId[a])}${b ? `<div class="chip">${esc(byId[b].glyph)}</div>` : ""}</div>${cap}</figure>`;
-  document.getElementById("combo").innerHTML =
+  const deckCard = (rank, suit, badge) => `<figure><div class="stack"><div class="card plain"><span class="g">${rank}</span><span class="g">${suit}</span><span></span></div>${badge ? `<div class="badge">${esc(byId[badge].glyph)}</div>` : ""}</div>${esc(byId[badge].name)} badge on the ${rank}${suit}: stays for the game</figure>`;
+  document.getElementById("combo").innerHTML = deckCard("5", "♥", "b-gold") + deckCard("7", "♥", "b-stamp") +
     fig("bomb", "c-wide", "Bomb with a Wide chip: clears a 3 by 3") +
     fig("reach", "c-long", "Reach with a Long chip: 10 s longer") +
     fig("swapper", "c-echo", "Swap with an Echo chip: two swaps") +
