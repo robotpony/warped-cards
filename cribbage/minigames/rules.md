@@ -229,7 +229,7 @@ Players never see the chances or the list of possible prizes. Each kind rolls on
 
 ##### A joker dealt into a hand
 
-A joker dealt into your hand (or the crib, or cut as the starter) is wild: it counts as whatever card scores best in each set, as in joker cribbage. Each joker also carries one power, which is enabled, and recharged, each time a set with the joker in it scores (decided 2026-11-15; the details are to design):
+A joker dealt into your hand (or the crib, or cut as the starter) is wild: it counts as whatever card scores best in each set, as in joker cribbage. Each joker also carries one power, which is enabled, and recharged, each time a set with the joker in it scores. A charged power waits until you tap the joker to use it. The power comes from the joker's kind (amber and teal each have their own); the wildcard joker rolls one of any power (decided 2026-11-15; which kind gets which power, and the details, are to design):
 
 | Power | What it does |
 |---|---|

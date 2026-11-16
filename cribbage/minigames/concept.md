@@ -173,7 +173,7 @@ Next is the discard, which is untimed (decided 2026-11-15). Ideas under discussi
 - When: only after the player hesitates (say 8 seconds), or on request, never by default.
 - What: highlight the 2 cards a strong player would throw, and say why in one line ("keeps a double run; a 5 is good in your own crib").
 - How it's worked out: score every way to keep 4 of the 6 (15 ways) over every possible starter (46), plus a crib estimate, as classic discard advice does. That's the classic value, not the grid value: the grid also uses grid cards and edge power, so check how well one predicts the other first (stats.md › Other stats, "Does the hand still matter?").
-- Levels: off, subtle (blink after a pause), coaching (explain each choice). A setting, on Options.
+- Levels: off, subtle (blink after a pause), coaching (explain each choice). A setting, on Options; subtle is the default (decided 2026-11-15).
 
 ## Bots
 
@@ -325,6 +325,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | Grid power carries into pegging: a hand card's power level multiplies what it pegs (simulate before tuning). Grid sets are walked on the maze as plays, taken in turns as in the maze walk mock v4 |
 | 2026-11-15 | A joker dealt into a hand, the crib or as the starter is wild, as in joker cribbage, and carries one power that is enabled and recharged each time a set with it scores: reach (hand size +1 for a while), a multiplier, added time, or a random item or joker. Details to design |
 | 2026-11-15 | Picking the crib is untimed. It's the first place for hints (see Hints) |
+| 2026-11-15 | A wild joker's power comes from its kind (amber and teal each have their own), except the wildcard joker, which rolls one of any power. A charged power waits for a tap, like a power joker. Hints default to subtle |
 | 2026-11-15 | Players call the tray "power jokers": the on-screen tag and the rules say so. The engine and config keep the name `tray` |
 | 2026-11-15 | Releases: Crib Maze for Mac, signed with Developer ID and notarized, posted as free pre-release demos on GitHub releases ([RELEASING.md](../../RELEASING.md)) |
 | 2026-11-15 | A card counter shows how many cards a set can pick (the pick limit, `maxSet` for now). Some combos, jokers and prizes will raise it for a while; not designed yet |
