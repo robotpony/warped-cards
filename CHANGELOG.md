@@ -8,6 +8,7 @@ warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
 - A new power joker, the reach. Tap it to raise your hand size, the cards a set can pick, for a while: usually +1 for about 20 seconds. A countdown shows over the reach card, and the extra cards show in violet on the counter. You start with one, and prizes can win more.
 - The card counter is now the hand size counter.
+- In a score's breakdown, the line that combines the edge power multipliers is now called Total multi.
 - Turn records note each reach and what was scored under it, so its effect can be measured.
 
 ## 0.9.2 — 2026-11-15

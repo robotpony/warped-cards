@@ -207,7 +207,7 @@ extension GameSession {
         if !powered.isEmpty {
             let gain = multiplied - total; total = multiplied
             pb.float(sel, multiplierText(percent: pct), "+\(gain)", .power)
-            pb.line("Multiplier" + (powered.count > 1 ? " (levels added)" : ""), multiplierText(percent: pct), "\(total)", .power)
+            pb.line("Total multi", multiplierText(percent: pct), "\(total)", .power)
             await pb.wait(stepMs())
         }
         // Cards left over cost steps, one line each, not multiplied.
