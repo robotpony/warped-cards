@@ -168,7 +168,7 @@ Code holds behaviour; config holds data. Any number, table or list the game need
 
 ### Written to port
 
-The engine spec (PLAN.md Phase 4, in `cribbage/minigames/engine.md`) describes the data model, actions, events, dice streams and their order of draws, and the config schemas in plain language. It MUST NOT lean on Swift-only ideas. Together with the config files and the shared fixtures, it is enough to build the engine again in another language and check it against the same records. The Swift code follows the spec; when they disagree, fix one in the same change.
+The engine spec (PLAN.md Phase 4, in `cribbage/minigames/engine.md`) describes the data model, actions, events, dice streams and their order of draws, and the config schemas in plain language. It MUST NOT lean on Swift-only ideas. Together with the config files and the shared fixtures, it is enough to build the engine again in another language and check it against the same records. The Swift code follows the spec; when they disagree, fix one in the same change. How to port, and the rules that keep the specs portable: [PORTING.md](PORTING.md).
 
 ## GameRecord: tracking, replay and counts
 
@@ -198,7 +198,7 @@ public struct Counts { ... }                                           // events
 
 ### File format
 
-One JSON Lines file per game, written as the game is played and flushed after every step, so a crash keeps everything up to the last move. The first line is the header; every line after is a step.
+The exact format, field by field and byte by byte, is `engine.md` › Records; the sketch below is the design as first agreed. One JSON Lines file per game, written as the game is played and flushed after every step, so a crash keeps everything up to the last move. The first line is the header; every line after is a step.
 
 ```
 {"kind":"header","format":1,"game":"crib-maze","rules":"match-r14",

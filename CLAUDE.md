@@ -10,8 +10,19 @@ Card game prototypes, specs and tests. One session acts as project commander; ot
 - Classic cribbage rule wording lives in `~/projects/utilities/scorekeep/docs/rules/cribbage.md` (owned by the SCOREKEEP session). Reference it, don't copy it. Don't invent classic scoring rules that conflict with it; ask SCOREKEEP.
 - Balance claims need simulation numbers, not estimates.
 - Order of work: rules and mocks (design track) alongside engine spec, Swift engine and simulator (engine track). The Mac beta app comes next, then iOS. Architecture: `ARCHITECTURE.md`; tools and libraries: `LIBRARIES.md` (add a row before adding anything new).
-- Engine specs are written to port: plain Markdown, no Swift-only ideas. Numbers and tables the code needs (rules values, chances, timings, bot levels, effects) live in JSON config files, not in code.
+- Numbers and tables the code needs (rules values, chances, timings, bot levels, effects) live in JSON config files, not in code.
 - Games are 1 human vs 1 or 2 bots. Bots are game features, not just test tools.
+
+## Written to port
+
+Swift is the first build, not the only one: Linux and Windows ports are planned, possibly in other languages, built from the specs, config and fixtures alone. `PORTING.md` is the rulebook (decided 2026-11-16); read its Keeping the spec true before changing the engine, a record or a scene.
+
+- The specs are the source of truth. A change to engine behaviour, an action, an event, a field or the record format updates `engine.md` in the same commit; a change to how a scene looks, plays or takes input updates `cribbage/minigames/ui.md`. The Swift is never the only place a behaviour is written down.
+- Specs describe data, order and encoding in plain words, with no Swift-only ideas (Codable, optionals, protocols). Wire formats follow `engine.md` › Records › Encoding, not a language default.
+- Rules math is integers with a stated rounding mode; ordering and tie-breaks are stated; randomness only from the named dice streams (`PORTING.md` › Same game, every build).
+- New behaviour comes with a fixture a port can check, not only a Swift test (`cribbage/minigames/fixtures/README.md`).
+- Platform-specific work (haptics, audio, shaders, file locations) sits behind an interface with a neutral description in `ui.md` › Platform seams. Assets stay in open formats.
+- `fixtures/spec.test.js` checks the spec against the Swift code. When it fails, fix the spec; don't loosen the test.
 
 ## Versions and tracking
 

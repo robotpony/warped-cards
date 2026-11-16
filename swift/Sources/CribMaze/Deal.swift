@@ -33,22 +33,29 @@ public enum Deal {
         return Dealt(player: Array(deck[0..<6]), bot: Array(own[0..<6]), starter: deck[6])
     }
 
-    /// The best 4 to keep by classic count: the hand's mean over every starter the deal leaves
-    /// (hand flushes and his nobs count). First found wins a tie. Returns (keep, throw).
+    /// The best 4 to keep by classic count: the hand's total over every starter the deal leaves
+    /// (hand flushes and his nobs count), which ranks keeps as the mean does. Totals are integers,
+    /// so every language breaks ties the same way (engine.md › The deal). First found wins a tie.
+    /// Returns (keep, throw).
     public static func classicKeep(_ six: [Card], scoring: Scoring = Scoring()) -> (keep: [Card], thrown: [Card]) {
         let ids = Set(six.map(\.id))
         let starters = (0..<52).filter { !ids.contains($0) }.map { Card(standard: $0) }
-        var best: (Double, [Card], [Card])?
+        var best: (Int, [Card], [Card])?
         for a in 0..<six.count { for b in (a + 1)..<six.count {
             let keep = six.enumerated().filter { $0.offset != a && $0.offset != b }.map(\.element)
-            let v = classicValue(keep, starters: starters, scoring: scoring)
+            let v = classicTotal(keep, starters: starters, scoring: scoring)
             if best == nil || v > best!.0 { best = (v, keep, [six[a], six[b]]) }
         } }
         return (best!.1, best!.2)
     }
 
-    /// A 4-card hand's mean classic count over these starters.
+    /// A 4-card hand's mean classic count over these starters, for showing.
     public static func classicValue(_ keep: [Card], starters: [Card], scoring: Scoring = Scoring()) -> Double {
+        Double(classicTotal(keep, starters: starters, scoring: scoring)) / Double(starters.count)
+    }
+
+    /// A 4-card hand's total classic count over these starters.
+    public static func classicTotal(_ keep: [Card], starters: [Card], scoring: Scoring = Scoring()) -> Int {
         var total = 0
         for st in starters {
             let cards = (keep + [st]).map { (rank: $0.rank, suit: $0.suit!) }
@@ -56,7 +63,7 @@ public enum Deal {
             if let j = keep.firstIndex(where: { $0.rank == 11 && $0.suit == st.suit }) { o.nobs = [4, j] }
             total += count(cards, o, scoring: scoring).total
         }
-        return Double(total) / Double(starters.count)
+        return total
     }
 
     /// The match turn's setup from a finished deal: the player's kept 4, the starter, the crib

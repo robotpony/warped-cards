@@ -1,6 +1,6 @@
 # Crib Maze: Engine Spec
 
-Status: draft 3, 2026-11-14 (Bots search order settled 2026-11-14). Covers the match turn at match rules r15, and a full game of classic cribbage as the baseline. A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 4, 2026-11-16 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r23, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -54,6 +54,7 @@ Each position has board coordinates: grid `g(r,c)` is (r, c), crib `c(i)` is (i,
 - Two positions touch when their coordinates differ by at most 1 in both row and column (8 neighbours, diagonals included).
 - Hand, crib and starter are edge positions. Grid positions are the rest.
 - The canonical position order, used wherever this spec says "in position order": grid row by row (g00, g01 ... g33), then hand h0 to h3, then crib c0 to c3, then the starter.
+- Each position also has an index, its place in that order: g00 to g33 are 0 to 15 (row × 4 + column), h0 to h3 are 16 to 19, c0 to c3 are 20 to 23, the starter is 24. Actions carry indexes; events carry names.
 
 ### Match turn state
 
@@ -88,7 +89,7 @@ Inputs: the seed, config, whether the player is the dealer, the player's tray, o
 5. Decide the jokers: a count from `jokers.perRound` (stream `deal`, purpose `joker_count`), then each joker's kind from `jokers.kinds` weights (purpose `joker_kind`, one draw per joker). Add them, then the configured extras (`title`, `blank`), to the end of the deck, giving IDs in that order.
 6. Shuffle the remaining deck, extras included (stream `deal`, purpose `shuffle`). This is the stock.
 7. Fill the grid from the top of the stock, row by row (g00 first). These draws count toward the card budget.
-8. Emit `turn_start`. Then resolve any extra cards on the grid (see Extra cards), then run the after-action checks.
+8. Emit `turnStart`. Then resolve any extra cards on the grid (see Extra cards), then run the after-action checks.
 
 The turn's deck size starts at the deck's card count. New made cards take IDs from 200, after the highest made card already in the deck, so a made card keeps its ID for the whole game.
 
@@ -100,7 +101,7 @@ Before a turn, the player is dealt 6 and throws 2 to the crib (rules.md › Deal
 
 1. Take the game's deck in ID order (the standard 52 without one) and shuffle it (stream `round`, purpose `shuffle`). The player's 6 are cards 0 to 5, the bot's 6 are 6 to 11, and the starter is card 12.
    With own decks (`deck.shared` false), the player's 6 are cards 0 to 5 and the starter is card 6. The bot's 6 come from its own deck, less those 7 cards by ID, shuffled (stream `round`, purpose `bot_shuffle`).
-2. The player picks 2 to throw, untimed. The bot keeps its best classic hand: for each of the 15 ways to keep 4, the mean classic count over the 46 starters the deal leaves (hand flushes and his nobs count; no crib estimate), first found on a tie.
+2. The player picks 2 to throw, untimed. The bot keeps its best classic hand: for each of the 15 ways to keep 4 (throw pairs in index order of the 6 as dealt: {0,1}, {0,2} ... {4,5}), the total classic count over the 46 standard cards not in its 6 as starters (hand flushes and his nobs count; no crib estimate). Highest total wins, first found on a tie. Compare totals, not means, so every language agrees.
 3. Start the turn with the player's kept 4 as the fixed hand, the starter, the crib as fixed cards (the dealer's throw first) and the bot's kept 4 as held cards. From a game's deck, the setup MUST carry the cards themselves, not their notation, since made cards share notation with standard ones.
 
 ### The game (r23)
@@ -123,20 +124,20 @@ A whole game also runs one action at a time, so it can be recorded and replayed 
 
 | Game action | Fields | Allowed when |
 |---|---|---|
-| `startHand` | options: deal (on or off), fixed hand and starter, card budget, timer seconds, warned | Before the first hand, or after a hand that didn't end the game |
+| `startHand` | options: deal (true or false), fixedHand (4 cards in notation) and fixedStarter, cardBudget and timerSeconds (for this hand, in place of rules.json's), warned; all but deal and warned may be left out | Before the first hand, or after a hand that didn't end the game |
 | `discard` | thrown: the player's 2 cards, as `{id, card}` | During the deal; both cards from the player's 6 |
 | a match turn action | as in Actions below | During the hand's match turn |
 
-1. The game starts with the game's seed and emits `game_start` (hands, shared, firstDealer, deckSize).
-2. `startHand` starts every dice stream again from the hand's seed (The game › Seeds) and emits `hand_start` (hand, seed, dealer, deckSize, options). With the deal on and no fixed cards, it deals (The deal, drawing from these dice) and emits `deal` (player, bot, starter). Otherwise the match turn starts at once, with the fixed cards or off the top of the deck.
+1. The game starts with the game's seed and emits `gameStart` (hands, shared, firstDealer, deckSize).
+2. `startHand` starts every dice stream again from the hand's seed (The game › Seeds) and emits `handStart` (hand, seed, dealer, deckSize, options). With the deal on and no fixed cards, it deals (The deal, drawing from these dice) and emits `deal` (player, bot, starter). Otherwise the match turn starts at once, with the fixed cards or off the top of the deck.
 3. `discard` throws the player's 2; the bot throws by its best classic keep. It emits `discard` (kept, thrown, botKept, botThrown), then starts the match turn with the hand's options.
-4. When the match turn ends, the hand ends: `hand_end` (the turn's result). After the last hand, `game_end` (hands, steps).
+4. When the match turn ends, the hand ends: `handEnd` (the turn's result). After the last hand, `gameEnd` (hands, steps).
 
 A hand's options are the app's settings when it starts, so they ride on the action, not in the config. Because every hand starts its dice from its own seed, a hand plays exactly as the same turn does when the deal and the turn are run on their own.
 
 ## Actions
 
-Each action names the player and carries the clock time (`clockMs`) from the session. An action that isn't allowed in the current state is an error, not an event: the app and bots MUST only send legal actions. A trace that the rules reject is legal; it produces a rejection event.
+Each action names the player and carries the clock time (`clockMs`) from the session. In a record, an action is written `{"<name>": {<fields>}}` (Records › Encoding). Positions in actions are indexes (Positions), for example `{"trace":{"positions":[0,1,6,9]}}`. A `source` is left out for the tray and is a position index for a joker on the board. An action that isn't allowed in the current state is an error, not an event: the app and bots MUST only send legal actions. A trace that the rules reject is legal; it produces a rejection event.
 
 | Action | Fields | Allowed when |
 |---|---|---|
@@ -144,10 +145,10 @@ Each action names the player and carries the clock time (`clockMs`) from the ses
 | `swap` | line of grid positions; source: `tray` or the board position of a swapper | Turn not over; the player has the swapper |
 | `bomb` | target grid position; source: `tray` or the board position of a bomb | Turn not over; the player has the bomb; the target holds a card |
 | `reach` | source: `tray` or the board position of a reach joker | Turn not over; the player has the reach joker (r19) |
-| `reach_over` | id of a reach in effect | Turn not over; that reach is in effect. Sent by the session when the reach's seconds are up |
+| `reachOver` | id of a reach in effect | Turn not over; that reach is in effect. Sent by the session when the reach's seconds are up |
 | `burn` | target grid position; source: `tray` or the board position of a burn joker | Turn not over; the player has the burn joker; the target holds a playing card; the deck is above `deck.minSize` (r23) |
-| `end_turn` | none | Turn not over |
-| `time_up` | none | Turn not over and the timer is on; sent by the session |
+| `endTurn` | none | Turn not over |
+| `timeUp` | none | Turn not over and the timer is on; sent by the session |
 
 Arming and disarming a special joker is UI state, not an action. The app MAY log it separately for playtests.
 
@@ -157,10 +158,10 @@ Checks run in this order. The first that fails decides the result.
 
 | Step | Check | If it fails |
 |---|---|---|
-| 1 | 2 to the pick limit (`maxSet`) picked positions, no repeats, each holding a card, none of them a special joker. With `starterJoins`, the starter isn't a picked position: tracing it is allowed and doesn't count | `trace_rejected`, reason `size` or `special`; costs nothing |
-| 2 | At least one grid position | `trace_rejected`, reason `no_grid_card`; costs nothing |
-| 3 | The positions are connected through touching (in any order; the traced order doesn't matter) | `trace_rejected`, reason `not_touching`; costs nothing |
-| 4 | This set of picked card IDs hasn't scored this turn | `trace_rejected`, reason `already_scored`; costs nothing |
+| 1 | 2 to the pick limit (`maxSet`) picked positions, no repeats, each holding a card, none of them a special joker. With `starterJoins`, the starter isn't a picked position: tracing it is allowed and doesn't count | `traceRejected`, reason `size` or `special`; costs nothing |
+| 2 | At least one grid position | `traceRejected`, reason `no_grid_card`; costs nothing |
+| 3 | The positions are connected through touching (in any order; the traced order doesn't matter) | `traceRejected`, reason `not_touching`; costs nothing |
+| 4 | This set of picked card IDs hasn't scored this turn | `traceRejected`, reason `already_scored`; costs nothing |
 
 Then count the set (see Counting a set). Each card in no combo is left over.
 
@@ -171,7 +172,7 @@ With `starterJoins`, and the starter holding a playing card, every set is counte
 - If a combo uses the starter, it's in the set: its power level counts in the multiplier, it powers up, its suit counts, and `score` names it last in positions and cards.
 - If no combo uses it, it's ignored: it isn't left over, adds no power, doesn't power up, and `score` leaves it out.
 - His nobs needs only the jack of the starter's suit, from the hand or crib, in the set.
-- A `leftover_penalty` costs only the picked cards.
+- A `leftoverPenalty` costs only the picked cards.
 
 #### Hand flushes and an optional starter (r18)
 
@@ -187,10 +188,10 @@ The pick limit is how many cards a set may pick: `maxSet`, plus the cards of eac
 | Combos | Left over | Warned before? | Result |
 |---|---|---|---|
 | 1 or more | none | either | Score |
-| 1 or more | some | no | `leftover_warning`; set warned; nothing else happens |
+| 1 or more | some | no | `leftoverWarning`; set warned; nothing else happens |
 | 1 or more | some | yes | Score, with the left-over cost taken off |
-| none | all | no | `leftover_warning`; set warned; nothing else happens |
-| none | all | yes | `leftover_penalty`: steps go down by cost × cards; nothing clears; the set isn't marked scored |
+| none | all | no | `leftoverWarning`; set warned; nothing else happens |
+| none | all | yes | `leftoverPenalty`: steps go down by cost × cards; nothing clears; the set isn't marked scored |
 
 A score, in order:
 
@@ -225,7 +226,7 @@ The blast is the target cell plus its neighbours: the 4 beside it (`plus`) or al
 3. Add it to the reaches in effect, with the next reach ID (from 1). The pick limit is `maxSet` plus the cards of every reach in effect, so reaches stack.
 4. Emit `reach`. A reach joker used from the board clears and refills its cell, as for a swap. Then check the board (Checks), since a higher limit can open up a set.
 
-The engine has no clock. The session counts each reach's seconds, pausing as the turn's timer does, and sends `reach_over` when they run out. `reach_over` removes that reach, emits `reach_over` with the new pick limit, and checks the board again, since a lower limit can leave no sets. The simulator, which has no clock either, ends a reach after as many bot actions as a person would make in its seconds: one per `timing.json` › `profiles.human.trace` milliseconds, rounded up.
+The engine has no clock. The session counts each reach's seconds, pausing as the turn's timer does, and sends `reachOver` when they run out. `reachOver` removes that reach, emits `reachOver` with the new pick limit, and checks the board again, since a lower limit can leave no sets. The simulator, which has no clock either, ends a reach after as many bot actions as a person would make in its seconds: one per `timing.json` › `profiles.human.trace` milliseconds, rounded up.
 
 ### Burn (r23)
 
@@ -247,7 +248,7 @@ For each column from left to right that lost a card:
 2. The empty cells above them fill from the stock, starting with the lowest empty cell and working up.
 3. A draw takes the top card of the stock and counts toward the card budget. When the stock is empty, or `cardBudget` is above 0 and `drawn` has reached it, nothing is drawn and the cell stays empty.
 
-The refill emits one `board_changed` event: the cells cleared, each card that fell (from, to) and each card drawn (cell, card).
+The refill emits one `boardChanged` event: the cells cleared, each card that fell (from, to) and each card drawn (cell, card).
 
 ## Extra cards
 
@@ -265,7 +266,7 @@ For each extra card:
    - `stock`: the special joker goes into the stock at a position from 0 to the cards still drawable (inclusive), drawn from stream `board`, purpose `stock_insert`, so it stays within reach of the card budget. If nothing is drawable, it goes to the tray instead. The extra card's cell refills.
    - `tray`: the special joker or item goes to the tray. The cell refills.
    - `steps`: add the outcome's amount to this turn's steps. The cell refills.
-4. Emit `extra_drawn` (the card, its outcome, the prize, where it went), then the `board_changed` from any refill.
+4. Emit `extraDrawn` (the card, its outcome, the prize, where it went), then the `boardChanged` from any refill.
 
 A refill here draws one card for one cell, at the extra card's position, with no falling.
 
@@ -273,15 +274,15 @@ A refill here draws one card for one cell, at the extra card's position, with no
 
 Run after setup and after every action that changed the board, in this order:
 
-1. If nothing more can be drawn and `stockOut` isn't set yet: set it, emit `stock_out` (reason `stock_empty` or `budget_used`).
+1. If nothing more can be drawn and `stockOut` isn't set yet: set it, emit `stockOut` (reason `stock_empty` or `budget_used`).
 2. If every grid cell is empty: end the turn with reason `board_cleared`.
-3. Otherwise check whether any set can score: any connected set of 2 to the pick limit (see Pick limit) positions, holding no special joker, with at least one grid card, not yet scored, whose points (after the left-over cost) are above 0. If none and `dead` wasn't set, emit `no_sets_left`. Set `dead` to the result.
+3. Otherwise check whether any set can score: any connected set of 2 to the pick limit (see Pick limit) positions, holding no special joker, with at least one grid card, not yet scored, whose points (after the left-over cost) are above 0. If none and `dead` wasn't set, emit `noSetsLeft`. Set `dead` to the result.
 
 ## Ending the turn
 
-1. If the reason is `board_cleared`, add the clear-board bonus (`clearBonus`: steps or none) and emit `board_cleared`.
-2. If a best score exists, award the prize: rare at `prize.rareAt` points or more, epic at `prize.epicAt` or more, common below. The prize is a special joker for the tray, picked by `prize.special` weights (stream `prize`, purpose `prize_special`). Emit `prize_won`.
-3. Emit `turn_end` with the reason (`board_cleared`, `timer`, `player`) and the turn's totals.
+1. If the reason is `board_cleared`, add the clear-board bonus (`clearBonus`: steps or none) and emit `boardCleared`.
+2. If a best score exists, award the prize: rare at `prize.rareAt` points or more, epic at `prize.epicAt` or more, common below. The prize is a special joker for the tray, picked by `prize.special` weights (stream `prize`, purpose `prize_special`). Emit `prizeWon`.
+3. Emit `turnEnd` with the reason (`board_cleared`, `timer`, `player`) and the turn's totals.
 
 Bots end their turn with reason `player` when they stop (see Bots).
 
@@ -307,29 +308,67 @@ In the match turn, `flushMin` is 4, so any 4 or 5 cards of one suit traced toget
 
 ## Events
 
-Every event names its type and carries the fields below. Cards appear as `{id, card}` pairs (for example `{"id": 17, "card": "5H"}`); positions as `g12`, `h0`, `c3`, `s`.
+Every event is written `{"<name>": {<fields>}}` (see Records › Encoding). The names and field names below are exactly what records hold. A card is a card reference, `{"id": 17, "card": "5H"}`, plus `"percent"` for a made card with a multiplier (r20). Event positions are names: `g12`, `h0`, `c3`, `s`. A field marked "or none" is left out when it has no value.
 
 | Event | Fields |
 |---|---|
-| `turn_start` | rulesVersion, dealer, hand, crib, starter, grid, stockSize, timer, cardBudget, jokers (count and kinds), tray |
-| `trace_rejected` | positions, reason |
-| `leftover_warning` | positions, leftOver |
-| `leftover_penalty` | positions, leftOver, cost |
-| `score` | positions, cards, combos (kind, size or multiplier, points, card indexes), comboPoints, multiplierPercent, multipliedPoints, leftOver, cost, points, single or multi, suit, powerAfter |
-| `board_changed` | cleared, fell (card, from, to), drawn (card, cell) |
-| `extra_drawn` | card, outcome, prize, goes, cell |
-| `swap` | line, before, after, source |
-| `bomb` | target, shape, cleared, source |
-| `stock_out` | reason, cardsLeftOnGrid |
+| `turnStart` | rulesVersion, dealer (true or false), hand (cards), crib (cards; empty for a non-dealer), starter (card), grid (16 cards in position order, `null` for an empty cell), stockSize, timer (seconds), cardBudget, jokers (kinds, in the order dealt), tray (count by kind) |
+| `traceRejected` | positions, reason (`size`, `special`, `no_grid_card`, `not_touching`, `already_scored`) |
+| `leftoverWarning` | positions, leftOver (count) |
+| `leftoverPenalty` | positions, leftOver, cost |
+| `score` | positions, cards, combos, comboPoints, multiplierPercent, multipliedPoints, leftOver, cost, points, multi (true for a multi, false for a single), suit (`S`, `H`, `D`, `C`, or none on a tie), powerAfter (level by edge position name) |
+| `boardChanged` | cleared (positions), fell (each `{card, from, to}`), drawn (each `{card, cell}`) |
+| `extraDrawn` | card, outcome, tier, prize, goes, cell |
+| `swap` | line (positions, ordered as Swap says), before (cards), after (cards), source (a position, or `tray`) |
+| `bomb` | target, shape, cleared (cards), source |
+| `stockOut` | reason (`stock_empty`, `budget_used`), cardsLeftOnGrid |
 | `reach` | id, cards, seconds, pickLimit, source |
-| `reach_over` | id, pickLimit |
+| `reachOver` | id, pickLimit |
 | `burn` | target, card, deckSize, source |
-| `no_sets_left` | stockLeft, tray |
-| `board_cleared` | bonus kind and amount |
-| `prize_won` | tier, bestPoints, bestCards, special |
-| `turn_end` | reason, steps, steps from edge power, best, scores, rejected, swaps, bombs, drawn, penalty total, left-over total, steps by suit, steps from sets with and without edge cards, burns, cards made |
+| `noSetsLeft` | stockLeft, tray |
+| `boardCleared` | kind, amount |
+| `prizeWon` | tier, bestPoints, bestCards, special |
+| `turnEnd` | reason (`board_cleared`, `timer`, `player`), totals (below) |
 
-These names follow `stats.md` › Event log, with the turn's details added. `stats.md` will be brought in step once the Swift engine settles them.
+A combo in `score` is `{kind, points, cards}` plus `size` or `multiplier` where the kind has one; `kind` is `fifteen`, `pair`, `run`, `flush` or `nobs`, and `cards` are indexes into the set's counted cards (Counting a set).
+
+`turnEnd` › totals, all whole numbers (counts or steps) unless noted: steps, stepsFromEdgePower, best (or none), scores, singles, multis, rejected, warnings, swaps, bombs, reaches, drawn, burns, made, penaltyTotal, leftOverTotal, stepsBySuit (steps by suit letter), stepsWithEdge, stepsWithoutEdge, extraSteps, clearBonus, reachCards, reachSeconds, reachScores, reachSteps, reachBest (or none), bigScores, bigSteps, madeScores, stepsFromMade.
+
+Values (reasons, purposes, kinds, tiers) stay snake_case text; names and fields are camelCase. These names follow `stats.md` › Event log by meaning, not by case.
+
+The game around the match turn adds its own events (The game as steps): `gameStart` (hands, shared, firstDealer, deckSize), `handStart` (hand, seed as decimal text, dealer, deckSize, options), `deal` (player, bot: cards; starter: card), `discard` (kept, thrown, botKept, botThrown), `handEnd` (result: turn, dealer, steps, best or none, tier or none, prize or none, made, burned, deckSize) and `gameEnd` (hands, steps). A match turn's events sit beside them in the same list, unwrapped.
+
+## Records
+
+A record is one game as JSON Lines: one JSON object per line, UTF-8, each line ending in a single newline. It holds everything needed to play the game again and check it. Records are written by the Swift build today; another build MUST read them, and SHOULD write them byte for byte the same (ignoring `at`), so replays and fixtures can be shared. Why records exist and how they're used: `ARCHITECTURE.md` › GameRecord.
+
+### Lines
+
+Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer writers stay readable.
+
+| Kind | Fields | Notes |
+|---|---|---|
+| `header` | format (1), game (`crib-maze`), rules (`match-r23`), app, build, commit, platform, install, started, seed, config, players | First line, once. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib Maze game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
+| `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`) |
+| `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
+| `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
+
+A roll is `{stream, purpose, n, value}`: a draw of `value` below `n` (Dice). `at` is wall time, ISO 8601 with milliseconds and the local offset (`2026-11-15T23:39:34.356-07:00`); it's the only field allowed to differ between two runs of the same game. A last line cut short (the app stopped mid-write) is dropped and the rest is kept. A record without an end line is a game that was left.
+
+### Encoding
+
+These rules come from the Swift build's encoder. They're the format now, so other builds MUST follow them, not their own language's defaults.
+
+1. Keys in every object are sorted by Unicode code point, byte order of UTF-8, upper case before lower case (`"A" < "Z" < "_x" < "a" < "aB" < "ab"`, and `"g12" < "g2"`). So `kind` is not first on a line.
+2. No spaces or indents. Strings escape `"`, `\` and control characters (`\n`, `\u0001`); `/` and non-ASCII (`×`, `é`) are written as is.
+3. Numbers are integers, written plainly. The one non-integer in config (`bots.json` › `starts`) is written as the shortest decimal that round-trips (`0.3`, `1`).
+4. A tagged value (an action, an event) is an object with one key, its name, holding an object of its fields: `{"trace":{"positions":[0,1,6]}}`. A name with no fields holds an empty object: `{"endTurn":{}}`.
+5. A field with no value is left out, not written as `null`. Inside a list, an empty slot is `null` (the grid in `turnStart`).
+6. Maps (tray, powerAfter, stepsBySuit) are objects, so their keys sort too.
+
+A step line: `{"action":{"trace":{"positions":[0,1,6,9]}},"at":"…","clockMs":12000,"events":[{"score":{…}},{"boardChanged":{…}}],"hand":1,"kind":"step","player":0,"rolls":[],"seq":7}`.
+
+The checked-in records (Fixtures) are the reference. Where this section and a record disagree, the record wins until this section is fixed.
 
 ## Dice
 
@@ -356,7 +395,7 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 ## Clock and timer
 
 - The session stamps every action with `clockMs`, the game time since the turn started. The engine stores it on the step and never reads a clock.
-- The timer is the session's job: it counts player time, pauses while a score breakdown or a joker reveal plays, and sends `time_up` when it reaches `timerSeconds`. A timer of 0 is off.
+- The timer is the session's job: it counts player time, pauses while a score breakdown or a joker reveal plays, and sends `timeUp` when it reaches `timerSeconds`. A timer of 0 is off.
 - In the simulator, the session advances a modelled clock by each action's duration from `timing.json`, using the same pauses.
 
 ## Bots
@@ -408,9 +447,9 @@ A full game of classic cribbage, for 2 or 3 players. It is the simulator's basel
 ### Starting a game
 
 1. Build the standard 52 in ID order and shuffle it (stream `deal`, purpose `shuffle`).
-2. Cut for deal: each seat in order cuts once, drawing an index below the cards left (purpose `cut_for_deal`); that card comes out of the deck. Emit `cut_for_deal` with each seat's card.
+2. Cut for deal: each seat in order cuts once, drawing an index below the cards left (purpose `cut_for_deal`); that card comes out of the deck. Emit `cutForDeal` with each seat's card.
 3. The lowest rank deals (ace is low; suit doesn't count). If two or more tie for lowest, only they cut again, in seat order, from the cards left, until one is lowest.
-4. Emit `game_start` (rulesVersion, players, target, dealer), then start the first hand.
+4. Emit `gameStart` (rulesVersion, players, target, dealer), then start the first hand.
 
 ### A hand
 
@@ -420,9 +459,9 @@ A full game of classic cribbage, for 2 or 3 players. It is the simulator's basel
 4. Cut: the seat before the dealer (the dealer's right) sends `cut`. Draw k below (stock size − 2 × `cutMin` + 1), purpose `cut`; the starter is the stock card at index `cutMin` + k. Emit `starter`. If it's a jack, the dealer pegs his heels (`peg.heels`).
 5. The play (below).
 6. The show (below).
-7. The deal passes to the next seat, win or lose. Emit `hand_end` with the scores, and start the next hand.
+7. The deal passes to the next seat, win or lose. Emit `handEnd` with the scores, and start the next hand.
 
-Every point is pegged the moment it's scored, as a `pegged` event (seat, kind, points, new total). If a total reaches `target`, the game ends right there: emit `game_end` (winner, scores, hands played) and set the stage to `over`. Nothing after it is scored, mid-play or mid-show.
+Every point is pegged the moment it's scored, as a `pegged` event (seat, kind, points, new total). If a total reaches `target`, the game ends right there: emit `gameEnd` (winner, scores, hands played) and set the stage to `over`. Nothing after it is scored, mid-play or mid-show.
 
 ### The play
 
@@ -444,7 +483,7 @@ After each card, add its value (rank, with 11, 12 and 13 counting 10), emit `pla
 Then the count starts again when:
 
 - The count is `maxCount`: start again at once (no go point).
-- No seat can play and cards remain: the last seat to play pegs `go` (`peg.go`). Emit `count_reset`, then start again.
+- No seat can play and cards remain: the last seat to play pegs `go` (`peg.go`). Emit `countReset`, then start again.
 
 After a start again, the seat after the last one to play leads, skipping seats with no cards. Ace is low here too, so Q-K-A is no run. When every card is down, the play ends and the cards go back to their owners for the show.
 
@@ -473,18 +512,18 @@ Gos, starting the count again, the show and the next deal need no action: the en
 
 | Event | Fields |
 |---|---|
-| `game_start` | rulesVersion, players, target, dealer |
-| `cut_for_deal` | cuts (seat, card), in order, recuts included; dealer |
+| `gameStart` | rulesVersion, players, target, dealer |
+| `cutForDeal` | cuts (seat, card), in order, recuts included; dealer |
 | `deal` | hand number, dealer, each seat's cards (own view only), crib card if any |
 | `discarded` | seat, cards (own view only) |
 | `starter` | card, cut index, heels or not |
 | `played` | seat, card, count |
 | `go` | seat |
-| `count_reset` | reason (`thirty_one` or `go`) |
+| `countReset` | reason (`thirty_one` or `go`) |
 | `show` | seat, `hand` or `crib`, cards, combos (as in Counting a set), points |
 | `pegged` | seat, kind (`heels`, `fifteen`, `thirty_one`, `pair`, `run`, `go`, `last_card`, `show`, `crib`), points, total |
-| `hand_end` | hand number, scores, points this hand by kind and seat |
-| `game_end` | winner, scores, hands played |
+| `handEnd` | hand number, scores, points this hand by kind and seat |
+| `gameEnd` | winner, scores, hands played |
 
 ### Bots
 
@@ -639,7 +678,7 @@ The effects catalogue belongs to the app, not the engine. Its format is set in P
 
 ## Left-over warning
 
-The warning shows once per player, ever, not once per turn. The engine treats `warned` as an input: the session passes it in when the turn starts (from the player's saved profile) and reads it back after. The event `leftover_warning` tells the session to save it.
+The warning shows once per player, ever, not once per turn. The engine treats `warned` as an input: the session passes it in when the turn starts (from the player's saved profile) and reads it back after. The event `leftoverWarning` tells the session to save it.
 
 ## Fixtures
 
@@ -651,7 +690,7 @@ Shared test cases live in [`cribbage/minigames/fixtures/`](fixtures/) as JSON. T
 | `classic-hands.json` | Classic hands and cribs with known counts: 29, 28, 24, 0, his nobs (in a hand and a crib), a jack starter (no nobs), the hand and crib flush rules |
 | `pegging.json` | Whole plays for 2 and 3 players: the hands, the cards in the order played, and every score (fifteens, pairs, a pair royal, runs played out of order, gos, 31s, the last card) |
 | `dice.json` | For a few seeds and stream names: the first raw outputs, draws below n, weighted picks and a shuffle of 52, so every port matches the generator exactly |
-| `turns/*.jsonl` | Whole recorded turns (a header and steps). Replaying each MUST give the same events. Recorded once the Swift engine plays (`ARCHITECTURE.md` › Build plan D) |
+| `records/*.jsonl` | Whole recorded games (Records), made by `cribmaze-sim record`. Replaying each from its seed MUST give the same rolls and events, and writing it again MUST give the same bytes, ignoring `at` |
 
 Totals and combo counts in `counting.json`, `classic-hands.json` and `pegging.json` are worked out by hand; each case's note shows the sum. `make-counting.js` fills in the card indexes from the mock counter and stops if it disagrees with a hand-worked number. `make-dice.js` writes `dice.json` from the reference dice; rerun it only when Dice changes, and say so in the commit.
 

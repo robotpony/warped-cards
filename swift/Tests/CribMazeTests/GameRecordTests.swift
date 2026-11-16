@@ -73,6 +73,26 @@ func botGame(_ config: Config, seed: UInt64, writer: RecordWriter<CribMazeGame>?
         }
     }
 
+    /// engine.md › Records › Encoding: reading a golden record and writing it again gives the same
+    /// bytes, ignoring `at`, so the checked-in records pin the wire format for every port.
+    @Test func goldenRecordsWriteTheSameBytes() throws {
+        let (records, _) = RecordReader<CribMazeGame>.readAll(goldenRecords)
+        func plain(_ data: Data) -> [String] {
+            String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)
+                .filter { !$0.contains("\"kind\":\"note\"") }
+                .map { $0.replacingOccurrences(of: #""at":"[^"]*","#, with: "", options: .regularExpression) }
+        }
+        for r in records {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("cribmaze-golden-\(ProcessInfo.processInfo.processIdentifier).jsonl")
+            let w = try RecordWriter<CribMazeGame>(url: url, clock: { Date(timeIntervalSince1970: 0) })
+            w.gameStarted(r.header)
+            for s in r.steps { w.record(s) }
+            if let e = r.end { w.gameEnded(e.result) }
+            let again = try Data(contentsOf: url), original = try Data(contentsOf: r.url!)
+            #expect(plain(again) == plain(original), "\(r.url!.lastPathComponent)")
+        }
+    }
+
     /// A game is a sequence of hands; each hand's steps carry its number.
     @Test func stepsGroupByHand() throws {
         var steps: [Step<CribMazeGame>] = []
