@@ -359,6 +359,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | No edge power cap (r21). A cap comes back only as a mechanic the player can see in the footer and change with jokers. Without it, the medium bot scores 540 steps a turn (was 270 with the ×1.5 cap) and wins epic prizes in 65% of turns (was 18%); weak 302, strong 647 (1,000 turns each, seed 1, dealer). The prize thresholds need retuning |
 | 2026-11-15 | A joker inventory (`mocks/joker-inventory.html`) catalogues jokers, chips that sit on jokers, and other pieces, built and ideas alike, to ideate from |
 | 2026-11-15 | The game is about deck building: a joker that changes a card changes the shared deck for the rest of the game (made, painted, nudged, cloned, burned or merged cards, and badges on cards). Power jokers and chips are the player layer. The deck must be visible, between turns and on the deal screen |
+| 2026-11-15 | The joker inventory is the working set: every piece in it is assumed to work, and the deck stays shared with owner badges, until playtests show otherwise |
 
 ## Open questions
 
