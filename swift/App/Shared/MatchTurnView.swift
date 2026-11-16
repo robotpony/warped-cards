@@ -422,6 +422,13 @@ struct SidePanel: View {
             Picker("Card budget", selection: $session.settings.budget) { Text("Whole stock").tag(0); Text("12").tag(12); Text("16").tag(16); Text("24").tag(24) }
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        GroupBox("Deck building") {
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Shared deck", isOn: $session.settings.sharedDeck)
+                Text("On: cards a joker changes go into the one deck everyone is dealt from. Off: each player builds their own. Not in play until deck edits are built.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
         if let url = session.savedRecord {
             Button("Show the turn record") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.link)
         }

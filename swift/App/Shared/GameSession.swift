@@ -28,6 +28,7 @@ struct TurnSettings: Equatable {
     var breakdown = true  // play each score's breakdown; off is a quick flash
     var hints = true      // nudge the player when they seem stuck (Hints.swift)
     var deal = true       // deal 6 and pick 2 for the crib before each turn
+    var sharedDeck = true // deck building: changed cards go into the shared deck (rules.json deck.shared)
 }
 
 /// The deal before a turn: your 6, the 2 you've picked for the crib, and the hint, if one showed.
@@ -186,6 +187,7 @@ final class GameSession {
     private func begin(_ setup: TurnSetup) {
         guard var c = config else { return }
         c.rules.match.cardBudget = settings.budget
+        c.rules.deck = .init(shared: settings.sharedDeck)
         c.rules.match.timerSeconds = settings.timer ? c.rules.match.timerSeconds : 0
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
         let (t, ev) = MatchTurn.start(config: c, setup: setup)

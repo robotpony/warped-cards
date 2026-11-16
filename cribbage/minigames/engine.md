@@ -464,7 +464,7 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r20 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r22 as tuned on 2026-11-15 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
@@ -478,8 +478,9 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
     "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
-    "prize": { "rareAt": 25, "epicAt": 31, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
+    "prize": { "rareAt": 40, "epicAt": 70, "special": [["swapper", 45], ["bomb", 30], ["reach", 25]] }
   },
+  "deck": { "shared": true },
   "specials": {
     "known": ["swapper", "bomb", "reach"],
     "start": { "swapper": 2, "bomb": 1, "reach": 1 },

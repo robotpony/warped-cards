@@ -360,6 +360,8 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | A joker inventory (`mocks/joker-inventory.html`) catalogues jokers, chips that sit on jokers, and other pieces, built and ideas alike, to ideate from |
 | 2026-11-15 | The game is about deck building: a joker that changes a card changes the shared deck for the rest of the game (made, painted, nudged, cloned, burned or merged cards, and badges on cards). Power jokers and chips are the player layer. The deck must be visible, between turns and on the deal screen |
 | 2026-11-15 | The joker inventory is the working set: every piece in it is assumed to work, and the deck stays shared with owner badges, until playtests show otherwise |
+| 2026-11-15 | Prizes retuned for r22: rare from 40 steps, epic from 70 (were 25 and 31). Medium bot, 1,000 turns, seed 1: dealer 59% common, 25% rare, 15% epic (back near r16's 59/27/14); non-dealer 76/16/8; weak dealer 84/12/4; strong dealer 56/25/19 |
+| 2026-11-15 | Shared deck or each player's own: undecided, so it's a setting (`deck.shared`, on by default; Advanced › Deck building in the beta) |
 
 ## Open questions
 

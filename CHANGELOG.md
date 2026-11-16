@@ -2,6 +2,16 @@
 
 warped-cards' changes, newest first. Versions are `major.minor.patch`, pre-1.0.
 
+## 0.13.0 — 2026-11-15
+
+### Added
+
+- Settings › Advanced has a Shared deck switch, on by default. It decides whether cards jokers change go into the deck everyone is dealt from or into your own. It does nothing yet: deck edits aren't built.
+
+### Changed
+
+- Prizes are harder to win, to match scores without the power cap: rare from a best set of 40 steps, epic from 70.
+
 ## 0.12.0 — 2026-11-15
 
 ### Added

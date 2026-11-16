@@ -150,7 +150,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r21"
+    public static let rulesVersion = "match-r22"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice

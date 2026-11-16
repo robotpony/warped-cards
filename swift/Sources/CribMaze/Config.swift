@@ -60,6 +60,10 @@ public struct RulesConfig: Codable, Sendable, Equatable {
     public var scoring: Scoring
     public var match: Match
     public var specials: Specials
+    /// Deck building (concept.md): whether cards changed by jokers go into the one shared deck
+    /// (true, the default) or into each player's own deck. Not used until deck edits are built.
+    public struct Deck: Codable, Sendable, Equatable { public var shared: Bool; public init(shared: Bool) { self.shared = shared } }
+    public var deck: Deck?
 }
 
 public struct JokersConfig: Codable, Sendable, Equatable {

@@ -42,7 +42,7 @@ Rendered from the beta (seed 2) with `--snapshot`; see `swift/App/Beta/Snapshot.
 
 | Game | What it is | Status |
 |---|---|---|
-| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.12.0 (the deal and the scoring grid), match rules r21, rules draft 5 |
+| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.13.0 (the deal and the scoring grid), match rules r22, rules draft 5 |
 | Classic cribbage | The classic game, sharing the same engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -90,7 +90,7 @@ Levels are `weak`, `medium`, `strong` and `perfect`. Balance numbers in the docs
 
 Run everything with `scripts/check.sh`. It runs the JS tests, a Swift format lint (notes only, not a failure yet), the Swift tests, and builds both apps with warnings as errors.
 
-State on 2026-11-15, version 0.12.0: **60 tests, all passing** (40 Swift, 20 JS).
+State on 2026-11-15, version 0.13.0: **60 tests, all passing** (40 Swift, 20 JS).
 
 | Suite | Tests | What it covers |
 |---|---|---|
