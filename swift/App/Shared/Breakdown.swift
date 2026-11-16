@@ -34,6 +34,19 @@ struct Banner { let kind: String; let head: String; let suit: String }
 struct BreakdownTiming {
     var base = 1200.0, accel = 0.85, min = 400.0
     var scale: Double { base / 1200 }
+
+    /// The pace from timing.json › profiles.human (breakdownBase, breakdownStep, breakdownMin), the
+    /// same numbers the simulator models a person with; the defaults above if the file can't be read.
+    static func load(from folder: URL) -> BreakdownTiming {
+        var t = BreakdownTiming()
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("timing.json")),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let human = (json["profiles"] as? [String: Any])?["human"] as? [String: Any] else { return t }
+        if let v = human["breakdownBase"] as? Double { t.base = v }
+        if let v = human["breakdownStep"] as? Double { t.accel = v }
+        if let v = human["breakdownMin"] as? Double { t.min = v }
+        return t
+    }
 }
 
 /// What the screen shows while a score plays out. The board itself still shows the turn

@@ -66,17 +66,25 @@ final class GameSession {
     private(set) var run: GameRun<CribMazeGame>?
     /// Where steps go besides the screen: the beta's record file; none in release or snapshots.
     private var recorder: (any GameRecorder)?
-    /// Game time starts at the game's start.
-    private var startedAt = ContinuousClock.now
+    /// Game time (engine.md › Clock and timer): since the game started, stopped whenever the turn
+    /// timer is (a move playing, the warning, an info card), so actions are stamped in play time.
+    private var clockBase: Duration = .zero
+    private var clockSince: ContinuousClock.Instant? = ContinuousClock.now
+    private var clockPaused: Bool { busy || warning != nil || info != nil }
+    private func syncClock() {
+        if clockPaused, let since = clockSince { clockBase += ContinuousClock.now - since; clockSince = nil }
+        else if !clockPaused, clockSince == nil { clockSince = .now }
+    }
+    private var gameTime: Duration { clockBase + (clockSince.map { ContinuousClock.now - $0 } ?? .zero) }
     /// The demo bot's own dice, apart from the game's.
     private var botDice = Dice(seed: 1)
     private(set) var feed: [FeedLine] = []
     private(set) var breakdown: Breakdown?
     private(set) var toast: String?
     /// The first-time left-over warning: the cards left over, until "Got it".
-    private(set) var warning: [String]?
+    private(set) var warning: [String]? { didSet { syncClock() } }
     /// An info card the player opened by tapping a word tag or the card counter.
-    var info: InfoTopic?
+    var info: InfoTopic? { didSet { syncClock() } }
     /// Input waits while a card covers the board.
     var blocked: Bool { over || busy || warning != nil || info != nil }
     func dismissWarning() { warning = nil }
@@ -84,7 +92,7 @@ final class GameSession {
     private(set) var flash: Set<Pos> = []
     private(set) var flashIsBomb = false
     /// While a move plays out, input waits.
-    private(set) var busy = false
+    private(set) var busy = false { didSet { syncClock() } }
     /// Cards drawn into each grid column by the last move, so new cards drop in from above as a block.
     private(set) var drawnPerColumn = [Int](repeating: 0, count: 4)
     /// Off for snapshots: moves apply at once.
@@ -116,6 +124,7 @@ final class GameSession {
         do {
             guard let folder = Bundle.main.url(forResource: "config", withExtension: nil) else { throw ConfigError(description: "config folder missing from the app") }
             config = try Config.load(from: folder)
+            timing = BreakdownTiming.load(from: folder)
         } catch { loadError = "\(error)" }
         newGame()
     }
@@ -195,7 +204,7 @@ final class GameSession {
         seedText = ""
         c.rules.deck = .init(shared: settings.sharedDeck, minSize: c.rules.deck?.minSize)
         let (r, opening) = GameRun<CribMazeGame>.start(.init(c, firstDealer: settings.dealer), seed: seed, players: [.human(0), .bot(1, level: "classic")])
-        run = r; game = r.state.game; startedAt = .now; botDice = Dice(seed: seed); savedRecord = nil
+        run = r; game = r.state.game; clockBase = .zero; clockSince = clockPaused ? nil : .now; botDice = Dice(seed: seed); savedRecord = nil
         recorder = Edition.isBeta && animate ? Recording.recorder() : nil   // snapshots (animate off) save no records
         recorder?.started(r)
         recorder?.record(opening)
@@ -242,7 +251,7 @@ final class GameSession {
     /// Sends an action to the engine, stamped with the game time, and hands the step to the recorder.
     private func act(_ action: CribMazeGame.Action, by player: PlayerID? = 0) -> Step<CribMazeGame>? {
         guard var r = run else { return nil }
-        let d = ContinuousClock.now - startedAt
+        let d = gameTime
         let ms = Int(d.components.seconds) * 1000 + Int(d.components.attoseconds / 1_000_000_000_000_000)
         do {
             let step = try r.send(action, by: player, clockMs: ms)

@@ -155,7 +155,7 @@ Source: `Theme.swift`, `BoardView.swift` (BoardLayout, EdgeBackground, EmptyCell
 
 ### Colours
 
-The app copies its colours from palette.json into code; it doesn't read the file (see Gaps). Cards use the original card art from `design/cards/cards.js`, not the neon cards.
+The app reads the table colours (`bg`, `text`, `panel`, `rim`, `cyan`, `magenta`, `gold`, `joker.special`) from palette.json, bundled into the app (0.15.2). Colours that aren't in the palette are still in code (see Gaps). Cards use the original card art from `design/cards/cards.js`, not the neon cards.
 
 | Role | Palette key or hex | Used for |
 |---|---|---|
@@ -422,7 +422,7 @@ The engine has no clock. The session runs three countdowns, each ticking once a 
 - With no power jokers, a stuck board ends the turn by itself 1,500 ms (hard-coded) after it was found, once nothing is busy.
 - If a move opens up a set, the stuck state and its grace stop at once.
 - While the grace runs, and hints are on, the power jokers panel blinks a gold ring (see Hints).
-- The time stamped on each action (`clockMs`) is real time since the game started, and doesn't pause (see Gaps).
+- The time stamped on each action (`clockMs`) is game time since the game started. It stops whenever the turn timer pauses (a move playing, the warning, an info card), and runs through the deal (0.15.2; engine.md › Clock and timer).
 
 Source: `GameSession.swift` (startTimer, watchReaches, watchDeadBoard, act).
 
@@ -744,9 +744,9 @@ Numbers in the app's code that the game feel depends on and that SHOULD move to 
 | 1 | 25 s | Stuck grace with power jokers | None (rules.md: to tune) | `rules.json` › match |
 | 2 | 1,500 ms | Stuck board with no power jokers ends after | `timing.json` human `ending` (1,500), not read | `timing.json` or `fx.json` |
 | 3 | 8 s | Discard hint shows after a pause | None | `hints.json` › discard |
-| 4 | 1,200 ms | Breakdown base step (Slow) | `timing.json` human `breakdownBase`, not read | Read `timing.json` |
-| 5 | 0.85 | Breakdown step gets quicker by | `timing.json` human `breakdownStep`, not read | Read `timing.json` |
-| 6 | 400 ms | Breakdown shortest step | `timing.json` human `breakdownMin`, not read | Read `timing.json` |
+| 4 | 1,200 ms | Breakdown base step (Slow) | `timing.json` human `breakdownBase`, read since 0.15.2 | Done |
+| 5 | 0.85 | Breakdown step gets quicker by | `timing.json` human `breakdownStep`, read since 0.15.2 | Done |
+| 6 | 400 ms | Breakdown shortest step | `timing.json` human `breakdownMin`, read since 0.15.2 | Done |
 | 7 | 1,200, 900, 600, 400 ms | Breakdown speed choices | None | `fx.json` |
 | 8 | 150, 650, 900 ms | Breakdown waits before the row, the banner, the tally | None | `fx.json` |
 | 9 | 500 ms | Breakdown wait after the total line | None | `fx.json` |
@@ -819,7 +819,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 1. No joker reveal. rules.md › Jokers and extra cards says an extra card on the board pauses play and the timer and plays a reveal; engine.md › Clock and timer says the timer pauses for it. The app shows only a toast and a feed line, and the timer keeps running.
 2. The bot never plays a match turn. rules.md says the computer players' turns come first, as a quick sequence of results. The app's bot only deals and throws (engine.md › The game says bots don't play grid turns yet, so rules.md is ahead of both).
 3. The left-over warning shows once per hand. engine.md › Left-over warning says once per player, ever, passed in from a saved profile. The app never passes `warned` into a hand, so it starts false every turn.
-4. Action times don't pause. ARCHITECTURE.md › Clock and timers says the app's clock pauses while a breakdown plays; engine.md says `clockMs` is time since the turn started. The app stamps real time since the game started, with no pauses.
+4. Fixed in 0.15.2: action times didn't pause. `clockMs` is now game time since the game started, stopped while the turn timer is; engine.md says so.
 5. The breakdown holds for a tap with no time limit, and the turn timer and reach timers stay paused while it holds. A player can stop the clock as long as they like. rules.md says "a tap skips to the end" and doesn't mention the hold, so skipping takes two taps.
 6. The turn timer keeps running while the settings panel is open, though it pauses for info cards and the warning.
 7. A board-armed joker can't be cancelled. rules.md says tap it again to cancel. Tapping an armed bomb on the board again bombs at its own cell; tapping the matching tray joker re-arms it from the tray instead of cancelling.
@@ -833,8 +833,8 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 15. The Command-N menu item is called "New Turn" but starts a new game.
 16. The deal always deals the bot's card first, even when the bot deals; the code comment says the dealer deals to the other player first.
 17. The drag hit area (70%) is fixed. ARCHITECTURE.md › Mac first, iOS later says it's a setting, as in the mock.
-18. The app doesn't read `palette.json` or `shapes.json`, though mocks/README.md says it does. Its colours are copies in code, a few colours aren't in the palette (page, ink, the starter bed, the clock's green, orange and red, the left-over reds), and cards use the cards.js art, not the neon card values or icons.
-19. The app doesn't read `timing.json`. Its breakdown base, step and minimum match the human profile's numbers, but are separate copies, so tuning one won't change the other.
+18. Partly fixed in 0.15.2: the app reads the table colours from `palette.json`. It still doesn't read `shapes.json`, a few colours aren't in the palette (page, ink, the starter bed, the clock's green, orange and red, the left-over reds), and cards use the cards.js art, not the neon card values or icons.
+19. Fixed in 0.15.2: the app reads its breakdown base, step and minimum from `timing.json` › profiles.human, so tuning the file changes both the app and the simulator. The other `timing.json` numbers (Hard-coded numbers 2, 19) still aren't read.
 20. Config fallbacks disagree: with no config, edge power per level falls back to 50% in the info card and chips but 10% in the breakdown. Config failing to load shows an error screen, so this only matters if a field goes missing.
 21. Reduce Motion (ARCHITECTURE.md › Presenter and cues) isn't supported, and there are no sound or haptic switches yet (none are needed until sound and haptics exist).
 22. rules.md's status line says match rules r22 is in the beta; the beta and `rules.json` are at r23.

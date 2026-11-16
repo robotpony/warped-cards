@@ -6,22 +6,47 @@ extension Color {
     }
 }
 
-/// The table in the neon palette (design/neon/palette.json, decided 2026-11-14) with the
-/// original card faces from design/cards/cards.js, which read far better than neon cards.
-/// Sizes follow the match turn mock (match-turn.html).
+/// The neon palette's colours (design/neon/palette.json, decided 2026-11-14), read from the copy
+/// bundled into the app, so the app, the mocks and any port share one set of values. A colour the
+/// file lacks falls back to the value it had when this was written.
+enum Palette {
+    /// palette.json › colours, flattened to paths: "cyan", "joker.special", "tokens.0".
+    static let colours: [String: String] = {
+        guard let url = Bundle.main.url(forResource: "palette", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+        var out: [String: String] = [:]
+        func walk(_ node: Any?, _ path: String) {
+            if let text = node as? String { out[path] = text }
+            if let map = node as? [String: Any] { for (k, v) in map { walk(v, path.isEmpty ? k : "\(path).\(k)") } }
+            if let list = node as? [Any] { for (i, v) in list.enumerated() { walk(v, "\(path).\(i)") } }
+        }
+        walk(json["colours"], "")
+        return out
+    }()
+
+    /// A colour by its path in palette.json › colours ("cyan", "joker.special").
+    static func colour(_ path: String, _ fallback: UInt32, opacity: Double = 1) -> Color {
+        guard let text = colours[path], text.hasPrefix("#"), let hex = UInt32(text.dropFirst(), radix: 16) else { return Color(hex: fallback, opacity: opacity) }
+        return Color(hex: hex, opacity: opacity)
+    }
+}
+
+/// The table in the neon palette with the original card faces from design/cards/cards.js, which
+/// read far better than neon cards. Sizes follow the match turn mock (match-turn.html).
 enum Theme {
     // Page and table (neon palette). The names keep the felt look's roles: felt is the table, feltText the text on it.
-    static let page = Color(hex: 0x05070F)          // around the phone
-    static let felt = Color(hex: 0x0A0E1F)          // neon bg
-    static let feltText = Color(hex: 0xDDE6FF)      // neon text
-    static let panel = Color(hex: 0x121A33)         // neon panel: the edge background
-    static let rim = Color(hex: 0x2E3A66)
-    static let cyan = Color(hex: 0x3CF2FF)
-    static let magenta = Color(hex: 0xFF4FD8)
-    static let violet = Color(hex: 0xC77DFF)       // neon joker.special
-    static let overlay = Color(hex: 0x0A0E1F, opacity: 0.95)
-    static let gold = Color(hex: 0xFFD447)
-    static let power = Color(hex: 0x3CF2FF)
+    static let page = Color(hex: 0x05070F)          // around the phone; not in the palette
+    static let felt = Palette.colour("bg", 0x0A0E1F)
+    static let feltText = Palette.colour("text", 0xDDE6FF)
+    static let panel = Palette.colour("panel", 0x121A33)   // the edge background
+    static let rim = Palette.colour("rim", 0x2E3A66)
+    static let cyan = Palette.colour("cyan", 0x3CF2FF)
+    static let magenta = Palette.colour("magenta", 0xFF4FD8)
+    static let violet = Palette.colour("joker.special", 0xC77DFF)
+    static let overlay = Palette.colour("bg", 0x0A0E1F, opacity: 0.95)
+    static let gold = Palette.colour("gold", 0xFFD447)
+    static let power = Palette.colour("cyan", 0x3CF2FF)
     static let bonus = Color(hex: 0xC9A0FF)
     static let ink = Color(hex: 0x2B2A26)
     // Cards (cards.js FACE, SUITS, JOKER)

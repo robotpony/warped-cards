@@ -1,6 +1,6 @@
 # Porting
 
-Status: draft 1, 2026-11-16. Rules r23, app 0.15.1.
+Status: draft 1, 2026-11-16. Rules r23, app 0.15.2.
 
 ## Summary
 

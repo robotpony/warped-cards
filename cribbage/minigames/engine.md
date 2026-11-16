@@ -394,7 +394,7 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 
 ## Clock and timer
 
-- The session stamps every action with `clockMs`, the game time since the turn started. The engine stores it on the step and never reads a clock.
+- The session stamps every action with `clockMs`, the game time in milliseconds since the game started. Game time stops whenever the turn timer pauses (below), so it measures play, not presentation; it runs through the deal. The engine stores it on the step and never reads a clock.
 - The timer is the session's job: it counts player time, pauses while a score breakdown or a joker reveal plays, and sends `timeUp` when it reaches `timerSeconds`. A timer of 0 is off.
 - In the simulator, the session advances a modelled clock by each action's duration from `timing.json`, using the same pauses.
 
