@@ -24,6 +24,16 @@
     suit: { S: "#E8ECFF", H: "#FF4D6D", D: "#4DA3FF", C: "#3DDC84" },
     joker: { amber: "#FFB020", teal: "#2EE6D6", special: "#C77DFF" },
     tokens: ["#FFD447", "#34E0A1", "#B48CFF"],
+    // The app's colours beyond the neon set (2026-11-16): the original cards (design/cards/cards.js),
+    // which the app draws, and the table's few extras, so every build reads one file.
+    page: "#05070F", ink: "#2B2A26", paper: "#FFFDF7", bezel: "#111111", starterBed: "#3A4A80",
+    card: {
+      face: "#FDFCF8", rule: "#D6D0C4", soft: "#7C6C48", joker: "#6A1B9A", red: "#E00000", flame: "#F2B705",
+      suit: { S: "#000000", H: "#E00000", D: "#0070E0", C: "#00843D" },
+      stack: ["#A99E86", "#CFC6B3"],
+    },
+    clock: { green: "#39E07A", orange: "#FF9F1C", red: "#FF4D4D" },
+    leftOver: { ring: "#FF5A5A", text: "#FF7A7A", names: "#C00000" },
   };
   const FONT = `"Russo One", "Saira Semi Condensed", system-ui, sans-serif`;
   const n = (v) => Math.round(v * 100) / 100;

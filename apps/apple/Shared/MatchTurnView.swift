@@ -90,7 +90,7 @@ struct PhoneView: View {
         .overlay { if session.over { SummaryView(session: session) } }
         .overlay { if session.dealing != nil { DealView(session: session) } }
         .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Color(hex: 0x111111), lineWidth: 10).padding(-5))
+        .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Theme.bezel, lineWidth: 10).padding(-5))
     }
 
     /// Settings, the last score, this turn's log and (in the beta) diagnostics.
@@ -208,8 +208,8 @@ struct TrayCard: View {
         let card = Card(id: 0, kind: .special(kind), rank: 0, suit: nil)
         ZStack {
             if count > 1 {
-                RoundedRectangle(cornerRadius: 5).fill(Color(hex: 0xA99E86)).frame(width: w, height: w * 1.4).offset(x: 6, y: -6)
-                RoundedRectangle(cornerRadius: 5).fill(Color(hex: 0xCFC6B3)).frame(width: w, height: w * 1.4).offset(x: 3, y: -3)
+                RoundedRectangle(cornerRadius: 5).fill(Theme.stack[0]).frame(width: w, height: w * 1.4).offset(x: 6, y: -6)
+                RoundedRectangle(cornerRadius: 5).fill(Theme.stack[1]).frame(width: w, height: w * 1.4).offset(x: 3, y: -3)
             }
             CardFace(card: card, width: w)
                 .overlay { if armed { RoundedRectangle(cornerRadius: 5.5).stroke(.white, lineWidth: 3).padding(-1.5) } }
@@ -256,7 +256,7 @@ struct WarningCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Every card must score").font(Theme.font(22, .bold))
                 Text("A set can hold one combo or several (7-8-8 is two fifteens and a pair), but every card you trace must be part of at least one: a fifteen, pair, run, flush or his nobs.")
-                let bad = Text(left.joined(separator: " ")).foregroundStyle(Color(hex: 0xC00000)).bold()
+                let bad = Text(left.joined(separator: " ")).foregroundStyle(Theme.leftOverNames).bold()
                 Text("Here, \(bad)\(left.count == 1 ? " isn't" : " aren't") part of any combo. While you trace, only cards in a combo light up.")
                 let rule = Text("From now on, a set still scores its combos, but each card left over costs \(cost) step\(cost == 1 ? "" : "s").").bold()
                 Text("\(rule) Your steps can go below 0. This time nothing happens.")
@@ -267,7 +267,7 @@ struct WarningCard: View {
             .font(Theme.font(15, .regular)).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
             .foregroundStyle(Theme.ink)
             .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 14)
-            .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: 0xFFFDF7)).shadow(color: .black.opacity(0.55), radius: 16, y: 12))
+            .background(RoundedRectangle(cornerRadius: 16).fill(Theme.paper).shadow(color: .black.opacity(0.55), radius: 16, y: 12))
             .padding(.horizontal, 20)
         }
     }
@@ -389,7 +389,7 @@ struct DeckPanel: View {
                         if !madeShown.isEmpty && !burnedShown.isEmpty { Rectangle().fill(Theme.feltText.opacity(0.25)).frame(width: 1, height: Self.w * 1.2).padding(.horizontal, 3) }
                         ForEach(burnedShown, id: \.id) { c in
                             mini(c, new: changes.burned.contains(c.id)).opacity(0.45)
-                                .overlay { Image(systemName: "xmark").font(.system(size: 16, weight: .heavy)).foregroundStyle(Color(hex: 0xE00000)) }
+                                .overlay { Image(systemName: "xmark").font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.red) }
                         }
                         if extra > 0 { Text("+\(extra)").font(Theme.font(13, .semibold)).opacity(0.7) }
                 }.padding(.vertical, 8).padding(.horizontal, 2)
@@ -629,7 +629,7 @@ struct TurnClock: View {
 
     enum Look { case running, warning, stuck, done, off }
 
-    static let green = Color(hex: 0x39E07A), orange = Color(hex: 0xFF9F1C), red = Color(hex: 0xFF4D4D)
+    static let green = Theme.clockGreen, orange = Theme.clockOrange, red = Theme.clockRed
 
     /// How urgent the breath is, from 0 (calm, over half the time left) to 3 (the last 5%). The last
     /// level is held at about 75% of full intensity: from 10 s, the seconds show instead.

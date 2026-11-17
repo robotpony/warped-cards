@@ -349,7 +349,7 @@ struct BreakdownOverlay: View {
                 .background(RoundedRectangle(cornerRadius: 6).fill(Theme.ink)).foregroundStyle(Theme.gold)
             Text(b.head).font(Theme.font(22, .bold))
             Text(b.suit).font(Theme.font(13, .semibold)).padding(.horizontal, 6).padding(.vertical, 1)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color(hex: 0xFFFDF7)))
+                .background(RoundedRectangle(cornerRadius: 6).fill(Theme.paper))
         }
         .lineLimit(1).fixedSize()
         .padding(.horizontal, 16).padding(.vertical, 6)
@@ -371,7 +371,7 @@ struct BreakdownOverlay: View {
                         }
                         .frame(maxWidth: .infinity)
                         Text(l.pts).fontWeight(.bold).monospacedDigit().frame(width: l.style == .total ? 64 : 48, alignment: .trailing)
-                            .foregroundStyle(l.style == .total ? Theme.feltText : l.style == .power ? Theme.power : l.style == .penalty ? Color(hex: 0xFF7A7A) : Theme.gold)
+                            .foregroundStyle(l.style == .total ? Theme.feltText : l.style == .power ? Theme.power : l.style == .penalty ? Theme.leftOverText : Theme.gold)
                     }
                     .font(Theme.font(l.style == .total ? 20 : 16, l.style == .total ? .bold : .medium))
                     .frame(minHeight: 24)
@@ -412,7 +412,7 @@ struct FloatView: View {
             if !f.sub.isEmpty { Text(f.sub).font(Theme.font(13, .semibold)).opacity(0.9) }
         }
         .fixedSize()
-        .foregroundStyle(f.style == .power ? Theme.power : f.style == .penalty ? Color(hex: 0xFF7A7A) : .white)
+        .foregroundStyle(f.style == .power ? Theme.power : f.style == .penalty ? Theme.leftOverText : .white)
         .shadow(color: .black.opacity(0.7), radius: 3, y: 2)
         .keyframeAnimator(initialValue: Rise(), repeating: false) { v, r in
             v.scaleEffect(r.scale).offset(y: r.y).opacity(r.opacity)
@@ -452,7 +452,7 @@ struct RowCard: View {
         let home = BoardLayout.frame(p)
         let c = on ? (RowLayout.centre(p, in: pb.row) ?? CGPoint(x: home.midX, y: home.midY)) : CGPoint(x: home.midX, y: home.midY)
         let lit = pb.lit.contains(p), power = pb.litPower.contains(p), left = pb.leftOver.contains(p)
-        let ring: Color = lit ? Theme.gold : power ? Theme.power : left ? Color(hex: 0xFF5A5A) : .white
+        let ring: Color = lit ? Theme.gold : power ? Theme.power : left ? Theme.leftOver : .white
         let starter = p == Board.starter
         CardFace(card: card)
             .overlay { RoundedRectangle(cornerRadius: Theme.cardRadius + 1.5).stroke(ring, lineWidth: lit || power || left ? 4 : 2).padding(-1.5) }
@@ -468,7 +468,7 @@ struct RowCard: View {
                         .background(Capsule().fill(power ? Theme.power : Theme.gold)).foregroundStyle(Theme.ink).fixedSize().offset(x: 8, y: -8)
                 }
             }
-            .shadow(color: lit ? Theme.gold.opacity(0.85) : power ? Theme.power.opacity(0.8) : left ? Color(hex: 0xFF5A5A, opacity: 0.7) : .black.opacity(0.4),
+            .shadow(color: lit ? Theme.gold.opacity(0.85) : power ? Theme.power.opacity(0.8) : left ? Theme.leftOver.opacity(0.7) : .black.opacity(0.4),
                     radius: lit || power || left ? 9 : 5, y: lit || power || left ? 0 : 3)
             .offset(y: lit || power ? -10 : 0)
             .animation(fx.motions.breakdown.light.animation(), value: lit || power || left)

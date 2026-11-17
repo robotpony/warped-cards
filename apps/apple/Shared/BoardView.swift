@@ -54,7 +54,7 @@ struct BoardView: View {
             // The starter counts with every set (r16), so it sits on a lighter bed of its own.
             let sf = BoardLayout.frame(Board.starter).insetBy(dx: -Theme.edgePad - 3, dy: -Theme.edgePad - 3)
             RoundedRectangle(cornerRadius: Theme.cardRadius + 8)
-                .fill(Color(hex: 0x3A4A80))
+                .fill(Theme.starterBed)
                 .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius + 8).strokeBorder(Theme.feltText.opacity(0.6), lineWidth: 1.5))
                 .frame(width: sf.width, height: sf.height)
                 .offset(x: sf.minX, y: sf.minY)
@@ -221,8 +221,8 @@ struct CellView: View, Equatable {
         let l = look
         let selected = l.order != nil
         let edge = Board.isEdge(p), starter = p == Board.starter
-        let glow: Color? = l.hit ? (l.bomb ? Color(hex: 0xE00000, opacity: 0.85) : Theme.gold.opacity(0.9))
-            : l.lit ? Theme.gold.opacity(0.85) : l.litPower ? Theme.power.opacity(0.8) : l.left ? Color(hex: 0xFF5A5A, opacity: 0.7)
+        let glow: Color? = l.hit ? (l.bomb ? Theme.red.opacity(0.85) : Theme.gold.opacity(0.9))
+            : l.lit ? Theme.gold.opacity(0.85) : l.litPower ? Theme.power.opacity(0.8) : l.left ? Theme.leftOver.opacity(0.7)
             : l.used ? .white.opacity(0.55) : nil
         CardFace(card: card)
             .overlay {   // dimming and the "used" brightening: plain overlays, not colour filters
@@ -236,7 +236,7 @@ struct CellView: View, Equatable {
             }
             .overlay {   // the pop before a bombed card clears, and the breakdown's rings
                 let ring: Color? = l.hit || (l.inset && !l.lit && !l.litPower && !l.left) ? .white
-                    : l.lit ? Theme.gold : l.litPower ? Theme.power : l.left ? Color(hex: 0xFF5A5A) : nil
+                    : l.lit ? Theme.gold : l.litPower ? Theme.power : l.left ? Theme.leftOver : nil
                 if let ring { RoundedRectangle(cornerRadius: Theme.cardRadius + 1.5).stroke(ring, lineWidth: 3).padding(-1.5) }
             }
             .background {   // steady looks without blur: a soft gold halo on edge cards, a hard drop shadow when raised

@@ -36,7 +36,7 @@ enum Palette {
 /// read far better than neon cards. Sizes follow the match turn mock (match-turn.html).
 enum Theme {
     // Page and table (neon palette). The names keep the felt look's roles: felt is the table, feltText the text on it.
-    static let page = Color(hex: 0x05070F)          // around the phone; not in the palette
+    static let page = Palette.colour("page", 0x05070F)   // around the phone
     static let felt = Palette.colour("bg", 0x0A0E1F)
     static let feltText = Palette.colour("text", 0xDDE6FF)
     static let panel = Palette.colour("panel", 0x121A33)   // the edge background
@@ -47,14 +47,26 @@ enum Theme {
     static let overlay = Palette.colour("bg", 0x0A0E1F, opacity: 0.95)
     static let gold = Palette.colour("gold", 0xFFD447)
     static let power = Palette.colour("cyan", 0x3CF2FF)
-    static let bonus = Color(hex: 0xC9A0FF)
-    static let ink = Color(hex: 0x2B2A26)
-    // Cards (cards.js FACE, SUITS, JOKER)
-    static let face = Color(hex: 0xFDFCF8)
-    static let rule = Color(hex: 0xD6D0C4)
-    static let soft = Color(hex: 0x7C6C48)
-    static let joker = Color(hex: 0x6A1B9A)
-    static let red = Color(hex: 0xE00000)
+    static let ink = Palette.colour("ink", 0x2B2A26)
+    static let paper = Palette.colour("paper", 0xFFFDF7)   // the left-over warning, the banner's suit chip
+    static let bezel = Palette.colour("bezel", 0x111111)
+    static let starterBed = Palette.colour("starterBed", 0x3A4A80)
+    // The original cards (palette.json › colours.card, from cards.js)
+    static let face = Palette.colour("card.face", 0xFDFCF8)
+    static let rule = Palette.colour("card.rule", 0xD6D0C4)
+    static let soft = Palette.colour("card.soft", 0x7C6C48)
+    static let joker = Palette.colour("card.joker", 0x6A1B9A)
+    static let red = Palette.colour("card.red", 0xE00000)
+    static let flame = Palette.colour("card.flame", 0xF2B705)
+    static let suits = [("S", 0x000000), ("H", 0xE00000), ("D", 0x0070E0), ("C", 0x00843D)].map { Palette.colour("card.suit.\($0.0)", UInt32($0.1)) }
+    static let stack = [Palette.colour("card.stack.0", 0xA99E86), Palette.colour("card.stack.1", 0xCFC6B3)]
+    // The turn clock, and cards left over in a score
+    static let clockGreen = Palette.colour("clock.green", 0x39E07A)
+    static let clockOrange = Palette.colour("clock.orange", 0xFF9F1C)
+    static let clockRed = Palette.colour("clock.red", 0xFF4D4D)
+    static let leftOver = Palette.colour("leftOver.ring", 0xFF5A5A)
+    static let leftOverText = Palette.colour("leftOver.text", 0xFF7A7A)
+    static let leftOverNames = Palette.colour("leftOver.names", 0xC00000)
 
     // Sizes: the mock's, a 64 pt card (k scales them all).
     static let k: CGFloat = 1

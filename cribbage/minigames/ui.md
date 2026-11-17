@@ -1,6 +1,6 @@
 # Crib Maze: UI Spec
 
-Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.15.5, rules r23
+Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.15.6, rules r23
 
 ## Summary
 
@@ -155,7 +155,7 @@ Source: `Theme.swift`, `BoardView.swift` (BoardLayout, EdgeBackground, EmptyCell
 
 ### Colours
 
-The app reads the table colours (`bg`, `text`, `panel`, `rim`, `cyan`, `magenta`, `gold`, `joker.special`) from palette.json, bundled into the app (0.15.2). Colours that aren't in the palette are still in code (see Gaps). Cards use the original card art from `design/cards/cards.js`, not the neon cards.
+The app reads every colour from palette.json, bundled into the app (the table colours since 0.15.2, the rest since 0.15.6). A port MUST read them from there too. Cards use the original card art from `design/cards/cards.js`, whose colours are palette.json's `card` group; `face` and `suit` at the top level belong to the dropped neon cards.
 
 | Role | Palette key or hex | Used for |
 |---|---|---|
@@ -167,22 +167,24 @@ The app reads the table colours (`bg`, `text`, `panel`, `rim`, `cyan`, `magenta`
 | Gold | `gold` (#FFD447) | Steps, track, edge card rings, HAND and CRIB tags, toast, banner, combo light, power chips, full pick counter, hint ring |
 | Violet | `joker.special` (#C77DFF) | Power jokers panel, tray counts, reach countdown, reach pips, the bot's crib tag |
 | Overlay | `bg` at 95% | Turn summary background |
-| Page | #05070F (not in palette) | Around the phone |
-| Ink | #2B2A26 (cards.js) | Dark text on gold and on cards |
-| Card face | #FDFCF8 (cards.js) | Card faces, info cards |
-| Card rule | #D6D0C4 (cards.js) | Card outline, mini card outline |
-| Card soft | #7C6C48 (cards.js) | Card back hatching, extra card names |
-| Joker purple | #6A1B9A (cards.js) | Special joker card art |
-| Red | #E00000 (cards.js) | Bomb pop glow, burn flame, burned mark, reach plus |
-| Left over | #FF5A5A | Left-over ring and glow in the breakdown |
-| Penalty text | #FF7A7A | Left-over points in the tally and floats |
-| Warning card | #FFFDF7 | Left-over warning background, banner suit chip |
-| Warning names | #C00000 | The left-over cards named in the warning |
-| Clock green, orange, red | #39E07A, #FF9F1C, #FF4D4D | Turn clock looks |
-| Tray stack | #A99E86, #CFC6B3 | The cards behind a tray card when you hold 2 or more |
-| Bezel | #111111 | Phone frame |
+| Page | `page` (#05070F) | Around the phone |
+| Ink | `ink` (#2B2A26) | Dark text on gold and on cards |
+| Card face | `card.face` (#FDFCF8) | Card faces, info cards |
+| Card rule | `card.rule` (#D6D0C4) | Card outline, mini card outline |
+| Card soft | `card.soft` (#7C6C48) | Card back hatching, extra card names |
+| Joker purple | `card.joker` (#6A1B9A) | Special joker card art |
+| Red | `card.red` (#E00000) | Bomb pop glow, burn flame, burned mark, reach plus |
+| Flame | `card.flame` (#F2B705) | The burn flame's inner flame |
+| Left over | `leftOver.ring` (#FF5A5A) | Left-over ring and glow in the breakdown |
+| Penalty text | `leftOver.text` (#FF7A7A) | Left-over points in the tally and floats |
+| Warning card | `paper` (#FFFDF7) | Left-over warning background, banner suit chip |
+| Warning names | `leftOver.names` (#C00000) | The left-over cards named in the warning |
+| Clock green, orange, red | `clock.green`, `clock.orange`, `clock.red` (#39E07A, #FF9F1C, #FF4D4D) | Turn clock looks |
+| Tray stack | `card.stack` (#A99E86, #CFC6B3) | The cards behind a tray card when you hold 2 or more |
+| Bezel | `bezel` (#111111) | Phone frame |
+| Starter bed | `starterBed` (#3A4A80) | The starter's lighter bed on the edge background |
 
-Suit colours on card faces are the four-colour deck from cards.js: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D. palette.json's `suit` colours are left from the neon cards, which were dropped on 2026-11-16 as too hard to read.
+Suit colours on card faces are the four-colour deck from cards.js, `card.suit`: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D. palette.json's `suit` colours are left from the neon cards, which were dropped on 2026-11-16 as too hard to read.
 
 ### Cards
 
@@ -898,7 +900,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 15. The Command-N menu item is called "New Turn" but starts a new game.
 16. The deal always deals the bot's card first, even when the bot deals; the code comment says the dealer deals to the other player first.
 17. The drag hit area (70%) is fixed. ARCHITECTURE.md › Mac first, iOS later says it's a setting, as in the mock.
-18. Partly fixed in 0.15.2: the app reads the table colours from `palette.json`. It still doesn't read `shapes.json`, a few colours aren't in the palette (page, ink, the starter bed, the clock's green, orange and red, the left-over reds), and the reach and burn icons are drawn only in Swift. Cards keep the cards.js art; the neon cards were dropped (2026-11-16).
+18. Partly fixed: the app reads every colour from `palette.json` (0.15.6). It still doesn't read `shapes.json`, and the reach and burn icons are drawn only in Swift. Cards keep the cards.js art; the neon cards were dropped (2026-11-16).
 19. Fixed in 0.15.2: the app reads its breakdown base, step and minimum from `timing.json` › profiles.human, so tuning the file changes both the app and the simulator. The other `timing.json` numbers (Hard-coded numbers 2, 19) still aren't read.
 20. Config fallbacks disagree: with no config, edge power per level falls back to 50% in the info card and chips but 10% in the breakdown. Config failing to load shows an error screen, so this only matters if a field goes missing.
 21. Reduce Motion (ARCHITECTURE.md › Presenter and cues) isn't supported, and there are no sound or haptic switches yet (none are needed until sound and haptics exist).

@@ -39,13 +39,13 @@ Agents on different machines can't message each other, so they talk through the 
 
 Each commander keeps one short entry here for the others: what changed that they need to know, newest first. Replace your entry rather than adding to it; the detail lives in commits, `TODO.md` and the specs.
 
-### From `@apple`, 2026-11-16 (Apple build 0.15.5, spec 3)
+### From `@apple`, 2026-11-16 (Apple build 0.15.6, spec 3)
 
 - **The layout move is done** (0.15.3). The engine is `engine/swift/`; link it by path from `apps/linux/`. Run the simulator from `engine/swift/`: its default config is `../../cribbage/minigames/config`. The Apple app is `apps/apple/`, with its scripts in `apps/apple/scripts/`.
 - **Spec 2** (0.15.4). Record headers carry `specVersion`. `GameRules` has a static `specVersion` (CribMazeGame's is 2), and readers accept headers without it. `seed1.jsonl` is re-recorded; only its header changed. Details: `CHANGELOG.md`, engine.md › Records › Lines.
 - **Checks.** On Linux, `scripts/check.sh` runs the JS checks, `swift test` in `engine/swift/`, then `apps/linux/scripts/check.sh` if it exists.
 - **Versions.** The version hook asks for a Linux bump on changes under `apps/linux/`, reading `config/version` in `apps/linux/project.godot`. If the version lives elsewhere, change `LINUX_VERSION` in `.claude/hooks/check-version-bump.sh`.
-- **Shared data the client reads.** Colours come from `design/neon/palette.json` and the breakdown pace from `timing.json` › profiles.human, as the Apple app does. Don't copy the values.
+- **Shared data the client reads.** Every colour comes from `design/neon/palette.json` (all of them since 0.15.6: the original cards are `colours.card`, plus `page`, `ink`, `paper`, `clock`, `leftOver` and more; ui.md › Colours names each) and the breakdown pace from `timing.json` › profiles.human, as the Apple app does. Don't copy the values.
 - **Game time.** `clockMs` is game time since the game started, paused whenever the turn timer pauses (engine.md › Clock and timer). A client MUST pause it the same way.
 - **Spec 3: the cue timings are in config** (0.15.5). Every motion and wait is in `config/fx.json`; ui.md › Motion says what each is and how a spring's duration and bounce map to stiffness and damping. Read the file, don't copy the numbers. `seed1.jsonl` is re-recorded; only its header's `specVersion` changed.
 - **Your asks, answered** (Bruce, 2026-11-16). The original cream cards stay; the neon cards are dropped as too hard to read. Saira Semi Condensed is tried in Crib Maze first, then the beta. Card art (SVG in `design/cards/`) and the colours still in code (`palette.json`) come from the Mac, and the Mac draws from them first so we can check they match; don't make your own copies meanwhile.

@@ -6,7 +6,7 @@ private let unitW: CGFloat = 50
 
 extension Suit {
     /// cards.js SUITS: four colours, each 4.5:1 on the face.
-    var colour: Color { [Color(hex: 0x000000), Color(hex: 0xE00000), Color(hex: 0x0070E0), Color(hex: 0x00843D)][rawValue] }
+    var colour: Color { Theme.suits[rawValue] }
     /// The glyph with the text-style selector, so it never draws as an emoji.
     var textGlyph: String { glyph + "\u{FE0E}" }
 }
@@ -66,13 +66,13 @@ struct CardFace: View {
                 p.addCurve(to: .init(x: 14, y: 40), control1: .init(x: 19, y: 52), control2: .init(x: 14, y: 47))
                 p.addCurve(to: .init(x: 20, y: 29), control1: .init(x: 14, y: 35), control2: .init(x: 17, y: 32))
                 p.addCurve(to: .init(x: 25, y: 18), control1: .init(x: 21, y: 25), control2: .init(x: 23, y: 21)); p.closeSubpath()
-            }.fill(Color(hex: 0xE00000))
+            }.fill(Theme.red)
             UnitShape { p in
                 p.move(to: .init(x: 25, y: 31)); p.addCurve(to: .init(x: 30, y: 44), control1: .init(x: 28, y: 36), control2: .init(x: 31, y: 39))
                 p.addCurve(to: .init(x: 25, y: 50), control1: .init(x: 30, y: 48), control2: .init(x: 28, y: 50))
                 p.addCurve(to: .init(x: 20, y: 44), control1: .init(x: 22, y: 50), control2: .init(x: 20, y: 48))
                 p.addCurve(to: .init(x: 25, y: 31), control1: .init(x: 20, y: 39), control2: .init(x: 23, y: 36)); p.closeSubpath()
-            }.fill(Color(hex: 0xF2B705))
+            }.fill(Theme.flame)
         } else if kind == "reach" {
             // A card, and a dashed extra card with a plus: one more card for a while.
             UnitShape { p in p.addRoundedRect(in: CGRect(x: 10, y: 24, width: 17, height: 24), cornerSize: CGSize(width: 2, height: 2)) }
@@ -84,7 +84,7 @@ struct CardFace: View {
             UnitShape { p in
                 p.move(to: .init(x: 31.5, y: 35.5)); p.addLine(to: .init(x: 31.5, y: 46.5))
                 p.move(to: .init(x: 26, y: 41)); p.addLine(to: .init(x: 37, y: 41))
-            }.stroke(Color(hex: 0xE00000), style: StrokeStyle(lineWidth: 2.8 * u, lineCap: .round))
+            }.stroke(Theme.red, style: StrokeStyle(lineWidth: 2.8 * u, lineCap: .round))
         } else {
             UnitShape { p in p.addEllipse(in: CGRect(x: 12, y: 29, width: 22, height: 22)) }.fill(Theme.ink)
             UnitShape { p in p.addRoundedRect(in: CGRect(x: 27, y: 25, width: 6, height: 5), cornerSize: CGSize(width: 1, height: 1),
@@ -94,7 +94,7 @@ struct CardFace: View {
             UnitShape { p in
                 let pts: [(CGFloat, CGFloat)] = [(41, 17), (42.2, 19.6), (45, 20), (43, 22), (43.5, 24.8), (41, 23.5), (38.5, 24.8), (39, 22), (37, 20), (39.8, 19.6)]
                 p.move(to: .init(x: pts[0].0, y: pts[0].1)); for q in pts.dropFirst() { p.addLine(to: .init(x: q.0, y: q.1)) }; p.closeSubpath()
-            }.fill(Color(hex: 0xE00000))
+            }.fill(Theme.red)
             UnitShape { p in p.addEllipse(in: CGRect(x: 16.6, y: 33.6, width: 4.8, height: 4.8)) }.fill(.white.opacity(0.35))
         }
     }

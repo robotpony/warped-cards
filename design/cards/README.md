@@ -36,19 +36,19 @@ The Mac draws the suit as a 34 unit text glyph today. The 24 unit box in `face-s
 
 ## Colours
 
-Hex values from ui.md › Look until they move into `palette.json`:
+The SVGs carry hex values so they open anywhere. The same colours are in `design/neon/palette.json` › colours (since Apple 0.15.6), and a build SHOULD tint from there:
 
-| Role | Hex |
-|---|---|
-| Card face | #FDFCF8 |
-| Card rule | #D6D0C4 |
-| Ink (bomb) | #2B2A26 |
-| Card soft (fuse, hatching, extra names) | #7C6C48 |
-| Joker purple | #6A1B9A |
-| Red (spark, plus, flame) | #E00000 |
-| Flame gold | #F2B705 |
+| Role | Palette key | Hex |
+|---|---|---|
+| Card face | `card.face` | #FDFCF8 |
+| Card rule | `card.rule` | #D6D0C4 |
+| Ink (bomb) | `ink` | #2B2A26 |
+| Card soft (fuse, hatching, extra names) | `card.soft` | #7C6C48 |
+| Joker purple | `card.joker` | #6A1B9A |
+| Red (spark, plus, flame) | `card.red` | #E00000 |
+| Flame gold | `card.flame` | #F2B705 |
 
-Suits: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D.
+Suits, `card.suit`: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D.
 
 ## Differences from the Mac to check
 
