@@ -62,23 +62,19 @@
   .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; font-size: 11px; color: var(--muted); padding: 2px 6px 0; }
   .legend span { display: inline-flex; align-items: center; gap: 4px; } .legend svg { flex: none; }
   .play.off { cursor: default; }
-  /* Radial menu: the chosen play lifts, the rest dim, and its choices fan out above it. */
+  /* Play sheet: choosing a play covers the plays with its choices, one row each, and Cancel last. */
   .dock { position: relative; }
-  .plays.choosing .play:not(.sel) { opacity: .28; }
-  .play.sel { transform: translateY(-2px) scale(1.04); z-index: 2; }
-  .radial { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
-  .rc { position: absolute; pointer-events: auto; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 7px; white-space: nowrap;
-        font: 700 13px/1.05 "Saira Semi Condensed", system-ui, sans-serif; color: #0A0E1F; background: var(--gold); border: 0; border-radius: 999px;
-        padding: 3px 11px 3px 3px; cursor: pointer; box-shadow: 0 0 0 2px #0A0E1F, 0 0 14px rgba(255,212,71,.6), 0 4px 10px rgba(0,0,0,.5);
-        animation: pop .16s ease-out both; }
-  .rc i { width: 26px; height: 26px; border-radius: 50%; background: #0A0E1F; color: var(--gold); display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 15px; flex: none; }
-  .rc small { display: block; font-size: 10px; font-weight: 600; opacity: .75; }
-  .rc:disabled { background: #2E3A66; color: #8C97BD; box-shadow: 0 0 0 2px #0A0E1F, 0 4px 10px rgba(0,0,0,.5); cursor: default; }
-  .rc:disabled i { color: #8C97BD; }
-  .rc.on { background: var(--cyan); box-shadow: 0 0 0 2px #0A0E1F, 0 0 14px rgba(60,242,255,.6); }
-  .rc.sm { padding: 3px; } .rc.sm i { width: 30px; height: 30px; font-size: 15px; }
-  @keyframes pop { from { opacity: 0; transform: translate(-50%, -20%) scale(.6); } }
-  @media (prefers-reduced-motion: reduce) { .rc { animation: none; } }
+  .sheet { position: absolute; inset: 0; z-index: 6; background: var(--panel); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; animation: rise .14s ease-out both; }
+  .sh-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sheet .play { cursor: default; outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 14px rgba(255,212,71,.55); margin: 2px 0 4px 2px; }
+  .sr { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--text); background: #0A0E1F; border: 1.5px solid var(--rim); border-radius: 10px; padding: 4px 10px 4px 5px; cursor: pointer; flex: none; }
+  .sr i { width: 28px; height: 28px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 15px; font-weight: 800; color: #0A0E1F; background: var(--gold); }
+  .sr b { display: block; font-size: 14px; line-height: 1.2; } .sr small { display: block; font-size: 11.5px; line-height: 1.2; color: var(--muted); }
+  .sr.go { border-color: var(--gold); } .sr.on { border-color: var(--cyan); box-shadow: 0 0 10px rgba(60,242,255,.35); } .sr.on i { background: var(--cyan); }
+  .sr:disabled { cursor: default; opacity: .45; } .sr:disabled i { background: #2E3A66; color: #8C97BD; }
+  .cancel { font: inherit; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1.5px solid var(--rim); border-radius: 999px; padding: 6px 16px; cursor: pointer; flex: none; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
   .jk { font: inherit; font-size: 13px; font-weight: 700; border: 1.5px solid var(--violet); color: var(--violet); background: transparent; border-radius: 8px; padding: 2px 8px; cursor: pointer; }
   .jk:disabled { opacity: .35; cursor: default; } .jk.on { background: var(--violet); color: var(--bg); }
   .acts .btn { font-size: 13px; padding: 3px 9px; }
@@ -741,57 +737,41 @@
     let d = "";
     if (G.phase === "done") d += `<div class="row" style="justify-content:space-between"><span class="muted">Hand ${G.hand} done</span><button class="btn go" id="nextHand">Deal the next hand</button></div>`;
     d += `<div class="row"><span class="lbl">Your plays · ${left(me).length} left</span></div>`;
-    // The chosen play's choices, for the radial menu: every choice shows, greyed with a reason when it can't be used.
-    const doorIcon = `<svg width="16" height="18" viewBox="0 0 16 18"><rect x="3.5" y="1.5" width="9" height="14" rx="1.5" transform="rotate(22 8 9)" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
-    let choices = [];
+    // The chosen play's sheet: one row a choice, greyed with the reason when it can't be used, and Cancel always.
+    const doorIcon = `<svg width="16" height="18" viewBox="0 0 16 18"><rect x="3.5" y="1.5" width="9" height="14" rx="1.5" transform="rotate(22 8 9)" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>`;
+    let sheet = "";
     if (myTurn && G.sel) {
-      const x = G.sel;
-      if (G.mode === "flip") choices = M.switches.map((_, k) => ({ attr: `data-flip="${k}"`, icon: LETTERS[k], ok: canFlip(k), sm: true, why: "flipped" }))
-        .concat([{ attr: `data-act="flip"`, icon: "✕", ok: true, sm: true }]);
-      else {
-        const closeWhy = !x.s ? "no suit" : (me.closed || 0) >= c.closeMax ? "one a hand" : "";
-        const flipWhy = !M.switches.length ? "no switches" : M.switches.every((_, k) => !canFlip(k)) ? "all flipped" : "";
-        choices = [
-          { attr: `data-act="close"`, icon: doorIcon, text: G.mode === "close" ? "Tap a path" : "Close a door", ok: !closeWhy, why: closeWhy, on: G.mode === "close" },
-          { attr: `data-act="walk"`, icon: "▶", text: `Walk ${x.p}`, ok: true },
-          { attr: `data-act="flip"`, icon: "⇄", text: "Flip", ok: !flipWhy, why: flipWhy },
-        ];
+      const x = G.sel, row = (attr, icon, title, sub, ok = true, cls = "") => `<button class="sr ${cls}" ${attr} ${ok ? "" : "disabled"}><i>${icon}</i><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`;
+      let rows = "";
+      if (G.mode === "flip") {
+        rows = M.switches.map((_, k) => row(`data-flip="${k}"`, LETTERS[k], `Flip switch ${LETTERS[k]}`, canFlip(k) ? "" : "Already flipped this hand", canFlip(k))).join("") +
+          row(`data-act="flip"`, "‹", "Back", "");
+      } else if (G.mode === "close") {
+        rows = row(`data-act="close"`, doorIcon, "Tap a path on the maze", `It becomes a ${GLYPH[x.s]}${Math.max(1, Math.round(x.p * c.closeMul))} door. Tap here to go back`, true, "on");
+      } else {
+        const closeWhy = !x.s ? "A play with no suit can't make a door" : (me.closed || 0) >= c.closeMax ? "You've closed a door this hand" : "";
+        const flipWhy = !M.switches.length ? "No switches on this maze" : M.switches.every((_, k) => !canFlip(k)) ? "Every switch was flipped this hand" : "";
+        rows = row(`data-act="walk"`, "▶", `Walk ${x.p} steps`, pv ? (pv.won ? "Reaches the goal!" : `Ends ${Math.round(previewCost(pv))} from the goal${pv.ev.includes("door_hit") ? ", hits a door" : ""}${pv.ev.includes("stopped") ? ", stopped by a door" : ""}${pv.ev.includes("bounce") ? ", bounces off a gate" : ""}`) : "", true, "go") +
+          row(`data-act="close"`, doorIcon, "Close a door", closeWhy || `Put a ${GLYPH[x.s]}${Math.max(1, Math.round(x.p * c.closeMul))} door on an open path`, !closeWhy) +
+          row(`data-act="flip"`, "⇄", "Flip a switch", flipWhy || "Swap a switch's open and shut passages", !flipWhy);
       }
+      sheet = `<div class="sheet"><div class="sh-top"><div class="play">${playFace(x)}</div><button class="cancel" data-act="cancel">✕ Cancel</button></div>${rows}</div>`;
     }
-    d += `<div class="plays${choices.length ? " choosing" : ""}">${me.plays.filter(x => !x.used).map(x => `<div class="play${G.sel === x ? " sel" : ""}${myTurn ? "" : " off"}" role="button" tabindex="0" data-play="${x.id}">
-        <b>${x.p}</b> <span class="su" style="color:${x.s ? FACECOL[x.s] : "inherit"}">${x.s ? GLYPH[x.s] : "no suit"}</span>
-        <small>${x.c.split(" ").map(t => cardText(t, FACECOL)).join(" ")}</small></div>`).join("")}</div>`;
+    d += `<div class="plays">${me.plays.filter(x => !x.used).map(x => `<div class="play${G.sel === x ? " sel" : ""}${myTurn ? "" : " off"}" role="button" tabindex="0" data-play="${x.id}">${playFace(x)}</div>`).join("")}</div>`;
     const js = Object.keys(JOKERS).filter(j => me.jokers[j]);
     d += `<div class="row"><span class="lbl">Jokers</span>${js.map(j => `<button class="jk${G.mode === j ? " on" : ""}" data-joker="${j}" ${myTurn && j !== "key" && me.jokerUsed !== G.turnNo ? "" : "disabled"} title="${JOKER_HINT[j]}">${JOKERS[j]}${me.jokers[j] > 1 ? " ×" + me.jokers[j] : ""}</button>`).join("") || `<span class="muted" style="font-size:13px">Stars give jokers</span>`}</div>`;
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
-    d += `<div class="radial">${choices.map(o => `<button class="rc${o.sm ? " sm" : ""}${o.on ? " on" : ""}" ${o.attr} ${o.ok ? "" : "disabled"}>` +
-      `<i>${o.icon}</i>${o.text ? `<span>${o.text}${!o.ok && o.why ? `<small>${o.why}</small>` : ""}</span>` : ""}</button>`).join("")}</div>`;
+    d += sheet;
     const keepScroll = $("dock").querySelector(".plays")?.scrollTop || 0;
     $("dock").innerHTML = d;
     $("dock").querySelector(".plays").scrollTop = keepScroll;
-    if (choices.length) placeRadial();
+
     $("won").hidden = G.won === null;
     if (G.won !== null) { const p = G.P[G.won]; $("wonTitle").textContent = p.human ? "You reach the goal!" : `${p.name} reaches the goal`; $("wonText").textContent = `Hand ${G.hand}. Seed ${G.seedText}.`; }
     $("log").textContent = G.log.slice(-80).map(e => JSON.stringify(e)).join("\n"); $("log").scrollTop = 1e9;
   }
-  // Lay the choices around the chosen play: walk above it, close a door to its left, flip to its right.
-  // A side choice that won't fit beside the tile moves up, next to walk. Switch letters sit in a row above.
-  function placeRadial() {
-    const dock = $("dock"), tile = dock.querySelector(".play.sel"), items = [...dock.querySelectorAll(".rc")];
-    if (!tile) return;
-    const D = dock.getBoundingClientRect(), T = tile.getBoundingClientRect(), pad = 4, gap = 6;
-    const L = T.left - D.left, R = T.right - D.left, x0 = (L + R) / 2, y0 = T.top - D.top + T.height / 2, yTop = T.top - D.top - 18;
-    const fitX = (x, w) => Math.min(D.width - w / 2 - pad, Math.max(w / 2 + pad, x));
-    const put = (el, x, y, k) => { el.style.left = x + "px"; el.style.top = y + "px"; el.style.animationDelay = (k * 30) + "ms"; };
-    const row = (els) => { const ws = els.map(el => el.offsetWidth), tot = ws.reduce((a, w) => a + w, 0) + gap * (els.length - 1);
-      let x = fitX(x0, tot) - tot / 2; els.forEach((el, k) => { put(el, x + ws[k] / 2, yTop, k); x += ws[k] + gap; }); };
-    if (items.length !== 3 || items[0].classList.contains("sm")) return row(items);
-    const [close, walk, flip] = items, cw = close.offsetWidth, fw = flip.offsetWidth;
-    const leftOk = L - gap - cw >= pad, rightOk = R + gap + fw <= D.width - pad;
-    if (leftOk) put(close, L - gap - cw / 2, y0, 1);
-    if (rightOk) put(flip, R + gap + fw / 2, y0, 2);
-    row([leftOk ? null : close, walk, rightOk ? null : flip].filter(Boolean));
-  }
+  const playFace = (x) => `<b>${x.p}</b> <span class="su" style="color:${x.s ? FACECOL[x.s] : "inherit"}">${x.s ? GLYPH[x.s] : "no suit"}</span>
+        <small>${x.c.split(" ").map(t => cardText(t, FACECOL)).join(" ")}</small>`;
   // The frame loop: runs while a token hops or the camera moves.
   function frame(now) {
     G.raf = 0;
@@ -873,6 +853,7 @@
     if (!b || b.disabled || b.classList.contains("off")) return;
     if (b.id === "nextHand") { G.turnNo = (G.turnNo || 0) + 1; return startHand(); }
     if (b.dataset.play) { const x = me.plays.find(x => x.id === b.dataset.play); G.sel = G.sel === x ? null : x; G.mode = null; G.flash = null; return render(); }
+    if (b.dataset.act === "cancel") { G.sel = null; G.mode = null; G.flash = null; return render(); }
     if (b.dataset.act === "walk") { G.turnNo = (G.turnNo || 0) + 1; return doWalk(me, G.sel, endTurn); }
     if (b.dataset.act === "close" || b.dataset.act === "flip") { G.mode = G.mode === b.dataset.act ? null : b.dataset.act; return render(); }
     if (b.dataset.flip !== undefined) { G.turnNo = (G.turnNo || 0) + 1; doFlip(me, G.sel, +b.dataset.flip); return endTurn(); }
