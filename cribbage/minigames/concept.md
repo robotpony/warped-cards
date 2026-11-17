@@ -172,7 +172,7 @@ Which prizes go to which layer, and how they balance, is open.
 
 ## Hints
 
-Hints nudge a player who seems stuck. The app has the hooks (`swift/App/Shared/Hints.swift`): each hint is a case with a rule for when it shows, and the place it points at blinks. The first one blinks the power jokers when no sets are left.
+Hints nudge a player who seems stuck. The app has the hooks (`apps/apple/Shared/Hints.swift`): each hint is a case with a rule for when it shows, and the place it points at blinks. The first one blinks the power jokers when no sets are left.
 
 Next is the discard, which is untimed (decided 2026-11-15). Ideas under discussion:
 
@@ -194,7 +194,7 @@ So classic advice is a good guide, except that it overrates hand flushes and und
 
 #### Discard principles
 
-Hints show a principle and the cards it's about, never the cards to throw (decided 2026-11-15): we don't know the game's balance well enough to coach, and classic cribbage knowledge may not carry over. Each principle has to earn its place with data. The code is `swift/Sources/CribMaze/Principles.swift`; the measured worth is in `config/hints.json`, and a hint shows the applying principle worth the most, if it's worth at least `minWorth` (5 steps).
+Hints show a principle and the cards it's about, never the cards to throw (decided 2026-11-15): we don't know the game's balance well enough to coach, and classic cribbage knowledge may not carry over. Each principle has to earn its place with data. The code is `engine/swift/Sources/CribMaze/Principles.swift`; the measured worth is in `config/hints.json`, and a hint shows the applying principle worth the most, if it's worth at least `minWorth` (5 steps).
 
 | Principle | Hint | Applies to | Worth on the grid | Best keep follows it |
 |---|---|---|---|---|

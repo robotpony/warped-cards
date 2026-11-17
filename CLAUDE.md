@@ -22,17 +22,18 @@ Swift is the first build, not the only one: Linux and Windows ports are planned,
 - Rules math is integers with a stated rounding mode; ordering and tie-breaks are stated; randomness only from the named dice streams (`PORTING.md` › Same game, every build).
 - New behaviour comes with a fixture a port can check, not only a Swift test (`cribbage/minigames/fixtures/README.md`).
 - Platform-specific work (haptics, audio, shaders, file locations) sits behind an interface with a neutral description in `ui.md` › Platform seams. Assets stay in open formats.
+- `engine/swift/` must keep building on Linux: Foundation only, same package and library names, no actors or async without a `` `@linux` `` item first, and a `` `@linux` `` item in `TODO.md` when a client API changes (`PORTING.md` › Layout). Don't edit `apps/linux/`.
 - `fixtures/spec.test.js` checks the spec against the Swift code. When it fails, fix the spec; don't loosen the test.
 
 ## Versions and tracking
 
 - Two versions, kept apart (`PORTING.md` › Versions, decided 2026-11-16). The **spec version** (`specVersion` in `cribbage/minigames/spec.json`, a whole number) names the shared contract and bumps when a port would have to change something; a rules version bump always bumps it. Each platform has its own **build version**, below for the Apple build, and says which spec version it implements.
-- Build versions are `major.minor.patch`, pre-1.0: patch for fixes, tweaks, refactors and docs; minor when a capability is added or removed; major only when Bruce asks. A borderline change is patch; a fix plus a feature is minor. The version lives in `MARKETING_VERSION` (`swift/App/project.yml`). The top `CHANGELOG.md` entry is the newest build a player would notice, so it can be older than the version. No build numbers, VERSION file or hand-made tags.
+- Build versions are `major.minor.patch`, pre-1.0: patch for fixes, tweaks, refactors and docs; minor when a capability is added or removed; major only when Bruce asks. A borderline change is patch; a fix plus a feature is minor. The version lives in `MARKETING_VERSION` (`apps/apple/project.yml`). The top `apps/apple/CHANGELOG.md` entry is the newest Apple build a player would notice, so it can be older than the version. No build numbers, VERSION file or hand-made tags.
 - `.claude/hooks/check-version-bump.sh` refuses a commit that changes the engine, the apps or `config/*.json` without a version bump. A build with nothing a player would notice still bumps (patch); it gets no changelog entry, only the commit message.
 
 ## Agents
 
-Shared code sits under `engine/`, each platform's client under `apps/<platform>/` (`PORTING.md` › Layout, decided 2026-11-16; the Apple build is still in `swift/` until it moves). Who works where, what each agent owns, and how they leave each other work: `AGENTS.md`. Agents on different machines talk through `PLAN.md`, `TODO.md` and `BUGS.md` lines that start with a handle in backticks, such as `` `@apple` ``. On starting, pull and grep for your handle.
+Shared code sits under `engine/`, each platform's client under `apps/<platform>/` (`PORTING.md` › Layout, decided 2026-11-16). Who works where, what each agent owns, and how they leave each other work: `AGENTS.md`. Agents on different machines talk through `PLAN.md`, `TODO.md` and `BUGS.md` lines that start with a handle in backticks, such as `` `@apple` ``. On starting, pull and grep for your handle.
 
 ## Commits
 
@@ -43,7 +44,7 @@ Same as warped-space-command (its CLAUDE.md › Working with Claude Code), decid
 - **No Claude co-author.** No `Co-Authored-By: Claude` / `@anthropic.com` trailer and no "Generated with Claude Code" line, whatever the harness's attribution reminder says. `.claude/hooks/check-commit-message.sh` refuses a commit with one.
 - Stage only the files the task touched (`git commit -- <paths>`, never `git add -A`), and diff shared files first: other sessions share this checkout.
 - Commit straight to `main` and push. Never force-push or amend a pushed commit. Quote a commit hash only from git's output after the commit.
-- `CHANGELOG.md`: newest first, `## 0.x.y — YYYY-MM-DD` with `### Added`, `### Changed`, `### Fixed`, `### Removed`. Written for players in on-screen names, one or two sentences an item. No Unreleased section; provenance and build details go in the commit message. Style: `~/projects/utilities/warped-space-command/docs/changelog-style.md`.
+- `apps/apple/CHANGELOG.md` (each platform keeps its own; the top-level `CHANGELOG.md` lists spec changes only): newest first, `## 0.x.y — YYYY-MM-DD` with `### Added`, `### Changed`, `### Fixed`, `### Removed`. Written for players in on-screen names, one or two sentences an item. No Unreleased section; provenance and build details go in the commit message. Style: `~/projects/utilities/warped-space-command/docs/changelog-style.md`.
 - `PLAN.md`: `## Phase N · Name` headings with `- [ ]` items. `TODO.md`: `- [ ]` lines. `BUGS.md`: `## Open` and `## Fixed` headings exactly, one line per bug with (version, who, date). Items are one short line pointing at the spec.
 - Space Command scans the repo: write tags like `#todo` in backticks in docs, or they become tasks.
-- Noddy Yookerspiel, the Crib Maze beta (`swift/App`, scheme `CribMazeBeta`; called Crib Maze Beta before 0.9.1), is the match turn mock from 0.8.0 on; `match-turn.html` is frozen at r16. Match turn rule changes bump `rulesVersion` in `cribbage/minigames/config/rules.json` and `MatchTurn.rulesVersion`, and add a line to `cribbage/minigames/mocks/README.md` › rules versions. `/debug` builds and runs the beta.
+- Noddy Yookerspiel, the Crib Maze beta (`apps/apple`, scheme `CribMazeBeta`; called Crib Maze Beta before 0.9.1), is the match turn mock from 0.8.0 on; `match-turn.html` is frozen at r16. Match turn rule changes bump `rulesVersion` in `cribbage/minigames/config/rules.json` and `MatchTurn.rulesVersion`, and add a line to `cribbage/minigames/mocks/README.md` › rules versions. `/debug` builds and runs the beta.

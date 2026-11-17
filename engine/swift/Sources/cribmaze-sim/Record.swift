@@ -16,7 +16,7 @@ import GameKit
 import GameRecord
 
 func runRecord(_ args: [String]) {
-    var games = 1, level = "medium", seed: UInt64 = 1, out = "records", folder = "../cribbage/minigames/config"
+    var games = 1, level = "medium", seed: UInt64 = 1, out = "records", folder = "../../cribbage/minigames/config"
     var i = 0
     func value() -> String { i += 1; guard i < args.count else { usage("\(args[i - 1]) needs a value") }; return args[i] }
     while i < args.count {

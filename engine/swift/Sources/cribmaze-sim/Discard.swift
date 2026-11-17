@@ -14,7 +14,7 @@ import Foundation
 import GameKit
 
 func runDiscard(_ args: [String]) {
-    var hand: [Card] = [], level = "medium", samples = 40, seed: UInt64 = 1, folder = "../cribbage/minigames/config"
+    var hand: [Card] = [], level = "medium", samples = 40, seed: UInt64 = 1, folder = "../../cribbage/minigames/config"
     var i = 0
     func value() -> String { i += 1; guard i < args.count else { usage("\(args[i - 1]) needs a value") }; return args[i] }
     while i < args.count {
@@ -96,7 +96,7 @@ func gridValue(_ keep: [Card], starters: [Card], samples: Int, seed: UInt64, con
 // follow it minus those that don't. Prints, per principle, how often it applies, its mean worth, and
 // how often the deal's best keep follows it (concept.md › Hints).
 func runPrinciples(_ args: [String]) {
-    var deals = 200, samples = 20, seed: UInt64 = 1, level = "medium", folder = "../cribbage/minigames/config"
+    var deals = 200, samples = 20, seed: UInt64 = 1, level = "medium", folder = "../../cribbage/minigames/config"
     var i = 0
     func value() -> String { i += 1; guard i < args.count else { usage("\(args[i - 1]) needs a value") }; return args[i] }
     while i < args.count {

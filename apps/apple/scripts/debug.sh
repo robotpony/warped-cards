@@ -1,24 +1,24 @@
 #!/bin/sh
 # Build Noddy Yookerspiel (the Crib Maze beta) as it stands and run it, for review.
-#   scripts/debug.sh              Debug build
-#   scripts/debug.sh release      Release build (separate derived data)
-#   scripts/debug.sh -- --demo    pass launch flags (stderr goes to swift/.build-app/debug.log)
+#   apps/apple/scripts/debug.sh              Debug build
+#   apps/apple/scripts/debug.sh release      Release build (separate derived data)
+#   apps/apple/scripts/debug.sh -- --demo    pass launch flags (stderr goes to apps/apple/.build-app/debug.log)
 # On a failed build it prints the errors and leaves the running copy alone.
 set -eu
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 
 CONFIG=Debug
 if [ "${1:-}" = "release" ]; then CONFIG=Release; shift; fi
 [ "${1:-}" = "--" ] && shift
 SCHEME=CribMazeBeta
 APP="Noddy Yookerspiel"
-DERIVED=swift/.build-app
-[ "$CONFIG" = Release ] && DERIVED=swift/.build-app-release
-LOG=swift/.build-app-$CONFIG.log
+DERIVED=apps/apple/.build-app
+[ "$CONFIG" = Release ] && DERIVED=apps/apple/.build-app-release
+LOG=apps/apple/.build-app-$CONFIG.log
 mkdir -p "$DERIVED"
 
-(cd swift/App && xcodegen generate --quiet)
-if ! xcodebuild -project swift/App/CribMaze.xcodeproj -scheme "$SCHEME" -configuration "$CONFIG" \
+(cd apps/apple && xcodegen generate --quiet)
+if ! xcodebuild -project apps/apple/CribMaze.xcodeproj -scheme "$SCHEME" -configuration "$CONFIG" \
      -derivedDataPath "$DERIVED" -skipPackageUpdates build > "$LOG" 2>&1; then
   echo "Build failed ($CONFIG). Errors:" >&2
   grep -E "error:" "$LOG" | sort -u | head -30 >&2

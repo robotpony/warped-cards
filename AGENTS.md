@@ -9,7 +9,7 @@ Who works on Warped Cards, where they run, and what each one owns. Claude Code s
 | Handle | Role | Runs on | Checkout | Owns |
 |---|---|---|---|---|
 | `@bruce` | Owner. Final say on anything that changes play | | | Everything |
-| `@apple` | Apple commander: the Swift engine, the Mac and iOS apps | Mac | The Mac's own checkout (shared into the Linux VM at `/mnt/mac/games/warped-cards`) | `apps/apple/` and its build version; `engine/swift/` as the reference build (both in `swift/` until the move) |
+| `@apple` | Apple commander: the Swift engine, the Mac and iOS apps | Mac | `~/projects/games/warped-cards` on the Mac (shared into the Linux VM at `/mnt/mac/games/warped-cards`) | `apps/apple/` and its build version; `engine/swift/` as the reference build |
 | `@linux` | Linux commander: the Linux port | Linux VM | `~/src/warped-cards-linux`, its own clone | `apps/linux/` and its build version |
 | `@scorekeep` | Classic cribbage rule wording | Mac | The scorekeep repo | `scorekeep/docs/rules/cribbage.md` |
 

@@ -22,13 +22,13 @@ Rung 6 before 7: scripted replay checks the rules without the dice, so a dice bu
 | Build | Rungs | How |
 |---|---|---|
 | JS mocks | 1 to 4 | `node --test cribbage/minigames/` |
-| Swift | 1, 2, 3, 5 to 8 | `swift test` in `swift/` (`CribMazeTests` › golden records) |
+| Swift | 1, 2, 3, 5 to 8 | `swift test` in `engine/swift/` (`CribMazeTests` › golden records) |
 
 ## Making fixtures
 
 - `make-dice.js` writes `dice.json` from `mocks/dice.js`. Rerun it only when Dice changes, and say so in the commit.
 - `make-counting.js` fills in card indexes from the mock counter and stops if it disagrees with a hand-worked total.
-- `swift run cribmaze-sim record --games 1 --seed 1 --out ../cribbage/minigames/fixtures/records/seed1.jsonl` (from `swift/`) re-records the golden game. Re-record only when a rules change breaks it on purpose, and say so in the commit. A re-recorded game is a new reference for every port.
+- `swift run cribmaze-sim record --games 1 --seed 1 --out ../../cribbage/minigames/fixtures/records/seed1.jsonl` (from `engine/swift/`) re-records the golden game. Re-record only when a rules change breaks it on purpose, and say so in the commit. A re-recorded game is a new reference for every port.
 - `spec.test.js` isn't a fixture: it checks that `engine.md` names every action and event the Swift engine writes, with its fields, and shows every config file's shape. When it fails, fix the spec (or the code) in the same change.
 
 ## What the records don't reach yet

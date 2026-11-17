@@ -338,7 +338,7 @@ The release app saves a game in progress as its seed, config and actions, the sa
 
 | Version | Where | Example |
 |---|---|---|
-| App version | `CHANGELOG.md` top heading, kept in step with `MARKETING_VERSION` in `project.yml` | 0.4.0 |
+| App version | `apps/apple/CHANGELOG.md` top heading, kept in step with `MARKETING_VERSION` in `project.yml` | 0.4.0 |
 | Build | Git commit count, stamped at build time (as Scorekeep does) | 57 |
 | Commit | Short git hash, stamped into Info.plist | 03155ff |
 | Rules version | `CribMaze.rulesVersion`, the same numbering as the mock's `RULES` | match-r14 |
@@ -357,18 +357,21 @@ All five go in every record header. A change to match turn rules bumps the rules
 
 ## Repo layout
 
+The layout for every platform is PORTING.md › Layout. The Swift parts:
+
 ```
-swift/
+engine/swift/
   Package.swift ............ engine, GameRecord, GameFX, stats, CLI
   Sources/
     GameKit/  CardKit/  CribbageKit/  CribMaze/  CribMazeBots/
     GameRecord/  CribMazeStats/  GameFX/  cribmaze-sim/
   Tests/ ................... one test target per module
-  App/
-    project.yml ............ XcodeGen: Crib Maze, Noddy Yookerspiel
-    Shared/ ................ scenes, presenter, GameSession
-    Beta/ .................. records, replay, stats, animation lab, tuning
-    Resources/ ............. sounds, haptic patterns, card art
+apps/apple/
+  project.yml ............ XcodeGen: Crib Maze, Noddy Yookerspiel
+  Shared/ ................ scenes, presenter, GameSession
+  Beta/ .................. records, replay, stats, animation lab, tuning
+  Resources/ ............. sounds, haptic patterns, card art
+  scripts/ ............... debug.sh, release.sh
 cribbage/minigames/
   engine.md ................ engine spec, written to port
   config/ .................. rules, jokers, bots, timing, fx (JSON)
@@ -383,7 +386,7 @@ Each phase ends with something that runs. Phases A to D are engine work and can 
 
 | Phase | What | Done when |
 |---|---|---|
-| A · Foundations | `swift/` package and XcodeGen project with both targets, version stamping, `scripts/check.sh` (format, build, test), the banned-calls test | Both apps launch to an empty window showing their versions |
+| A · Foundations | Swift package and XcodeGen project with both targets, version stamping, `scripts/check.sh` (format, build, test), the banned-calls test | Both apps launch to an empty window showing their versions |
 | B · Cards and counting | Engine spec first draft; GameKit (protocol, Dice, Step), CardKit, CribbageKit counting written fresh; port `scoring.test.js` to shared fixtures; config loading and checks | Swift and JS pass the same fixtures |
 | C · Records | Done in 0.15.0 (2026-11-16). GameRecord writer, reader, replayer, counts; `cribmaze-sim replay` and `record`; the beta writes through it | A toy game records, verifies and replays in scripted mode |
 | D · Match turn engine | CribMaze match turn at the rules of the time (r15; r23 now), jokers and reveals, special jokers, config; bots at every level; `cribmaze-sim run` and `report` | 10,000 bot turns run clean; bot numbers match the mock's within noise |

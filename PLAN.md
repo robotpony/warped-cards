@@ -7,7 +7,7 @@ Where things live:
 - **Concept, decisions and learnings for each game:** the game's `concept.md` (Crib Maze: [cribbage/minigames/concept.md](cribbage/minigames/concept.md)).
 - **Player-facing rules:** the game's `rules.md`. **Stats and the simulator:** `stats.md`.
 - **Mocks and their findings:** `mocks/README.md`. **Playtest data and plans:** `playtests/`.
-- **Small next tasks:** [TODO.md](TODO.md). **Bugs:** [BUGS.md](BUGS.md). **Changes:** [CHANGELOG.md](CHANGELOG.md).
+- **Small next tasks:** [TODO.md](TODO.md). **Bugs:** [BUGS.md](BUGS.md). **Changes:** [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md) (the Mac app), [CHANGELOG.md](CHANGELOG.md) (spec).
 
 Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run side by side: design (rules and mocks) and engine (spec, Swift engine, simulator). The Mac beta app follows the engine; iOS comes after it. How the code fits together: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -80,7 +80,7 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 - [ ] First human playtest of the beta, a whole game once the maze plays (`playtests/plan.md`)
 - [ ] Publish the first release on GitHub, after the first playtest (`RELEASING.md`)
 - [ ] Joker reveals, and the begin and end effects, in the beta (`ARCHITECTURE.md` › Effects)
-- [ ] More hints: an idle player, a missed set, a joker never used (`swift/App/Shared/Hints.swift`)
+- [ ] More hints: an idle player, a missed set, a joker never used (`apps/apple/Shared/Hints.swift`)
 - [ ] Beta tools: records, replay, stats, animation lab, tuning; after GameRecord (`ARCHITECTURE.md` › F)
 - [ ] The rest of a round: the maze, pegging on it and the shop, as each design settles (`ARCHITECTURE.md` › G)
 - [ ] iOS, and TestFlight for sharing the beta (`ARCHITECTURE.md` › H)

@@ -16,7 +16,7 @@ import Foundation
 import GameKit
 
 func runGame(_ args: [String]) {
-    var games = 500, level = "medium", seed: UInt64 = 1, own = false, burnDead = false, freshTray = false, freshDeck = false, folder = "../cribbage/minigames/config"
+    var games = 500, level = "medium", seed: UInt64 = 1, own = false, burnDead = false, freshTray = false, freshDeck = false, folder = "../../cribbage/minigames/config"
     var i = 0
     func value() -> String { i += 1; guard i < args.count else { usage("\(args[i - 1]) needs a value") }; return args[i] }
     while i < args.count {

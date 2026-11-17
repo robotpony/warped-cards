@@ -3,7 +3,7 @@ import Testing
 @testable import GameKit
 
 /// The repo's shared fixtures folder, found from this file's path.
-let fixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../cribbage/minigames/fixtures").standardized
+let fixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../../cribbage/minigames/fixtures").standardized
 
 struct DiceFixture: Decodable {
     struct Case: Decodable {

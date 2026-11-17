@@ -10,8 +10,8 @@ const path = require('node:path');
 const root = path.join(__dirname, '..', '..', '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 const spec = read('cribbage/minigames/engine.md');
-const matchTurn = read('swift/Sources/CribMaze/MatchTurn.swift');
-const game = read('swift/Sources/CribMaze/CribMazeGame.swift');
+const matchTurn = read('engine/swift/Sources/CribMaze/MatchTurn.swift');
+const game = read('engine/swift/Sources/CribMaze/CribMazeGame.swift');
 
 // Splits text on commas at bracket depth 0.
 function topLevel(text) {

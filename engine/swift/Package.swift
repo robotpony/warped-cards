@@ -1,6 +1,6 @@
 // swift-tools-version: 6.2
 // Crib Maze engine: rules, bots and the simulator, with no UI.
-// Design: ../ARCHITECTURE.md. Rules: ../cribbage/minigames/engine.md.
+// Design: ../../ARCHITECTURE.md. Rules: ../../cribbage/minigames/engine.md.
 import PackageDescription
 
 let strict: [SwiftSetting] = [.unsafeFlags(["-warnings-as-errors"])]

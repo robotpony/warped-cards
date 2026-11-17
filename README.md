@@ -46,7 +46,7 @@ Steps from both kinds of play walk your token through a maze in place of a pegbo
   </tr>
 </table>
 
-Rendered from the beta with `--snapshot` (seed 2; seed 7 for the deck, with `--burn g11 --play` and `--deal --turn 2`); see `swift/App/Beta/Snapshot.swift`.
+Rendered from the beta with `--snapshot` (seed 2; seed 7 for the deck, with `--burn g11 --play` and `--deal --turn 2`); see `apps/apple/Beta/Snapshot.swift`.
 
 ## Games
 
@@ -71,10 +71,10 @@ Nothing is released yet; [RELEASING.md](RELEASING.md) covers how builds get ther
 You need macOS 26, Xcode 27 (Swift 6.4) and XcodeGen (`brew install xcodegen`).
 
 ```sh
-scripts/debug.sh                 # build Noddy Yookerspiel (Debug) and open it
-scripts/debug.sh release         # the same, in Release
-scripts/debug.sh -- --demo       # watch the medium bot play turn after turn
-scripts/debug.sh -- --demo --slow
+apps/apple/scripts/debug.sh                 # build Noddy Yookerspiel (Debug) and open it
+apps/apple/scripts/debug.sh release         # the same, in Release
+apps/apple/scripts/debug.sh -- --demo       # watch the medium bot play turn after turn
+apps/apple/scripts/debug.sh -- --demo --slow
 ```
 
 In Claude Code, `/debug` and `/debug-release` run the same script.
@@ -140,7 +140,7 @@ The HTML mocks open straight from disk: see [mocks/README.md](cribbage/minigames
 - Crib Maze: [rules](cribbage/minigames/rules.md) (player-facing), [concept](cribbage/minigames/concept.md) (intent, decisions, plan), [engine](cribbage/minigames/engine.md) (spec for ports), [stats](cribbage/minigames/stats.md), [ideation](cribbage/minigames/ideation.md), [maze inspiration](cribbage/minigames/maze-inspiration.md).
 - App: [ARCHITECTURE.md](ARCHITECTURE.md) (Swift app, engine, records, effects) and [LIBRARIES.md](LIBRARIES.md) (tools and libraries).
 - Design: the [card renderer](design/cards/index.html) and the [neon asset gallery](design/neon/).
-- Tracking: [PLAN.md](PLAN.md), [TODO.md](TODO.md), [BUGS.md](BUGS.md), [CHANGELOG.md](CHANGELOG.md).
+- Tracking: [PLAN.md](PLAN.md), [TODO.md](TODO.md), [BUGS.md](BUGS.md), [CHANGELOG.md](CHANGELOG.md) (spec changes), [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md) (the Mac app).
 
 ## Layout
 
@@ -150,12 +150,14 @@ cribbage/minigames/
   fixtures/     cases shared by the JS mocks and Swift tests
   mocks/        HTML mocks
   playtests/    saved playtest runs
-swift/
+engine/swift/
   Sources/      GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, cribmaze-sim
   Tests/        Swift tests
-  App/          Noddy Yookerspiel (the beta) and the release app (XcodeGen: project.yml)
+apps/apple/     Noddy Yookerspiel (the beta) and the release app (XcodeGen: project.yml)
+  scripts/      debug.sh (build and run the beta), release.sh
+apps/linux/     the Linux client (@linux)
 design/         card renderer and the neon asset set
-scripts/        check.sh (all checks), debug.sh (build and run the beta)
+scripts/        check.sh (every check this machine can run)
 ```
 
 ## Licence

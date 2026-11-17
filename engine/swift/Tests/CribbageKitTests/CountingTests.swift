@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import CribbageKit
 
-let fixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../cribbage/minigames/fixtures").standardized
+let fixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../../cribbage/minigames/fixtures").standardized
 
 struct CountFixture: Decodable {
     struct Combo: Decodable { let kind: String; let points: Int; let cards: [Int]; let size: Int?; let multiplier: Int? }

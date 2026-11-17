@@ -4,7 +4,7 @@ Status: draft 1, 2026-11-16, spec 1, from the beta app at 0.15.1, rules r23
 
 ## Summary
 
-This spec describes how the Crib Maze beta app (Noddy Yookerspiel, `swift/App`) looks and behaves above the engine: its scenes, what the player can do in each, what plays when the engine reports something, and how long it takes. It is written so a port to Linux or Windows, in another language and UI toolkit, can rebuild the same game feel without reading Swift.
+This spec describes how the Crib Maze beta app (Noddy Yookerspiel, `apps/apple`) looks and behaves above the engine: its scenes, what the player can do in each, what plays when the engine reports something, and how long it takes. It is written so a port to Linux or Windows, in another language and UI toolkit, can rebuild the same game feel without reading Swift.
 
 The engine is specced in [engine.md](engine.md). This spec starts where that one stops: the app sends the engine actions and gets back events, and everything here is how those events reach the player. Player-facing names come from [rules.md](rules.md). The HTML match turn mock is frozen at r16; from r17 on, the beta app is the only source of truth for UI behaviour, and this spec records it.
 
@@ -845,10 +845,10 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.15.0 (`MARKETING_VERSION` in `swift/App/project.yml`), rules `match-r23` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.15.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r23` (`cribbage/minigames/config/rules.json`):
 
-- `swift/App/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
-- `swift/App/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `swift/App/Release/` for the release stand-ins
+- `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
+- `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins
 - `cribbage/minigames/config/`: `rules.json`, `timing.json`, `hints.json`
 - `design/neon/palette.json`, `design/neon/shapes.json`
 - Read alongside: [engine.md](engine.md), [rules.md](rules.md), [mocks/README.md](mocks/README.md), `ARCHITECTURE.md`

@@ -5,7 +5,7 @@ import Testing
 @testable import CribMaze
 import CribMazeBots
 
-let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../..").standardized
+let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../..").standardized
 let configFolder = repo.appendingPathComponent("cribbage/minigames/config")
 func loadConfig() throws -> Config { try Config.load(from: configFolder) }
 func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputFormatting = .sortedKeys; return String(data: try! e.encode(v), encoding: .utf8)! }
@@ -151,7 +151,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
     /// ARCHITECTURE.md › Rules for the engine: no unseeded randomness, no wall clock.
     @Test func noBannedCalls() throws {
         let banned = ["SystemRandomNumberGenerator", "Int.random", ".random(in", "shuffled()", "UUID()", "Date()", "Date.now", "CFAbsoluteTime"]
-        let src = repo.appendingPathComponent("swift/Sources")
+        let src = repo.appendingPathComponent("engine/swift/Sources")
         let files = FileManager.default.enumerator(at: src, includingPropertiesForKeys: nil)!.compactMap { $0 as? URL }
             .filter { $0.pathExtension == "swift" && !$0.path.contains("cribmaze-sim") }
         for f in files {

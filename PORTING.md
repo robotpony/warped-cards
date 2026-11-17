@@ -27,19 +27,9 @@ apps/<platform>/scripts/   that platform's build, run and release scripts
 - A client uses an engine and reads the shared data where it is. It MUST NOT copy config, fixtures or design data.
 - Each `apps/<platform>/` has a `README.md` (how to set up, build and run), its own `CHANGELOG.md`, and its own build version (Versions).
 - Nothing in `engine/` may depend on `apps/`.
+- `engine/swift/` is linked by path from every Swift client, so it MUST keep building and passing `swift test` on Linux. It keeps the package name `CribMazeEngine` and its library names (GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, GameRecord), and imports Foundation and nothing Apple-only. Actors or async code need a `` `@linux` `` item first: Godot calls the engine from its main loop. A change to an API the clients use (`GameRun.start`, `RecordReader`, `Replayer`, `Config.load`) gets a `` `@linux` `` item in TODO.md.
+- `scripts/check.sh` runs the shared checks, then the checks of whichever platform it's on. On Linux it runs `apps/linux/scripts/check.sh` if there is one.
 - Who owns each folder: [AGENTS.md](AGENTS.md).
-
-### Moving there
-
-The Apple build moves first (`@apple`, from `swift/`). Until it does, `swift/` is the engine and `swift/App` is the Apple app. Delete this subsection once the move lands.
-
-1. `git mv` the package (`Package.swift`, `Sources`, `Tests`) to `engine/swift/`, and `swift/App` to `apps/apple/`. Use `git mv`, so history follows the files.
-2. Fix the paths that count folders: `#filePath` test paths gain one `../` (`Tests/*/`), the simulator's default `--config` folder (`../cribbage/minigames/config` becomes `../../cribbage/minigames/config`), and `project.yml`'s package path (`..`) and resource paths (`../../`).
-3. Fix every other path to `swift/`: `scripts/`, `.claude/commands/`, `.claude/hooks/check-version-bump.sh`, `.gitignore`, `spec.test.js`, and the docs (`git grep -n "swift/"`).
-4. Split the scripts: `debug.sh` and `release.sh` move to `apps/apple/scripts/`; `check.sh` stays in `scripts/` and runs the engine tests and each platform's checks that the machine can run.
-5. Give the Apple app its own `apps/apple/CHANGELOG.md` (the current `CHANGELOG.md` moves there) and `README.md`. The top-level `CHANGELOG.md` then lists spec changes only.
-6. The version hook checks per platform: a change under `apps/apple/` or `engine/swift/` needs an Apple bump; a change under `apps/linux/` needs a Linux bump.
-7. Check: `scripts/check.sh` passes, `/debug` runs the beta, and the golden records still verify. One commit, as a patch build.
 
 ## What's true
 
@@ -68,7 +58,7 @@ The Swift build is the reference build, not the spec. Where the Swift code does 
 
 ### Swift, on Linux or Windows
 
-The engine package (`swift/Package.swift`: GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, GameRecord, `cribmaze-sim`) imports Foundation and nothing from Apple's UI frameworks.
+The engine package (`engine/swift/Package.swift`: GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, GameRecord, `cribmaze-sim`) imports Foundation and nothing from Apple's UI frameworks.
 
 **Linux: passes, checked 2026-11-16** by `@linux` at spec 1, on Omarchy (Arch) on ARM64 with Swift 6.4.2. A clean `swift build` (warnings fail it) and all 68 tests in `swift test` pass with no code changes, including rung 8 (`goldenRecordsWriteTheSameBytes`): Linux Foundation's `JSONEncoder` sorts keys the same as the Mac's, and `ISO8601DateFormatter`, `FileHandle` and `CocoaError` in `GameRecord/Record.swift` all behave. Windows hasn't been tried.
 
@@ -81,7 +71,7 @@ Setting up Swift on an Arch-based Linux:
 
 Re-run the check after a Swift upgrade, and before a Linux build ships.
 
-If the engine passes, a Swift port is a new UI over the same engine. The apps (`swift/App`) are SwiftUI and stay Apple-only.
+If the engine passes, a Swift port is a new UI over the same engine. The apps (`apps/apple`) are SwiftUI and stay Apple-only.
 
 ### Another language
 
@@ -127,7 +117,7 @@ Decided 2026-11-16. Two versions, kept apart:
 | Version | What it names | Where it lives | Bumped when |
 |---|---|---|---|
 | Spec version, `spec 1` | The shared contract: rules.md, engine.md, ui.md, config, fixtures and the record format | `specVersion` in [spec.json](cribbage/minigames/spec.json) | A port would have to change something: an action, event, field, fixture, config shape, record encoding or scene behaviour. Wording fixes don't bump it |
-| Build version, `0.15.2` | One platform's build | Each platform's own place (Apple: `MARKETING_VERSION` in `swift/App/project.yml`) | That platform's own testing and releases, as in CLAUDE.md › Versions and tracking |
+| Build version, `0.15.2` | One platform's build | Each platform's own place (Apple: `MARKETING_VERSION` in `apps/apple/project.yml`) | That platform's own testing and releases, as in CLAUDE.md › Versions and tracking |
 
 - The spec version is one whole number. It never resets.
 - A rules version bump (`match-r23` to `match-r24`) always bumps the spec version too. `spec.json` names the rules version it covers, and the drift check fails if that's behind `config/rules.json`.

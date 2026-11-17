@@ -6,7 +6,7 @@
 //   cribmaze-sim replay <file or folder>... [--scripted] [--counts]             (Record.swift)
 //
 // Turn i plays from seed + i, bot seat 0, starting tray from config, warned set
-// (bots count as already warned). Config defaults to ../cribbage/minigames/config.
+// (bots count as already warned). Config defaults to ../../cribbage/minigames/config.
 // Bots have no clock, so a reach joker ends after as many actions as a person would make in its
 // seconds: one per `trace` milliseconds of timing.json's human profile.
 import CribMaze
@@ -20,7 +20,7 @@ struct Options {
     var seed: UInt64 = 1
     var dealer = false
     var reachEarly = false
-    var config = "../cribbage/minigames/config"
+    var config = "../../cribbage/minigames/config"
 }
 
 func usage(_ why: String? = nil) -> Never {
