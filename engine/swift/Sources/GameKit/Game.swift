@@ -24,6 +24,8 @@ public protocol GameRules {
 
     static var gameID: String { get }           // "crib-maze"
     static var rulesVersion: String { get }     // "match-r23"
+    /// The spec version this build implements (PORTING.md › Versions): `specVersion` in spec.json.
+    static var specVersion: Int { get }
 
     static func start(_ config: Config, players: [PlayerSeat], dice: inout Dice) -> (State, [Event])
     static func apply(_ action: Action, by player: PlayerID?, to state: inout State, dice: inout Dice) throws -> [Event]
@@ -106,6 +108,8 @@ public struct AppStamp: Codable, Sendable, Equatable {
 public struct GameHeader<G: GameRules>: Codable, Sendable {
     public var game: String
     public var rules: String
+    /// The spec version the writer implemented; nil in records written before spec 2.
+    public var specVersion: Int?
     public var stamp: AppStamp
     public var started: String       // wall time with its offset, ISO 8601
     /// The seed as decimal text: JSON numbers lose precision past 2^53.
@@ -114,18 +118,19 @@ public struct GameHeader<G: GameRules>: Codable, Sendable {
     public var players: [PlayerSeat]
 
     public init(_ run: GameRun<G>, stamp: AppStamp, started: String) {
-        game = G.gameID; rules = G.rulesVersion; self.stamp = stamp; self.started = started
+        game = G.gameID; rules = G.rulesVersion; specVersion = G.specVersion; self.stamp = stamp; self.started = started
         seed = String(run.seed); config = run.config; players = run.players
     }
 
     public var seedValue: UInt64? { UInt64(seed) }
 
     // Written flat: the stamp's fields (app, build, commit, platform, install) sit beside the rest.
-    enum Keys: String, CodingKey { case game, rules, started, seed, config, players }
+    enum Keys: String, CodingKey { case game, rules, specVersion, started, seed, config, players }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         game = try c.decode(String.self, forKey: .game)
         rules = try c.decode(String.self, forKey: .rules)
+        specVersion = try c.decodeIfPresent(Int.self, forKey: .specVersion)
         stamp = try AppStamp(from: decoder)
         started = try c.decode(String.self, forKey: .started)
         seed = try c.decode(String.self, forKey: .seed)
@@ -136,6 +141,7 @@ public struct GameHeader<G: GameRules>: Codable, Sendable {
         var c = encoder.container(keyedBy: Keys.self)
         try c.encode(game, forKey: .game)
         try c.encode(rules, forKey: .rules)
+        try c.encodeIfPresent(specVersion, forKey: .specVersion)
         try stamp.encode(to: encoder)
         try c.encode(started, forKey: .started)
         try c.encode(seed, forKey: .seed)

@@ -1,6 +1,6 @@
 # Crib Maze: UI Spec
 
-Status: draft 1, 2026-11-16, spec 1, from the beta app at 0.15.1, rules r23
+Status: draft 1, 2026-11-16, spec 2, from the beta app at 0.15.1, rules r23
 
 ## Summary
 
@@ -673,7 +673,7 @@ Source: `MatchTurnView.swift` (Toast, WarningCard, InfoCard), `Hints.swift`.
 
 ## Settings panel
 
-A tap on the header or footer opens the settings in a panel anchored above the footer (340 × 620 pt), in the dark panel colours with a `cyan` tint. A tap outside closes it. It has a title (the app's name, rules and app version) and three tabs. Settings live for the session only; they reset when the app starts.
+A tap on the header or footer opens the settings in a panel anchored above the footer (340 × 620 pt), in the dark panel colours with a `cyan` tint. A tap outside closes it. It has a title (the app's name, then the build line and build number: `Mac 0.15.4 · spec 2 · r23 (54)`) and three tabs. The app menu's About panel shows the same build line, without the build number (PORTING.md › Versions). Settings live for the session only; they reset when the app starts.
 
 | Tab | Contents |
 |---|---|

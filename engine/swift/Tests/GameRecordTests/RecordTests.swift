@@ -14,6 +14,7 @@ enum Coins: GameRules {
 
     static let gameID = "coins"
     static let rulesVersion = "coins-r1"
+    static let specVersion = 1
 
     static func start(_ config: Config, players: [PlayerSeat], dice: inout Dice) -> (State, [Event]) {
         (State(config: config), [.gameStart(hands: config.hands)])

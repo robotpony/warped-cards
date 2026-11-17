@@ -2,6 +2,12 @@
 
 Crib Maze for Mac and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.15.4 — 2026-11-16
+
+### Changed
+
+- About Noddy Yookerspiel and the settings title show which build this is and what it plays, as `Mac 0.15.4 · spec 2 · r23`.
+
 ## 0.15.0 — 2026-11-16
 
 ### Changed

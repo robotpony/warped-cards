@@ -80,7 +80,10 @@ public struct Replayer<G: GameRules> {
 
     /// Replays a whole record and says whether, and where, it differs.
     public static func check(_ record: Record<G>, mode: ReplayMode = .verify) -> ReplayReport {
-        let note = record.header.rules == G.rulesVersion ? nil : "recorded under \(record.header.rules), engine is \(G.rulesVersion)"
+        var notes: [String] = []
+        if record.header.rules != G.rulesVersion { notes.append("recorded under \(record.header.rules), engine is \(G.rulesVersion)") }
+        if let s = record.header.specVersion, s != G.specVersion { notes.append("recorded at spec \(s), engine is spec \(G.specVersion)") }
+        let note = notes.isEmpty ? nil : notes.joined(separator: "; ")
         do {
             var r = try Replayer(record, mode: mode)
             try r.finish()

@@ -93,6 +93,14 @@ func botGame(_ config: Config, seed: UInt64, writer: RecordWriter<CribMazeGame>?
         }
     }
 
+    /// The header names the spec version, and the engine's matches spec.json.
+    @Test func headerNamesTheSpecVersion() throws {
+        let spec = try JSONSerialization.jsonObject(with: Data(contentsOf: repo.appendingPathComponent("cribbage/minigames/spec.json"))) as? [String: Any]
+        #expect(spec?["specVersion"] as? Int == CribMazeGame.specVersion)
+        let (records, _) = RecordReader<CribMazeGame>.readAll(goldenRecords)
+        for r in records { #expect(r.header.specVersion == CribMazeGame.specVersion, "\(r.url!.lastPathComponent)") }
+    }
+
     /// A game is a sequence of hands; each hand's steps carry its number.
     @Test func stepsGroupByHand() throws {
         var steps: [Step<CribMazeGame>] = []

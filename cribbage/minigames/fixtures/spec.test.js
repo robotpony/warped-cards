@@ -115,6 +115,13 @@ test("the spec's config examples have the config files' shape", () => {
   }
 });
 
+test("the Swift engine's spec version is spec.json's", () => {
+  const { specVersion } = JSON.parse(read('cribbage/minigames/spec.json'));
+  const m = game.match(/static let specVersion = (\d+)/);
+  assert.ok(m, "CribMazeGame.swift has no specVersion");
+  assert.strictEqual(Number(m[1]), specVersion, 'CribMazeGame.specVersion is out of step with spec.json');
+});
+
 test("the spec's status names the current rules version", () => {
   const rules = JSON.parse(read('cribbage/minigames/config/rules.json'));
   const r = rules.rulesVersion.replace(/^match-/, '');

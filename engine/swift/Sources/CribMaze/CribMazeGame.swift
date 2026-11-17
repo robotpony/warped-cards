@@ -11,6 +11,8 @@ import GameKit
 public enum CribMazeGame: GameRules {
     public static let gameID = "crib-maze"
     public static var rulesVersion: String { MatchTurn.rulesVersion }
+    /// Keep in step with `specVersion` in cribbage/minigames/spec.json (spec.test.js checks it).
+    public static let specVersion = 2
 
     /// The config files, plus who deals first. Encoded flat, so a record's config reads like the files.
     public struct Config: Codable, Sendable, Equatable {

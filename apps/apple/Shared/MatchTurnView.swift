@@ -421,7 +421,7 @@ struct SidePanel: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Edition.name).font(.headline)
-                Text("Match turn, rules \(MatchTurn.rulesVersion), app \(version)").font(.caption).foregroundStyle(.secondary)
+                Text("\(BuildLine.text) (\(build))").font(.caption).foregroundStyle(.secondary)
             }
             Picker("", selection: $tab) {
                 Text("Game").tag(Tab.game); Text("Advanced").tag(Tab.advanced); Text("Animation").tag(Tab.animation)
@@ -528,10 +528,7 @@ struct SidePanel: View {
         }
     }
 
-    private var version: String {
-        let i = Bundle.main.infoDictionary
-        return "\(i?["CFBundleShortVersionString"] as? String ?? "?") (\(i?["CFBundleVersion"] as? String ?? "?"))"
-    }
+    private var build: String { Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?" }
 }
 
 /// The card counter beside the help line: one pip per card a set may pick, lit as you pick them.
