@@ -100,7 +100,7 @@ final class GameSession {
     /// The score breakdown as it plays, and its timing.
     let playback = Playback()
     let meter = FrameMeter()
-    var slowMotion = false { didSet { Motion.scale = slowMotion ? 5 : 1 } }
+    var slowMotion = false { didSet { Motion.scale = slowMotion ? fx.waits.slowMotion : 1 } }
     var timing = BreakdownTiming()
     private(set) var secondsLeft = 0
     private(set) var savedRecord: URL?
@@ -297,22 +297,22 @@ final class GameSession {
             Task { [weak self] in
                 guard let self else { return }
                 await self.playBreakdown(score, before: old.state)
-                withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.reset() }
+                withAnimation(fx.motions.breakdown.tally.animation()) { self.playback.reset() }
                 self.commit(t, ev)
-                withAnimation(.spring(duration: Motion.t(0.26))) { self.playback.bump = true }
-                try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
-                withAnimation(.easeOut(duration: Motion.t(0.2))) { self.playback.bump = false }
+                withAnimation(fx.motions.board.stepsBump.animation()) { self.playback.bump = true }
+                try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
+                withAnimation(fx.motions.board.stepsUnbump.animation()) { self.playback.bump = false }
                 self.busy = false
             }
             return
         }
         busy = true; flash = hit; flashIsBomb = bomb
         Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(Motion.ms(bomb ? 380 : 340)))
+            try? await Task.sleep(for: .milliseconds(Motion.ms(bomb ? fx.waits.board.bombPop : fx.waits.board.pop)))
             guard let self else { return }
             self.flash = []
             self.commit(t, ev)
-            try? await Task.sleep(for: .milliseconds(Motion.ms(320)))
+            try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
             self.busy = false
         }
     }
@@ -322,7 +322,7 @@ final class GameSession {
         var drawn = [Int](repeating: 0, count: 4)
         for e in ev { if case .boardChanged(_, _, let d) = e { for x in d { if let p = Board.parse(x.cell), Board.isGrid(p) { drawn[p % 4] += 1 } } } }
         drawnPerColumn = drawn
-        if animate { withAnimation(.easeOut(duration: Motion.t(0.3))) { turn = t } } else { turn = t }
+        if animate { withAnimation(fx.motions.board.change.animation()) { turn = t } } else { turn = t }
         for e in ev { describe(e) }
         watchReaches()
         if t.state.over { finish() } else { watchDeadBoard() }
@@ -337,7 +337,7 @@ final class GameSession {
         deadTask = Task { [weak self] in
             guard let self else { return }
             if !hasJokers {
-                try? await Task.sleep(for: .milliseconds(Motion.ms(1500)))
+                try? await Task.sleep(for: .milliseconds(Motion.ms(timing.ending)))
                 while self.busy { try? await Task.sleep(for: .milliseconds(100)) }
                 if !Task.isCancelled, self.turn?.state.dead == true, !self.over { self.send(.endTurn) }
                 return
@@ -504,7 +504,7 @@ final class GameSession {
         toast = text
         toastTask?.cancel()
         toastTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2.4))
+            try? await Task.sleep(for: .milliseconds(Int(fx.waits.toast)))
             if !Task.isCancelled { self?.toast = nil }
         }
     }

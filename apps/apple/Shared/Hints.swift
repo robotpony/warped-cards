@@ -38,7 +38,7 @@ struct HintBlink: ViewModifier {
             }
             .onChange(of: on, initial: true) { _, v in
                 lit = false
-                if v { withAnimation(.easeInOut(duration: Motion.t(0.5)).repeatForever(autoreverses: true)) { lit = true } }
+                if v { withAnimation(fx.motions.hint.blink.animation()) { lit = true } }
             }
     }
 }

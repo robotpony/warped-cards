@@ -115,7 +115,7 @@ struct PhoneView: View {
                 Text("\(session.state?.steps ?? 0)").font(Theme.font(44, .bold)).contentTransition(.numericText())
                     .foregroundStyle(session.playback.bump ? Theme.gold : Theme.feltText)
                     .scaleEffect(session.playback.bump ? 1.25 : 1, anchor: .leading)
-                    .animation(.snappy, value: session.state?.steps)
+                    .animation(fx.motions.board.numberRoll.animation(), value: session.state?.steps)
                     .onGeometryChange(for: CGPoint.self, of: { g in
                         let f = g.frame(in: .named("phone")); return CGPoint(x: f.minX + 24, y: f.midY)
                     }) { session.playback.stepsAt = $0 }
@@ -145,7 +145,7 @@ struct PhoneView: View {
                 Capsule().fill(Theme.feltText.opacity(0.15))
                 Capsule().fill(Theme.gold).frame(width: g.size.width * min(1, max(0, CGFloat(session.state?.steps ?? 0) / 121)))
                     .shadow(color: Theme.gold.opacity(0.7), radius: 3)
-                    .animation(.easeOut(duration: Motion.t(0.4)), value: session.state?.steps)
+                    .animation(fx.motions.board.stepsCount.animation(), value: session.state?.steps)
             }
         }
         .frame(height: 6)
@@ -219,7 +219,7 @@ struct TrayCard: View {
                             RoundedRectangle(cornerRadius: 5).fill(Theme.felt.opacity(0.55))
                             ZStack {
                                 Circle().fill(Theme.felt.opacity(0.6))
-                                Wedge(fraction: c).fill(Theme.violet).animation(.linear(duration: 1), value: c)
+                                Wedge(fraction: c).fill(Theme.violet).animation(fx.motions.clock.wedge.animation(scaled: false), value: c)
                                 Circle().strokeBorder(Theme.violet, lineWidth: 2.5)
                             }
                             .frame(width: w * 0.62, height: w * 0.62)
@@ -236,7 +236,7 @@ struct TrayCard: View {
         }
         .offset(y: armed ? -10 : 0)
         .opacity(count < 1 && countdown == nil ? 0.3 : 1)
-        .animation(.easeOut(duration: Motion.t(0.12)), value: armed)
+        .animation(fx.motions.board.select.animation(), value: armed)
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
         .help(["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
@@ -287,7 +287,7 @@ struct Toast: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
-        .animation(.easeOut(duration: Motion.t(0.2)), value: text)
+        .animation(fx.motions.board.helpText.animation(), value: text)
         .allowsHitTesting(false)
     }
 }
@@ -510,7 +510,7 @@ struct SidePanel: View {
             VStack(alignment: .leading, spacing: 6) {
                 Toggle("Play each score's breakdown (tap to skip)", isOn: $session.settings.breakdown)
                 Picker("Speed", selection: $session.timing.base) {
-                    Text("Slow (1.2 s)").tag(1200.0); Text("Medium (0.9 s)").tag(900.0); Text("Quick (0.6 s)").tag(600.0); Text("Practised (0.4 s)").tag(400.0)
+                    ForEach(fx.waits.breakdown.speeds, id: \.self) { s in Text("\(s.name) (\(String(format: "%g", s.ms / 1000)) s)").tag(s.ms) }
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -552,7 +552,7 @@ struct PickCounter: View {
             Text("HAND SIZE \(count) / \(limit)").font(Theme.font(11, .bold)).tracking(0.6).monospacedDigit()
                 .foregroundStyle(count == limit ? Theme.gold : Theme.feltText.opacity(0.75))
         }
-        .animation(.easeOut(duration: Motion.t(0.12)), value: count)
+        .animation(fx.motions.board.select.animation(), value: count)
         .contentShape(Rectangle())
         .help("Hand size: how many cards a set can pick. The starter is free.")
     }
@@ -636,20 +636,20 @@ struct TurnClock: View {
     static func urgency(left: Int, total: Int) -> Int {
         guard total > 0 else { return 0 }
         let f = Double(max(0, left)) / Double(total)
-        return f > 0.5 ? 0 : f > 0.25 ? 1 : f > 0.1 ? 2 : 3
+        let u = fx.waits.clock.urgencyPercent.map { Double($0) / 100 }
+        return f > u[0] ? 0 : f > u[1] ? 1 : f > u[2] ? 2 : 3
     }
     /// Each level's half-breath in seconds, and how far the clock swells.
-    static let period: [Double] = [2.0, 1.4, 0.9, 0.55]
-    static let depth: [CGFloat] = [0.05, 0.07, 0.10, 0.13]
-    /// From this many seconds left, the clock shows them.
-    static let countdownFrom = 10
+    /// Each level's half-breath and depth, and the seconds the clock counts down from: fx.json › waits.clock.
+    static var depth: [CGFloat] { fx.waits.clock.breathDepth.map { CGFloat($0) } }
+    static var countdownFrom: Int { fx.waits.clock.secondsFrom }
 
     var body: some View {
         let total = session.turn?.config.rules.match.timerSeconds ?? 0
         let look: Look = session.over ? .done
             : session.graceLeft != nil ? .stuck
             : total == 0 ? .off
-            : session.secondsLeft * 10 <= total ? .warning : .running
+            : session.secondsLeft * 100 <= total * fx.waits.clock.warningPercent ? .warning : .running
         let filled: Double = switch look {
         case .done: 1
         case .stuck: 1 - Double(session.graceLeft ?? 0) / Double(GameSession.graceSeconds)
@@ -665,13 +665,13 @@ struct TurnClock: View {
         ZStack {
             Circle().fill(colour.opacity(0.15))
             Wedge(fraction: filled).fill(colour)
-                .animation(.linear(duration: 1), value: filled)   // grows smoothly between ticks
+                .animation(fx.motions.clock.wedge.animation(scaled: false), value: filled)   // grows smoothly between ticks
             Circle().strokeBorder(colour, lineWidth: 2)
             if look == .running || look == .warning, session.secondsLeft <= Self.countdownFrom {
                 Text("\(max(0, session.secondsLeft))").font(Theme.font(14, .bold)).monospacedDigit()
                     .foregroundStyle(.white).shadow(color: .black.opacity(0.6), radius: 2)
                     .contentTransition(.numericText(countsDown: true))
-                    .animation(.snappy, value: session.secondsLeft)
+                    .animation(fx.motions.board.numberRoll.animation(scaled: false), value: session.secondsLeft)
             }
         }
         .frame(width: 30, height: 30)
@@ -680,17 +680,17 @@ struct TurnClock: View {
         .scaleEffect(look == .running || look == .warning ? (breathe ? 1 + Self.depth[urgency] : 1 - Self.depth[urgency] / 2) : 1)
         .opacity(look == .stuck && pulse ? 0.35 : 1)
         .shadow(color: look == .off ? .clear : colour.opacity(0.5), radius: 4)
-        .animation(.easeOut(duration: 0.3), value: look)
+        .animation(fx.motions.clock.look.animation(scaled: false), value: look)
         .onChange(of: (look == .running || look == .warning) ? Self.urgency(left: session.secondsLeft, total: total) : -1, initial: true) { _, level in
             var quiet = Transaction(); quiet.disablesAnimations = true
             withTransaction(quiet) { breathe = false }
             guard level >= 0 else { return }
             urgency = level
-            withAnimation(.easeInOut(duration: Self.period[level]).repeatForever(autoreverses: true)) { breathe = true }
+            withAnimation(.easeInOut(duration: fx.waits.clock.halfBreath[level] / 1000).repeatForever(autoreverses: true)) { breathe = true }
         }
         .onChange(of: look == .stuck, initial: true) { _, stuck in
             pulse = false
-            if stuck { withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { pulse = true } }
+            if stuck { withAnimation(fx.motions.clock.pulse.animation(scaled: false)) { pulse = true } }
         }
         .help(look == .off ? "No timer" : look == .stuck ? "No sets left: use a power joker before the clock fills" : "\(max(0, session.secondsLeft)) s left")
     }
@@ -768,8 +768,8 @@ struct DealView: View {
     private func dealIn() async {
         guard session.animate, shown < 12 else { return }
         for i in 1...12 {
-            try? await Task.sleep(for: .milliseconds(Motion.ms(90)))
-            withAnimation(.spring(duration: Motion.t(0.3), bounce: 0.2)) { shown = i }
+            try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.deal.gap)))
+            withAnimation(fx.motions.deal.card.animation()) { shown = i }
         }
     }
 
@@ -805,7 +805,7 @@ struct DealView: View {
                         CardFace(card: c, width: Self.slotW)
                             .matchedGeometryEffect(id: c.id, in: ns)
                             .contentShape(Rectangle())
-                            .onTapGesture { if !throwing { withAnimation(.snappy(duration: Motion.t(0.25))) { session.togglePick(c) } } }
+                            .onTapGesture { if !throwing { withAnimation(fx.motions.board.pick.animation()) { session.togglePick(c) } } }
                     } else { emptySlot }
                 }
                 ForEach(0..<2, id: \.self) { i in
@@ -859,7 +859,7 @@ struct DealView: View {
             }
         }
         .frame(minHeight: 44)
-        .animation(.easeOut(duration: Motion.t(0.3)), value: d.hint?.principle)
+        .animation(fx.motions.hint.show.animation(), value: d.hint?.principle)
     }
 
     // Your hand, fanned like cards held in your hand.
@@ -881,7 +881,7 @@ struct DealView: View {
                     .offset(y: visible ? 0 : -200)
                     .zIndex(Double(k))
                     .contentShape(Rectangle())
-                    .onTapGesture { if !throwing && d.picked.count < 2 { withAnimation(.snappy(duration: Motion.t(0.25))) { session.togglePick(c) } } }
+                    .onTapGesture { if !throwing && d.picked.count < 2 { withAnimation(fx.motions.board.pick.animation()) { session.togglePick(c) } } }
             }
         }
         .frame(height: Self.handW * 1.4 + 20)
@@ -901,10 +901,10 @@ struct DealView: View {
     /// The bot throws, the starter is cut and turned, then the turn starts.
     private func finish() async {
         throwing = true
-        withAnimation(.spring(duration: Motion.t(0.45), bounce: 0.15)) { botIn = true }
-        try? await Task.sleep(for: .milliseconds(Motion.ms(550)))
-        withAnimation(.spring(duration: Motion.t(0.4), bounce: 0.3)) { starterUp = true }
-        try? await Task.sleep(for: .milliseconds(Motion.ms(900)))
+        withAnimation(fx.motions.deal.throw.animation()) { botIn = true }
+        try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.deal.throwToStarter)))
+        withAnimation(fx.motions.deal.starter.animation()) { starterUp = true }
+        try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.deal.starterToTurn)))
         session.throwToCrib()
     }
 }

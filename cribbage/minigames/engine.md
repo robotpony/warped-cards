@@ -1,6 +1,6 @@
 # Crib Maze: Engine Spec
 
-Status: draft 5, 2026-11-16, spec 2 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r23, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 5, 2026-11-16, spec 3 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r23, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib Maze round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -674,7 +674,98 @@ The engine MUST check on load that each deal row fills the crib to exactly 4 (`t
 
 ### fx.json
 
-The effects catalogue belongs to the app, not the engine. Its format is set in Phase E (`ARCHITECTURE.md` › Presentation and effects).
+Every client's cue motions and waits (from spec 3). The engine doesn't read it; what each value means, and how a spring maps to numbers, is in [ui.md](ui.md) › Motion. Sounds and haptics join it in Phase E (`ARCHITECTURE.md` › Presentation and effects).
+
+```json
+{
+  "version": 1,
+  "motions": {
+    "board": {
+      "select":     { "type": "easeOut", "ms": 120 },
+      "pop":        { "type": "spring", "ms": 300, "bounce": 0.4 },
+      "change":     { "type": "easeOut", "ms": 300 },
+      "pick":       { "type": "spring", "ms": 250, "bounce": 0.15 },
+      "helpText":   { "type": "easeOut", "ms": 200 },
+      "stepsCount": { "type": "easeOut", "ms": 400 },
+      "numberRoll": { "type": "spring", "ms": 500, "bounce": 0.15 },
+      "stepsBump":  { "type": "spring", "ms": 260, "bounce": 0 },
+      "stepsUnbump": { "type": "easeOut", "ms": 200 }
+    },
+    "hint": {
+      "show":  { "type": "easeOut", "ms": 300 },
+      "blink": { "type": "easeInOut", "ms": 500, "repeat": true }
+    },
+    "deal": {
+      "card":    { "type": "spring", "ms": 300, "bounce": 0.2 },
+      "throw":   { "type": "spring", "ms": 450, "bounce": 0.15 },
+      "starter": { "type": "spring", "ms": 400, "bounce": 0.3 }
+    },
+    "breakdown": {
+      "fade":      { "type": "easeOut", "ms": 300 },
+      "setLeave":  { "type": "easeOut", "ms": 250 },
+      "rowFly":    { "type": "spring", "ms": 500, "bounce": 0.18 },
+      "banner":    { "type": "spring", "ms": 250, "bounce": 0 },
+      "tally":     { "type": "easeOut", "ms": 200 },
+      "tallyLine": { "type": "easeOut", "ms": 220 },
+      "light":     { "type": "spring", "ms": 250, "bounce": 0 },
+      "unlight":   { "type": "easeOut", "ms": 150 },
+      "powerUp":   { "type": "spring", "ms": 300, "bounce": 0 },
+      "totalFly":  { "type": "easeIn", "ms": 500 }
+    },
+    "clock": {
+      "look":  { "type": "easeOut", "ms": 300 },
+      "wedge": { "type": "linear", "ms": 1000 },
+      "pulse": { "type": "easeInOut", "ms": 600, "repeat": true }
+    }
+  },
+  "waits": {
+    "breakdown": {
+      "speeds": [
+        { "name": "Slow", "ms": 1200 },
+        { "name": "Medium", "ms": 900 },
+        { "name": "Quick", "ms": 600 },
+        { "name": "Practised", "ms": 400 }
+      ],
+      "beforeRow": 150,
+      "rowBeat": 20,
+      "beforeBanner": 650,
+      "beforeTally": 900,
+      "comboLitPercent": 88,
+      "afterTotal": 500,
+      "rowStagger": 50,
+      "flyHome": 500
+    },
+    "board": {
+      "pop": 340,
+      "bombPop": 380,
+      "settle": 320
+    },
+    "float": {
+      "life": 1000,
+      "keys": [180, 450, 270],
+      "startScale": 0.6,
+      "peakScale": 1.15,
+      "startY": 12,
+      "midRise": 18,
+      "rise": 36
+    },
+    "toast": 2400,
+    "deal": {
+      "gap": 90,
+      "throwToStarter": 550,
+      "starterToTurn": 900
+    },
+    "clock": {
+      "secondsFrom": 10,
+      "warningPercent": 10,
+      "urgencyPercent": [50, 25, 10],
+      "halfBreath": [2000, 1400, 900, 550],
+      "breathDepth": [0.05, 0.07, 0.10, 0.13]
+    },
+    "slowMotion": 5
+  }
+}
+```
 
 ## Left-over warning
 

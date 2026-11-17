@@ -260,9 +260,9 @@ struct CellView: View, Equatable {
             .shadow(color: glow ?? .clear, radius: glow == nil ? 0 : (l.hit ? 10 : 9))
             .scaleEffect(l.hit ? (l.bomb ? 1.18 : 1.12) : l.lit || l.litPower ? 1.06 : l.used ? 1.1 : selected ? 1.04 : 1)
             .offset(y: l.lit || l.litPower ? -8 : l.inset ? -4 : l.used ? -4 : selected ? -2 : l.armedSource ? -6 : 0)
-            .animation(.easeOut(duration: Motion.t(0.12)), value: selected)
-            .animation(.easeOut(duration: Motion.t(0.12)), value: l.used)
-            .animation(.spring(duration: Motion.t(0.3), bounce: 0.4), value: l.hit)
+            .animation(fx.motions.board.select.animation(), value: selected)
+            .animation(fx.motions.board.select.animation(), value: l.used)
+            .animation(fx.motions.board.pop.animation(), value: l.hit)
             .opacity(l.away ? 0 : 1)
     }
 

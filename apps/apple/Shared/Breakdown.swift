@@ -30,10 +30,15 @@ struct FloatText: Identifiable {
 
 struct Banner { let kind: String; let head: String; let suit: String }
 
-/// Timings from the mock's defaults: the first step 1.2 s, each after 15% quicker, never under 0.4 s.
+/// The breakdown's pace: the first step `base` ms, each after `accel` times the last, never under `min`.
+/// `base` is the player's chosen speed (fx.json › waits.breakdown.speeds); the fixed waits scale with
+/// it against the profile's own base.
 struct BreakdownTiming {
     var base = 1200.0, accel = 0.85, min = 400.0
-    var scale: Double { base / 1200 }
+    var profileBase = 1200.0
+    /// How long a stuck board with no power jokers waits before the turn ends (profile `ending`).
+    var ending = 1500.0
+    var scale: Double { base / profileBase }
 
     /// The pace from timing.json › profiles.human (breakdownBase, breakdownStep, breakdownMin), the
     /// same numbers the simulator models a person with; the defaults above if the file can't be read.
@@ -42,9 +47,10 @@ struct BreakdownTiming {
         guard let data = try? Data(contentsOf: folder.appendingPathComponent("timing.json")),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let human = (json["profiles"] as? [String: Any])?["human"] as? [String: Any] else { return t }
-        if let v = human["breakdownBase"] as? Double { t.base = v }
+        if let v = human["breakdownBase"] as? Double { t.base = v; t.profileBase = v }
         if let v = human["breakdownStep"] as? Double { t.accel = v }
         if let v = human["breakdownMin"] as? Double { t.min = v }
+        if let v = human["ending"] as? Double { t.ending = v }
         return t
     }
 }
@@ -98,7 +104,7 @@ final class Playback {
         let f = FloatText(id: id(), point: point, text: text, sub: sub, style: style)
         floats.append(f)
         Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(Motion.ms(1000)))
+            try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.float.life)))
             self?.floats.removeAll { $0.id == f.id }
         }
     }
@@ -110,13 +116,13 @@ final class Playback {
     }
 
     func line(_ name: String, _ pts: String, _ run: String, _ style: LineStyle = .normal, cards: [Card] = []) {
-        withAnimation(.easeOut(duration: Motion.t(0.22))) { tally.append(TallyLine(id: id(), name: name, pts: pts, run: run, style: style, cards: cards)) }
+        withAnimation(fx.motions.breakdown.tallyLine.animation()) { tally.append(TallyLine(id: id(), name: name, pts: pts, run: run, style: style, cards: cards)) }
     }
 
     /// Waits for a tap (or click) on the screen. Snapshots and the demo don't wait.
     func hold() async {
         guard !instant, !autoContinue else { return }
-        withAnimation(.easeOut(duration: Motion.t(0.2))) { holding = true }
+        withAnimation(fx.motions.breakdown.tally.animation()) { holding = true }
         await withCheckedContinuation { resume = $0 }
         holding = false
     }
@@ -163,7 +169,7 @@ extension GameSession {
     /// Plays a score's breakdown over the board as it was before the score.
     func playBreakdown(_ e: MatchEvent, before old: MatchState) async {
         guard case .score(let names, let refs, let combos, _, let pct, let multiplied, _, _, let points, _, let suit, _) = e else { return }
-        let pb = playback, T = timing
+        let pb = playback, T = timing, W = fx.waits.breakdown
         let sel = names.compactMap(Board.parse)
         var n = 0
         func stepMs() -> Double { defer { n += 1 }; return max(T.min, T.base * pow(T.accel, Double(n))) }
@@ -173,39 +179,39 @@ extension GameSession {
         pb.reset(); pb.active = true
         for p in sel { pb.rowCards[p] = old.cells[p] }
         for p in sel where Board.isEdge(p) && old.power[p] > 0 { pb.chipText[p] = multiplierText(old.power[p]) }
-        await pb.wait(150 * T.scale)
+        await pb.wait(W.beforeRow * T.scale)
         // The cards leave the board (their cells empty and the rest dims) and fly up into the row.
         pb.row = sel
-        withAnimation(.easeOut(duration: Motion.t(0.25))) { pb.set = sel }
+        withAnimation(fx.motions.breakdown.setLeave.animation()) { pb.set = sel }
         if pb.instant { pb.rowOn = true } else {
-            try? await Task.sleep(for: .milliseconds(20))
+            try? await Task.sleep(for: .milliseconds(Int(W.rowBeat)))
             pb.rowOn = true   // each row card animates itself, staggered
         }
-        await pb.wait(650 * T.scale)
-        withAnimation(.spring(duration: Motion.t(0.25))) { pb.banner = Banner(kind: combos.count > 1 ? "MULTI ×\(combos.count)" : "SINGLE", head: head, suit: suitText) }
-        await pb.wait(900 * T.scale)
-        withAnimation(.easeOut(duration: Motion.t(0.2))) { pb.tallyOn = true }
+        await pb.wait(W.beforeBanner * T.scale)
+        withAnimation(fx.motions.breakdown.banner.animation()) { pb.banner = Banner(kind: combos.count > 1 ? "MULTI ×\(combos.count)" : "SINGLE", head: head, suit: suitText) }
+        await pb.wait(W.beforeTally * T.scale)
+        withAnimation(fx.motions.breakdown.tally.animation()) { pb.tallyOn = true }
         let card = { (p: Pos) in old.cells[p] }
         // r16: the starter joined this set. It lights first, so it reads as part of every score.
         if sel.contains(Board.starter), turn?.starterJoins == true {
-            withAnimation(.spring(duration: Motion.t(0.25))) { pb.lit = [Board.starter] }
+            withAnimation(fx.motions.breakdown.light.animation()) { pb.lit = [Board.starter] }
             pb.float([Board.starter], "Starter", "joins the set")
             pb.line("Starter joins", "", "", .normal, cards: [card(Board.starter)].compactMap { $0 })
             await pb.wait(stepMs())
-            withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.lit = [] }
+            withAnimation(fx.motions.breakdown.unlight.animation()) { pb.lit = [] }
         }
 
         var total = 0
         for c in combos {
             let ps = c.cards.map { sel[$0] }
             total += c.points
-            withAnimation(.spring(duration: Motion.t(0.25))) { pb.lit = Set(ps) }
+            withAnimation(fx.motions.breakdown.light.animation()) { pb.lit = Set(ps) }
             pb.float(ps, "+\(c.points)", Self.displayName(c))
             pb.line(Self.displayName(c), Self.signed(c.points), "\(total)", cards: ps.compactMap(card))
             let ms = stepMs()
-            await pb.wait(ms * 0.88)
-            withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.lit = [] }
-            await pb.wait(ms * 0.12)
+            await pb.wait(ms * W.comboLitPercent / 100)
+            withAnimation(fx.motions.breakdown.unlight.animation()) { pb.lit = [] }
+            await pb.wait(ms * (100 - W.comboLitPercent) / 100)
         }
         // Edge power multiplies the combos: each powered card lights with its multiplier, then the set's applies.
         let powered = sel.filter { Board.isEdge($0) && old.power[$0] > 0 }
@@ -214,12 +220,12 @@ extension GameSession {
         let ep = config?.rules.match.edgePower
         let adds = ep?.combine != "each"
         for p in powered {
-            withAnimation(.spring(duration: Motion.t(0.25))) { pb.litPower = [p] }
+            withAnimation(fx.motions.breakdown.light.animation()) { pb.litPower = [p] }
             let m = adds ? "+" + String(format: "%g", Double((ep?.percentPerLevel ?? 10) * old.power[p]) / 100) : multiplierText(old.power[p])
             pb.float([p], m, "edge power", .power)
             pb.line(p == Board.starter ? "Starter power" : "Edge power", m, "", .power, cards: [card(p)].compactMap { $0 })
             await pb.wait(stepMs())
-            withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.litPower = [] }
+            withAnimation(fx.motions.breakdown.unlight.animation()) { pb.litPower = [] }
         }
         if adds, let ep, ep.capPercent > 0, !powered.isEmpty {
             let sum = 100 + ep.percentPerLevel * powered.map { old.power[$0] }.reduce(0, +)
@@ -231,12 +237,12 @@ extension GameSession {
         // r20: each joker-made card in the set adds its own multiplier.
         let madeIn = sel.filter { old.cells[$0]?.percent != nil }
         for p in madeIn {
-            withAnimation(.spring(duration: Motion.t(0.25))) { pb.litPower = [p] }
+            withAnimation(fx.motions.breakdown.light.animation()) { pb.litPower = [p] }
             let m = multiplierText(percent: old.cells[p]!.percent!)
             pb.float([p], m, "joker card", .power)
             pb.line("Joker card", m, "", .power, cards: [card(p)].compactMap { $0 })
             await pb.wait(stepMs())
-            withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.litPower = [] }
+            withAnimation(fx.motions.breakdown.unlight.animation()) { pb.litPower = [] }
         }
         if !powered.isEmpty || !madeIn.isEmpty {
             let gain = multiplied - total; total = multiplied
@@ -250,7 +256,7 @@ extension GameSession {
         for i in sel.indices where !used.contains(i) {
             let p = sel[i]
             total -= cost
-            withAnimation(.spring(duration: Motion.t(0.25))) { _ = pb.leftOver.insert(p) }
+            withAnimation(fx.motions.breakdown.light.animation()) { _ = pb.leftOver.insert(p) }
             pb.float([p], "−\(cost)", "left over", .penalty)
             pb.line("Left over", "−\(cost)", "\(total)", .penalty, cards: [card(p)].compactMap { $0 })
             await pb.wait(stepMs())
@@ -260,28 +266,28 @@ extension GameSession {
         if !edges.isEmpty {
             pb.line("Power up", "▲", "", .power, cards: edges.compactMap(card))
             let step = config?.rules.match.edgePower.step ?? 1
-            withAnimation(.spring(duration: Motion.t(0.3))) {
+            withAnimation(fx.motions.breakdown.powerUp.animation()) {
                 pb.litPower = Set(edges)
                 for p in edges { pb.chipLevel[p] = old.power[p] + step; pb.chipText[p] = multiplierText(old.power[p] + step) }
             }
             for p in edges { pb.float([p], "▲", multiplierText(old.power[p] + step), .power) }
             await pb.wait(stepMs())
-            withAnimation(.easeOut(duration: Motion.t(0.15))) { pb.litPower = [] }
+            withAnimation(fx.motions.breakdown.unlight.animation()) { pb.litPower = [] }
         }
         _ = refs
         pb.line("\(head) · \(suitText)", Self.signed(points), "", .total)
-        await pb.wait(max(T.min, 500 * T.scale))
+        await pb.wait(max(T.min, W.afterTotal * T.scale))
         await pb.hold()
         // The cards fly home; then the board moves on (grid cards clear, edge cards stay).
         if !pb.instant {
             // The total floats up from the scoresheet to the step counter as the cards fly home.
             if let from = pb.totalAt {
                 pb.fly = FlyText(text: Self.signed(points), from: from)
-                withAnimation(.easeIn(duration: Motion.t(0.5))) { pb.fly?.arrived = true }
+                withAnimation(fx.motions.breakdown.totalFly.animation()) { pb.fly?.arrived = true }
             }
-            withAnimation(.easeOut(duration: Motion.t(0.2))) { pb.tallyOn = false; pb.banner = nil }
+            withAnimation(fx.motions.breakdown.tally.animation()) { pb.tallyOn = false; pb.banner = nil }
             pb.rowOn = false
-            try? await Task.sleep(for: .milliseconds(Motion.ms(500)))
+            try? await Task.sleep(for: .milliseconds(Motion.ms(W.flyHome)))
         }
     }
 }
@@ -316,7 +322,7 @@ struct BreakdownOverlay: View {
             // It reaches past the edge background's outline and glow, so no stray borders show through.
             RoundedRectangle(cornerRadius: 16).fill(Theme.felt.opacity(0.94)).padding(-(Theme.edgePadOuter + 8))
                 .opacity(pb.active ? 1 : 0)
-                .animation(.easeOut(duration: Motion.t(0.3)), value: pb.active)
+                .animation(fx.motions.breakdown.fade.animation(), value: pb.active)
             VStack {
                 if let b = pb.banner { banner(b).transition(.scale(scale: 0.9).combined(with: .opacity).combined(with: .offset(y: -8))) }
             }
@@ -326,7 +332,7 @@ struct BreakdownOverlay: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { tallyH = $0 }
                 .scaleEffect(tallyH > room ? room / tallyH : 1, anchor: .top)
-                .animation(.easeOut(duration: Motion.t(0.2)), value: tallyH > room)
+                .animation(fx.motions.breakdown.tally.animation(), value: tallyH > room)
                 .offset(y: RowLayout.tallyTop)
             ForEach(Array(pb.row.enumerated()), id: \.element) { i, p in
                 if let card = pb.rowCards[p] { RowCard(p: p, card: card, index: i, pb: pb) }
@@ -411,13 +417,14 @@ struct FloatView: View {
         .keyframeAnimator(initialValue: Rise(), repeating: false) { v, r in
             v.scaleEffect(r.scale).offset(y: r.y).opacity(r.opacity)
         } keyframes: { _ in
-            KeyframeTrack(\.scale) { CubicKeyframe(1.15, duration: Motion.t(0.18)); CubicKeyframe(1, duration: Motion.t(0.45)); CubicKeyframe(1, duration: Motion.t(0.27)) }
-            KeyframeTrack(\.y) { CubicKeyframe(0, duration: Motion.t(0.18)); CubicKeyframe(-18, duration: Motion.t(0.45)); CubicKeyframe(-36, duration: Motion.t(0.27)) }
-            KeyframeTrack(\.opacity) { CubicKeyframe(1, duration: Motion.t(0.18)); CubicKeyframe(1, duration: Motion.t(0.45)); CubicKeyframe(0, duration: Motion.t(0.27)) }
+            let F = fx.waits.float, k = F.keys.map { Motion.t($0) / 1000 }
+            KeyframeTrack(\.scale) { CubicKeyframe(F.peakScale, duration: k[0]); CubicKeyframe(1, duration: k[1]); CubicKeyframe(1, duration: k[2]) }
+            KeyframeTrack(\.y) { CubicKeyframe(0, duration: k[0]); CubicKeyframe(-F.midRise, duration: k[1]); CubicKeyframe(-F.rise, duration: k[2]) }
+            KeyframeTrack(\.opacity) { CubicKeyframe(1, duration: k[0]); CubicKeyframe(1, duration: k[1]); CubicKeyframe(0, duration: k[2]) }
         }
         .position(f.point)
     }
-    struct Rise { var scale = 0.6, y = 12.0, opacity = 0.0 }
+    struct Rise { var scale = fx.waits.float.startScale, y = fx.waits.float.startY, opacity = 0.0 }
 }
 
 /// A small card in a tally line: rank and suit, in the card face's colours.
@@ -464,13 +471,13 @@ struct RowCard: View {
             .shadow(color: lit ? Theme.gold.opacity(0.85) : power ? Theme.power.opacity(0.8) : left ? Color(hex: 0xFF5A5A, opacity: 0.7) : .black.opacity(0.4),
                     radius: lit || power || left ? 9 : 5, y: lit || power || left ? 0 : 3)
             .offset(y: lit || power ? -10 : 0)
-            .animation(.spring(duration: Motion.t(0.25)), value: lit || power || left)
+            .animation(fx.motions.breakdown.light.animation(), value: lit || power || left)
             .rotationEffect(starter && !on ? .degrees(-5) : .zero)
             .scaleEffect(on ? RowLayout.w / Theme.cardW : 1)
             .frame(width: Theme.cardW, height: Theme.cardH)
             .offset(x: c.x - Theme.cardW / 2, y: c.y - Theme.cardH / 2)
             // Staggered flights; the starter, last in the row, comes up from its corner last.
-            .animation(.spring(duration: Motion.t(0.5), bounce: 0.18).delay(Motion.t(Double(index) * 0.05)), value: on)
+            .animation(fx.motions.breakdown.rowFly.animation().delay(Motion.t(Double(index) * fx.waits.breakdown.rowStagger) / 1000), value: on)
     }
 }
 

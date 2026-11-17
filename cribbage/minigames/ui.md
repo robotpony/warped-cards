@@ -1,6 +1,6 @@
 # Crib Maze: UI Spec
 
-Status: draft 1, 2026-11-16, spec 2, from the beta app at 0.15.1, rules r23
+Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.15.5, rules r23
 
 ## Summary
 
@@ -15,7 +15,7 @@ Where the app's behaviour seems unintended, or disagrees with rules.md or engine
 ## How to read this
 
 - Sizes are in points (pt) at the app's reference frame: a 64 pt wide card, 1.4 times as tall (89.6 pt). See Layout.
-- Times are in milliseconds (ms) at normal speed. Every animation and pause in the app goes through one global motion scale (1 normally, 5 in the beta's slow motion), so a port SHOULD route its durations through one such scale too.
+- Times are in milliseconds (ms) at normal speed. Every cue's motion and wait comes from `config/fx.json`, as Motion describes; the numbers in this spec are that file's values at spec 3, and the file wins if they differ. Every animation and pause goes through one global motion scale (1 normally, `waits.slowMotion` in the beta's slow motion), so a port SHOULD route its durations through one such scale too.
 - A value marked (config) is read from a config file. A value marked (hard-coded) is written into the app's code. Every hard-coded number that should move to config is collected in Hard-coded numbers.
 - Colours are named by their key in `design/neon/palette.json` (for example `gold`, `panel`, `joker.special`). A colour that isn't in the palette is given in hex and listed in Look.
 - Words in capitals in quotes ("POWER JOKERS") are on-screen text, shown as the app shows it.
@@ -475,7 +475,7 @@ The headline is the set's biggest combo that isn't a fifteen (the first of the b
 
 ### Pace
 
-Each counted part takes one step. Steps start at the base time and get 15% quicker each time, never under 400 ms: step n takes `max(400, base × 0.85^n)`. The base is the player's breakdown speed: Slow 1,200 ms (the default), Medium 900, Quick 600, Practised 400. Fixed waits are scaled by `base / 1200`. The app doesn't read these from `timing.json`, which holds the same numbers for the simulator (see Hard-coded numbers).
+Each counted part takes one step. Steps start at the base time and get 15% quicker each time, never under 400 ms: step n takes `max(400, base × 0.85^n)`. The base is the player's breakdown speed: Slow 1,200 ms (the default), Medium 900, Quick 600, Practised 400. Fixed waits are scaled by `base / breakdownBase`. The first base, the 0.85 and the 400 ms floor are `timing.json` › profiles.human (`breakdownBase`, `breakdownStep`, `breakdownMin`), the numbers the simulator models a person with. The speed choices and their names are `fx.json` › waits.breakdown.speeds.
 
 | Base | Steps (ms) |
 |---|---|
@@ -737,39 +737,102 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib Maze) ha
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 
+## Motion
+
+Every cue's motion and wait is in `cribbage/minigames/config/fx.json` (from spec 3). A client MUST read the file, not copy its numbers, and MUST NOT start without it. The engine doesn't read it; engine.md › fx.json shows its shape.
+
+The file has two parts:
+
+- `motions`: how a thing moves, by scene (`board`, `hint`, `deal`, `breakdown`, `clock`). Each is a spring or a curve, with a duration in ms.
+- `waits`: how long a cue holds before the next, in ms, plus a few sizes and thresholds that go with them (the float's rise, the clock's urgency levels).
+
+### Springs
+
+A spring is `{ "type": "spring", "ms": d, "bounce": b }`, with `bounce` from 0 (no overshoot) to below 1. It is a damped spring with mass 1 that moves a value from 0 to 1:
+
+```
+stiffness k = (2π / d)²          d in seconds
+damping   c = 4π (1 − b) / d
+x'' = −k (x − 1) − c x'          x(0) = 0, x'(0) = 0
+```
+
+This is how SwiftUI's `spring(duration:bounce:)` is defined. `d` is the time the spring feels like it takes, not the time to settle: with a bounce it overshoots and keeps moving a little past `d`. A port MUST step this equation (or a tween with the same stiffness and damping) and stop when the value is within 0.001 of 1 and nearly still. A spring with bounce 0 is critically damped.
+
+The overshoot is `e^(−πζ / √(1 − ζ²))` with ζ = 1 − b: `board.pop` (300 ms, 0.4) overshoots by about 9%, `deal.starter` (0.3) by about 5%, `breakdown.rowFly` (0.18) by about 1%.
+
+### Curves
+
+| `type` | Curve | Cubic Bézier |
+|---|---|---|
+| `easeIn` | Starts slow | 0.42, 0, 1, 1 |
+| `easeOut` | Ends slow | 0, 0, 0.58, 1 |
+| `easeInOut` | Both | 0.42, 0, 0.58, 1 |
+| `linear` | Even | 0, 0, 1, 1 |
+
+`"repeat": true` plays the motion forward and back, forever, until its state changes; `ms` is one way.
+
+### What scales
+
+Slow motion multiplies every motion and wait, except the clock's (`motions.clock`, `waits.clock`, and `board.numberRoll` on the clock's seconds), which follow real seconds, and `waits.breakdown.rowBeat`. The breakdown speed setting scales only the breakdown's fixed waits (`beforeRow`, `beforeBanner`, `beforeTally`, `afterTotal`), not motions (Score breakdown › Pace).
+
+### The values
+
+| Key | What it moves or holds |
+|---|---|
+| `motions.board.select` | A cell's selected and used looks, the armed joker, the pick counter |
+| `motions.board.pop` | A scored, bombed or burned card's pop |
+| `motions.board.change` | Board changes: cards clear, fall and drop in |
+| `motions.board.pick` | Picking a card on the deal screen |
+| `motions.board.helpText` | The help line's text changing |
+| `motions.board.stepsCount`, `numberRoll` | The steps number counting (its value, and the digits rolling); `numberRoll` also rolls the clock's seconds |
+| `motions.board.stepsBump`, `stepsUnbump` | The steps number growing after a breakdown, and settling back |
+| `motions.hint.show`, `blink` | A deal hint appearing; a hinted card's blinking ring |
+| `motions.deal.card`, `throw`, `starter` | Each dealt card; the bot's throw to the crib; the starter turning up |
+| `motions.breakdown.*` | The board fading back (`fade`), the set's cells emptying (`setLeave`), each card's flight to the row and home (`rowFly`), the banner, the tally fading (`tally`) and each line (`tallyLine`), cards lighting (`light`) and unlighting (`unlight`), the power-up chips (`powerUp`) and the total's flight to the steps (`totalFly`) |
+| `motions.clock.look`, `wedge`, `pulse` | The clock's colour changes; the wedge growing between ticks; a stuck board's pulse |
+| `waits.breakdown.*` | The speed choices; the waits in the cue sheet (orders 1, 2, 3, 13 and 15); `comboLitPercent`, the part of a combo's step its cards stay lit; `rowStagger`, the gap between cards flying to the row |
+| `waits.board.pop`, `bombPop`, `settle` | A score's pop with the breakdown off; a bomb or burn's pop; the busy time after a board change |
+| `waits.float` | A float's life, its three keyframe lengths, its scales and rises (pt) |
+| `waits.toast` | How long a toast shows |
+| `waits.deal.*` | The gap between dealt cards; the throw to the starter; the starter to the turn |
+| `waits.clock.*` | Seconds the clock counts down from; the warning's last percent; the urgency levels (percent of time left), each level's half-breath (ms) and swell (scale) |
+| `waits.slowMotion` | The beta's slow-motion factor |
+
+A float's keyframes use SwiftUI's cubic keyframes, a smooth spline through the keys. A port MAY ease in and out between keys instead.
+
 ## Hard-coded numbers
 
-Numbers in the app's code that the game feel depends on and that SHOULD move to config, so a port and the beta tune the same values. Layout sizes (card size, gaps, paddings, text sizes) are left out: they belong in a theme or layout file, not game config. "Config today" names a file that already holds the same value for the simulator, where one does.
+Numbers in the app's code that the game feel depends on and that SHOULD move to config, so a port and the beta tune the same values. The cue timings moved to `fx.json` at spec 3 (Motion); what's left here is rules, input and layout numbers. Layout sizes (card size, gaps, paddings, text sizes) are left out: they belong in a theme or layout file, not game config. "Config today" names a file that already holds the same value for the simulator, where one does.
 
 | # | Value | Where it's used | Config today | Should move to |
 |---|---|---|---|---|
 | 1 | 25 s | Stuck grace with power jokers | None (rules.md: to tune) | `rules.json` › match |
-| 2 | 1,500 ms | Stuck board with no power jokers ends after | `timing.json` human `ending` (1,500), not read | `timing.json` or `fx.json` |
+| 2 | 1,500 ms | Stuck board with no power jokers ends after | `timing.json` human `ending`, read since 0.15.5 | Done (spec 3) |
 | 3 | 8 s | Discard hint shows after a pause | None | `hints.json` › discard |
 | 4 | 1,200 ms | Breakdown base step (Slow) | `timing.json` human `breakdownBase`, read since 0.15.2 | Done |
 | 5 | 0.85 | Breakdown step gets quicker by | `timing.json` human `breakdownStep`, read since 0.15.2 | Done |
 | 6 | 400 ms | Breakdown shortest step | `timing.json` human `breakdownMin`, read since 0.15.2 | Done |
-| 7 | 1,200, 900, 600, 400 ms | Breakdown speed choices | None | `fx.json` |
-| 8 | 150, 650, 900 ms | Breakdown waits before the row, the banner, the tally | None | `fx.json` |
-| 9 | 500 ms | Breakdown wait after the total line | None | `fx.json` |
-| 10 | 88% / 12% | A combo's step: lit, then unlit | None | `fx.json` |
-| 11 | 500 ms | Fly home after the hold (not skippable) | None | `fx.json` |
-| 12 | 50 ms | Stagger between row card flights | None | `fx.json` |
-| 13 | 340 ms | Score pop with the breakdown off | None | `fx.json` |
-| 14 | 380 ms | Bomb and burn pop | None | `fx.json` |
-| 15 | 320 ms | Busy time after the board changes, and the steps bump | None | `fx.json` |
-| 16 | 300 ms | Board change (clear, fall, drop in) | None | `fx.json` |
-| 17 | 1,000 ms; 180, 450, 270 ms; 36 pt | Float life, keyframes, rise | None | `fx.json` |
-| 18 | 2,400 ms | Toast time | None | `fx.json` |
-| 19 | 90 ms | Deal: time between cards | `timing.json` human `dealIn` (1,600 for the whole deal), not read | `timing.json` or `fx.json` |
-| 20 | 550 ms, 900 ms | Deal: bot throw to starter, starter to turn start | None | `fx.json` |
-| 21 | 10 s | Clock shows seconds from | None | `fx.json` |
-| 22 | 10% | Clock turns orange in the last | None | `fx.json` |
-| 23 | 50%, 25%, 10% | Clock breath urgency thresholds | None | `fx.json` |
-| 24 | 2.0, 1.4, 0.9, 0.55 s | Clock half-breath per urgency | None | `fx.json` |
-| 25 | 0.05, 0.07, 0.10, 0.13 | Clock breath depth per urgency | None | `fx.json` |
-| 26 | 600 ms | Stuck clock pulse | None | `fx.json` |
-| 27 | 500 ms | Hint blink | None | `fx.json` |
+| 7 | 1,200, 900, 600, 400 ms | Breakdown speed choices | `fx.json` › waits.breakdown.speeds | Done (spec 3) |
+| 8 | 150, 650, 900 ms | Breakdown waits before the row, the banner, the tally | `fx.json` › waits.breakdown (beforeRow, beforeBanner, beforeTally) | Done (spec 3) |
+| 9 | 500 ms | Breakdown wait after the total line | `fx.json` › waits.breakdown.afterTotal | Done (spec 3) |
+| 10 | 88% / 12% | A combo's step: lit, then unlit | `fx.json` › waits.breakdown.comboLitPercent | Done (spec 3) |
+| 11 | 500 ms | Fly home after the hold (not skippable) | `fx.json` › waits.breakdown.flyHome | Done (spec 3) |
+| 12 | 50 ms | Stagger between row card flights | `fx.json` › waits.breakdown.rowStagger | Done (spec 3) |
+| 13 | 340 ms | Score pop with the breakdown off | `fx.json` › waits.board.pop | Done (spec 3) |
+| 14 | 380 ms | Bomb and burn pop | `fx.json` › waits.board.bombPop | Done (spec 3) |
+| 15 | 320 ms | Busy time after the board changes, and the steps bump | `fx.json` › waits.board.settle | Done (spec 3) |
+| 16 | 300 ms | Board change (clear, fall, drop in) | `fx.json` › motions.board.change | Done (spec 3) |
+| 17 | 1,000 ms; 180, 450, 270 ms; 36 pt | Float life, keyframes, rise | `fx.json` › waits.float | Done (spec 3) |
+| 18 | 2,400 ms | Toast time | `fx.json` › waits.toast | Done (spec 3) |
+| 19 | 90 ms | Deal: time between cards | `fx.json` › waits.deal.gap | Done (spec 3) |
+| 20 | 550 ms, 900 ms | Deal: bot throw to starter, starter to turn start | `fx.json` › waits.deal | Done (spec 3) |
+| 21 | 10 s | Clock shows seconds from | `fx.json` › waits.clock.secondsFrom | Done (spec 3) |
+| 22 | 10% | Clock turns orange in the last | `fx.json` › waits.clock.warningPercent | Done (spec 3) |
+| 23 | 50%, 25%, 10% | Clock breath urgency thresholds | `fx.json` › waits.clock.urgencyPercent | Done (spec 3) |
+| 24 | 2.0, 1.4, 0.9, 0.55 s | Clock half-breath per urgency | `fx.json` › waits.clock.halfBreath | Done (spec 3) |
+| 25 | 0.05, 0.07, 0.10, 0.13 | Clock breath depth per urgency | `fx.json` › waits.clock.breathDepth | Done (spec 3) |
+| 26 | 600 ms | Stuck clock pulse | `fx.json` › motions.clock.pulse | Done (spec 3) |
+| 27 | 500 ms | Hint blink | `fx.json` › motions.hint.blink | Done (spec 3) |
 | 28 | 121 steps | Progress track length, and its tooltip | None (rules.md: 61 or 121) | `rules.json` › game, once the maze is specced |
 | 29 | 70% | Drag hit area (ARCHITECTURE.md: a setting) | None | A player setting, default in config |
 | 30 | 6 pt | Movement that starts a drag | None | Input config |
@@ -781,7 +844,7 @@ Numbers in the app's code that the game feel depends on and that SHOULD move to 
 | 36 | 50 (percent per level) | Fallback when config is missing, in the info card and chips; the breakdown's fallback is 10 | `rules.json` `edgePower.percentPerLevel` (10) | Remove the fallbacks: config MUST load |
 | 37 | 2 (left-over cost), swapper and bomb (known kinds), 4 (min slots) | Fallbacks and the slot count | `rules.json` | Remove the fallbacks; slot count to layout |
 | 38 | 8 lines, 14 cards | Feed lines in settings; mini cards in the deck panel | None | Layout file |
-| 39 | 5× | Slow motion | None | Beta config |
+| 39 | 5× | Slow motion | `fx.json` › waits.slowMotion | Done (spec 3) |
 
 39 rows.
 

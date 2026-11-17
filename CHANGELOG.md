@@ -2,6 +2,14 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 3 — 2026-11-16
+
+### Added
+
+- `config/fx.json`: every cue's motion (a spring with a duration and bounce, or an ease curve) and wait, which clients MUST read instead of copying numbers. ui.md › Motion says what each value is and how a spring's duration and bounce map to a damped spring's stiffness and damping. The values are the ones ui.md gave in words at spec 2, so nothing moves differently.
+- The stuck board's wait before the turn ends comes from `timing.json` › profiles.human.ending (1,500 ms, as before).
+- `seed1.jsonl` is re-recorded at spec 3; only its header's `specVersion` changes.
+
 ## spec 2 — 2026-11-16
 
 ### Added

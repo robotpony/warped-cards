@@ -1,6 +1,6 @@
 # Porting
 
-Status: draft 2, 2026-11-16. Spec 2, rules r23, Apple build 0.15.4.
+Status: draft 2, 2026-11-16. Spec 3, rules r23, Apple build 0.15.5.
 
 ## Summary
 
@@ -149,11 +149,11 @@ For every session working on the Swift build, not just porters:
 | Bots, match and classic keep | Yes | Yes | Through records |
 | Records | Yes | Yes | Yes (Swift) |
 | Scenes, cues, layout | Draft (ui.md) | Yes (beta app) | No; by hand |
-| FX catalogue (`fx.json`) | No | No | No |
+| Cue motions and waits (`fx.json`) | Yes (ui.md › Motion) | Yes (Apple 0.15.5) | Shape only (spec.test.js) |
 | Pegging on the maze, maze walk, shop | Not designed | No | No |
 
 ## Open questions
 
 1. Answered 2026-11-16: each port keeps its own build version and names the spec version it implements (Versions).
 2. Answered 2026-11-16: the Swift engine with a new UI. The Linux client is Godot 4.7 with the engine loaded through SwiftGodot (Bruce, after a trial build: the golden record verifies inside Godot on Linux ARM64). Known risks: a crash on a project's first import with the extension present, and the OpenGL renderer in a VM with no Vulkan.
-3. Answered 2026-11-16 by Bruce: yes. The UI's cue timings move into config before the Linux UI is built, so every client reads them instead of copying numbers. `@apple` does it (TODO.md); until then, ui.md › Hard-coded numbers are provisional.
+3. Answered 2026-11-16 by Bruce: yes. The UI's cue timings move into config before the Linux UI is built, so every client reads them instead of copying numbers. Done at spec 3: `config/fx.json`, specced in ui.md › Motion.
