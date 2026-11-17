@@ -289,6 +289,8 @@ Players take turns, starting with the player to the dealer's left, until every p
 - **Close a door with it:** put a door on an open passage that no token stands beside. The door takes the play's suit, and its steps as strength. A play with no suit can't make a door. You can close one door a hand (to tune).
 - **Flip a switch with it:** see Switches.
 
+You see every player's plays left and their total steps, but not their cards.
+
 Which play to use, and when, is the game: a big play can carry you through a door of its suit, and the order you arrive at a junction decides which way you go.
 
 ### 6. Next round
@@ -328,7 +330,7 @@ If your steps reach a gate of the wrong suit, you bounce: walking into the gate 
 A door has a suit and a strength, and you need both: only steps of its suit wear it down, and the steps spent on it don't move you. Steps of another suit stop at the door. The door shows its suit and the strength left.
 
 - Doors on the main route get stronger toward the goal (12, 18, 24 and so on in the mock, to tune).
-- A door you close takes your play's suit, and its steps as strength. Whether opening it should need the same suit (as now) or the same cards: not designed yet.
+- A door you close takes your play's suit, and its steps as strength. Opening it needs the same suit, like any door.
 - Damage stays on a door between turns, whoever did it. Once a door is down, it's open for every player.
 
 ### Switches

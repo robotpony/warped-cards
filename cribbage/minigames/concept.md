@@ -175,7 +175,8 @@ The maze walk is the pegging (2026-11-17); rules.md › 5 and Moving through the
 - Every set scored on the grid, and the hand and crib counts, is a play: cards, steps and suit, shown as a list to pick from (as in `mocks/maze-walk.html`). All of them, not a best few; the maze balances the volume with loops that circle back and doors that take more steps.
 - It plays like a party board game: walks go forward, junctions alternate between the players who reach them, and the choice is which play to use when. The board previews where each play lands.
 - Doors need a suit and a strength. Closing a door spends a play; switches, bombs and other jokers come second.
-- Open: whether 14 plays each a round (28 to 42 turns) drags; whether you see the other players' plays.
+- You see the other players' plays as a count and a total, not their cards (2026-11-17).
+- Open: whether 14 plays each a round (28 to 42 turns) drags. Play a round first; if it does, small plays could walk themselves.
 
 ## Transitions and effects
 
@@ -453,6 +454,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Bots are balanced by default. Bot runs can be set to push on given features (doors, switches, junction timing, jokers), so each feature gets tested (Bruce) |
 | 2026-11-17 | Pegging is the maze, with no classic play to 31 (Bruce): pegging applies the scored card combos from the grid, an echo of classic pegging. Every scored set is a play, plus the hand and crib counts; the maze balances the volume with loops that circle back and doors that take more steps. One step a point; the maze grows to fit a game of 6 to 12 rounds, like cribbage. Junctions flip each time a token passes. Doors have a strength and a suit, and need both. You can close doors on others with a play (whether opening it needs the same suit or the same cards: open). Suit gates stay. Bot runs with styles go in the mock |
 | 2026-11-17 | `mocks/maze-board.html` v3 plays it, with real grid turns: 180 medium-bot turns recorded with `cribmaze-sim record` (`mocks/maze-sets.js`; about 14 plays and 226 steps a turn). Walks go forward: they skip dead ends and pockets, and junctions choose only between ways that both lead on (a junction at every fork made the walk a random walk; no game finished in 40 rounds). A wrong-suit door stops a play rather than bouncing it (2026-11-13). One door closed a round, and each switch flips once a round (bots fought over them: 100 doors and 118 flips a game). Defaults: 600-step route on a 37×37 maze, 6 doors from 12 strength. Bot runs, 30 games each: balanced against balanced, 5 to 14 rounds, median 9, 27 in 6 to 12; balanced beats racer 26 to 4 and timer 20 to 10; door closers stretch games to a median of 12 |
+| 2026-11-17 | Answers on v3 (Bruce): a closed door opens with the same suit, like any door; you see the other players' plays as a count and a total; the first seat winning more often (18 to 12) is normal in cribbage and needs no fix; play a round before deciding whether 14 plays a round drags. maze-board v4: junction arrows only at real forks (three or more ways on), drawn as a gold disc with an arrow, since arrows on every corridor cell were confusing; a key under the maze; plays back in maze-walk's tile shape, every card shown |
 
 ## Open questions
 
@@ -461,9 +463,9 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 3. Can tokens get in each other's way at a gate or a fork?
 4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 180-second timer (raised from 90 on 2026-11-15) leave a person room to clear the board?
 5. Edge power has no cap since r21. Does a cap come back as a mechanic the player can see and change with jokers, and how big do scores get over 5 to 13 hands?
-6. A door you close: does opening it need the same suit (as in the mock) or the same cards?
-7. About 14 plays each a round is 28 to 42 maze turns. Does that drag, and should small plays merge or walk themselves?
-8. Seat order: in bot runs the first seat wins more often (18 to 12 with two balanced bots). Is that the deal order, and does it need a fix?
+6. Do small closed doors (a play of 6 makes a door of 3) matter, or should a closed door have a minimum strength?
+7. About 14 plays each a round is 28 to 42 maze turns. Does that drag? Play a round first; if it does, plays of 4 steps or fewer could walk themselves.
+8. Junctions: are the forks near the start too dense? The mock shows 147 on a 37×37 maze, drawn only near the tokens and the previewed path.
 9. The shop: what you pay with now that pips are gone (steps, prizes or something new), what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps or a prize, and how big?
 11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.

@@ -52,13 +52,15 @@
   .dock { background: var(--panel); border: 1px solid var(--rim); border-radius: 12px; padding: 7px 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
   .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .lbl { font-size: 11px; font-weight: 700; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
-  .plays { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; overflow-y: auto; min-height: 0; padding: 2px; }
-  .play { font: inherit; border: 1px solid var(--rim); border-radius: 9px; background: var(--bg); color: var(--text); padding: 3px 4px 2px; cursor: pointer; text-align: left; line-height: 1.1; min-width: 0; }
-  .play .st { display: flex; justify-content: space-between; align-items: baseline; }
-  .play b { font-size: 19px; } .play .su { font-size: 15px; font-weight: 800; }
-  .play small { display: block; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  /* Plays: maze-walk's tiles (steps and suit, then every card), on the card face. */
+  .plays { display: flex; flex-wrap: wrap; gap: 6px; overflow-y: auto; min-height: 0; padding: 3px; align-content: flex-start; }
+  .play { font: inherit; border: 0; border-radius: 9px; background: #FDFCF8; color: #2B2A26; padding: 4px 9px 3px; cursor: pointer; text-align: left; line-height: 1.15; }
+  .play b { font-size: 18px; } .play .su { font-weight: 700; }
+  .play small { display: block; font-size: 11px; }
   .play small i { font-style: normal; font-weight: 700; }
-  .play.sel { border-color: var(--gold); box-shadow: 0 0 8px rgba(255,212,71,.4); }
+  .play.sel { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 10px rgba(255,212,71,.55); }
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 9px; font-size: 11.5px; color: var(--muted); padding: 2px 6px 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; } .legend svg { flex: none; }
   .play:disabled { opacity: .35; cursor: default; }
   .jk { font: inherit; font-size: 13px; font-weight: 700; border: 1.5px solid var(--violet); color: var(--violet); background: transparent; border-radius: 8px; padding: 2px 8px; cursor: pointer; }
   .jk:disabled { opacity: .35; cursor: default; } .jk.on { background: var(--violet); color: var(--bg); }
@@ -79,6 +81,7 @@
       <div class="top"><span id="handLabel">Hand 1</span><span class="phase">PEGGING</span><span id="seedLabel"></span></div>
       <div class="players" id="players"></div>
       <svg class="maze" id="maze" role="img" aria-label="The maze"><g id="mazeCam"></g><g id="mazeHud"></g></svg>
+      <div class="legend" id="legend"></div>
       <div class="prompt" id="prompt" aria-live="polite"></div>
       <div class="dock" id="dock"></div>
     </div>
@@ -116,7 +119,7 @@
     <ul class="tight">
       <li><b>The scoring grid comes first.</b> Every set you score on the grid, and your hand and crib counts from the show, becomes a <b>play</b>: its cards, its steps and its suit (the most common suit; a tie has none). The grid here is a recorded medium-bot turn for each player: about 14 plays and 226 steps a hand.</li>
       <li><b>Pegging is the maze.</b> Players take turns, the seat after the dealer first, until every play is used. On your turn, pick a play: the board shows where it will take you. Then <b>walk</b> it, or spend it to <b>close a door</b> (the door takes the play's suit, and its steps as strength), or to <b>flip a switch</b>. You can close one door a hand (setting). Before that you can play one joker.</li>
-      <li><b>Walking.</b> One step a point, and every step is taken. Walks go forward: they never turn into a dead end or a pocket. Where two ways both lead on, a <b>junction</b> (the arrow, shown near the tokens and along a previewed path) decides: you go the way it points, and it turns to the other way for whoever comes next, so arriving first or second matters. One way is often a loop that circles back.</li>
+      <li><b>Walking.</b> One step a point, and every step is taken. Walks go forward: they never turn into a dead end or a pocket. Where two ways both lead on, a <b>junction</b> (a gold disc with an arrow, at real forks near the tokens and along a previewed path) decides: you go the way it points, and it turns to the other way for whoever comes next, so arriving first or second matters. One way is often a loop that circles back.</li>
       <li><b>Doors</b> have a suit and a strength, and you need both: only a play of the door's suit wears it down, and the steps spent on it don't move you. Damage stays; a broken door is open for everyone. A play of another suit stops at the door, and the rest of it is lost. <b>Suit gates</b> pass their suit only; another suit bounces off (one step) and walks back. <b>Switches</b> are a pair of passages, one open and one shut; flipping swaps them, for everyone. Each switch flips once a hand.</li>
       <li><b>Stars</b> sit on the loops and give a joker when a play ends on them: <i>key</i> (one wrong-suit gate or door), <i>burn</i> (break any door), <i>bomb</i> (a wall beside you; a big shortcut leaves a door of half the cut, no suit), <i>swapper</i> (swap places with a token, not back the same hand).</li>
       <li>The first token into the goal wins. The target is 6 to 12 hands a game, like cribbage.</li>
@@ -153,6 +156,7 @@
   const D = window.WarpedDice, A = window.WarpedNeonMaze, TURNS = window.WarpedMazeSets.turns;
   const SUITS = ["S", "H", "D", "C"], GLYPH = { S: "♠︎", H: "♥︎", D: "♦︎", C: "♣︎" };
   const SUITCOL = { S: "#E8ECFF", H: "#FF4D6D", D: "#4DA3FF", C: "#3DDC84" };
+  const FACECOL = { S: "#000000", H: "#E00000", D: "#0070E0", C: "#00843D" }; // on a card face, as in the beta
   const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N E S W, clockwise
   const SEATS = ["You", "Bot 1", "Bot 2"];
   const STYLES = { balanced: "Balanced", racer: "Racer", timer: "Timer", closer: "Door closer", jokers: "Jokers" };
@@ -641,15 +645,14 @@
     const near = new Set(pv ? pv.cells : []);
     const isNear = (i) => near.has(i) || G.P.some(p => manhattan(M, i, posOf(p)) <= 7);
     if (cs >= 14) for (const i of vis) {
-      if (liveExits(M, i).length < 2 || !(c.whole || isNear(i))) continue;
-      const d = M.ptr[i], ux = DIRS[d][0], uy = DIRS[d][1], px = cx(i) + ux * cs * .26, py = cy(i) + uy * cs * .26, w = cs * .14;
-      s += `<path d="M${px + ux * w} ${py + uy * w}L${px - uy * w - ux * w} ${py + ux * w - uy * w}L${px + uy * w - ux * w} ${py - ux * w - uy * w}Z" fill="#3CF2FF" opacity=".75"/>`;
+      if (!isJunction(M, i) || !(c.whole || isNear(i))) continue;
+      s += junctionMark(cx(i), cy(i), cs, M.ptr[i]);
     }
     for (const i of M.prizes) if (c.whole || vis.includes(i)) s += A.prize(X(i), Y(i), cs);
     if (pv) {
       const pts = [me.pos, ...pv.cells].map(i => `${cx(i)},${cy(i)}`).join(" ");
       s += `<polyline points="${pts}" fill="none" stroke="#FFD447" stroke-width="3" stroke-dasharray="1 6" stroke-linecap="round" opacity=".9"/>` +
-        `<rect x="${X(pv.end) + 3}" y="${Y(pv.end) + 3}" width="${cs - 6}" height="${cs - 6}" rx="5" fill="none" stroke="#FFD447" stroke-width="2.5" class="pulse"/>`;
+        `<circle cx="${cx(pv.end)}" cy="${cy(pv.end)}" r="${cs * .36}" fill="none" stroke="#FFD447" stroke-width="2.5" class="pulse"/><circle cx="${cx(pv.end)}" cy="${cy(pv.end)}" r="${cs * .1}" fill="#FFD447"/>`;
     }
     if (myTurn && G.mode === "close") for (const k of keysIn) if (canClose(me, k)) s += target(k, `data-pass="${k}"`);
     if (myTurn && G.mode === "burn") for (const k of keysIn) { const e = M.edges.get(k); if (e && e.kind === "door") s += target(k, `data-pass="${k}"`); }
@@ -669,6 +672,7 @@
       hud = A.pointer(o + dx * k, o + dy * k, Math.atan2(dy, dx) * 180 / Math.PI + 90, "G", 40);
     }
     $("mazeHud").innerHTML = hud;
+    if (!$("legend").innerHTML) $("legend").innerHTML = legend();
 
     const F = an ? (G.lastF || field()) : (G.lastF = field());
     $("handLabel").textContent = `Hand ${G.hand} · ${G.dealer === 0 ? "your deal" : G.P[G.dealer].name + " deals"}`;
@@ -676,7 +680,7 @@
     $("players").innerHTML = G.P.map(p => {
       const now = G.phase === "maze" && G.turn === p.seat && G.won === null, l = left(p);
       return `<div class="pl${now ? " now" : ""}"><div class="nm"><svg width="14" height="14" viewBox="0 0 20 20">${tokenIcon(p.seat)}</svg>${p.name}</div>` +
-        `<b>${Math.round(F[posOf(p)])}</b> to go · ${l.length} plays</div>`;
+        `<b>${Math.round(F[posOf(p)])}</b> to go · ${l.length} ${l.length === 1 ? "play" : "plays"}, ${l.reduce((a, x) => a + x.p, 0)} steps</div>`;
     }).join("");
 
     let prompt = "";
@@ -699,8 +703,8 @@
     d += `</div>`;
     if (myTurn && G.mode === "flip") d += `<div class="row acts"><span class="lbl">Spend it on switch</span>${M.switches.map((_, k) => `<button class="btn" data-flip="${k}" ${canFlip(k) ? "" : "disabled title=\"Flipped this hand\""}>${LETTERS[k]} ⇄</button>`).join("")}</div>`;
     d += `<div class="plays">${me.plays.filter(x => !x.used).map(x => `<button class="play${G.sel === x ? " sel" : ""}" data-play="${x.id}" ${myTurn ? "" : "disabled"} title="${x.k}">
-        <span class="st"><b>${x.p}</b><span class="su" style="color:${x.s ? SUITCOL[x.s] : "var(--muted)"}">${x.s ? GLYPH[x.s] : "–"}</span></span>
-        <small>${x.c.split(" ").map(cardText).join(" ")}</small></button>`).join("")}</div>`;
+        <b>${x.p}</b> <span class="su" style="color:${x.s ? FACECOL[x.s] : "inherit"}">${x.s ? GLYPH[x.s] : "no suit"}</span>
+        <small>${x.c.split(" ").map(t => cardText(t, FACECOL)).join(" ")}</small></button>`).join("")}</div>`;
     const js = Object.keys(JOKERS).filter(j => me.jokers[j]);
     d += `<div class="row"><span class="lbl">Jokers</span>${js.map(j => `<button class="jk${G.mode === j ? " on" : ""}" data-joker="${j}" ${myTurn && j !== "key" && me.jokerUsed !== G.turnNo ? "" : "disabled"} title="${JOKER_HINT[j]}">${JOKERS[j]}${me.jokers[j] > 1 ? " ×" + me.jokers[j] : ""}</button>`).join("") || `<span class="muted" style="font-size:13px">Stars give jokers</span>`}</div>`;
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
@@ -710,7 +714,29 @@
     $("log").textContent = G.log.slice(-80).map(e => JSON.stringify(e)).join("\n"); $("log").scrollTop = 1e9;
   }
   function previewCost(pv) { const S = snapshot(); const me = G.P[0], play = G.sel; walk(me, play); const v = costField()[me.pos]; restore(S); return v; }
-  const cardText = (t) => { const s = t.slice(-1), r = t.slice(0, -1); return `<i style="color:${SUITCOL[s]}">${r}${GLYPH[s]}</i>`; };
+  const cardText = (t, col = SUITCOL) => { const s = t.slice(-1), r = t.slice(0, -1); return `<i style="color:${col[s]}">${r}${GLYPH[s]}</i>`; };
+  // A real fork: three or more ways that lead on. Corridors and dead ends are never junctions.
+  const isJunction = (M, i) => exitsOf(M, i).filter(d => !M.dead[i * 4 + d]).length >= 3;
+  // A junction: a dark disc with a gold ring, and a bold arrow the way the next token goes.
+  function junctionMark(x, y, cs, d) {
+    const r = cs * .3, ang = Math.atan2(DIRS[d][1], DIRS[d][0]) * 180 / Math.PI, k = r * .62;
+    return `<g transform="translate(${x} ${y}) rotate(${ang})"><circle r="${r}" fill="#0A0E1F" stroke="#FFD447" stroke-width="${Math.max(1.5, cs * .06)}"/>` +
+      `<path d="M${-k * .7} 0H${k * .55}M${k * .1} ${-k * .6}L${k * .75} 0L${k * .1} ${k * .6}" fill="none" stroke="#FFD447" stroke-width="${Math.max(2, cs * .09)}" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  }
+  // The key under the maze: each piece drawn with the same code as on the board.
+  function legend() {
+    const ic = (w, inner) => `<svg width="${w}" height="22" viewBox="0 0 ${w} 22">${inner}</svg>`;
+    const items = [
+      [ic(18, `<g transform="translate(-1 -1)">${tokenIcon(0)}</g>`), "you"],
+      [ic(18, `<g transform="translate(-1 -1)">${tokenIcon(1)}</g>`), "bot"],
+      [ic(22, junctionMark(11, 11, 30, 1)), "junction"],
+      [ic(40, doorMark(20, 11, 30, true, { suit: "H", strength: 12, damage: 0 })), "door"],
+      [ic(22, A.gate(11, 11, 22, true, "S")), "gate"],
+      [ic(22, switchMark(11, 11, 22, true, { sw: 0 })), "switch"],
+      [ic(22, A.prize(0, 0, 22)), "star"],
+    ];
+    return items.map(([svg, t]) => `<span>${svg}${t}</span>`).join("");
+  }
   function tokenIcon(seat) {
     const st = `fill="${A.P.tokens[seat]}" stroke="#fff" stroke-width="1.5"`;
     return seat === 0 ? `<circle cx="10" cy="10" r="6" ${st}/>` : seat === 1 ? `<rect x="4.5" y="4.5" width="11" height="11" rx="2" ${st}/>` : `<polygon points="10,3.5 17,15.5 3,15.5" ${st}/>`;
