@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build, sign, notarize and publish Crib Maze for Mac (RELEASING.md).
+# Build, sign, notarize and publish Crib RPG for Mac (RELEASING.md).
 #   apps/apple/scripts/release.sh build     archive, sign with Developer ID, notarize, staple, zip (local only)
 #   apps/apple/scripts/release.sh publish   tag the version and post the zip to GitHub releases (public)
 # Notarizing needs a keychain profile (default warped-cards-notary, or set NOTARY_PROFILE):
@@ -8,7 +8,7 @@ set -eu
 cd "$(dirname "$0")/../../.."
 
 SCHEME=CribMaze
-APP="Crib Maze"
+APP="Crib RPG"
 TEAM=7J49PFSP65
 PROFILE=${NOTARY_PROFILE:-warped-cards-notary}
 # Outside engine/swift/: an archive whose build folder sits inside the package folder fails to resolve modules.
@@ -27,7 +27,7 @@ notes() {
   # Every release page starts with what the game is (apps/apple/scripts/release-intro.md), then this version's changes.
   { cat apps/apple/scripts/release-intro.md; printf '\n## What'"'"'s new in %s\n' "$VERSION"; } > "$NOTES"
   awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} on && /^## / {exit} on {print}' apps/apple/CHANGELOG.md >> "$NOTES"
-  printf '\n---\nA free demo for macOS 26 or later. Unzip and drag Crib Maze to Applications. Every version: [CHANGELOG.md](https://github.com/robotpony/warped-cards/blob/main/apps/apple/CHANGELOG.md)\n' >> "$NOTES"
+  printf '\n---\nA free demo for macOS 26 or later. Unzip and drag Crib RPG to Applications. Every version: [CHANGELOG.md](https://github.com/robotpony/warped-cards/blob/main/apps/apple/CHANGELOG.md)\n' >> "$NOTES"
 }
 
 case "${1:-}" in
@@ -74,9 +74,9 @@ publish)
   BUILT=$(cat "$OUT/commit")
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "tag $TAG already exists"
   notes
-  git tag -a "$TAG" "$BUILT" -m "Crib Maze $VERSION"
+  git tag -a "$TAG" "$BUILT" -m "Crib RPG $VERSION"
   git push origin main "$TAG"
-  gh release create "$TAG" "$ZIP" --title "Crib Maze $VERSION" --notes-file "$NOTES" --prerelease
+  gh release create "$TAG" "$ZIP" --title "Crib RPG $VERSION" --notes-file "$NOTES" --prerelease
   echo "== Published $TAG"
   ;;
 *) echo "usage: apps/apple/scripts/release.sh build | publish" >&2; exit 2 ;;

@@ -459,6 +459,8 @@ struct SidePanel: View {
                         .textFieldStyle(.roundedBorder).monospacedDigit().onSubmit { session.newGame() }
                     Button("New game") { session.newGame() }
                 }
+                // Plays this game again from its first turn, with the same seed, so the same deal.
+                Button("Restart game") { session.newGame(seed: session.seed) }
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
         if let b = session.breakdown {

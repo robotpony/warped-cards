@@ -1,10 +1,10 @@
 # Releasing
 
-How Crib Maze for Mac gets from a commit to a free download on [GitHub releases](https://github.com/robotpony/warped-cards/releases). The script is `apps/apple/scripts/release.sh`; this is the checklist around it.
+How Crib RPG for Mac gets from a commit to a free download on [GitHub releases](https://github.com/robotpony/warped-cards/releases). The script is `apps/apple/scripts/release.sh`; this is the checklist around it.
 
 ## What ships
 
-- **Crib Maze** (`ca.robotpony.cribmaze`), the release target: no records, no beta tools. It's a free demo, posted as a pre-release while the version is below 1.0.
+- **Crib RPG** (`ca.robotpony.cribmaze`, target `CribMaze`; called Crib Maze before 0.17.0), the release target: no records, no beta tools. It's a free demo, posted as a pre-release while the version is below 1.0.
 - Noddy Yookerspiel, the beta, isn't posted. Testers build it, or get it through TestFlight once the iOS version exists.
 - One zip per version, `Crib-Maze-<version>-mac.zip`, signed with the Developer ID certificate (team 7J49PFSP65), notarized by Apple and stapled, so it opens without warnings on macOS 26 or later.
 

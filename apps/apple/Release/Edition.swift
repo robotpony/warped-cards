@@ -1,1 +1,1 @@
-enum Edition { static let name = "Crib Maze"; static let isBeta = false }
+enum Edition { static let name = "Crib RPG"; static let isBeta = false }

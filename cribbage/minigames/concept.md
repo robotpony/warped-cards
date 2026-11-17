@@ -238,7 +238,7 @@ What the mocks and bot runs have taught us so far. Details and numbers are in [m
 
 ## Working title
 
-"Crib Maze" is a placeholder. Options to react to (none checked yet against existing games or App Store names):
+"Crib Maze" is a placeholder. The Mac release app is called Crib RPG from 0.17.0 (Bruce, 2026-11-16), also known as Noddy Yookerspiel (the beta) or Crib Jokers; the game itself is still Crib Maze in the docs. Options to react to (none checked yet against existing games or App Store names):
 
 | Name | Why it might work |
 |---|---|
@@ -375,6 +375,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | The maze will change, to be more of a board game with circular paths; its place in the round stays the same. Game length comes from the maze's size, its circular paths and clearing its gates. Gates take points or suits to open, or special jokers, which can be played during pegging on the maze |
 | 2026-11-16 | Cards keep the original cream art from `design/cards/cards.js`, with four-colour suits. The neon cards are dropped: they were too hard to read (Bruce) |
 | 2026-11-16 | One typeface for every build, Saira Semi Condensed, so the Mac and Linux builds look the same. The Mac tries it in Crib Maze first; the beta follows once Bruce has seen it |
+| 2026-11-16 | The Mac release app is renamed Crib RPG (was Crib Maze), also known as Noddy Yookerspiel or Crib Jokers (Bruce). Its bundle ID and target stay `cribmaze`, so settings carry over |
 | 2026-11-16 | App icon: four cream cards in a 2 × 2 grid, one suit each, on joker purple with a gold star where they meet; no text. One set of layers in `design/icon/` exported for macOS, iOS, Linux and web, with a simpler favicon |
 
 ## Open questions

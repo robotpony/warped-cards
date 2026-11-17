@@ -83,7 +83,7 @@ enum Theme {
 
     /// Whether the UI face is Saira Semi Condensed (design/fonts/, bundled into both apps). Crib Maze
     /// uses it; the beta keeps the system font at its condensed width unless launched with `--saira`
-    /// (Bruce, 2026-11-16: try it in Crib Maze first). ui.md › Type.
+    /// (Bruce, 2026-11-16: try it in the release app, Crib RPG, first). ui.md › Type.
     static let saira: Bool = {
         guard !Edition.isBeta || CommandLine.arguments.contains("--saira") else { return false }
         guard let dir = Bundle.main.url(forResource: "saira-semi-condensed", withExtension: nil),

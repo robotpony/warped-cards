@@ -1,6 +1,16 @@
 # Changelog
 
-Crib Maze for Mac and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
+Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
+
+## 0.17.0 — 2026-11-16
+
+### Added
+
+- Settings › Game has Restart game, which plays the current game again from its first turn, with the same deal.
+
+### Changed
+
+- The release app is now called Crib RPG (it was Crib Maze). The beta is still Noddy Yookerspiel.
 
 ## 0.16.0 — 2026-11-16
 
