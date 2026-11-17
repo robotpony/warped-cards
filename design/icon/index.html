@@ -290,7 +290,7 @@
 
   const out = document.getElementById("out");
   const round2 = `<h2 style="margin:8px 0 4px">Round 2 · Versions of E</h2>
-    <p class="muted">Bruce picked E with no text (2026-11-16). Each version below is built in layers (background, cards, star), so it also shows iOS's dark and tinted icons, and a simpler favicon next to the full icon scaled down.</p>` +
+    <p class="muted">Bruce picked E with no text, then E2 (2026-11-16); the final files are in <code>layers/</code> and <code>export/</code> (README.md). Each version below is built in layers (background, cards, star), so it also shows iOS's dark and tinted icons, and a simpler favicon next to the full icon scaled down.</p>` +
     E.map(v => {
       const a = eArt(v), sm = eSmall(v);
       return `<section id="${v.key}">

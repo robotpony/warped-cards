@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Star layer: the gold joker-made star where the four cards meet. Transparent around it. -->
+  <circle cx="512" cy="512" r="84" fill="#FFD447" stroke="#3D0E63" stroke-width="12"/>
+  <path d="M10 1L12.35 7.36L19.13 7.63L13.8 11.84L15.64 18.37L10 14.6L4.36 18.37L6.2 11.84L0.87 7.63L7.65 7.36Z" fill="#2B2A26" transform="translate(460.76 460.76) scale(5.12)"/>
+</svg>

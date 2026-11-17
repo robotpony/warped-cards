@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Favicon: its own simpler drawing for 16 to 48 px. Four cream tiles, one suit each, no star. -->
+  <defs><linearGradient id="fav" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A2BC2"/><stop offset="1" stop-color="#3D0E63"/></linearGradient></defs>
+  <rect width="1024" height="1024" rx="160" fill="url(#fav)"/>
+  <rect x="40" y="40" width="452" height="452" rx="70" fill="#FDFCF8"/>
+  <path d="M10 0.8C10 0.8 1.4 7.4 1.4 12C1.4 14.6 3.4 16.4 5.8 16.4C7.3 16.4 8.6 15.7 9.3 14.6C9.1 16.6 8.2 18.1 6.6 19.2H13.4C11.8 18.1 10.9 16.6 10.7 14.6C11.4 15.7 12.7 16.4 14.2 16.4C16.6 16.4 18.6 14.6 18.6 12C18.6 7.4 10 0.8 10 0.8Z" fill="#000000" transform="translate(98.76 98.76) scale(16.72)"/>
+  <rect x="532" y="40" width="452" height="452" rx="70" fill="#FDFCF8"/>
+  <path d="M10 18.6C10 18.6 1 12.4 1 6.6C1 3.6 3.3 1.4 5.9 1.4C7.8 1.4 9.2 2.6 10 4.2C10.8 2.6 12.2 1.4 14.1 1.4C16.7 1.4 19 3.6 19 6.6C19 12.4 10 18.6 10 18.6Z" fill="#E00000" transform="translate(590.76 98.76) scale(16.72)"/>
+  <rect x="40" y="532" width="452" height="452" rx="70" fill="#FDFCF8"/>
+  <path d="M10 0.8L17.6 10L10 19.2L2.4 10Z" fill="#0070E0" transform="translate(98.76 590.76) scale(16.72)"/>
+  <rect x="532" y="532" width="452" height="452" rx="70" fill="#FDFCF8"/>
+  <path d="M5.7 5.4a4.3 4.3 0 1 0 8.6 0a4.3 4.3 0 1 0 -8.6 0ZM0.9000000000000004 11.4a4.3 4.3 0 1 0 8.6 0a4.3 4.3 0 1 0 -8.6 0ZM10.5 11.4a4.3 4.3 0 1 0 8.6 0a4.3 4.3 0 1 0 -8.6 0ZM7.4 10.4a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0ZM9.1 11.5C9 15.4 8 17.6 6.4 19.2H13.6C12 17.6 11 15.4 10.9 11.5Z" fill="#00843D" transform="translate(590.76 590.76) scale(16.72)"/>
+</svg>

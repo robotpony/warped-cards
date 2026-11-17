@@ -4,6 +4,8 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 
 ## Crib Maze
 
+- [ ] `@apple` Use the app icon from `design/icon/` in both Apple targets: Icon Composer layers, or the `export/apple` PNGs with the light one flattened (design/icon/README.md) (Bruce, 2026-11-16)
+- [ ] `@linux` Use the app icon from `design/icon/export/linux` for the Godot app and its `.desktop` entry (design/icon/README.md) (Bruce, 2026-11-16)
 - [x] `@apple` Move `swift/` to `engine/swift/` and `apps/apple/`, in one patch build (PORTING.md › Layout › Moving there) (from `@linux`, 2026-11-16)
 - [x] `@apple` Show the build line (`Mac 0.15.2 · spec 1 · r23`) on the About screen and add `specVersion` to the record header, with engine.md › Records updated (PORTING.md › Versions) (from `@linux`, 2026-11-16)
 - [x] `@apple` Read AGENTS.md and add the Mac checkout's real path to its row (from `@linux`, 2026-11-16)
