@@ -459,6 +459,9 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Superseded the same day by the play sheet below. Play choices are a radial menu (Bruce): the chosen play lifts and glows, the rest dim, and its choices sit around it as labelled pills: walk above, close a door to the left, flip to the right (moved up beside walk when a side has no room). A choice that can't be used still shows, greyed, with the reason (no suit, one a hand, all flipped). Flip opens a row of switch letters |
 | 2026-11-17 | Play choices are a sheet over the plays (Bruce: the menu is modal anyway): the chosen play at the top with Cancel beside it, always shown, then one row a choice with a line of detail: Walk (where it ends), Close a door (the door it makes), Flip a switch. A row that can't be used is greyed with the reason. Flip and close open their own rows on the same sheet |
 | 2026-11-17 | Header and key (Bruce): no key under the maze; tapping something on the maze explains it (doors, gates, switches, junctions, stars, tokens). The header shows the hand number, large, then each player's place (1st, 2nd, 3rd) and the % of the way still to go; tapping a player shows the rest. The seed and maze size live in the settings panel. No "pick a play" prompt |
+| 2026-11-17 | Gates merge into doors (Bruce, answer 42): one piece, the card door. Shortcuts get doors with no suit, strength half the steps saved; suited shortcut doors trapped tokens in dead-end shortcuts (40-game runs: 5 to 28 rounds, against 4 to 12 with no shortcut doors). Walks avoid doors they can't open when there's another way, and a token stopped at a door may turn back |
+| 2026-11-17 | Plays shown as a fan of small cards, steps and suit in the corner, until one is chosen; the joker tray sits at the bottom. One joker a turn, before or after the play; after your play, the turn waits for a joker or End turn (Bruce) |
+| 2026-11-17 | Deadlocks are a plot opportunity (Bruce). A player who ends a round no closer to the goal is stuck; at the next deal the maze stirs for them (their door fades, a star falls ahead, or a wall opens), once a round. Two stuck players, or one stuck behind a door the other closed, duel: a short classic pegging game, its winner's door breaks (Bruce: pegging duel not designed yet; the mock tosses a coin). 40 games, balanced against balanced: 5 to 25 rounds, median 8, 34 in 6 to 12, about 4 plot events and 2 duels a game. Two door-closer bots still drag (median 16): they close a fresh door every round |
 | 2026-11-17 | Doors look like playing cards (Bruce): rank (the strength left) and suit in two corners and large in the middle, all turned with the card as it lies across the path. Walls are double: two thin neon lines with a few points of floor between them, so the cards sit in among them |
 
 ## Open questions
@@ -474,6 +477,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 9. The shop: what you pay with now that pips are gone (steps, prizes or something new), what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps or a prize, and how big?
 11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.
+12. The duel: how short is the pegging game, what does the loser risk, and does a bot duel the same way?
 
 ## Plan
 

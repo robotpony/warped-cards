@@ -283,13 +283,20 @@ Pegging is the maze. Classic play to 31 is gone: all the scoring happens on the 
 
 Every set you scored on the grid is a **play**, and so are your hand and crib counts from the show. A play has its cards, its steps (its points, after multipliers) and its suit. A typical hand gives each player about 14 plays and 226 steps (medium bot, r27).
 
-Players take turns, starting with the player to the dealer's left, until every play is used. On your turn you may play one joker, then you must use one play, in one of three ways:
+Players take turns, starting with the player to the dealer's left, until every play is used. On your turn you must use one play, and you may play one joker, before the play or after it. You use a play in one of three ways:
 
 - **Walk it:** move your token its steps (see Moving through the maze). Before you choose, the board shows where each play would take you.
 - **Close a door with it:** put a door on an open passage that no token stands beside. The door takes the play's suit, and its steps as strength. A play with no suit can't make a door. You can close one door a hand (to tune).
 - **Flip a switch with it:** see Switches.
 
 You see every player's plays left and their total steps, but not their cards.
+
+### Stuck: the maze stirs, or a duel
+
+A player who ends a round no closer to the goal than they began it is stuck. At the next deal, the maze stirs for them: the door in their way fades (any suit wears it down, at half its strength), a star falls a few steps ahead, or a wall beside them opens. One stir a round, for the player furthest behind.
+
+When two players are stuck, or one is stuck behind a door the other closed, they duel instead: a short game of classic pegging between the two. The winner's way opens: the door in their way breaks. The pegging duel is not designed yet (the mock tosses a coin), and neither is what the loser risks.
+
 
 Which play to use, and when, is the game: a big play can carry you through a door of its suit, and the order you arrive at a junction decides which way you go.
 
@@ -299,19 +306,18 @@ All cards go back into the deck, and the deck is shuffled. The deck lasts the wh
 
 ## Moving through the maze
 
-The maze is a grid of passages built from the game's seed, with a main route from start to goal (600 steps in the mock, to tune for a game of 6 to 12 rounds), loops that circle back, suit gates, doors and switches.
+The maze is a grid of passages built from the game's seed, with a main route from start to goal (600 steps in the mock, to tune for a game of 6 to 12 rounds), loops that circle back, doors and switches.
 
 - One point is one step, and you must take every step.
-- Walks go forward. A walk never turns into a dead end or a pocket the goal isn't in; it only walks one when it has no other way (after a bounce).
+- Walks go forward. A walk never turns into a dead end or a pocket the goal isn't in; it only walks one when it has no other way.
+- Walks avoid a door they can't open when there's another way. A token stopped at a door may turn back on its next play, or go in with a play of the door's suit.
 - **Junctions.** Where two ways both lead on, a junction's arrow decides: you go the way it points, and the arrow turns to the other way for whoever comes next. Arriving first or second matters, since one way is often a loop that circles back.
 - All tokens share the maze and may stand on the same cell.
 - The game ends the instant a token reaches the goal.
 
-### Suit gates
+### A play's suit
 
-A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps of that suit.
-
-- Each play's steps carry the suit that appears most often among its cards, hand, crib and starter included. If two or more suits tie for most, the steps carry no suit: they walk open paths but can't pass a suit gate.
+Each play's steps carry the suit that appears most often among its cards, hand, crib and starter included. If two or more suits tie for most, the steps carry no suit: they walk open paths, and wear down only doors with no suit.
 
 | Set | Suits | Its steps carry |
 |---|---|---|
@@ -321,15 +327,16 @@ A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps of that suit.
 | 9♦ 6♠ 9♠ 6♦ | 2 diamonds, 2 spades | no suit (a tie) |
 | 7♠ 8♦ | 1 spade, 1 diamond | no suit (a tie) |
 
-So a set built around one suit is worth more than its steps: a run of 3 hearts walks through a heart gate that a mixed run of 3 can't, and a 2-card set of two suits never passes a gate.
+So a set built around one suit is worth more than its steps: a run of 3 hearts wears down a heart door that a mixed run of 3 can't touch.
 
-If your steps reach a gate of the wrong suit, you bounce: walking into the gate costs one step, and the rest of your steps take you back the way you came. A door of the wrong suit stops you instead, and the rest of your steps are lost.
+There are no gates (merged into doors, 2026-11-17).
 
 ### Doors
 
-A door has a suit and a strength, and you need both: only steps of its suit wear it down, and the steps spent on it don't move you. Steps of another suit stop at the door. The door shows its suit and the strength left.
+A door is a card laid across the path: its rank is the strength left, and its suit is the suit it needs. Only steps of its suit wear it down, and the steps spent on it don't move you. Steps of another suit stop at the door, and the rest of the walk is lost. A door with no suit is worn down by any steps.
 
 - Doors on the main route get stronger toward the goal (12, 18, 24 and so on in the mock, to tune).
+- Shortcut doors guard passages that cut the route short. They have no suit, and their strength is half the steps the shortcut saves (to tune), so a shortcut is a trade of steps.
 - A door you close takes your play's suit, and its steps as strength. Opening it needs the same suit, like any door.
 - Damage stays on a door between turns, whoever did it. Once a door is down, it's open for every player.
 

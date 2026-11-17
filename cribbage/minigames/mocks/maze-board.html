@@ -51,6 +51,10 @@
   .pl .rk { font-size: 15px; font-weight: 800; } .pl .pc { font-size: 13px; color: var(--muted); }
   .mazewrap { position: relative; flex: none; }
   .tip { position: absolute; left: 8px; right: 8px; bottom: 8px; background: rgba(10,14,31,.94); border: 1.5px solid var(--gold); border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0,0,0,.5); cursor: pointer; }
+  .plot { position: absolute; left: 14px; right: 14px; top: 12px; background: #F3ECDC; color: #2B2A26; border-radius: 10px; padding: 9px 12px; font-size: 13.5px; line-height: 1.35;
+          box-shadow: 0 0 0 2px #C77DFF, 0 0 18px rgba(199,125,255,.6), 0 6px 16px rgba(0,0,0,.5); cursor: pointer; animation: rise .2s ease-out both; }
+  .plot b { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #7B2FBF; margin-bottom: 2px; }
+  .plot[hidden] { display: none; }
   .tip[hidden] { display: none; } .tip b { color: var(--gold); } .tip p { margin: 0; } .tip p + p { margin-top: 4px; }
   .pl { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--rim); border-radius: 9px; padding: 3px 6px; font-size: 12px; line-height: 1.25; }
   .pl.now { border-color: var(--gold); box-shadow: 0 0 8px rgba(255,212,71,.35); }
@@ -69,6 +73,14 @@
   .play small i { font-style: normal; font-weight: 700; }
   .play.sel { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 16px rgba(255,212,71,.7); transition: transform .12s; }
   .play.off { cursor: default; }
+  /* The fan: small cards, steps over suit. */
+  .fan { position: relative; height: 96px; flex: none; }
+  .fc { position: absolute; width: 52px; height: 74px; border-radius: 6px; background: #F3ECDC; border: 1.5px solid #D6D0C4; box-shadow: -2px 2px 6px rgba(0,0,0,.45);
+        display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 5px 0 0 5px; line-height: 1; color: #2B2A26; cursor: pointer; transform-origin: 50% 120%; transition: margin-top .12s; }
+  .fc b { font-size: 18px; font-weight: 800; } .fc span { font-size: 16px; margin-top: 2px; padding-left: 1px; }
+  .fan:not(.off) .fc:hover { margin-top: -8px; }
+  .fan.off .fc { cursor: default; filter: saturate(.6) brightness(.8); }
+  .tray { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; border-top: 1px solid var(--rim); }
   /* Play sheet: choosing a play covers the plays with its choices, one row each, and Cancel last. */
   .dock { position: relative; }
   .sheet { position: absolute; inset: 0; z-index: 6; background: var(--panel); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; animation: rise .14s ease-out both; }
@@ -100,6 +112,7 @@
     <div class="screen">
       <div class="hdr"><div class="hand" id="handLabel"></div><div class="players" id="players"></div></div>
       <div class="mazewrap"><svg class="maze" id="maze" role="img" aria-label="The maze"><g id="mazeCam"></g><g id="mazeHud"></g></svg>
+        <div class="plot" id="plot" hidden></div>
         <div class="tip" id="tip" hidden></div></div>
       <div class="prompt" id="prompt" aria-live="polite"></div>
       <div class="dock" id="dock"></div>
@@ -116,11 +129,12 @@
       <label>Route <select id="length"><option value="600" selected>600 steps</option><option value="900">900 steps</option><option value="1200">1,200 steps</option></select> <span class="muted" id="sizeNote"></span></label>
       <label>Doors on the route <select id="doors"><option value="4">4</option><option value="6" selected>6</option><option value="9">9</option></select>
         strength <select id="doorBase"><option value="12:6" selected>12, 18, 24 …</option><option value="20:10">20, 30, 40 …</option><option value="30:15">30, 45, 60 …</option></select></label>
-      <label>Gated shortcuts <select id="gates"><option value="0">none</option><option value="6" selected>6</option><option value="12">12</option></select></label>
+      <label>Shortcut doors (strength: half the steps saved) <select id="shortSuit"><option value="">any suit</option><option value="1">suited</option></select> <select id="gates"><option value="0">none</option><option value="3">3</option><option value="6" selected>6</option><option value="12">12</option></select></label>
       <label>Switches <select id="switches"><option value="0">none</option><option value="4" selected>4</option><option value="8">8</option></select></label>
       <label>Close a door: strength <select id="closeMul"><option value="0.5">half the play's steps</option><option value="1" selected>the play's steps</option></select>
         <select id="closeWhere"><option value="any" selected>anywhere</option><option value="near">within 10 cells of you</option></select>
         at most <select id="closeMax"><option value="1" selected>1</option><option value="2">2</option><option value="99">any</option></select> a hand</label>
+      <label>Plot: when a player ends a hand no closer to the goal <select id="plotAfter"><option value="0">nothing happens</option><option value="1" selected>the maze stirs (two stuck: a duel)</option></select></label>
       <label>Bots <select id="bots"><option value="1" selected>1</option><option value="2">2</option></select>
         Bot 1 <select id="style1"></select> Bot 2 <select id="style2"></select></label>
       <label>Walk speed <select id="speed"><option value="160">normal</option><option value="90" selected>fast</option><option value="0">instant</option></select></label>
@@ -141,7 +155,7 @@
       <li><b>Pegging is the maze.</b> Players take turns, the seat after the dealer first, until every play is used. On your turn, pick a play: the board shows where it will take you. Then <b>walk</b> it, or spend it to <b>close a door</b> (the door takes the play's suit, and its steps as strength), or to <b>flip a switch</b>. You can close one door a hand (setting). Before that you can play one joker.</li>
       <li><b>Walking.</b> One step a point, and every step is taken. Walks go forward: they never turn into a dead end or a pocket. Where two ways both lead on, a <b>junction</b> (a gold disc with an arrow, at real forks near the tokens and along a previewed path) decides: you go the way it points, and it turns to the other way for whoever comes next, so arriving first or second matters. One way is often a loop that circles back.</li>
       <li><b>Doors</b> have a suit and a strength, and you need both: only a play of the door's suit wears it down, and the steps spent on it don't move you. Damage stays; a broken door is open for everyone. A play of another suit stops at the door, and the rest of it is lost. <b>Suit gates</b> pass their suit only; another suit bounces off (one step) and walks back. <b>Switches</b> are a pair of passages, one open and one shut; flipping swaps them, for everyone. Each switch flips once a hand.</li>
-      <li><b>Stars</b> sit on the loops and give a joker when a play ends on them: <i>key</i> (one wrong-suit gate or door), <i>burn</i> (break any door), <i>bomb</i> (a wall beside you; a big shortcut leaves a door of half the cut, no suit), <i>swapper</i> (swap places with a token, not back the same hand).</li>
+      <li><b>Stars</b> sit on the loops and give a joker when a play ends on them: <i>key</i> (one wrong-suit door), <i>burn</i> (break any door), <i>bomb</i> (a wall beside you; a big shortcut leaves a door of half the cut, no suit), <i>swapper</i> (swap places with a token, not back the same hand).</li>
       <li>The first token into the goal wins. The target is 6 to 12 hands a game, like cribbage.</li>
     </ul>
 
@@ -181,7 +195,7 @@
   const SEATS = ["You", "Bot 1", "Bot 2"];
   const STYLES = { balanced: "Balanced", racer: "Racer", timer: "Timer", closer: "Door closer", jokers: "Jokers" };
   const JOKERS = { key: "Key", burn: "Burn", bomb: "Bomb", swapper: "Swapper" };
-  const JOKER_HINT = { key: "Used by itself: lets one play pass a wrong-suit gate or door", burn: "Break any door", bomb: "Blow open a wall beside you", swapper: "Swap places with any token" };
+  const JOKER_HINT = { key: "Used by itself: lets one play past a wrong-suit door", burn: "Break any door", bomb: "Blow open a wall beside you", swapper: "Swap places with any token" };
   const LETTERS = "ABCDEFGH", V = 380;
   for (const id of ["style0", "style1", "style2"]) $(id).innerHTML = Object.entries(STYLES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   $("style0").value = "balanced"; $("style1").value = "balanced"; $("style2").value = "racer";
@@ -189,8 +203,8 @@
   const cfg = () => {
     const [db, ds] = $("doorBase").value.split(":").map(Number);
     return {
-      length: +$("length").value, doors: +$("doors").value, doorBase: db, doorStep: ds, gates: +$("gates").value,
-      switches: +$("switches").value, closeMul: +$("closeMul").value, closeWhere: $("closeWhere").value, closeMax: +$("closeMax").value, bots: +$("bots").value,
+      length: +$("length").value, doors: +$("doors").value, doorBase: db, doorStep: ds, gates: +$("gates").value, shortSuit: !!$("shortSuit").value,
+      switches: +$("switches").value, closeMul: +$("closeMul").value, closeWhere: $("closeWhere").value, closeMax: +$("closeMax").value, plotAfter: +$("plotAfter").value, bots: +$("bots").value,
       styles: [$("style0").value, $("style1").value, $("style2").value], speed: +$("speed").value, whole: $("whole").checked, zoom: +$("zoom").value,
     };
   };
@@ -233,13 +247,14 @@
       const d = bfs(start, edges, nb, N)[goal];
       if (d >= c.length && loops) { loops--; continue; }
       edges.delete(key(a, b));
-      if (d < c.length && c.length - d >= 10 && c.length - d <= c.length / 5) shortcuts.push([a, b]);
+      if (d < c.length && c.length - d >= 10 && c.length - d <= c.length / 5) shortcuts.push([a, b, c.length - d]);
     }
     let g = 0;
-    for (const [a, b] of shortcuts) {
+    for (const [a, b, saves] of shortcuts) {
       if (g >= c.gates) break;
-      edges.set(key(a, b), { kind: "gate", suit: SUITS[g % 4] });
-      if (bfs(start, edges, nb, N, e => e.kind !== "gate")[goal] !== c.length) { edges.delete(key(a, b)); continue; }
+      // A shortcut door: a card door like the route's, as strong as half the steps it saves.
+      edges.set(key(a, b), { kind: "door", shortcut: true, saves, strength: Math.max(6, Math.round(saves / 2)), damage: 0, suit: c.shortSuit ? SUITS[g % 4] : null });
+      if (bfs(start, edges, nb, N, e => !e.shortcut)[goal] !== c.length) { edges.delete(key(a, b)); continue; }
       g++;
     }
     M.route = routeFrom(M);
@@ -255,7 +270,7 @@
       for (let m = 0; m < 1 << k; m++) {
         const pass = (e) => e.kind !== "switch" || (e.on !== !!(m >> e.sw & 1));
         if (bfs(goal, edges, nb, N, pass).some(d => d < 0)) return false;
-        if (bfs(start, edges, nb, N, e => e.kind !== "gate" && pass(e))[goal] < c.length * .8) return false;
+        if (bfs(start, edges, nb, N, e => !e.shortcut && pass(e))[goal] < c.length * .8) return false;
       }
       return true;
     };
@@ -300,9 +315,9 @@
     return dist;
   }
   function routeFrom(M) {
-    const d = bfs(M.goal, M.edges, M.nb, M.N, e => e.kind !== "gate"), path = [M.start];
+    const d = bfs(M.goal, M.edges, M.nb, M.N, e => !e.shortcut), path = [M.start];
     let cur = M.start;
-    while (cur !== M.goal && d[cur] > 0) { cur = M.nb(cur).find(n => { const e = M.edges.get(M.key(cur, n)); return d[n] === d[cur] - 1 && e && e.kind !== "gate"; }); path.push(cur); }
+    while (cur !== M.goal && d[cur] > 0) { cur = M.nb(cur).find(n => { const e = M.edges.get(M.key(cur, n)); return d[n] === d[cur] - 1 && e && !e.shortcut; }); path.push(cur); }
     return path;
   }
   const passable = (e) => !!e && !(e.kind === "switch" && !e.on);
@@ -339,7 +354,7 @@
   const manhattan = (M, a, b) => { const [x, y] = M.xy(a), [p, q] = M.xy(b); return Math.abs(x - p) + Math.abs(y - q); };
 
   // ---------- Cost to the goal (for the header and the bots) ----------
-  // One step a cell; a door its strength left plus 8 when it has a suit; a gate 12 more.
+  // One step a cell; a door its strength left plus 8 when it has a suit.
   function costField() {
     const M = G.M, N = M.N, W = M.W, adj = M.adj, dist = new Float64Array(N).fill(Infinity), off = [-W, 1, W, -1];
     const hk = new Float64Array(N * 4 + 4), hv = new Int32Array(N * 4 + 4); let hn = 0;
@@ -350,7 +365,7 @@
       const d0 = hk[0], u = pop(); if (d0 > dist[u]) continue;
       for (let d = 0; d < 4; d++) {
         const e = adj[u * 4 + d]; if (!e || (e.kind === "switch" && !e.on)) continue;
-        const c = e.kind === "door" ? e.strength - e.damage + 1 + (e.suit ? 8 : 0) : e.kind === "gate" ? 13 : 1, n = u + off[d];
+        const c = e.kind === "door" ? e.strength - e.damage + 1 + (e.suit ? 8 : 0) : 1, n = u + off[d];
         if (d0 + c < dist[n]) { dist[n] = d0 + c; push(d0 + c, n); }
       }
     }
@@ -366,7 +381,7 @@
     G = { seedText: String(seedText), seed: seedValue(seedText), c, rolls: [], log: [], hand: 0, guard: 0, won: null, anim: null, sel: null, mode: null, swaps: [], cam: null, headless, stats: {} };
     G.M = makeMaze(G.seed, c, G.rolls); changed();
     G.P = SEATS.slice(0, 1 + c.bots).map((name, seat) => ({ name, seat, human: seat === 0 && !headless, style: c.styles[seat], pos: G.M.start, prev: -1, plays: [], jokers: { key: 0, burn: 0, bomb: 0, swapper: 0 } }));
-    G.gridRng = D.stream(G.seed, "grid", G.rolls); G.prizeRng = D.stream(G.seed, "prize", G.rolls);
+    G.gridRng = D.stream(G.seed, "grid", G.rolls); G.prizeRng = D.stream(G.seed, "prize", G.rolls); G.plotRng = D.stream(G.seed, "plot", G.rolls);
     log("game_start", { seed: G.seedText, size: G.M.W + "x" + G.M.H, route: c.length, switches: G.M.switches.length, stars: G.M.prizes.size });
     startHand();
   }
@@ -376,6 +391,7 @@
 
   // Each player's grid turn: a recorded medium-bot turn, dealer or not, picked by the "grid" stream.
   function startHand() {
+    if (G.hand) plotCheck();
     G.hand++;
     const n = G.P.length;
     G.dealer = (G.hand - 1) % n;
@@ -402,6 +418,65 @@
     if (!G.headless) render();
   }
 
+  // ---------- Plot: when a player is stuck, the maze stirs ----------
+  // Stuck: this many of their turns in a row without getting closer to the goal (by the cost field,
+  // doors included). Then one event, picked from the "plot" stream, opens a way for them.
+  // Stuck: a player ends a hand no closer to the goal (by the cost field, doors included) than they began it.
+  // Checked as each hand starts; one event a hand, for the player furthest behind.
+  function plotCheck() {
+    if (!G.c.plotAfter || G.won !== null) return;
+    const F = field(), stuck = [];
+    for (const p of G.P) { const d = F[p.pos]; if (p.handStart !== undefined && d >= p.handStart - .5) stuck.push(p); p.handStart = d; }
+    if (!stuck.length) return;
+    stuck.sort((a, b) => F[b.pos] - F[a.pos]);
+    if (stuck.length > 1) duel(stuck[0], stuck[1]);
+    else { const p = stuck[0], way = wayAhead(p), q = way.door && way.door.closedBy !== undefined && G.P[way.door.closedBy];
+      if (q && q !== p) duel(p, q); else stir(p, way); }
+    for (const p of G.P) p.handStart = F[p.pos];
+  }
+  // The way ahead: downhill on the cost field, noting the first door on it.
+  function wayAhead(p) {
+    const M = G.M, F = field(); let c = p.pos, door = null; const ahead = [];
+    for (let k = 0; k < 400 && c !== M.goal; k++) {
+      let best = -1, bd = -1;
+      for (const d of exitsOf(M, c)) { const n = stepTo(M, c, d); if (n >= 0 && F[n] < F[c] && (best < 0 || F[n] < F[best])) { best = n; bd = d; } }
+      if (best < 0) break;
+      const e = M.adj[c * 4 + bd]; if (e.kind === "door" && !door) door = e;
+      c = best; ahead.push(c);
+    }
+    return { door, ahead };
+  }
+  // One of three openings for a player: their door fades, a star falls ahead, or a wall beside them opens.
+  function opening(p, way, ev) {
+    const M = G.M, F = field(), who = p.human ? "you" : p.name;
+    if (ev === "fade") {
+      const door = way.door, was = door.suit; door.suit = null; door.strength = door.damage + Math.ceil((door.strength - door.damage) / 2);
+      return `the ${was ? GLYPH[was] + " " : ""}door ahead of ${who} fades: any suit wears it down now, and it's half as strong.`;
+    }
+    if (ev === "break") { way.door.kind = "open"; way.door.broken = true; return `the door ahead of ${who} breaks open, for everyone.`; }
+    if (ev === "star") { M.prizes.add(way.ahead[Math.min(6, way.ahead.length - 1)]); return `a star falls a few steps ahead of ${who}.`; }
+    const n = bombable(p).sort((a, b) => F[a] - F[b])[0];
+    setEdge(M, p.pos, n, bombResult(p, n)); findPockets(M);
+    return `the walls shift beside ${who}: a new way opens.`;
+  }
+  const openings = (p, way) => [way.door && ["fade", 50], way.ahead.length > 5 && ["star", 25], bombable(p).length && ["shift", 25]].filter(Boolean);
+  function stir(p, way) {
+    const opts = openings(p, way); if (!opts.length) return;
+    const ev = G.plotRng.pick(opts, "plot"), text = opening(p, way, ev);
+    changed(); G.stats.plot = (G.stats.plot || 0) + 1;
+    log("plot", { player: p.name, event: ev });
+    if (!G.headless) G.plot = { title: "The maze stirs", text: text[0].toUpperCase() + text.slice(1) };
+  }
+  // A duel: the two stuck players play a short classic pegging game (not designed yet). Stand-in: a coin
+  // from the plot stream picks the winner, and the door in the winner's way breaks (or another opening).
+  function duel(p, q) {
+    const w = G.plotRng.pick([[p, 50], [q, 50]], "duel"), way = wayAhead(w), opts = openings(w, way);
+    const text = way.door ? opening(w, way, "break") : opts.length ? opening(w, way, G.plotRng.pick(opts, "plot")) : "the maze stays as it is.";
+    changed(); G.stats.plot = (G.stats.plot || 0) + 1; G.stats.duel = (G.stats.duel || 0) + 1;
+    log("duel", { players: [p.name, q.name], winner: w.name });
+    if (!G.headless) G.plot = { title: "Duel", text: `${p.human ? "You" : p.name} and ${q.human ? "you" : q.name} are stuck in each other's way, so you peg it out: a short game of classic pegging (not designed yet; a coin stands in). ${w.human ? "You win" : w.name + " wins"}, and ${text}` };
+  }
+
   // ---------- Walking a play (the same for everyone, so it can be previewed) ----------
   // Every step is taken. At a junction (3 or 4 ways) you go where its arrow points, or the next
   // way round from it, and the arrow turns on to the next way. A gate passes its suit; a door
@@ -415,6 +490,10 @@
       let cand = ex.filter(d => d !== from);
       const live = cand.filter(d => !M.dead[i * 4 + d]); if (live.length) cand = live;
       if (!cand.length) cand = ex; if (!cand.length) break;
+      // Doors: a walk avoids a door it can't open when it has another way; standing at a door of its suit, it goes in.
+      const blocked = (d) => { const e = M.adj[i * 4 + d]; return e.kind === "door" && e.suit && e.suit !== play.s && !p.jokers.key; };
+      const open = cand.filter(d => !blocked(d)); if (open.length) cand = open;
+      if (p.prev < 0) { const mine = cand.filter(d => M.adj[i * 4 + d].kind === "door"); if (mine.length) cand = mine; }
       let d = cand[0];
       if (cand.length > 1) {
         for (let k = 0; k < 4; k++) { const t = (M.ptr[i] + k) % 4; if (cand.includes(t)) { d = t; break; } }
@@ -423,10 +502,9 @@
         out.ev.push("junction"); out.turns.push([i, d]);
       }
       const to = stepTo(M, i, d), e = M.adj[i * 4 + d];
-      if ((e.kind === "gate" || e.kind === "door") && e.suit && e.suit !== play.s) {
+      if (e.kind === "door" && e.suit && e.suit !== play.s) {
         if (p.jokers.key > 0) { p.jokers.key--; out.ev.push("key"); }
-        else if (e.kind === "door") { out.cells.push(i); out.ev.push("stopped"); break; }
-        else { n--; p.prev = to; out.cells.push(i); out.ev.push("bounce"); continue; }
+        else { out.cells.push(i); out.ev.push("stopped"); p.prev = -1; break; }
       }
       if (e.kind === "door") {
         const hit = Math.min(n, e.strength - e.damage); e.damage += hit; n -= hit; out.cells.push(i); out.ev.push("door_hit");
@@ -506,7 +584,7 @@
     else if (j === "bomb") { if (!bombable(p).includes(arg)) return false; setEdge(M, p.pos, arg, bombResult(p, arg)); findPockets(M); }
     else if (j === "burn") { const e = M.edges.get(arg); if (!e || e.kind !== "door") return false; e.kind = "open"; e.broken = true; }
     else return false;
-    p.jokers[j]--; p.jokerUsed = G.turnNo; changed();
+    p.jokers[j]--; p.jokerUsed = G.turnNo; G.jokerDone = true; changed();
     log("joker", { player: p.name, joker: j });
     return true;
   }
@@ -585,13 +663,22 @@
     doWalk(p, a.act === "walk" ? a.play : left(p)[0], endTurn);
   }
   function botLive() { const p = cur(); if (p.human || G.won !== null || G.phase !== "maze" || G.anim) return; applyBot(p); }
-  function endTurn() { G.sel = null; G.mode = null; if (!G.headless) showTip(null); if (!G.headless) render(); if (G.headless) return; later(nextTurn, 150); }
+  // After your play: if you hold a joker you can still use this turn, the turn waits for it or End turn.
+  const usableJokers = (p) => !G.jokerDone && ["burn", "bomb", "swapper"].some(j => p.jokers[j] > 0);
+  function afterPlay() {
+    G.sel = null; G.mode = null;
+    if (G.won !== null) return;
+    const me = G.P[0];
+    if (usableJokers(me)) { G.after = true; G.flash = "Play a joker, or end your turn"; return render(); }
+    endTurn();
+  }
+  function endTurn() { G.sel = null; G.mode = null; G.after = false; G.jokerDone = false; if (G.P[G.turn] && G.P[G.turn].human) G.plot = null; if (!G.headless) showTip(null); if (!G.headless) render(); if (G.headless) return; later(nextTurn, 150); }
 
   // ---------- Bot runs: whole games, every seat a bot, no animation ----------
   // One game a tick, so the page stays responsive; progress(k) after each game, done(html) at the end.
   function runGames(n, done, progress = () => {}) {
     const keep = G, hands = [], wins = [0, 0, 0], sum = {}, runC = cfg();
-    const keys = ["walk", "junction", "bounce", "stopped", "door_hit", "door_down", "door_closed", "switch", "joker", "star", "key"];
+    const keys = ["walk", "junction", "stopped", "plot", "duel", "door_hit", "door_down", "door_closed", "switch", "joker", "star", "key"];
     let s = 0, g = null;
     // One hand a tick.
     const one = () => { try { oneHand(); } catch (e) { G = keep; done(`<p>Game ${s} failed: ${e.message}</p><pre>${e.stack}</pre>`); } };
@@ -671,7 +758,6 @@
       const e = M.edges.get(k); if (!e || (e.kind === "open" && !e.broken)) continue;
       const [mx, my, up] = mid(k);
       if (e.broken) s += A.brokenDoor(mx, my, cs, up);
-      else if (e.kind === "gate") s += A.gate(mx, my, cs, up, e.suit);
       else if (e.kind === "door") s += doorMark(mx, my, cs, up, e);
       else if (e.kind === "switch") s += switchMark(mx, my, cs, up, e);
     }
@@ -737,13 +823,13 @@
     else if (G.mode === "flip") prompt = "Pick a switch to flip (its letter is on the maze)";
     else if (G.mode === "bomb") prompt = "Tap a wall beside you";
     else if (G.mode === "burn") prompt = "Tap a door to burn";
-    else if (G.sel) prompt = pv ? `${G.sel.p} steps: ${pv.won ? "reaches the goal!" : `ends ${Math.round(previewCost(pv))} from the goal`}${pv.ev.includes("bounce") ? " · bounces" : ""}${pv.ev.includes("door_hit") ? " · hits a door" : ""}` : "";
+    else if (G.sel) prompt = pv ? `${G.sel.p} steps: ${pv.won ? "reaches the goal!" : `ends ${Math.round(previewCost(pv))} from the goal`}${pv.ev.includes("door_hit") ? " · hits a door" : ""}` : "";
     else prompt = "";
     $("prompt").textContent = prompt;
 
     let d = "";
     if (G.phase === "done") d += `<div class="row" style="justify-content:space-between"><span class="muted">Hand ${G.hand} done</span><button class="btn go" id="nextHand">Deal the next hand</button></div>`;
-    d += `<div class="row"><span class="lbl">Your plays · ${left(me).length} left</span></div>`;
+    d += `<div class="row"><span class="lbl">Your plays · ${left(me).length} left · ${left(me).reduce((a, x) => a + x.p, 0)} steps</span></div>`;
     // The chosen play's sheet: one row a choice, greyed with the reason when it can't be used, and Cancel always.
     const doorIcon = `<svg width="16" height="18" viewBox="0 0 16 18"><rect x="3.5" y="1.5" width="9" height="14" rx="1.5" transform="rotate(22 8 9)" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>`;
     let sheet = "";
@@ -758,20 +844,25 @@
       } else {
         const closeWhy = !x.s ? "A play with no suit can't make a door" : (me.closed || 0) >= c.closeMax ? "You've closed a door this hand" : "";
         const flipWhy = !M.switches.length ? "No switches on this maze" : M.switches.every((_, k) => !canFlip(k)) ? "Every switch was flipped this hand" : "";
-        rows = row(`data-act="walk"`, "▶", `Walk ${x.p} steps`, pv ? (pv.won ? "Reaches the goal!" : `Ends ${Math.round(previewCost(pv))} from the goal${pv.ev.includes("door_hit") ? ", hits a door" : ""}${pv.ev.includes("stopped") ? ", stopped by a door" : ""}${pv.ev.includes("bounce") ? ", bounces off a gate" : ""}`) : "", true, "go") +
+        rows = row(`data-act="walk"`, "▶", `Walk ${x.p} steps`, pv ? (pv.won ? "Reaches the goal!" : `Ends ${Math.round(previewCost(pv))} from the goal${pv.ev.includes("door_hit") ? ", hits a door" : ""}${pv.ev.includes("stopped") ? ", stopped by a door" : ""}`) : "", true, "go") +
           row(`data-act="close"`, doorIcon, "Close a door", closeWhy || `Put a ${GLYPH[x.s]}${Math.max(1, Math.round(x.p * c.closeMul))} door on an open path`, !closeWhy) +
           row(`data-act="flip"`, "⇄", "Flip a switch", flipWhy || "Swap a switch's open and shut passages", !flipWhy);
       }
       sheet = `<div class="sheet"><div class="sh-top"><div class="play">${playFace(x)}</div><button class="cancel" data-act="cancel">✕ Cancel</button></div>${rows}</div>`;
     }
-    d += `<div class="plays">${me.plays.filter(x => !x.used).map(x => `<div class="play${G.sel === x ? " sel" : ""}${myTurn ? "" : " off"}" role="button" tabindex="0" data-play="${x.id}">${playFace(x)}</div>`).join("")}</div>`;
-    const js = Object.keys(JOKERS).filter(j => me.jokers[j]);
-    d += `<div class="row"><span class="lbl">Jokers</span>${js.map(j => `<button class="jk${G.mode === j ? " on" : ""}" data-joker="${j}" ${myTurn && j !== "key" && me.jokerUsed !== G.turnNo ? "" : "disabled"} title="${JOKER_HINT[j]}">${JOKERS[j]}${me.jokers[j] > 1 ? " ×" + me.jokers[j] : ""}</button>`).join("") || `<span class="muted" style="font-size:13px">Stars give jokers</span>`}</div>`;
+    // Your plays as a fan of small cards: steps over suit. Tap one to open its sheet, which shows its cards.
+    const fan = left(me), nF = fan.length, cw = 52, fw = ($("dock").clientWidth || 400) - 44, gapF = nF > 1 ? Math.min(cw + 4, (fw - cw) / (nF - 1)) : 0, x0F = (fw - (cw + gapF * (nF - 1))) / 2;
+    d += `<div class="fan${G.after || !myTurn ? " off" : ""}">${fan.map((x, k) => { const m = k - (nF - 1) / 2, ang = nF > 1 ? m * Math.min(3.2, 36 / nF) : 0;
+      return `<div class="fc" role="button" tabindex="0" data-play="${x.id}" style="left:${x0F + k * gapF + 12}px; top:${Math.abs(m) * Math.abs(m) * .35 + 4}px; transform: rotate(${ang}deg); z-index:${k + 1}">` +
+        `<b>${x.p}</b><span style="color:${x.s ? FACECOL[x.s] : "#8A8170"}">${x.s ? GLYPH[x.s] : "–"}</span></div>`; }).join("")}</div>`;
+    // The joker tray: one joker a turn, before your play or after it.
+    const js = Object.keys(JOKERS).filter(j => me.jokers[j]), jOk = (j) => myTurn && j !== "key" && !G.jokerDone && !G.sel;
+    d += `<div class="tray"><span class="lbl">Jokers</span>${js.map(j => `<button class="jk${G.mode === j ? " on" : ""}" data-joker="${j}" ${jOk(j) ? "" : "disabled"} title="${JOKER_HINT[j]}">${JOKERS[j]}${me.jokers[j] > 1 ? " ×" + me.jokers[j] : ""}</button>`).join("") || `<span class="muted" style="font-size:13px">Stars give jokers</span>`}` +
+      `${G.after ? `<button class="btn go" data-act="endturn" style="margin-left:auto">End turn</button>` : ""}</div>`;
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
     d += sheet;
-    const keepScroll = $("dock").querySelector(".plays")?.scrollTop || 0;
     $("dock").innerHTML = d;
-    $("dock").querySelector(".plays").scrollTop = keepScroll;
+    if (G.plot) { $("plot").innerHTML = `<b>${G.plot.title}</b>${G.plot.text}`; $("plot").hidden = false; } else $("plot").hidden = true;
 
     $("won").hidden = G.won === null;
     if (G.won !== null) { const p = G.P[G.won]; $("wonTitle").textContent = p.human ? "You reach the goal!" : `${p.name} reaches the goal`; $("wonText").textContent = `Hand ${G.hand}. Seed ${G.seedText}.`; }
@@ -844,9 +935,9 @@
     const side = [[fy, 0], [1 - fx, 1], [1 - fy, 2], [fx, 3]].sort((a, b) => a[0] - b[0])[0];
     const e = side[0] < .3 ? M.adj[i * 4 + side[1]] : null;
     const sname = (q) => q ? `<span style="color:${SUITCOL[q]}">${GLYPH[q]}</span>` : "no suit";
-    if (e && e.kind === "door") out.push(`<b>Door ${sname(e.suit)}, ${e.strength - e.damage} left</b> (of ${e.strength}). Only ${e.suit ? sname(e.suit) : "any"} steps wear it down, and steps spent on it don't move you. Another suit stops here and loses the rest of its walk.${e.closedBy !== undefined ? ` Closed by ${G.P[e.closedBy].name}.` : ""}`);
+    if (e && e.kind === "door") out.push(`<b>Door ${sname(e.suit)}, ${e.strength - e.damage} left</b> (of ${e.strength}). Only ${e.suit ? sname(e.suit) : "any"} steps wear it down, and steps spent on it don't move you. Another suit stops here and loses the rest of its walk.${e.shortcut ? ` It guards a shortcut that saves ${e.saves} steps.` : ""}${e.closedBy !== undefined ? ` Closed by ${G.P[e.closedBy].name}.` : ""}`);
     else if (e && e.broken) out.push(`<b>A broken door.</b> Open for everyone.`);
-    else if (e && e.kind === "gate") out.push(`<b>Gate ${sname(e.suit)}.</b> Only ${sname(e.suit)} steps pass, and it never wears down. Another suit bounces off: one step into it, then the rest of the walk goes back.`);
+    else if (false) out.push(`<b>Gate ${sname(e.suit)}.</b> Only ${sname(e.suit)} steps pass, and it never wears down. Another suit bounces off: one step into it, then the rest of the walk goes back.`);
     else if (e && e.kind === "switch") out.push(`<b>Switch ${LETTERS[e.sw]}</b>, now ${e.on ? "open" : "shut"}. Flipping it (with a play) swaps it with its pair, for everyone, once a hand.`);
     for (const p of G.P) if (p.pos === i) out.push(`<b>${p.name}</b>${p.human ? "" : ` (${STYLES[G.c.styles[p.seat]]} bot)`}: ${left(p).length} plays left.`);
     if (i === M.goal) out.push(`<b>The goal.</b> The first token here wins.`);
@@ -858,6 +949,7 @@
   }
   function showTip(html) { const t = $("tip"); if (!html) { t.hidden = true; return; } t.innerHTML = html; t.hidden = false; }
   $("tip").addEventListener("click", () => showTip(null));
+  $("plot").addEventListener("click", () => { G.plot = null; render(); });
   $("players").addEventListener("click", (ev) => {
     const el = ev.target.closest("[data-who]"); if (!el) return;
     const p = G.P[+el.dataset.who], l = left(p), F = field();
@@ -870,27 +962,31 @@
     const asking = G.phase === "maze" && cur().human && !G.anim && G.won === null && ["close", "burn", "bomb"].includes(G.mode);
     if (!asking) return showTip(explainAt(ev));
     const pass = t.closest("[data-pass]");
-    if (pass && G.mode === "close" && G.sel) { if (doClose(me, G.sel, pass.dataset.pass)) endTurn(); return; }
-    if (pass && G.mode === "burn") { if (useJoker(me, "burn", pass.dataset.pass)) { G.mode = null; render(); } return; }
-    const bomb = t.closest("[data-bomb]"); if (bomb && G.mode === "bomb") { if (useJoker(me, "bomb", +bomb.dataset.bomb)) { G.mode = null; render(); } }
+    if (pass && G.mode === "close" && G.sel) { if (doClose(me, G.sel, pass.dataset.pass)) afterPlay(); return; }
+    if (pass && G.mode === "burn") { if (useJoker(me, "burn", pass.dataset.pass)) jokerDone(); return; }
+    const bomb = t.closest("[data-bomb]"); if (bomb && G.mode === "bomb") { if (useJoker(me, "bomb", +bomb.dataset.bomb)) jokerDone(); }
   });
+  // A joker used: after the play it ends the turn; before it, the play is still to come.
+  function jokerDone() { G.mode = null; if (G.after) return endTurn(); G.flash = null; render(); }
   $("dock").addEventListener("click", (ev) => {
-    const me = G.P[0], b = ev.target.closest("button, .play");
-    if (!b || b.disabled || b.classList.contains("off")) return;
+    const me = G.P[0], b = ev.target.closest("button, .fc");
+    if (!b || b.disabled || b.closest(".fan.off")) return;
     if (b.id === "nextHand") { G.turnNo = (G.turnNo || 0) + 1; return startHand(); }
+    if (b.dataset.play && G.after) return;
     if (b.dataset.play) { const x = me.plays.find(x => x.id === b.dataset.play); G.sel = G.sel === x ? null : x; G.mode = null; G.flash = null; return render(); }
     if (b.dataset.act === "cancel") { G.sel = null; G.mode = null; G.flash = null; return render(); }
-    if (b.dataset.act === "walk") { G.turnNo = (G.turnNo || 0) + 1; return doWalk(me, G.sel, endTurn); }
+    if (b.dataset.act === "walk") { G.turnNo = (G.turnNo || 0) + 1; return doWalk(me, G.sel, afterPlay); }
     if (b.dataset.act === "close" || b.dataset.act === "flip") { G.mode = G.mode === b.dataset.act ? null : b.dataset.act; return render(); }
-    if (b.dataset.flip !== undefined) { G.turnNo = (G.turnNo || 0) + 1; doFlip(me, G.sel, +b.dataset.flip); return endTurn(); }
+    if (b.dataset.flip !== undefined) { G.turnNo = (G.turnNo || 0) + 1; doFlip(me, G.sel, +b.dataset.flip); return afterPlay(); }
     if (b.dataset.joker) { G.mode = G.mode === b.dataset.joker ? null : b.dataset.joker; return render(); }
-    if (b.dataset.swap) { if (useJoker(me, "swapper", +b.dataset.swap)) { G.mode = null; render(); } }
+    if (b.dataset.swap) { if (useJoker(me, "swapper", +b.dataset.swap)) jokerDone(); }
+    if (b.dataset.act === "endturn") return endTurn();
   });
   $("again").addEventListener("click", () => start(G.seedText));
   $("apply").addEventListener("click", () => start($("seed").value || "1"));
   $("seed").addEventListener("keydown", (e) => { if (e.key === "Enter") start($("seed").value || "1"); });
   $("newSeed").addEventListener("click", () => { const s = String(Math.floor(Math.random() * 1e9)); $("seed").value = s; start(s); });
-  for (const id of ["length", "doors", "doorBase", "gates", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
+  for (const id of ["length", "doors", "doorBase", "gates", "shortSuit", "plotAfter", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
   for (const id of ["speed", "whole", "zoom"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
   $("runBtn").addEventListener("click", () => {
     const n = +$("runN").value, t0 = performance.now(); $("runBtn").disabled = true; $("runOut").textContent = "Running…";
