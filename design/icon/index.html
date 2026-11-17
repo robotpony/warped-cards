@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crib Maze Icon</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700;800&display=swap">
+<style>
+  :root {
+    --bg: #F4F1EA; --text: #2B2A26; --muted: #6B6352; --line: #E2D8C2; --panel: #FFFDF7;
+    --desk: #DCD6CA;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; --desk: #2A251D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17140F; --text: #E9DFC9; --muted: #A99E86; --line: #3A3428; --panel: #211D16; --desk: #2A251D;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 22px; margin: 0; }
+  p { margin: 0 0 12px; max-width: 75ch; }
+  .muted { color: var(--muted); }
+  .bar { display: flex; gap: 8px; margin: 12px 0 24px; flex-wrap: wrap; }
+  .bar button { font: inherit; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line);
+                background: var(--panel); color: var(--text); cursor: pointer; }
+  .bar button[aria-pressed="true"] { border-color: var(--text); font-weight: 700; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+            padding: 18px; margin-bottom: 22px; }
+  .head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+  .tag { font-size: 13px; color: var(--muted); }
+  .row { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; }
+  figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  figcaption { font-size: 12px; color: var(--muted); text-align: center; }
+  .hero svg { width: 260px; height: 260px; display: block; }
+  .desk { background: var(--desk); border-radius: 12px; padding: 14px; display: flex; gap: 14px; align-items: flex-end; }
+  .wall { border-radius: 18px; padding: 16px; display: flex; gap: 14px; align-items: flex-end;
+          background: linear-gradient(160deg, #3B5BA9, #7A4CA0 60%, #C0607A); }
+  .linux { background: #242424; border-radius: 12px; padding: 14px; display: flex; gap: 14px; align-items: flex-end; }
+  .tabs { background: #DEE1E6; border-radius: 10px 10px 0 0; padding: 8px 8px 0; display: flex; gap: 4px; min-width: 260px; }
+  .tab { background: #fff; border-radius: 8px 8px 0 0; padding: 6px 10px; display: flex; gap: 8px; align-items: center;
+         font: 12px system-ui, sans-serif; color: #222; }
+  .tab.off { background: transparent; color: #555; }
+  .tabs.dark { background: #202124; }
+  .tabs.dark .tab { background: #35363A; color: #eee; }
+  .tabs.dark .tab.off { background: transparent; color: #aaa; }
+  .tiny { display: flex; gap: 10px; align-items: center; }
+  .tiny svg { image-rendering: pixelated; }
+  @media (max-width: 600px) { .hero svg { width: 200px; height: 200px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Crib Maze app icon, mocks</h1>
+  <p class="muted">Each idea is shown the way each platform frames it: macOS (rounded plate with a margin and shadow), iOS (full bleed, the system rounds the corners), Linux (a scalable SVG on a dark panel) and web (favicon at 32 and 16 px, the home screen icon at 180). One artwork per idea; the frames come from the platform. Mock, 2026-11-16.</p>
+  <div class="bar" role="group" aria-label="Page theme">
+    <button data-t="auto" aria-pressed="true">Auto</button>
+    <button data-t="light" aria-pressed="false">Light</button>
+    <button data-t="dark" aria-pressed="false">Dark</button>
+  </div>
+  <div id="out"></div>
+</main>
+<script>
+(function () {
+  // Suit and star paths from design/neon/shapes.json (20 x 20 box).
+  const SHAPE = {
+    H: "M10 18.6C10 18.6 1 12.4 1 6.6C1 3.6 3.3 1.4 5.9 1.4C7.8 1.4 9.2 2.6 10 4.2C10.8 2.6 12.2 1.4 14.1 1.4C16.7 1.4 19 3.6 19 6.6C19 12.4 10 18.6 10 18.6Z",
+    D: "M10 0.8L17.6 10L10 19.2L2.4 10Z",
+    S: "M10 0.8C10 0.8 1.4 7.4 1.4 12C1.4 14.6 3.4 16.4 5.8 16.4C7.3 16.4 8.6 15.7 9.3 14.6C9.1 16.6 8.2 18.1 6.6 19.2H13.4C11.8 18.1 10.9 16.6 10.7 14.6C11.4 15.7 12.7 16.4 14.2 16.4C16.6 16.4 18.6 14.6 18.6 12C18.6 7.4 10 0.8 10 0.8Z",
+    C: "M5.7 5.4a4.3 4.3 0 1 0 8.6 0a4.3 4.3 0 1 0 -8.6 0ZM0.9 11.4a4.3 4.3 0 1 0 8.6 0a4.3 4.3 0 1 0 -8.6 0ZM10.5 11.4a4.3 4.3 0 1 0 8.6 0a4.3 4.3 0 1 0 -8.6 0ZM7.4 10.4a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0ZM9.1 11.5C9 15.4 8 17.6 6.4 19.2H13.6C12 17.6 11 15.4 10.9 11.5Z",
+    star: "M10 1L12.35 7.36L19.13 7.63L13.8 11.84L15.64 18.37L10 14.6L4.36 18.37L6.2 11.84L0.87 7.63L7.65 7.36Z",
+  };
+  // palette.json: card.* and the table colours.
+  const C = { face: "#FDFCF8", rule: "#D6D0C4", ink: "#2B2A26", soft: "#7C6C48", joker: "#6A1B9A",
+    S: "#000000", H: "#E00000", D: "#0070E0", C: "#00843D",
+    bg: "#0A0E1F", panel: "#121A33", rim: "#2E3A66", cyan: "#3CF2FF", gold: "#FFD447", magenta: "#FF4FD8", violet: "#C77DFF", paper: "#FFFDF7" };
+  const FONT = `font-family="Saira Semi Condensed, Arial Narrow, sans-serif" font-weight="800"`;
+  let uid = 0;
+
+  const shape = (k, cx, cy, size, fill) =>
+    `<path d="${SHAPE[k]}" fill="${fill}" transform="translate(${cx - size / 2} ${cy - size / 2}) scale(${size / 20})"/>`;
+
+  // A cream card, top-left at x, y, width w (height 1.4 w).
+  function card(x, y, w, o = {}) {
+    const h = w * 1.4, s = o.suit, col = s ? C[s] : C.ink;
+    let g = `<g${o.rot ? ` transform="rotate(${o.rot} ${x + w / 2} ${y + h / 2})"` : ""}>`;
+    if (o.shadow) g += `<rect x="${x}" y="${y + w * 0.06}" width="${w}" height="${h}" rx="${w * 0.09}" fill="#000" opacity="${o.shadow}"/>`;
+    g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w * 0.09}" fill="${C.face}" stroke="${o.ring || C.rule}" stroke-width="${o.ring ? w * 0.06 : w * 0.024}"/>`;
+    if (o.rank) g += `<text x="${x + w * 0.2}" y="${y + w * 0.36}" text-anchor="middle" ${FONT} font-size="${w * 0.34}" fill="${col}" letter-spacing="${o.rank === "10" ? -w * 0.03 : 0}">${o.rank}</text>`;
+    if (s) g += shape(s, x + w / 2, y + h / 2 + (o.rank ? w * 0.06 : 0), w * (o.pip || 0.56), col);
+    if (o.inner) g += o.inner(x, y, w, h);
+    return g + `</g>`;
+  }
+
+  // ---- The five ideas. Each draws in a 1024 full-bleed square. ----------
+
+  const IDEAS = [
+    {
+      key: "trace", name: "A · Trace", scheme: "Table navy, cream cards, gold trace",
+      note: "The match board: a 3 × 3 grid of cards with a gold set traced through four of them, the way you play a turn. The grid one.",
+      art() {
+        const id = "g" + uid++;
+        let s = `<defs><radialGradient id="${id}" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="${C.panel}"/><stop offset="1" stop-color="${C.bg}"/></radialGradient>` +
+          `<filter id="${id}f" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter></defs>` +
+          `<rect width="1024" height="1024" fill="url(#${id})"/>`;
+        const w = 168, h = w * 1.4, gap = 30, x0 = (1024 - 3 * w - 2 * gap) / 2, y0 = (1024 - 3 * h - 2 * gap) / 2;
+        const grid = [["5", "H"], ["J", "S"], ["2", "C"], ["9", "D"], ["5", "S"], ["K", "D"], ["4", "C"], ["6", "H"], ["5", "D"]];
+        const path = [0, 1, 4, 7];
+        const centre = i => [x0 + (i % 3) * (w + gap) + w / 2, y0 + Math.floor(i / 3) * (h + gap) + h / 2];
+        const d = path.map((i, n) => (n ? "L" : "M") + centre(i).join(" ")).join("");
+        grid.forEach(([r, su], i) => {
+          s += card(x0 + (i % 3) * (w + gap), y0 + Math.floor(i / 3) * (h + gap), w, { suit: su, pip: 0.5, ring: path.includes(i) ? C.gold : null });
+        });
+        s += `<path d="${d}" fill="none" stroke="${C.gold}" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" opacity=".55" filter="url(#${id}f)"/>` +
+          `<path d="${d}" fill="none" stroke="${C.gold}" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`;
+        return s;
+      },
+    },
+    {
+      key: "fan", name: "B · Fan", scheme: "Table navy, cyan neon edge",
+      note: "A cribbage hand fanned out: 5♥, 5♣, J♦, 10♠ (four fifteens and a pair: 10 points). Cyan glow behind it, so it reads as the game's table, not a plain card deck.",
+      art() {
+        const id = "g" + uid++;
+        let s = `<defs><radialGradient id="${id}" cx="50%" cy="60%" r="70%"><stop offset="0" stop-color="#16305A"/><stop offset=".55" stop-color="${C.panel}"/><stop offset="1" stop-color="${C.bg}"/></radialGradient>` +
+          `<filter id="${id}f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="30"/></filter></defs>` +
+          `<rect width="1024" height="1024" fill="url(#${id})"/>` +
+          `<ellipse cx="512" cy="600" rx="330" ry="250" fill="${C.cyan}" opacity=".28" filter="url(#${id}f)"/>`;
+        const w = 260, hand = [["10", "S", -24], ["J", "D", -8], ["5", "C", 8], ["5", "H", 24]];
+        hand.forEach(([r, su, a]) => {
+          s += `<g transform="rotate(${a} 512 980)">` + card(512 - w / 2, 270, w, { suit: su, rank: r, pip: 0.5, shadow: 0.35 }) + `</g>`;
+        });
+        return s;
+      },
+    },
+    {
+      key: "mazecard", name: "C · Maze card", scheme: "Gold, cream card, ink maze",
+      note: "One card, tilted like the starter, with a maze for its pip. The path ends in a red heart: the gate a 5♥ opens. Warm and bright on a home screen.",
+      art() {
+        const id = "g" + uid++;
+        let s = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE07A"/><stop offset="1" stop-color="#F29A1C"/></linearGradient></defs>` +
+          `<rect width="1024" height="1024" fill="url(#${id})"/>`;
+        const w = 520;
+        s += card(512 - w / 2, 512 - w * 0.7, w, {
+          rot: -6, shadow: 0.25, rank: "5", suit: null,
+          inner: (x, y, w, h) => {
+            // A serpentine maze, 5 x 5 cells, entry top left, exit bottom right.
+            const u = 56, mx = x + (w - 5 * u) / 2, my = y + h / 2 - 2.5 * u + 30;
+            const P = (cx, cy) => `${mx + cx * u} ${my + cy * u}`;
+            const walls = `M${P(1, 0)}H${mx + 5 * u}V${my + 4 * u}M${P(4, 5)}H${mx}V${my}` +
+              `M${P(1, 0)}V${my + 4 * u}M${P(2, 1)}V${my + 5 * u}M${P(3, 0)}V${my + 4 * u}M${P(4, 1)}V${my + 5 * u}`;
+            let g = `<path d="${walls}" fill="none" stroke="${C.ink}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>`;
+            g += `<path d="M${P(0.5, 0.5)}V${my + 4.5 * u}H${mx + 1.5 * u}V${my + 0.5 * u}H${mx + 2.5 * u}V${my + 4.5 * u}H${mx + 3.5 * u}V${my + 0.5 * u}H${mx + 4.5 * u}V${my + 5.1 * u}" fill="none" stroke="${C.gold}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`;
+            g += `<circle cx="${mx + 0.5 * u}" cy="${my + 0.5 * u}" r="17" fill="${C.ink}"/>`;
+            g += shape("H", mx + 4.5 * u, my + 5.75 * u, 52, C.H);
+            return g;
+          },
+        });
+        return s;
+      },
+    },
+    {
+      key: "board", name: "D · Board", scheme: "Paper light, four-colour suits, gold token",
+      note: "A light take: the 4 × 4 board as a cream grid, with the four suits on it and a gold token stepping through. Grid like, and the one that stands out on a dark dock.",
+      art() {
+        let s = `<rect width="1024" height="1024" fill="${C.paper}"/>`;
+        const n = 4, cell = 176, gap = 22, x0 = (1024 - n * cell - (n - 1) * gap) / 2, y0 = x0;
+        const pips = { 0: "S", 5: "H", 10: "D", 15: "C", 6: null };
+        for (let i = 0; i < 16; i++) {
+          const x = x0 + (i % n) * (cell + gap), y = y0 + Math.floor(i / n) * (cell + gap);
+          const on = i in pips;
+          s += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="26" fill="${on ? C.face : "#EFE9DC"}" stroke="${on ? C.rule : "#E2D8C2"}" stroke-width="6"/>`;
+          if (pips[i]) s += shape(pips[i], x + cell / 2, y + cell / 2, 104, C[pips[i]]);
+        }
+        const c = i => [x0 + (i % n) * (cell + gap) + cell / 2, y0 + Math.floor(i / n) * (cell + gap) + cell / 2];
+        const route = [0, 1, 5, 6, 10, 11, 15];
+        const d = route.map((i, k) => (k ? "L" : "M") + c(i).join(" ")).join("");
+        s += `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="12" stroke-dasharray="2 30" stroke-linecap="round" opacity=".55"/>`;
+        const [tx, ty] = c(6);
+        s += `<circle cx="${tx}" cy="${ty + 10}" r="64" fill="#000" opacity=".15"/><circle cx="${tx}" cy="${ty}" r="62" fill="${C.gold}" stroke="${C.ink}" stroke-width="10"/>` +
+          shape("star", tx, ty, 70, C.ink);
+        return s;
+      },
+    },
+    {
+      key: "suits", name: "E · Four suits", scheme: "Joker purple, cream cards",
+      note: "A 2 × 2 grid of cards, one per suit in the four-colour deck, with a gold star for the joker-made card. The boldest at 16 px.",
+      art() {
+        const id = "g" + uid++;
+        let s = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A2BC2"/><stop offset="1" stop-color="#3D0E63"/></linearGradient></defs>` +
+          `<rect width="1024" height="1024" fill="url(#${id})"/>`;
+        const w = 300, h = w * 1.4, gap = 40, x0 = (1024 - 2 * w - gap) / 2, y0 = (1024 - 2 * h - gap) / 2;
+        [["S", -3], ["H", 2], ["D", -2], ["C", 3]].forEach(([su, a], i) => {
+          s += card(x0 + (i % 2) * (w + gap), y0 + Math.floor(i / 2) * (h + gap), w, { suit: su, pip: 0.62, rot: a, shadow: 0.3 });
+        });
+        s += `<circle cx="${x0 + 2 * w + gap - 10}" cy="${y0 + 10}" r="78" fill="${C.gold}" stroke="#3D0E63" stroke-width="12"/>` + shape("star", x0 + 2 * w + gap - 10, y0 + 10, 96, C.ink);
+        return s;
+      },
+    },
+  ];
+
+  // ---- Round 2: versions of E, in layers (background, cards, star) --------
+  // mode: "light", "dark" (iOS and macOS dark icons) or "tinted" (iOS tinted:
+  // the system turns the art grey and tints it; shown here with a warm tint).
+
+  function eArt(v, mode = "light") {
+    const id = "e" + uid++;
+    const bg = mode === "dark" ? v.darkBg : v.bg;
+    let s = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${bg[0]}"/><stop offset="1" stop-color="${bg[1]}"/></linearGradient>` +
+      `<filter id="${id}g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="40"/></filter>` +
+      `<filter id="${id}t"><feColorMatrix type="matrix" values="${[1, 0.77, 0.42].map(t => `${0.2126 * t} ${0.7152 * t} ${0.0722 * t} 0 0`).join(" ")} 0 0 0 1 0"/></filter></defs>`;
+    s += mode === "tinted" ? `<rect width="1024" height="1024" fill="#0B0B0B"/>` : `<rect width="1024" height="1024" fill="url(#${id})"/>`;
+    const w = v.w, h = w * 1.4, gap = v.gap, x0 = (1024 - 2 * w - gap) / 2, y0 = (1024 - 2 * h - gap) / 2;
+    let fg = "";
+    if (v.glow && mode !== "tinted") fg += `<rect x="${x0}" y="${y0}" width="${2 * w + gap}" height="${2 * h + gap}" rx="60" fill="${v.glow}" opacity="${mode === "dark" ? 0.35 : 0.5}" filter="url(#${id}g)"/>`;
+    const tilt = v.tilt ? [-3, 2, -2, 3] : [0, 0, 0, 0];
+    ["S", "H", "D", "C"].forEach((su, i) => {
+      fg += card(x0 + (i % 2) * (w + gap), y0 + Math.floor(i / 2) * (h + gap), w,
+        { suit: su, pip: v.pip, rot: tilt[i], shadow: v.shadow, ring: v.ring });
+    });
+    if (v.star) {
+      const [cx, cy, r] = v.star === "centre" ? [512, 512, 84] : [x0 + 2 * w + gap - 10, y0 + 10, 78];
+      fg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.gold}" stroke="${mode === "dark" ? v.darkBg[1] : v.bg[1]}" stroke-width="12"/>` + shape("star", cx, cy, r * 1.22, C.ink);
+    }
+    if (mode === "dark") fg = `<g opacity=".92">${fg}</g>`;
+    if (mode === "tinted") fg = `<g filter="url(#${id}t)">${fg}</g>`;
+    return s + fg;
+  }
+
+  // The simple favicon: four cream tiles, one suit each, no star or tilt.
+  function eSmall(v) {
+    let s = `<rect width="1024" height="1024" fill="${v.bg[0]}"/><rect y="512" width="1024" height="512" fill="${v.bg[1]}" opacity=".6"/>`;
+    const t = 452, g = 40, o = (1024 - 2 * t - g) / 2;
+    ["S", "H", "D", "C"].forEach((su, i) => {
+      const x = o + (i % 2) * (t + g), y = o + Math.floor(i / 2) * (t + g);
+      s += `<rect x="${x}" y="${y}" width="${t}" height="${t}" rx="70" fill="${C.face}"/>` + shape(su, x + t / 2, y + t / 2, t * 0.74, C[su]);
+    });
+    return s;
+  }
+
+  const PURPLE = ["#8A2BC2", "#3D0E63"], PURPLE_DARK = ["#2A0B40", "#0E0418"];
+  const E = [
+    { key: "e1", name: "E1 · As picked", scheme: "Joker purple, tilted cards, star at the corner",
+      note: "Round 1's E unchanged, for comparison.",
+      bg: PURPLE, darkBg: PURPLE_DARK, w: 300, gap: 40, pip: 0.62, tilt: true, shadow: 0.3, star: "corner" },
+    { key: "e2", name: "E2 · Square on", scheme: "Joker purple, straight cards, star in the middle",
+      note: "No tilt, bigger suits, tighter gaps, and the star where the four cards meet. Crisper at 32 px, and the star reads as the centre of the board.",
+      bg: PURPLE, darkBg: PURPLE_DARK, w: 316, gap: 28, pip: 0.72, tilt: false, shadow: 0.3, star: "centre" },
+    { key: "e3", name: "E3 · Table navy", scheme: "The game's table navy, straight cards, star in the middle",
+      note: "E2 on the table colour from the game, so the icon and the app's first screen match. Loses the purple that marks jokers.",
+      bg: ["#1A2A5C", "#0A0E1F"], darkBg: ["#0F1630", "#05070F"], w: 316, gap: 28, pip: 0.72, tilt: false, shadow: 0.35, star: "centre" },
+    { key: "e4", name: "E4 · Violet glow", scheme: "Deep purple, violet glow and rings, star at the corner",
+      note: "A darker purple with the joker violet glowing behind the cards and ringing each one, closer to the game's neon table.",
+      bg: ["#3A0F5E", "#14051F"], darkBg: ["#1C0830", "#08020D"], w: 300, gap: 36, pip: 0.66, tilt: false, shadow: 0, ring: C.violet, glow: C.violet, star: "corner" },
+    { key: "e5", name: "E5 · No star", scheme: "Joker purple, straight cards, no star",
+      note: "Just the four suits. Tests whether the star earns its place; the simplest shape of all five.",
+      bg: PURPLE, darkBg: PURPLE_DARK, w: 316, gap: 28, pip: 0.74, tilt: false, shadow: 0.3, star: null },
+  ];
+
+  // ---- Platform frames ---------------------------------------------------
+
+  // iOS and web home screen: full bleed, corners rounded by the system.
+  function ios(art, px) {
+    const id = "c" + uid++;
+    return `<svg viewBox="0 0 1024 1024" width="${px}" height="${px}"><clipPath id="${id}"><rect width="1024" height="1024" rx="230"/></clipPath><g clip-path="url(#${id})">${art}</g></svg>`;
+  }
+  // macOS (Big Sur grid): 824 plate inside 1024, 185 corner, soft shadow.
+  function mac(art, px) {
+    const id = "c" + uid++;
+    return `<svg viewBox="0 0 1024 1024" width="${px}" height="${px}"><defs><filter id="${id}s" x="-10%" y="-10%" width="120%" height="130%"><feGaussianBlur stdDeviation="14"/></filter></defs>` +
+      `<rect x="100" y="112" width="824" height="824" rx="185" fill="#000" opacity=".35" filter="url(#${id}s)"/>` +
+      `<clipPath id="${id}"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>` +
+      `<g clip-path="url(#${id})"><g transform="translate(100 100) scale(${824 / 1024})">${art}</g></g></svg>`;
+  }
+  // Linux (freedesktop): a scalable SVG; we use the same plate, with a little margin.
+  function linux(art, px) {
+    const id = "c" + uid++;
+    return `<svg viewBox="0 0 1024 1024" width="${px}" height="${px}"><clipPath id="${id}"><rect x="64" y="64" width="896" height="896" rx="200"/></clipPath>` +
+      `<g clip-path="url(#${id})"><g transform="translate(64 64) scale(${896 / 1024})">${art}</g></g></svg>`;
+  }
+  // Favicon: square, small rounding.
+  function fav(art, px) {
+    const id = "c" + uid++;
+    return `<svg viewBox="0 0 1024 1024" width="${px}" height="${px}"><clipPath id="${id}"><rect width="1024" height="1024" rx="160"/></clipPath><g clip-path="url(#${id})">${art}</g></svg>`;
+  }
+
+  const out = document.getElementById("out");
+  const round2 = `<h2 style="margin:8px 0 4px">Round 2 · Versions of E</h2>
+    <p class="muted">Bruce picked E with no text (2026-11-16). Each version below is built in layers (background, cards, star), so it also shows iOS's dark and tinted icons, and a simpler favicon next to the full icon scaled down.</p>` +
+    E.map(v => {
+      const a = eArt(v), sm = eSmall(v);
+      return `<section id="${v.key}">
+      <div class="head"><h2>${v.name}</h2><span class="tag">${v.scheme}</span></div>
+      <p>${v.note}</p>
+      <div class="row">
+        <figure class="hero">${mac(a, 260)}<figcaption>macOS, 1024 canvas</figcaption></figure>
+        <figure><div class="wall">${ios(a, 110)}${ios(eArt(v, "dark"), 110)}${ios(eArt(v, "tinted"), 110)}</div><figcaption>iOS light, dark and tinted</figcaption></figure>
+        <figure><div class="desk">${mac(a, 128)}${mac(a, 64)}${mac(a, 32)}</div><figcaption>macOS Dock and Finder, 128 / 64 / 32</figcaption></figure>
+        <figure><div class="linux">${linux(a, 96)}${linux(a, 48)}</div><figcaption>Linux, GNOME panel</figcaption></figure>
+        <figure>
+          <div class="tabs"><div class="tab">${fav(a, 16)}Full</div><div class="tab">${fav(sm, 16)}Simple</div></div>
+          <div class="tabs dark"><div class="tab">${fav(a, 16)}Full</div><div class="tab">${fav(sm, 16)}Simple</div></div>
+          <div class="tiny" style="margin-top:8px">${fav(a, 32)}${fav(a, 16)}<span class="tag">full</span>${fav(sm, 32)}${fav(sm, 16)}<span class="tag">simple</span></div>
+          <figcaption>Web favicon, 32 / 16 px</figcaption>
+        </figure>
+      </div>
+    </section>`;
+    }).join("") +
+    `<details><summary style="cursor:pointer;margin:8px 0 16px"><h2 style="display:inline">Round 1 · Five ideas</h2></summary>`;
+  out.innerHTML = round2 + IDEAS.map(I => {
+    const a = I.art();
+    return `<section id="${I.key}">
+      <div class="head"><h2>${I.name}</h2><span class="tag">${I.scheme}</span></div>
+      <p>${I.note}</p>
+      <div class="row">
+        <figure class="hero">${mac(a, 260)}<figcaption>macOS, 1024 canvas</figcaption></figure>
+        <figure><div class="desk">${mac(a, 128)}${mac(a, 64)}${mac(a, 32)}</div><figcaption>macOS Dock and Finder, 128 / 64 / 32</figcaption></figure>
+        <figure><div class="wall">${ios(a, 120)}${ios(a, 60)}</div><figcaption>iOS home screen and Spotlight</figcaption></figure>
+        <figure><div class="linux">${linux(a, 96)}${linux(a, 48)}</div><figcaption>Linux, GNOME panel</figcaption></figure>
+        <figure>
+          <div class="tabs"><div class="tab">${fav(a, 16)}Crib Maze</div><div class="tab off">Inbox</div></div>
+          <div class="tabs dark"><div class="tab">${fav(a, 16)}Crib Maze</div><div class="tab off">Inbox</div></div>
+          <div class="tiny" style="margin-top:8px">${fav(a, 32)}${fav(a, 16)}${ios(a, 60)}</div>
+          <figcaption>Web: tab favicon, 32 / 16 px, home screen 180 (shown at 60)</figcaption>
+        </figure>
+      </div>
+    </section>`;
+  }).join("") + `</details>`;
+
+  document.querySelectorAll(".bar button").forEach(b => b.addEventListener("click", () => {
+    const t = b.dataset.t;
+    if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.dataset.theme = t;
+    document.querySelectorAll(".bar button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  }));
+})();
+</script>
+</body>
+</html>
