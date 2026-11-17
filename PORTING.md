@@ -155,5 +155,5 @@ For every session working on the Swift build, not just porters:
 ## Open questions
 
 1. Answered 2026-11-16: each port keeps its own build version and names the spec version it implements (Versions).
-2. Which comes first off Apple: the Swift engine with a new UI, or another language? The Swift engine passes on Linux (Two ways to port), so the Swift path costs only a new UI. Still to choose: the Linux UI toolkit.
+2. Answered 2026-11-16: the Swift engine with a new UI. The Linux client is Godot 4.7 with the engine loaded through SwiftGodot (Bruce, after a trial build: the golden record verifies inside Godot on Linux ARM64). Known risks: a crash on a project's first import with the extension present, and the OpenGL renderer in a VM with no Vulkan.
 3. Answered 2026-11-16 by Bruce: yes. The UI's cue timings move into config before the Linux UI is built, so every client reads them instead of copying numbers. `@apple` does it (TODO.md); until then, ui.md › Hard-coded numbers are provisional.
