@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-16, spec 4, from the beta app at 0.18.0, rules r24
+Status: draft 3, 2026-11-17, spec 5, from the beta app at 0.18.1, rules r25
 
 ## Summary
 
@@ -930,7 +930,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.18.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r24` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.18.1 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r25` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins

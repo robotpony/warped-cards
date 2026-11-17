@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 6, 2026-11-16, spec 4 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r24, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 6, 2026-11-17, spec 5 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r25, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -361,7 +361,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r24`), specVersion (4), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
+| `header` | format (1), game (`crib-maze`), rules (`match-r25`), specVersion (5), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -558,14 +558,14 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r24, as tuned on 2026-11-15 with the opening count added on 2026-11-16 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r25, as tuned on 2026-11-15, with the opening count added on 2026-11-16 and prizes retuned on 2026-11-17 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r24",
+  "rulesVersion": "match-r25",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
@@ -577,7 +577,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
     "maxEdgeCards": 1,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
-    "prize": { "rareAt": 40, "epicAt": 70, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20]] }
+    "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20]] }
   },
   "game": { "turns": 3 },
   "deck": { "shared": true, "minSize": 40 },
@@ -815,7 +815,7 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 | The traced bots' starting cards and paths can include special jokers | The shuffled list holds playing cards only, so special jokers are never starting cards or on a path (bot results shift a little) |
 | Starter "apart" and "touching off" settings | Not in the engine; r14 has the starter in the corner and touching on |
 | "Good hand" setting | Fixed cards in a standalone turn |
-| Epic at double the rare threshold | `epicAt` set in config (31) |
+| Epic at double the rare threshold | `epicAt` set in config (34) |
 | Warning state kept in browser storage | A player profile input (see Left-over warning) |
 
 ## Open questions

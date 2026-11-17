@@ -2,6 +2,12 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.18.1 — 2026-11-17
+
+### Changed
+
+- Prizes are easier to win again, now that a set uses only one hand or crib card: rare from a best set of 28 steps, epic from 34.
+
 ## 0.18.0 — 2026-11-16
 
 ### Added

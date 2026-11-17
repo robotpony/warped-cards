@@ -230,6 +230,7 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r22 | 2026-11-15 | Prizes retuned for no cap: rare from a best set of 40 steps, epic from 70 (were 25 and 31). Config gains `deck.shared` (on), for deck building. Noddy Yookerspiel only |
 | r23 | 2026-11-15 | A game of 3 turns (`game.turns`). The deck lasts the game: made cards join it and burned cards leave it. New burn joker (start 1, prize weight 20), down to `deck.minSize` 40. Power jokers and each turn's prize carry over. Noddy Yookerspiel only |
 | r24 | 2026-11-16 | The hand, and the dealer's crib, are counted as a classic show before the grid deals in (`opening`). A set picks at most one hand or crib card (`maxEdgeCards` 1). The hand row keeps the order you sorted it in the deal. Noddy Yookerspiel only |
+| r25 | 2026-11-17 | Prizes retuned for r24's lower scores: rare from a best set of 28 steps, epic from 34 (were 40 and 70). Noddy Yookerspiel only |
 | r19 | 2026-11-15 | New power joker, the reach: sets pick 1 or 2 more cards for 10 to 45 seconds. Everyone starts with 1. Noddy Yookerspiel only; the web mock stays at r16 |
 | r18 | 2026-11-15 | Flushes count like a classic hand: 4 picked cards of one suit score whatever the starter's suit. The starter never costs a set points. Crib Maze Beta only; the web mock stays at r16 |
 | r17 | 2026-11-15 | A set picks 2 to 4 cards (was 5), plus the starter. Crib Maze Beta only; the web mock stays at r16 |

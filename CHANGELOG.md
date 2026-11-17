@@ -2,6 +2,15 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 5 — 2026-11-17
+
+Match rules r25 (concept.md › Decisions, 2026-11-17).
+
+### Changed
+
+- Prizes retuned for r24's lower scores: `rules.json` › `match.prize` is rare from a best set of 28 steps and epic from 34 (were 40 and 70). Nothing else in the engine changes, but a port's game from the same seed now awards different prizes and so plays differently in later turns.
+- `seed1.jsonl` is re-recorded at spec 5.
+
 ## spec 4 — 2026-11-16
 
 Match rules r24 (concept.md › Decisions, 2026-11-16).

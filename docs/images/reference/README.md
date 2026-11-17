@@ -1,6 +1,6 @@
 # Reference screenshots
 
-What the Mac beta (Noddy Yookerspiel) shows, for other builds to match shot for shot. Made by `apps/apple/scripts/reference.sh` from Apple build 0.18.0, spec 4; re-shoot when a scene changes.
+What the Mac beta (Noddy Yookerspiel) shows, for other builds to match shot for shot. Made by `apps/apple/scripts/reference.sh` from Apple build 0.18.1, spec 5; re-shoot when a scene changes.
 
 - Each phone shot is the 402 pt wide phone with 24 pt of page around it, rendered at 2x (900 px wide). The settings shot is the 340 × 620 pt panel at the Mac's screen scale (2x).
 - Every shot is a still from `--snapshot`, the beta's own renderer: `"Noddy Yookerspiel" --snapshot <file> --seed 1 <flags>`. Animations are at their end state, so motion isn't shown; ui.md › Motion and `config/fx.json` give the timings.

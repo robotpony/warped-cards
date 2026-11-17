@@ -1,6 +1,6 @@
 # Crib RPG: Rules
 
-Status: draft 6, 2026-11-16. Match turns follow match rules r24. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 6, 2026-11-17. Match turns follow match rules r25. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -64,7 +64,7 @@ In classic cribbage you'd count your hand after pegging. In Crib RPG, each playe
 
 The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
-These are match rules r24, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r25, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -263,7 +263,7 @@ Not designed yet: items; the title and blank card prizes; how many jokers a roun
 | The timer runs out | The turn ends |
 | No sets are left on the board | With no power jokers, the turn ends. With some, you have 25 seconds to use one (to tune), shown on the clock; a joker that opens up a set stops the count |
 
-At the end, your best score wins one prize: a special joker for your power jokers. A bigger best score wins a better tier: common below 40 steps, rare from 40, epic from 70 (to tune; r22). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
+At the end, your best score wins one prize: a special joker for your power jokers. A bigger best score wins a better tier: common below 28 steps, rare from 28, epic from 34 (to tune; r25). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
 
 Your token doesn't move during the turn. Each scoring set becomes a bundle of steps with a suit, and after the turn you walk them through the maze (not designed yet).
 

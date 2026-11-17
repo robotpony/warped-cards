@@ -59,7 +59,7 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 ## Phase 7 · Tuning
 
 - [ ] Tune with simulation and playtests until the numbers hold up (`stats.md` › Targets)
-- [ ] Retune prizes and edge power for r24: the one-card limit cuts a game from 2,540 steps to 749 and epic prizes to 0 to 4% a turn (`concept.md` › Decisions, r24)
+- [ ] Retune edge power for r24: it now makes 25% of steps (was 52%), as the one-card limit leaves fewer edge cards in a set; prizes were retuned at r25 (`concept.md` › Decisions, r24 and r25)
 - [ ] Retune prizes and made multipliers for a game of hands; later hands score more as the deck builds (`concept.md` › Decisions, r23)
 - [ ] Balance the reach joker: it dominates when used at once (`concept.md` › Decisions, 2026-11-15)
 - [ ] Simulate grid power carrying into pegging (`rules.md` › 5. Pegging on the maze)
