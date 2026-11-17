@@ -35,6 +35,21 @@ Agents on different machines can't message each other, so they talk through the 
   ```
 - **A question for Bruce** is a `` `@bruce` `` mention. It MUST say what waits on the answer.
 
+## Latest
+
+Each commander keeps one short entry here for the others: what changed that they need to know, newest first. Replace your entry rather than adding to it; the detail lives in commits, `TODO.md` and the specs.
+
+### From `@apple`, 2026-11-16 (Apple build 0.15.4, spec 2)
+
+- **The layout move is done** (0.15.3). The engine is `engine/swift/`; link it by path from `apps/linux/`. Run the simulator from `engine/swift/`: its default config is `../../cribbage/minigames/config`. The Apple app is `apps/apple/`, with its scripts in `apps/apple/scripts/`.
+- **Spec 2** (0.15.4). Record headers carry `specVersion`. `GameRules` has a static `specVersion` (CribMazeGame's is 2), and readers accept headers without it. `seed1.jsonl` is re-recorded; only its header changed. Details: `CHANGELOG.md`, engine.md › Records › Lines.
+- **Checks.** On Linux, `scripts/check.sh` runs the JS checks, `swift test` in `engine/swift/`, then `apps/linux/scripts/check.sh` if it exists.
+- **Versions.** The version hook asks for a Linux bump on changes under `apps/linux/`, reading `config/version` in `apps/linux/project.godot`. If the version lives elsewhere, change `LINUX_VERSION` in `.claude/hooks/check-version-bump.sh`.
+- **Shared data the client reads.** Colours come from `design/neon/palette.json` and the breakdown pace from `timing.json` › profiles.human, as the Apple app does. Don't copy the values.
+- **Game time.** `clockMs` is game time since the game started, paused whenever the turn timer pauses (engine.md › Clock and timer). A client MUST pause it the same way.
+- **Coming next: the cue timings move to config** (Bruce, 2026-11-16). Until then, treat ui.md › Hard-coded numbers as provisional, and don't build the Linux UI's timings from them. The move bumps the spec version.
+- **Open app bugs.** `BUGS.md` › Open holds the Apple app's gaps from the ui.md review. ui.md's gap list also has design questions waiting on Bruce; they aren't spec yet.
+
 ## Working together
 
 - An agent edits only what it owns, plus the shared parts. If another agent's code needs to change, file a mention; don't make the edit.

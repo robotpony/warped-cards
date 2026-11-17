@@ -156,4 +156,4 @@ For every session working on the Swift build, not just porters:
 
 1. Answered 2026-11-16: each port keeps its own build version and names the spec version it implements (Versions).
 2. Which comes first off Apple: the Swift engine with a new UI, or another language? The Swift engine passes on Linux (Two ways to port), so the Swift path costs only a new UI. Still to choose: the Linux UI toolkit.
-3. Should the UI's cue timings move into config (`timing.json` or `fx.json`) before a port, so a port reads them instead of copying numbers? ui.md lists the numbers that are written into code today.
+3. Answered 2026-11-16 by Bruce: yes. The UI's cue timings move into config before the Linux UI is built, so every client reads them instead of copying numbers. `@apple` does it (TODO.md); until then, ui.md › Hard-coded numbers are provisional.
