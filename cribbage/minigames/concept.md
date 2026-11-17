@@ -78,9 +78,10 @@ Phases of a game
                                 a cleared board or no sets left
          5e  Turn end ......... the best set wins a prize; the turn summary
     6  Shop .................. spend on jokers and discovered cards
-    7  Pegging on the maze ... classic play to 31, each point a step
-    8  Maze walk ............. grid steps spent on the maze: gates, switches,
-                               shifts, bundles walked by suit
+    7  Pegging on the maze ... players take turns walking the sets they made
+                               on the grid (their plays), choosing which to play;
+                               junctions, doors, switches and jokers are the choices
+    8  (merged into 7) ....... the maze walk is the pegging (2026-11-17)
     9  Next round ............ the deal passes left
 
   Game end ................... a token exits the maze (the beta: after 3 turns)
@@ -98,8 +99,8 @@ Phases of a game
 | 5d | The grid | rules.md › 3; engine.md › Match turn; ui.md › Scene: Match turn | Yes (r27) | Yes |
 | 5e | Turn end | rules.md › 3 › Ending the turn; ui.md › Scene: Turn summary | Yes: prize tier, summary, next turn | Yes |
 | 6 | Shop | rules.md › 4 | No; not designed | Yes |
-| 7 | Pegging on the maze | rules.md › 5; engine.md › Classic (pegging specced, not built) | No | Yes: players take turns on the maze |
-| 8 | Maze walk | concept.md › The maze walk; rules.md › Moving through the maze | No; notes only | Yes: players take turns, and smart choices decide it: where to turn, which jokers to play, which doors to close |
+| 7 | Pegging on the maze | rules.md › 5 (to rewrite); concept.md › The maze walk | No; `mocks/maze-board.html` v2 drifted (play to 31, a points pool) and is to be reworked | Yes: players take turns walking their grid sets as plays, chosen from a list of cards and steps, as in `mocks/maze-walk.html` |
+| 8 | Maze walk | Merged into 7 (2026-11-17) | | Smart choices decide it: which play to make, where to turn, which jokers to play, which doors to close |
 | 9 | Next round | rules.md › 6 | Yes, as the next of 3 turns: the deck carries over, the deal alternates | Yes |
 | | Game end | rules.md › Winning | After 3 turns (r23), with your steps in the summary; no winner yet, since the bot plays no grid turn | Yes: the first token to exit the maze |
 
@@ -429,7 +430,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-15 | Shared deck or each player's own: undecided, so it's a setting (`deck.shared`, on by default; Advanced › Deck building in the beta) |
 | 2026-11-15 | Deck edits, first cut (match rules r23). A game is 3 turns (`game.turns`, to tune), the deal alternating. The deck lasts the game: made cards join it, and a new burn joker takes a grid card out of it for the game, down to 40 cards. Everyone starts with 1 burn; it joins the prize table at weight 20. Power jokers and each turn's prize carry over. Bots don't burn yet. `cribmaze-sim game`, medium bot, 300 games, seed 1: turns score 672, 709 and 1,048 steps (2,429 a game); with a fresh deck each turn, 672, 506 and 743 (1,921). So the lasting deck lifts turns 2 and 3 by about 40%, mostly through made cards' multipliers (181 steps of turn 3). Carrying power jokers over changes almost nothing (bots use them only when stuck). The deck ends the game at 57 cards, 5 of them made. Epic prizes rise from 21% in turn 1 to 31% in turn 3. Prizes and made multipliers need retuning for a game, not a turn |
 | 2026-11-15 | The shape of a game (Bruce): title sequence to the menu, start a game, cut for first dealer, then hands repeat (deal, scoring grid, shop, pegging on the maze) until a player exits the maze. The shop comes after the scoring grid, before pegging. The 3-turn game (`game.turns`, r23) is a stand-in until the maze is built |
-| 2026-11-15 | A game runs 5 to 13 hands. Maze size, circular paths and gates are scaled for a typical game in that range. Grid points are spent opening gates, hitting switches and shifting the maze; pegging moves the tokens, so both matter. How the split works: to design |
+| 2026-11-15 | A game runs 5 to 13 hands. Maze size, circular paths and gates are scaled for a typical game in that range. Grid points are spent opening gates, hitting switches and shifting the maze; pegging moves the tokens, so both matter. How the split works: to design (the grid points and pegging split is superseded 2026-11-17: the maze is the pegging, walked with your grid sets) |
 | 2026-11-15 | The 3-turn game doesn't stay as a test mode: the maze replaces it shortly, and the game becomes hands until a player exits the maze. Made and burned cards last the whole game, across every hand. GameRecord comes next on the engine track, before more deck edits. The first human playtest follows a plan (`playtests/plan.md`), and the first GitHub release waits on it. The playtest waits for the maze, to test the whole sequence of a game |
 | 2026-11-15 | The maze will change, to be more of a board game with circular paths; its place in the round stays the same. Game length comes from the maze's size, its circular paths and clearing its gates. Gates take points or suits to open, or special jokers, which can be played during pegging on the maze |
 | 2026-11-16 | Cards keep the original cream art from `design/cards/cards.js`, with four-colour suits. The neon cards are dropped: they were too hard to read (Bruce) |
@@ -451,6 +452,9 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Prototype order after the grid playtest (Bruce): pegging on the maze and the maze walk together, then the shop, then the cut and the bots' turns. The scoring phase summarizes the bots' scores; the maze phase takes turns, and hinges on smart choices: where to turn, which jokers to apply, which doors to close (concept.md › Phases) |
 | 2026-11-17 | The maze prototype (pegging on the maze and the maze walk) starts as a browser mock, not in the beta, to work out the turns and choices quickly (Bruce) |
 | 2026-11-17 | The maze prototype is `mocks/maze-board.html` v2, built on maze-walk's grid maze and the neon maze art. "Circular paths" means loops through the grid, not a round board; v1's round board of turning rings was removed. Switches stand in for shifts: a pair of passages, one open and one shut, that any player can flip. Bot-only runs at the defaults (121-step route, grid steps ÷ 40) last 3 to 15 hands with 1 bot (median 7) and 4 to 10 with 2 (Bruce) |
+| 2026-11-17 | The maze is the pegging, and the grid is the scoring phase (Bruce). You move by choosing from the hands you formed on the grid, shown as a list of plays (cards and steps), as in `mocks/maze-walk.html`. This reverses classic cribbage's order on purpose, so all the scoring sits in the grid. Supersedes 2026-11-15's split (grid points work the maze, pegging moves the tokens). Phases 7 and 8 merge. Whether classic play to 31 stays anywhere: open |
+| 2026-11-17 | Junctions alternate, as on a party board game (Bruce): the first player through goes the way it points, the next goes the other way. Timing matters, since doors cost cards or combos to get through. Secondary: switch cards, bombs and in-maze switches |
+| 2026-11-17 | Bots are balanced by default. Bot runs can be set to push on given features (doors, switches, junction timing, jokers), so each feature gets tested (Bruce) |
 
 ## Open questions
 

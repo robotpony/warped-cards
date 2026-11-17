@@ -279,6 +279,8 @@ After the scoring grid, before pegging, you can shop. What you pay with isn't de
 
 ### 5. Pegging on the maze
 
+> Under revision (2026-11-17): the maze is the pegging. You move by choosing from the sets you made on the grid. Whether classic play to 31 stays anywhere is open (concept.md › Decisions). This section is rewritten once the open questions there are answered.
+
 Peg as in classic cribbage. The player to the dealer's left plays first, and the count runs up to 31. With three players, play passes to the left; a player who can't play says "go" and sits out until the count starts again. The last player to play before the count starts again scores the go (or the 31).
 
 Every point you peg is one step, moved right away, before the next card is played. See Moving through the maze.
