@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70">
+  <!-- Card back: frame, inner outline, and the 45 degree crosshatch, lines 3.4 units apart. -->
+  <g id="frame">
+    <rect width="50" height="70" rx="4.5" fill="#FDFCF8"/>
+    <rect x="0.6" y="0.6" width="48.8" height="68.8" rx="3.9" fill="none" stroke="#D6D0C4" stroke-width="1.2"/>
+  </g>
+  <rect id="inner" x="4.5" y="4.5" width="41" height="61" rx="2.7" fill="none" stroke="#D6D0C4" stroke-width="1"/>
+  <clipPath id="hatch-clip"><rect x="9" y="9" width="32" height="52" rx="1.8"/></clipPath>
+  <g id="hatch" clip-path="url(#hatch-clip)">
+    <path transform="translate(9 9)" d="M-50.342 0L1.658 52M1.658 0L-50.342 52M-45.533 0L6.467 52M6.467 0L-45.533 52M-40.725 0L11.275 52M11.275 0L-40.725 52M-35.917 0L16.083 52M16.083 0L-35.917 52M-31.108 0L20.892 52M20.892 0L-31.108 52M-26.300 0L25.700 52M25.700 0L-26.300 52M-21.492 0L30.508 52M30.508 0L-21.492 52M-16.683 0L35.317 52M35.317 0L-16.683 52M-11.875 0L40.125 52M40.125 0L-11.875 52M-7.067 0L44.933 52M44.933 0L-7.067 52M-2.258 0L49.742 52M49.742 0L-2.258 52M2.550 0L54.550 52M54.550 0L2.550 52M7.358 0L59.358 52M59.358 0L7.358 52M12.167 0L64.167 52M64.167 0L12.167 52M16.975 0L68.975 52M68.975 0L16.975 52M21.783 0L73.783 52M73.783 0L21.783 52M26.592 0L78.592 52M78.592 0L26.592 52M31.400 0L83.400 52M83.400 0L31.400 52" fill="none" stroke="#7C6C48" stroke-opacity="0.7" stroke-width="0.7"/>
+  </g>
+</svg>

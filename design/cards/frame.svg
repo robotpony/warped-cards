@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70">
+  <!-- Card frame: the face fill and the card rule outline. Every card starts with this. -->
+  <g id="frame">
+    <rect width="50" height="70" rx="4.5" fill="#FDFCF8"/>
+    <rect x="0.6" y="0.6" width="48.8" height="68.8" rx="3.9" fill="none" stroke="#D6D0C4" stroke-width="1.2"/>
+  </g>
+</svg>

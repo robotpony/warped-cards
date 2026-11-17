@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70">
+  <!-- Swapper icon: two arrows, one each way. Placed in the 50 x 70 card box; draw it over the joker layout. -->
+  <g id="icon-swap">
+    <path d="M13 30H35L30 25M37 42H15L20 47" fill="none" stroke="#6A1B9A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70">
+  <!-- Extra card, title: frame and the name in capitals, centred. Text is centred on x, y. -->
+  <g id="frame">
+    <rect width="50" height="70" rx="4.5" fill="#FDFCF8"/>
+    <rect x="0.6" y="0.6" width="48.8" height="68.8" rx="3.9" fill="none" stroke="#D6D0C4" stroke-width="1.2"/>
+  </g>
+  <text id="name" x="25" y="35" text-anchor="middle" dominant-baseline="central" font-family="Saira Semi Condensed, sans-serif" font-weight="700" font-size="7" fill="#7C6C48">TITLE</text>
+</svg>
