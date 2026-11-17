@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreText
 
 extension Color {
     init(hex: UInt32, opacity: Double = 1) {
@@ -80,9 +81,43 @@ enum Theme {
     static let edgePad: CGFloat = 6
     static let edgePadOuter: CGFloat = 9
 
-    /// The mock's face is Saira Semi Condensed; until it's bundled, the system's condensed width stands in.
+    /// Whether the UI face is Saira Semi Condensed (design/fonts/, bundled into both apps). Crib Maze
+    /// uses it; the beta keeps the system font at its condensed width unless launched with `--saira`
+    /// (Bruce, 2026-11-16: try it in Crib Maze first). ui.md › Type.
+    static let saira: Bool = {
+        guard !Edition.isBeta || CommandLine.arguments.contains("--saira") else { return false }
+        guard let dir = Bundle.main.url(forResource: "saira-semi-condensed", withExtension: nil),
+              let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { return false }
+        for f in files where f.pathExtension == "ttf" { CTFontManagerRegisterFontsForURL(f as CFURL, .process, nil) }
+        return true
+    }()
+
     static func font(_ size: CGFloat, _ weight: Font.Weight = .semibold) -> Font {
-        .system(size: size, weight: weight).width(.condensed)
+        guard saira else { return .system(size: size, weight: weight).width(.condensed) }
+        // By file, since the family name doesn't resolve weights. The four weights design/fonts/ has.
+        let face = switch weight {
+        case .bold, .heavy, .black: "Bold"
+        case .semibold: "SemiBold"
+        case .medium: "Medium"
+        default: "Regular"
+        }
+        return .custom("SairaSemiCondensed-" + face, fixedSize: size)
+    }
+
+    /// Text in the UI face. With Saira, which has no suit glyphs or ★, those are drawn from
+    /// shapes.json inside the text, in its colour (ui.md › Type).
+    static func text(_ s: String, _ size: CGFloat) -> Text {
+        guard saira else { return Text(s) }
+        let marks = Set("♠♥♦♣★".unicodeScalars)
+        var out = Text(""), run = ""
+        for ch in s {
+            if let first = ch.unicodeScalars.first, marks.contains(first) {
+                let mark = Text(SuitShapes.image(Character(first), size: size * 0.8)).baselineOffset(-size * 0.06)
+                out = Text("\(out)\(Text(verbatim: run))\(mark)")
+                run = ""
+            } else { run.append(ch) }
+        }
+        return Text("\(out)\(Text(verbatim: run))")
     }
 }
 

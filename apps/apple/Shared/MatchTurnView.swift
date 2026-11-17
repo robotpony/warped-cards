@@ -256,7 +256,7 @@ struct WarningCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Every card must score").font(Theme.font(22, .bold))
                 Text("A set can hold one combo or several (7-8-8 is two fifteens and a pair), but every card you trace must be part of at least one: a fifteen, pair, run, flush or his nobs.")
-                let bad = Text(left.joined(separator: " ")).foregroundStyle(Theme.leftOverNames).bold()
+                let bad = Theme.text(left.joined(separator: " "), 15).foregroundStyle(Theme.leftOverNames).bold()
                 Text("Here, \(bad)\(left.count == 1 ? " isn't" : " aren't") part of any combo. While you trace, only cards in a combo light up.")
                 let rule = Text("From now on, a set still scores its combos, but each card left over costs \(cost) step\(cost == 1 ? "" : "s").").bold()
                 Text("\(rule) Your steps can go below 0. This time nothing happens.")
@@ -279,7 +279,7 @@ struct Toast: View {
     var body: some View {
         GeometryReader { g in
             if let text {
-                Text(text).font(Theme.font(20, .bold)).multilineTextAlignment(.center)
+                Theme.text(text, 20).font(Theme.font(20, .bold)).multilineTextAlignment(.center)
                     .padding(.horizontal, 18).padding(.vertical, 10)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.gold)).foregroundStyle(Theme.ink)
                     .frame(maxWidth: g.size.width - 40)

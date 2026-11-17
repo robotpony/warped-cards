@@ -11,7 +11,7 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
-    MARKETING_VERSION: "0.15.7"
+    MARKETING_VERSION: "0.16.0"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_IDENTITY: "-"
@@ -35,6 +35,12 @@ targetTemplates:
         type: folder
         buildPhase: resources
       - path: ../../design/neon/palette.json
+        buildPhase: resources
+      - path: ../../design/neon/shapes.json
+        buildPhase: resources
+      # Saira Semi Condensed with its OFL licence, bundled as the folder "saira-semi-condensed" (ui.md › Type).
+      - path: ../../design/fonts/saira-semi-condensed
+        type: folder
         buildPhase: resources
       # The card art (design/cards/README.md), bundled as the folder "cards".
       - path: ../../design/cards

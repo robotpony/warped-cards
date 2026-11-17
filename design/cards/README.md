@@ -32,7 +32,7 @@ Text in these files is a layout reference. Each `<text>` has an `id` and is cent
 | Kind word | 25, 61.5 | 8, tracked 1 | Joker purple | SWAP, BOMB, REACH, BURN |
 | Extra name | 25, 35 | 7 | Card soft | AMBER, TEAL, TITLE, BLANK |
 
-The Mac draws the suit as a 34 unit text glyph today. The 24 unit box in `face-sample.svg` is a first guess at the same size from `shapes.json`; `@apple` sets it when the Mac switches to the shapes.
+The suit is `shapes.json`'s, in a 28 unit box centred on (25, 36), as in `face-sample.svg`. That box matches the 34 unit glyph the beta still draws with the system font: the glyphs' ink is about 25 units tall and centred about 36 down (measured on the Mac, 0.16.0), and the shapes fill about 90% of their box.
 
 ## Colours
 

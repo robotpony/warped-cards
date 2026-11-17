@@ -2,6 +2,12 @@
 
 Crib Maze for Mac and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.16.0 — 2026-11-16
+
+### Changed
+
+- Crib Maze uses Saira Semi Condensed, the game's own typeface, with suits and stars drawn as shapes to match it. Noddy Yookerspiel keeps its current look for now; launch it with `--saira` to try the new one.
+
 ## 0.15.4 — 2026-11-16
 
 ### Changed

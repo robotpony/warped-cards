@@ -348,7 +348,7 @@ struct BreakdownOverlay: View {
             Text(b.kind).font(Theme.font(11, .bold)).tracking(1.1).padding(.horizontal, 6).padding(.vertical, 2)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Theme.ink)).foregroundStyle(Theme.gold)
             Text(b.head).font(Theme.font(22, .bold))
-            Text(b.suit).font(Theme.font(13, .semibold)).padding(.horizontal, 6).padding(.vertical, 1)
+            Theme.text(b.suit, 13).font(Theme.font(13, .semibold)).padding(.horizontal, 6).padding(.vertical, 1)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Theme.paper))
         }
         .lineLimit(1).fixedSize()
@@ -432,7 +432,7 @@ struct MiniCard: View {
     let card: Card
     var body: some View {
         let colour = card.suit?.colour ?? Theme.ink
-        Text(card.isPlaying ? Card.rankText(card.rank) + (card.suit?.textGlyph ?? "") : "★")
+        Theme.text(card.isPlaying ? Card.rankText(card.rank) + (card.suit?.textGlyph ?? "") : "★", 12)
             .font(Theme.font(12, .bold)).tracking(-0.3)
             .foregroundStyle(colour)
             .frame(minWidth: 22, minHeight: 26).padding(.horizontal, 2)

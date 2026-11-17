@@ -16,6 +16,8 @@ extension Suit {
 struct CardFace: View {
     let card: Card
     var width: CGFloat = Theme.cardW
+    /// The suit shape's box and centre, in card units: the size and place of the 34 unit glyph it replaces.
+    static let suitBox: CGFloat = 28, suitY: CGFloat = 36
 
     /// The art file for this card: the joker or extra card's own, or the plain frame.
     private var artName: String {
@@ -51,7 +53,12 @@ struct CardFace: View {
         let rank = Text(Card.rankText(card.rank)).font(Theme.font((ten ? 14 : 16) * u, .bold)).tracking(ten ? -1.2 * u : 0).foregroundStyle(fill)
         rank.position(x: 9 * u, y: 10.5 * u)
         rank.rotationEffect(.degrees(180)).position(x: 41 * u, y: 59.5 * u)
-        Text(card.suit?.textGlyph ?? "").font(.system(size: 34 * u)).foregroundStyle(fill).position(x: 25 * u, y: 35 * u)
+        if Theme.saira, let glyph = card.suit?.glyph.first, let shape = SuitShapes.path(glyph, size: Self.suitBox * u) {
+            // Saira has no suit glyphs: the suit is shapes.json's, in a box the glyph's size (design/cards/face-sample.svg).
+            shape.fill(fill).frame(width: Self.suitBox * u, height: Self.suitBox * u).position(x: 25 * u, y: Self.suitY * u)
+        } else {
+            Text(card.suit?.textGlyph ?? "").font(.system(size: 34 * u)).foregroundStyle(fill).position(x: 25 * u, y: 35 * u)
+        }
     }
 }
 

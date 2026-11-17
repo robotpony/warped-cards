@@ -288,6 +288,6 @@ struct CellView: View, Equatable {
     }
 
     private func badge(_ text: String, _ bg: Color, _ fg: Color, _ size: CGFloat) -> some View {
-        Text(text).font(Theme.font(size * 0.62, .bold)).frame(width: size, height: size).background(Circle().fill(bg)).foregroundStyle(fg)
+        Theme.text(text, size * 0.62).font(Theme.font(size * 0.62, .bold)).frame(width: size, height: size).background(Circle().fill(bg)).foregroundStyle(fg)
     }
 }

@@ -1,6 +1,6 @@
 // The card art from design/cards/*.svg (bundled as "cards"), so every build draws one source
 // (design/cards/README.md). Reads only the subset those files use: rect, circle and path
-// (M L H V C Z, absolute or relative), fill and stroke with their opacities, width, caps, joins
+// (SVGPath), fill and stroke with their opacities, width, caps, joins
 // and dashes, translate, rotate and scale transforms, and a rect clip path. Text isn't drawn
 // here: each <text> is a slot the card view draws itself, at its centre.
 import Foundation
@@ -121,7 +121,7 @@ struct CardArt {
                 let c = CGPoint(x: num(a["cx"]), y: num(a["cy"])), r = num(a["r"])
                 return Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
             default:
-                return a["d"].map(pathData)
+                return a["d"].map(SVGPath.parse)
             }
         }
 
@@ -140,37 +140,6 @@ struct CardArt {
             p.addLine(to: CGPoint(x: r.minX, y: r.minY + k))
             p.addArc(center: CGPoint(x: r.minX + k, y: r.minY + k), radius: k, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
             p.closeSubpath()
-            return p
-        }
-
-        /// Path data with M, L, H, V, C and Z, absolute or relative.
-        static func pathData(_ d: String) -> Path {
-            var tokens: [String] = []
-            var cur = ""
-            for ch in d {
-                if ch.isLetter { if !cur.isEmpty { tokens.append(cur) }; tokens.append(String(ch)); cur = "" }
-                else if ch == " " || ch == "," { if !cur.isEmpty { tokens.append(cur) }; cur = "" }
-                else if ch == "-", !cur.isEmpty, cur.last != "e" { tokens.append(cur); cur = "-" }
-                else { cur.append(ch) }
-            }
-            if !cur.isEmpty { tokens.append(cur) }
-            var p = Path(), i = 0, cmd: Character = "M", pt = CGPoint.zero, start = CGPoint.zero
-            func n() -> CGFloat { defer { i += 1 }; return CGFloat(Double(tokens[i]) ?? 0) }
-            while i < tokens.count {
-                if let c = tokens[i].first, c.isLetter { cmd = c; i += 1; if c == "Z" || c == "z" { p.closeSubpath(); pt = start; continue } }
-                let rel = cmd.isLowercase
-                func at(_ x: CGFloat, _ y: CGFloat) -> CGPoint { rel ? CGPoint(x: pt.x + x, y: pt.y + y) : CGPoint(x: x, y: y) }
-                switch cmd.uppercased() {
-                case "M": pt = at(n(), n()); p.move(to: pt); start = pt; cmd = rel ? "l" : "L"
-                case "L": pt = at(n(), n()); p.addLine(to: pt)
-                case "H": let x = n(); pt = CGPoint(x: rel ? pt.x + x : x, y: pt.y); p.addLine(to: pt)
-                case "V": let y = n(); pt = CGPoint(x: pt.x, y: rel ? pt.y + y : y); p.addLine(to: pt)
-                case "C":
-                    let c1 = at(n(), n()), c2 = at(n(), n()), e = at(n(), n())
-                    p.addCurve(to: e, control1: c1, control2: c2); pt = e
-                default: i += 1
-                }
-            }
             return p
         }
 
