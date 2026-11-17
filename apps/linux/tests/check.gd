@@ -44,5 +44,29 @@ func _initialize() -> void:
 	var bad = JSON.parse_string(engine.send('{"nonsense":{}}', 0, 0))
 	expect(bad.has("error"), "an unreadable action is refused, not ignored")
 
+	# What the screen reads between steps (apps/linux/README.md › The bridge). Seed 1 with the deal
+	# off: g02 is 8♥ and g03 is 7♣, a fifteen (docs/images/reference/README.md › trace-combo).
+	engine.newGameWith(1, "classic", true, true)
+	engine.send('{"startHand":{"options":{"deal":false,"warned":false}}}', 0, 0)
+	var t = JSON.parse_string(engine.turnState())
+	expect(t.cells.size() == 25 and t.cells[2].card == "8H" and t.cells[3].card == "7C", "turnState holds the board by position")
+	expect(int(t.pickLimit) == int(rules.match.maxSet) and t.starterJoins, "turnState gives the pick limit and the starter rule")
+	var pv = JSON.parse_string(engine.preview("[2,3]"))
+	expect(not pv.has("problem") and pv.value.combos.size() == 1 and pv.value.combos[0].kind == "fifteen" and int(pv.value.points) == 2,
+		"preview counts 8♥ 7♣ as a fifteen for 2")
+	var far = JSON.parse_string(engine.preview("[0,3]"))
+	expect(far.get("problem") == "not_touching", "preview names the rule a trace breaks")
+	expect(engine.isLine("[0,1,2]") and not engine.isLine("[0,5,2]"), "isLine knows a straight line")
+	var g = JSON.parse_string(engine.gameState())
+	expect(g.stage == "playing" and int(g.turn) == 1 and int(g.deck.count) == 52, "gameState gives the stage, the turn and the deck")
+	var before := int(t.steps)
+	engine.send('{"trace":{"positions":[2,3]}}', 0, 1000)
+	expect(int(JSON.parse_string(engine.turnState()).steps) == before + 2, "a trace sent through the bridge scores")
+
+	var fx = Repo.read_json("cribbage/minigames/config/fx.json")
+	expect(fx != null and fx.has("motions") and fx.has("waits"), "config/fx.json loads (ui.md › Motion: a client MUST NOT start without it)")
+	var line := "Linux %s · spec %s · %s" % [ProjectSettings.get_setting("application/config/version"), v.spec, v.rules.trim_prefix("match-")]
+	print("build line: " + line)
+
 	print("%d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)

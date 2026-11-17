@@ -1,17 +1,20 @@
-; Crib Maze for Linux (apps/linux, owned by @linux). The build version is config/version
+; Crib RPG for Linux (apps/linux, owned by @linux). The build version is config/version
 ; (PORTING.md › Versions); .claude/hooks/check-version-bump.sh reads it.
 config_version=5
 
 [application]
-config/name="Crib Maze"
-config/version="0.1.0"
+config/name="Crib RPG"
+config/version="0.2.0"
 run/main_scene="res://scenes/main.tscn"
 
 [display]
 window/size/viewport_width=442
-window/size/viewport_height=880
+window/size/viewport_height=910
+window/size/resizable=false
+window/dpi/allow_hidpi=true
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="expand"
+display_server/driver.linuxbsd="wayland"
 
 [rendering]
 renderer/rendering_method="gl_compatibility"

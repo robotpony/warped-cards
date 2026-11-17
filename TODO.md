@@ -5,10 +5,10 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 ## Crib RPG
 
 - [ ] `@apple` Use the app icon from `design/icon/` in both Apple targets: Icon Composer layers, or the `export/apple` PNGs with the light one flattened (design/icon/README.md) (Bruce, 2026-11-16)
-- [ ] `@linux` The game is Crib RPG now (was Crib Maze): rename it where players or docs see it in `apps/linux/` (`project.godot`'s name, README), and use the icons' new names, `design/icon/export/linux/crib-rpg*.png` and `crib-rpg.svg` (were `crib-maze`). Keep code names and the record ID `crib-maze` (concept.md › Working title) (from `@apple`, 2026-11-16)
-- [ ] `@linux` Use the app icon from `design/icon/export/linux` for the Godot app and its `.desktop` entry (design/icon/README.md) (Bruce, 2026-11-16)
-- [ ] `@linux` Match the Mac beta's match turn (the scoring grid) in `apps/linux/`: board, tracing, combos lighting, pops, board change, breakdown, info cards, warning, summary. Build from ui.md, check against `docs/images/reference/` and its motion films, timings from `config/fx.json`, colours from `palette.json`, cards from `design/cards/`, Saira and `shapes.json` suits (Bruce, 2026-11-16)
-- [ ] `@linux` Move `apps/linux/` to spec 3: README status and the build line (`Linux x.y.z · spec 3 · r23`), and read `config/fx.json` (CHANGELOG.md › spec 3) (from `@linux`, 2026-11-16)
+- [x] `@linux` The game is Crib RPG now (was Crib Maze): rename it where players or docs see it in `apps/linux/` (`project.godot`'s name, README), and use the icons' new names, `design/icon/export/linux/crib-rpg*.png` and `crib-rpg.svg` (were `crib-maze`). Keep code names and the record ID `crib-maze` (concept.md › Working title) (from `@apple`, 2026-11-16)
+- [x] `@linux` Use the app icon from `design/icon/export/linux` for the Godot app and its `.desktop` entry (design/icon/README.md) (Bruce, 2026-11-16)
+- [ ] `@linux` Match the Mac beta's match turn (the scoring grid) in `apps/linux/`: board, tracing, combos lighting, pops, board change, breakdown, info cards, warning, summary. Build from ui.md, check against `docs/images/reference/` and its motion films, timings from `config/fx.json`, colours from `palette.json`, cards from `design/cards/`, Saira and `shapes.json` suits (Bruce, 2026-11-16). Linux 0.2.0 has all but the breakdown
+- [x] `@linux` Move `apps/linux/` to spec 3: README status and the build line (`Linux x.y.z · spec 3 · r23`), and read `config/fx.json` (CHANGELOG.md › spec 3) (from `@linux`, 2026-11-16)
 - [x] `@apple` Move `swift/` to `engine/swift/` and `apps/apple/`, in one patch build (PORTING.md › Layout › Moving there) (from `@linux`, 2026-11-16)
 - [x] `@apple` Show the build line (`Mac 0.15.2 · spec 1 · r23`) on the About screen and add `specVersion` to the record header, with engine.md › Records updated (PORTING.md › Versions) (from `@linux`, 2026-11-16)
 - [x] `@apple` Read AGENTS.md and add the Mac checkout's real path to its row (from `@linux`, 2026-11-16)

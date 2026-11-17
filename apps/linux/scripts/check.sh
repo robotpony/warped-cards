@@ -5,4 +5,5 @@ set -eu
 echo "== Linux client (apps/linux)"
 "$LINUX_APP/scripts/build.sh" debug
 cd "$LINUX_APP"
-"$GODOT" --headless --script res://tests/check.gd
+# A script error stops the check without quitting Godot, so give it a time limit.
+timeout 120 "$GODOT" --headless --script res://tests/check.gd
