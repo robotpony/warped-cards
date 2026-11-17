@@ -60,9 +60,16 @@ struct FX: Decodable {
         }
         let breakdown: Breakdown, board: Board, float: Float, toast: Double, deal: Deal, clock: Clock, slowMotion: Double
     }
+    /// The grid's first deal-in (ui.md › The grid fills): one pattern a turn, picked from the turn's seed.
+    struct Fill: Decodable {
+        struct Pattern: Decodable, Equatable { let name, order, from: String; let gap: Double }
+        let card: MotionSpec
+        let patterns: [Pattern]
+    }
     let version: Int
     let motions: Motions
     let waits: Waits
+    let fill: Fill
 
     /// Loaded once from the app's bundled config folder. The file MUST be there (ui.md › Motion).
     static let shared: FX = {

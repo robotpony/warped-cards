@@ -86,7 +86,7 @@ Phases of a game
   Game end ................... a token exits the maze (the beta: after 3 turns)
 ```
 
-| # | Phase | Specs | In the beta now (0.20.1) | v1 target |
+| # | Phase | Specs | In the beta now (0.21.0) | v1 target |
 |---|---|---|---|---|
 | 1 | Title and options | concept.md › A round | Settings panel only (Game tab: Restart game); no title screen | Proposed: yes, a simple title and options screen |
 | 2 | Cut for first deal | rules.md › Setup; engine.md › Classic | No: the first dealer comes from config, then the deal alternates | Proposed: yes |
@@ -437,6 +437,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Match rules r27: the opening bonus starts at 6, not 10 (Bruce), so 11 wins 1 power joker, 16 wins 2, 21 wins 3 and 26 wins 4. `cribmaze-sim run`, medium, 1,000 turns, seed 1: dealers win 9.7 power jokers a hundred turns (was 2.1), non-dealers 5.5 (was 1.3). Steps don't move (game 749.5), since bots rarely need the extra jokers |
 | 2026-11-17 | The grid intro (Bruce): after the hand and crib are counted, and before the grid deals in, a card explains the grid ("collect more steps for your step counter by matching crib hands") and waits for Start, so the timer starts only once you've read it. Shown on the game's first turn only (Bruce, 0.20.1) |
 | 2026-11-17 | Phases (Bruce): one list of every phase of a game, in order, with what the beta has and what v1 targets, kept in concept.md › Phases. It is the target set for the first version, to iterate on; rules.md, ui.md and engine.md point to it |
+| 2026-11-17 | Fill patterns (Bruce): the grid's first deal-in comes in one of five patterns, all five tried: rain, deal, spiral, wave and scatter (ui.md › The grid fills). Refills keep falling from above. The pick is presentation only, from the turn's seed |
 
 ## Open questions
 

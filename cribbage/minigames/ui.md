@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 8, from the beta app at 0.20.1, rules r27
+Status: draft 3, 2026-11-17, spec 9, from the beta app at 0.21.0, rules r27
 
 ## Summary
 
@@ -303,9 +303,25 @@ Then, on the game's first turn only, the grid intro (0.20.0; first turn only fro
 
 The rule line follows config: `maxEdgeCards` (one card, or "up to N cards from your hand and crib", or left out with no limit) and `starterJoins`. The button names the timer as m:ss, or just "Start" with no timer. Only Start dismisses it; the session stays busy and the timer doesn't run until then. The demo and films don't show it.
 
-After Start, every grid column drops in from above, 4 card heights, in one board change (300 ms), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair", and a prize line for a bonus: "Hand bonus: +2 power jokers (bomb, reach)".
+After Start (or straight after the count, on later turns), the grid fills in one of five patterns (The grid fills, below), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair", and a prize line for a bonus: "Hand bonus: +2 power jokers (bomb, reach)".
 
 Starting a new turn or game while the opening plays stops it. With animation off (snapshots), the turn shows at once, grid and all, with the counts' steps and bonus jokers included, and the bonus toast (both counts' lines, joined with " · ").
+
+#### The grid fills
+
+The grid's first deal-in, after the opening count, comes in one of five patterns, so the turn's start doesn't feel the same every time (Bruce, 2026-11-17). Refills after a score always fall from above, which shows where new cards come from. The patterns are `fx.json` › fill.
+
+| Pattern | Order (`order`) | Gap between groups | How each card comes in (`from`) |
+|---|---|---|---|
+| rain | Column by column, left to right, each column's 4 cards together | 70 ms | Drops from 4 card heights above, fading in |
+| deal | One card at a time in reading order, g00 to g33 | 35 ms | Flies from the deck pile, above the board's top right, scaling from 0.6, fading in |
+| spiral | One at a time, clockwise from the top left, outside in: g00 g01 g02 g03 g13 g23 g33 g32 g31 g30 g20 g10 g11 g12 g22 g21 | 35 ms | Grows from 0.6 about its centre, fading in |
+| wave | Diagonals from the corner by the starter: g33, then g23 and g32, and so on to g00 (cells with the same (3 − row) + (3 − column) land together) | 70 ms | Grows from 0.6, fading in |
+| scatter | One at a time, in a random order | 30 ms | Tossed on: turned (−12° to +12° by cell, (p × 7 mod 5) × 6 − 12 for grid index p) and scaled 1.18, settling flat, fading in |
+
+- Each group lands with `fill.card` (a 380 ms spring, bounce 0.2), then the gap. A settle wait follows the last card's motion.
+- The pattern is picked from the turn's seed on its own dice stream, `fx.fill` (engine.md › Dice; seeded from the hand's seed), never the game's streams: draw below the number of patterns, then, for scatter, shuffle the 16 grid cells in reading order the way engine.md shuffles (one draw below i + 1 for i from 15 down to 1, swapping). The pick is presentation only, so two builds show the same pattern for the same turn, and it never changes the game.
+- With animation off (snapshots), the grid shows at once. The beta takes `--fill <pattern>` to force one, and films each as `--cue fill` (`docs/images/reference/motion/fill-*.mp4`).
 
 ### Tracing a set
 
@@ -576,7 +592,7 @@ The session hands each action's events to the screen in the order the engine emi
 | Event | Cue | Duration | From |
 |---|---|---|---|
 | `turn_start` | The turn appears, its grid empty while an opening count plays; the timer starts after it | Instant | Timer: config |
-| `opening` | The opening count over the empty board, then the grid deals in (Scene: Match turn › Starting a turn) | Breakdown pace, or a 340 ms pop; 300 ms deal-in | Hard-coded |
+| `opening` | The opening count over the empty board, then the grid fills (Scene: Match turn › Starting a turn) | Breakdown pace, or a 340 ms pop; then a fill pattern (The grid fills) | `fx.json` › fill |
 | `trace_rejected` | Toast with the reason: "Sets are 2 to N cards", "A special joker can't be in a set", "Every set needs a grid card", "A set can use only one hand or crib card", "The cards must touch", "That set already scored" | Toast, 2,400 ms | Hard-coded |
 | `leftover_warning` | The left-over warning covers the board (see Overlays). Timers pause | Until "Got it" | Cost: config `leftOverCost` |
 | `leftover_penalty` | Steps drop (number and track animate). Feed line "K♠ 9♦  no combo: K♠ 9♦ left over  −4". No other cue | Steps: quick spring; track 400 ms | Hard-coded |
@@ -771,7 +787,7 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib RPG) has
 
 - Records: every game is written as a GameRecord file under the app's data folder, `Records/<YYYY-MM-DD>/<time>-crib-maze.jsonl` (ARCHITECTURE.md › GameRecord). Writing starts at the player's first choice, so a game opened and left leaves no file. The deal's hint is kept as a `deal_hint` note.
 - Diagnostics: slow motion and the frame meter (see Settings panel). A hitch is a frame that took over 1.5 times the display's frame time while something was moving.
-- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--intro` (the grid intro card over the empty board), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
+- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--intro` (the grid intro card over the empty board), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|fill|trace|breakdown|bomb` (with `--fill <pattern>` for the fill cue) films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 
@@ -948,7 +964,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.20.1 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.21.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins

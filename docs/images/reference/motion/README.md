@@ -11,3 +11,8 @@ The numbers behind every motion are in `config/fx.json` and ui.md › Motion; th
 | [trace.mp4](trace.mp4) | Tracing 8♥ then 7♣: the selected look on each card, the fifteen lighting, then the score pop with the breakdown off, and the board change as new cards fall in |
 | [breakdown.mp4](breakdown.mp4) | A breakdown of A♣ A♥ 7♦ 6♦ (a fifteen, a pair, one edge card): every cue in ui.md › Cue sheet, through the hold (the film does not wait) and the fly home |
 | [bomb.mp4](bomb.mp4) | A bomb armed, then fired on the top-left card: the bomb pop and the board change |
+| [fill-rain.mp4](fill-rain.mp4) | The grid fills, rain: column by column from above (0.21.0) |
+| [fill-deal.mp4](fill-deal.mp4) | The grid fills, deal: card by card from the deck pile (0.21.0) |
+| [fill-spiral.mp4](fill-spiral.mp4) | The grid fills, spiral: clockwise from the top left, growing in (0.21.0) |
+| [fill-wave.mp4](fill-wave.mp4) | The grid fills, wave: diagonals from the corner by the starter (0.21.0) |
+| [fill-scatter.mp4](fill-scatter.mp4) | The grid fills, scatter: tossed on in a random order (0.21.0) |

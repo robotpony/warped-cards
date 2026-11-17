@@ -73,7 +73,7 @@ struct BoardView: View {
                     .offset(x: f.minX, y: f.minY)
                     .zIndex(session.selection.contains(p) || session.flash.contains(p) ? 1 : 0)
                     .transition(.asymmetric(
-                        insertion: .offset(y: Board.isGrid(p) ? -CGFloat(max(1, session.drawnPerColumn[p % 4])) * BoardLayout.pitchY : 0).combined(with: .opacity),
+                        insertion: insertion(p, f),
                         // The view's frame sits at the board's origin, so the anchor points at the card's offset centre.
                         removal: .scale(scale: 0.2, anchor: UnitPoint(x: f.midX / Theme.cardW, y: f.midY / Theme.cardH)).combined(with: .opacity)))
             }
@@ -84,6 +84,24 @@ struct BoardView: View {
         .gesture(drag)
         .onContinuousHover { phase in
             if case .active = phase, session.mode.targetsACard { NSCursor.crosshair.set() } else { NSCursor.arrow.set() }
+        }
+    }
+
+    /// How a new card comes in: dropping from above (refills, and the rain fill), or the grid's
+    /// first fill pattern (ui.md › The grid fills).
+    private func insertion(_ p: Pos, _ f: CGRect) -> AnyTransition {
+        guard Board.isGrid(p) else { return .opacity }
+        let centre = UnitPoint(x: f.midX / Theme.cardW, y: f.midY / Theme.cardH)
+        switch session.fillPattern?.from {
+        case "deck":   // from the deck pile, above the board's top right
+            return .offset(x: BoardLayout.width - f.midX - Theme.cardW / 2, y: -f.midY - 110).combined(with: .scale(scale: 0.6, anchor: centre)).combined(with: .opacity)
+        case "grow":
+            return .scale(scale: 0.6, anchor: centre).combined(with: .opacity)
+        case "spin":   // tossed on: a little turn and lift that settles
+            let turn = Double((p * 7) % 5) * 6 - 12
+            return .modifier(active: Toss(angle: turn, scale: 1.18, anchor: centre), identity: Toss(angle: 0, scale: 1, anchor: centre)).combined(with: .opacity)
+        default:
+            return .offset(y: -CGFloat(max(1, session.drawnPerColumn[p % 4])) * BoardLayout.pitchY).combined(with: .opacity)
         }
     }
 
@@ -104,7 +122,7 @@ struct BoardView: View {
     private var placed: [(p: Pos, card: Card)] {
         guard let cells = session.state?.cells else { return [] }
         // r24: while the hand and crib are counted, the grid's cards wait to deal in.
-        return (0..<Board.count).filter { !(session.gridHidden && Board.isGrid($0)) }.compactMap { p in cells[p].map { (p, $0) } }
+        return (0..<Board.count).filter { session.gridVisible($0) }.compactMap { p in cells[p].map { (p, $0) } }
     }
 
     /// A word tag under a point: tapping HAND, CRIB or STARTER explains it.
@@ -290,5 +308,13 @@ struct CellView: View, Equatable {
 
     private func badge(_ text: String, _ bg: Color, _ fg: Color, _ size: CGFloat) -> some View {
         Theme.text(text, size * 0.62).font(Theme.font(size * 0.62, .bold)).frame(width: size, height: size).background(Circle().fill(bg)).foregroundStyle(fg)
+    }
+}
+
+/// The scatter fill's toss: a card turned and lifted, settling flat in its cell.
+private struct Toss: ViewModifier {
+    let angle: Double, scale: CGFloat, anchor: UnitPoint
+    func body(content: Content) -> some View {
+        content.rotationEffect(.degrees(angle), anchor: anchor).scaleEffect(scale, anchor: anchor)
     }
 }

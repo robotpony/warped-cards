@@ -2,6 +2,14 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 9 — 2026-11-17
+
+Rules unchanged (r27).
+
+### Added
+
+- `fx.json` › fill: the grid's first deal-in comes in one of five patterns (rain, deal, spiral, wave, scatter), picked from the turn's seed on the presentation-only stream `fx.fill` (ui.md › The grid fills). Refills still fall from above. `seed1.jsonl` and `seed12.jsonl` are re-recorded with spec 9 in their headers.
+
 ## spec 8 — 2026-11-17
 
 Rules unchanged (r27).

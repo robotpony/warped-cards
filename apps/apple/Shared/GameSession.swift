@@ -100,6 +100,41 @@ final class GameSession {
     func snapshotFlash(_ ps: Set<Pos>, bomb: Bool) { flash = ps; flashIsBomb = bomb }
     /// The opening count (r24): grid cards wait off the board while the hand and crib are counted.
     private(set) var gridHidden = false
+    /// The grid filling in (ui.md › The grid fills): the grid cells shown so far, or nil for all, and
+    /// the pattern they come in with.
+    private(set) var gridShown: Set<Pos>?
+    private(set) var fillPattern: FX.Fill.Pattern?
+    /// Beta only: fill with this pattern instead of the turn's pick (`--fill`).
+    var forcedFill: String?
+    /// Beta only: skip the opening count and play only the fill (the `fill` film cue).
+    var fillOnly = false
+    func gridVisible(_ p: Pos) -> Bool { !Board.isGrid(p) || (!gridHidden && (gridShown?.contains(p) ?? true)) }
+
+    /// The turn's fill pattern and the order its cells come in, as groups that land together. Picked
+    /// from the turn's seed on its own stream, `fx.fill`, which the game never draws from.
+    func fillPlan() -> (FX.Fill.Pattern, [[Pos]]) {
+        var dice = DiceStream(gameSeed: game?.turnSeed ?? seed, name: "fx.fill")
+        let all = fx.fill.patterns
+        var pattern = all[dice.below(all.count)]
+        if let f = forcedFill, let forced = all.first(where: { $0.name == f }) { pattern = forced }
+        let g = { (r: Int, c: Int) in Board.g(r, c) }
+        let groups: [[Pos]]
+        switch pattern.order {
+        case "columns": groups = (0..<4).map { c in (0..<4).map { g($0, c) } }
+        case "spiral":
+            let rc = [(0,0),(0,1),(0,2),(0,3),(1,3),(2,3),(3,3),(3,2),(3,1),(3,0),(2,0),(1,0),(1,1),(1,2),(2,2),(2,1)]
+            groups = rc.map { [g($0.0, $0.1)] }
+        case "diagonal":   // from the corner by the starter (bottom right) to the top left
+            groups = (0...6).map { k in (0..<16).map { g($0 / 4, $0 % 4) }.filter { p in (3 - p / 4) + (3 - p % 4) == k } }
+        case "random":
+            var cells = (0..<16).map { g($0 / 4, $0 % 4) }
+            for i in stride(from: cells.count - 1, through: 1, by: -1) { cells.swapAt(i, dice.below(i + 1)) }
+            groups = cells.map { [$0] }
+        default: groups = (0..<16).map { [g($0 / 4, $0 % 4)] }   // rows, in reading order
+        }
+        return (pattern, groups)
+    }
+
     /// Beta films only: off to start a cue from the dealt board, with the counts' steps already in.
     var playsOpening = true
     /// Counts turns shown, so an opening count still playing stops when a new turn starts.
@@ -282,7 +317,7 @@ final class GameSession {
             // Deal first: the turn starts once you've thrown to the crib.
             timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
             turn = nil; events = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
-            turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false; startGrid()
+            turnGen += 1; gridHidden = false; gridShown = nil; fillPattern = nil; stepsShown = nil; trayShown = nil; busy = false; startGrid()
             playback.reset()
             dealing = DealState(dealt: dealt, botThrown: botThrown)
             watchHint()
@@ -295,14 +330,14 @@ final class GameSession {
     /// Shows the turn a step started.
     private func begin(_ step: Step<CribMazeGame>) {
         guard let t = run?.state.turn else { return }
-        turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false; startGrid()
+        turnGen += 1; gridHidden = false; gridShown = nil; fillPattern = nil; stepsShown = nil; trayShown = nil; busy = false; startGrid()
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
         let ev = step.events.compactMap(\.matchEvent)
         turn = t; events = ev; feed = []; breakdown = nil; mode = .trace; selection = []; armedSource = nil; warning = nil; toast = nil
         for e in ev { describe(e) }
         secondsLeft = t.config.rules.match.timerSeconds
         let openings = ev.filter { if case .opening = $0 { true } else { false } }
-        guard animate, playsOpening, !openings.isEmpty else {
+        guard animate, playsOpening, !openings.isEmpty || fillOnly else {
             let won = openings.map(bonusLine).filter { !$0.isEmpty }
             if !won.isEmpty { show(won.joined(separator: " · ")) }
             startTimer(); return
@@ -318,7 +353,7 @@ final class GameSession {
         Task { [weak self] in
             guard let self else { return }
             try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
-            for e in openings {
+            for e in (self.fillOnly ? [] : openings) {
                 guard self.turnGen == gen else { return }
                 guard case .opening(_, _, _, _, _, _, let points, let bonus) = e else { continue }
                 if self.settings.breakdown {
@@ -347,16 +382,24 @@ final class GameSession {
             guard self.turnGen == gen else { return }
             // The grid intro: what the grid is for, until Start, on the game's first turn only
             // (the demo and films don't wait).
-            if !self.playback.autoContinue, (self.game?.results.isEmpty ?? true) {
+            if !self.playback.autoContinue, !self.fillOnly, (self.game?.results.isEmpty ?? true) {
                 self.hideToast()
                 withAnimation(fx.motions.breakdown.tally.animation()) { self.gridIntro = self.intro(t) }
                 await withCheckedContinuation { self.introResume = $0 }
                 guard self.turnGen == gen else { return }
             }
-            // The grid deals in, every column dropping from above.
+            // The grid fills in, in the turn's pattern (ui.md › The grid fills).
+            let (pattern, groups) = self.fillPlan()
+            self.fillPattern = pattern; self.gridShown = []; self.gridHidden = false
             self.drawnPerColumn = [4, 4, 4, 4]
-            withAnimation(fx.motions.board.change.animation()) { self.gridHidden = false }
+            for group in groups {
+                guard self.turnGen == gen else { return }
+                withAnimation(fx.fill.card.animation()) { self.gridShown?.formUnion(group) }
+                try? await Task.sleep(for: .milliseconds(Motion.ms(pattern.gap)))
+            }
             self.stepsShown = nil
+            try? await Task.sleep(for: .milliseconds(Motion.ms(fx.fill.card.ms)))
+            self.gridShown = nil; self.fillPattern = nil
             try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
             guard self.turnGen == gen else { return }
             self.busy = false

@@ -31,6 +31,7 @@ import SwiftUI
             }
             return
         }
+        session.forcedFill = value("--fill")
         if let dir = value("--film") { Film.run(session, cue: value("--cue") ?? "deal", to: dir, seed: value("--seed").flatMap(UInt64.init) ?? 1); return }
         guard let out = value("--snapshot") else { return }
         session.animate = false
@@ -173,8 +174,10 @@ import SwiftUI
         session.settings.timer = false
         session.settings.deal = cue == "deal"
         session.settings.breakdown = cue == "breakdown" || cue == "opening"
-        // Only the opening cue plays the opening count; the others start from the dealt board.
-        session.playsOpening = cue == "opening"
+        // Only the opening cue plays the opening count, and the fill cue only the grid filling in
+        // (`--fill <pattern>`); the others start from the dealt board.
+        session.playsOpening = cue == "opening" || cue == "fill"
+        session.fillOnly = cue == "fill"
         session.playback.autoContinue = true
         session.newTurn(seed: seed)
         let slow = fx.waits.slowMotion, filmed = slow * 3
@@ -203,6 +206,9 @@ import SwiftUI
         case "opening":   // r24: the hand and crib counted over the empty board, then the grid deals in
             steps = []
             length = 30000
+        case "fill":      // the grid's first fill, in the pattern `--fill` names
+            steps = []
+            length = 2400
         case "bomb":
             steps = [(400, { session.arm("bomb") }), (900, { session.submit([s("g00")]) })]
             length = 2400

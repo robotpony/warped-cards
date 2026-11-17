@@ -91,9 +91,17 @@ FILMS='deal|The deal: twelve cards in, one every 90 ms, each on a 300 ms spring 
 opening|The opening count (r24): the hand, then the crib, rise into the row and count aloud over the empty board, their steps fly to the counter, then the grid deals in
 trace|Tracing 8♥ then 7♣: the selected look on each card, the fifteen lighting, then the score pop with the breakdown off, and the board change as new cards fall in
 breakdown|A breakdown of A♣ A♥ 7♦ 6♦ (a fifteen, a pair, one edge card): every cue in ui.md › Cue sheet, through the hold (the film does not wait) and the fly home
-bomb|A bomb armed, then fired on the top-left card: the bomb pop and the board change'
+bomb|A bomb armed, then fired on the top-left card: the bomb pop and the board change
+fill-rain|The grid fills, rain: column by column from above
+fill-deal|The grid fills, deal: card by card from the deck pile
+fill-spiral|The grid fills, spiral: clockwise from the top left, growing in
+fill-wave|The grid fills, wave: diagonals from the corner by the starter
+fill-scatter|The grid fills, scatter: tossed on in a random order'
 echo "$FILMS" | while IFS='|' read -r cue what; do
-  perl -e 'alarm 1500; exec @ARGV' "$APP" --film "$PWD/$OUT/motion/$cue.mp4" --cue "$cue" --seed 1
+  case "$cue" in
+    fill-*) perl -e 'alarm 1500; exec @ARGV' "$APP" --film "$PWD/$OUT/motion/$cue.mp4" --cue fill --fill "${cue#fill-}" --seed 1 ;;
+    *) perl -e 'alarm 1500; exec @ARGV' "$APP" --film "$PWD/$OUT/motion/$cue.mp4" --cue "$cue" --seed 1 ;;
+  esac
   echo "| [$cue.mp4]($cue.mp4) | $what |" >> "$OUT/motion/README.md"
 done
 echo "Wrote $(ls "$OUT"/motion/*.mp4 | wc -l | tr -d ' ') films to $OUT/motion"
