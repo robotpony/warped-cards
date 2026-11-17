@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card chips</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Mock: where a card's multiplier chip goes, so it no longer covers the HAND, CRIB and STARTER
+     tags (Bruce, 2026-11-17). Colours and sizes follow the beta (Theme.swift; card 64 x 89.6 pt),
+     drawn at 1.7x. Each variant shows the hand row: a made 5 x2, a made A x1.5, a powered 9 x1.2
+     mid-pulse (cyan), a plain J, and the starter. */
+  :root {
+    --page: #05070F; --felt: #0A0E1F; --text: #DDE6FF; --panel: #121A33; --rim: #2E3A66;
+    --gold: #FFD447; --cyan: #3CF2FF; --ink: #2B2A26; --face: #FDFCF8; --rule: #D6D0C4;
+    --bed: #3A4A80; --S: #000000; --H: #E00000; --D: #0070E0; --C: #00843D;
+    --k: 1.7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font-family: "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  .lede { color: #9AA6C8; margin: 0 0 24px; line-height: 1.45; }
+  section { background: var(--felt); border: 1px solid var(--rim); border-radius: 16px; padding: 18px 16px 22px; margin-bottom: 18px; }
+  h2 { font-size: 20px; margin: 0 0 2px; }
+  h2 b { color: var(--gold); }
+  .note { color: #9AA6C8; margin: 0 0 18px; font-size: 15px; line-height: 1.4; }
+  .scroll { overflow-x: auto; padding: 22px 4px 6px; }
+
+  .row { display: flex; align-items: flex-end; gap: calc(5px * var(--k)); width: max-content; }
+  .bed { display: flex; gap: calc(5px * var(--k)); padding: calc(6px * var(--k)); border-radius: calc(13px * var(--k));
+         background: var(--panel); outline: 1.5px solid rgba(60, 242, 255, .35); position: relative; }
+  .sbed { padding: calc(6px * var(--k)); border-radius: calc(13px * var(--k)); background: var(--bed);
+          outline: 1.5px solid rgba(221, 230, 255, .6); position: relative; }
+
+  .card { --w: calc(64px * var(--k)); width: var(--w); height: calc(var(--w) * 1.4); position: relative;
+          background: var(--face); border-radius: calc(5px * var(--k)); border: 1px solid var(--rule);
+          box-shadow: 0 0 0 calc(2px * var(--k)) var(--gold); color: var(--c); }
+  .starter .card { box-shadow: none; transform: rotate(-5deg); }
+  .rank { position: absolute; left: calc(5px * var(--k)); top: calc(3px * var(--k)); font-weight: 700; font-size: calc(17px * var(--k)); line-height: 1; }
+  .rank.flip { left: auto; top: auto; right: calc(5px * var(--k)); bottom: calc(3px * var(--k)); transform: rotate(180deg); }
+  .pip { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(30px * var(--k)); line-height: 1; }
+  .tag { position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); height: calc(16px * var(--k)); padding: 0 calc(6px * var(--k));
+         border-radius: 999px; background: var(--gold); color: var(--ink); font-weight: 800; font-size: calc(10px * var(--k));
+         letter-spacing: .08em; display: flex; align-items: center; z-index: 3; white-space: nowrap; }
+  .starter .tag { background: var(--text); color: var(--felt); top: calc(-2px * var(--k)); }
+
+  .chip { font-weight: 800; color: var(--ink); background: var(--gold); white-space: nowrap; line-height: 1; z-index: 2;
+          display: flex; align-items: center; justify-content: center; }
+  .chip.pulse { background: var(--cyan); }
+  /* The made-card star, inside the card under the rank (all variants). */
+  .star { position: absolute; left: calc(5px * var(--k)); top: calc(22px * var(--k)); font-size: calc(11px * var(--k)); color: #B08A00; line-height: 1; }
+
+  /* Today: chip and star hang off the top corners, over the tag. */
+  .v0 .chip { position: absolute; right: calc(-6px * var(--k)); top: calc(-6px * var(--k)); height: calc(18px * var(--k)); padding: 0 calc(6px * var(--k)); border-radius: 999px; font-size: calc(12px * var(--k)); }
+  .v0 .star { left: calc(-5px * var(--k)); top: calc(-5px * var(--k)); width: calc(16px * var(--k)); height: calc(16px * var(--k)); border-radius: 50%;
+              background: var(--gold); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: calc(10px * var(--k)); z-index: 4; }
+
+  /* A: a pill centred on the suit. */
+  .vA .chip { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: calc(18px * var(--k)); padding: 0 calc(7px * var(--k));
+              border-radius: 999px; font-size: calc(13px * var(--k)); box-shadow: 0 1px 0 rgba(0,0,0,.25), 0 0 0 calc(1.5px * var(--k)) var(--face); }
+
+  /* B: the pip lifts, and the pill sits across its lower edge. */
+  .vB .pip { top: 44%; }
+  .vB .chip { position: absolute; left: 50%; top: 64%; transform: translate(-50%, -50%); height: calc(16px * var(--k)); padding: 0 calc(6px * var(--k));
+              border-radius: 999px; font-size: calc(12px * var(--k)); box-shadow: 0 0 0 calc(1.5px * var(--k)) var(--face); }
+
+  /* C: a round coin on the pip's lower right shoulder. */
+  .vC .chip { position: absolute; left: 62%; top: 62%; transform: translate(-50%, -50%); min-width: calc(26px * var(--k)); height: calc(26px * var(--k));
+              padding: 0 calc(3px * var(--k)); border-radius: 999px; font-size: calc(11px * var(--k)); box-shadow: 0 0 0 calc(2px * var(--k)) var(--face), 0 2px 3px rgba(0,0,0,.3); }
+
+  /* D: the pip becomes a plate: a small suit over the multiplier. */
+  .vD .has .pip { font-size: calc(20px * var(--k)); top: 40%; }
+  .vD .chip { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: calc(36px * var(--k)); height: calc(44px * var(--k));
+              border-radius: calc(7px * var(--k)); font-size: calc(13px * var(--k)); align-items: flex-end; padding-bottom: calc(5px * var(--k));
+              background: rgba(255, 212, 71, .35); border: calc(1.5px * var(--k)) solid var(--gold); z-index: 1; }
+  .vD .chip.pulse { background: rgba(60, 242, 255, .3); border-color: var(--cyan); }
+  .vD .has .pip { z-index: 2; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Card chips</h1>
+  <p class="lede">Where a card's multiplier goes, so it stops covering the HAND, CRIB and STARTER tags. Each variant puts the multiplier over the suit, and moves the made card's ★ inside the card, under the rank. The cyan chip is a power chip mid-pulse. Drawn at 1.7x the beta's card size.</p>
+  <div id="variants"></div>
+</main>
+<script>
+  const variants = [
+    ["v0", "Today", "The chip and ★ hang off the top corners and collide with the HAND tag (Bruce's screenshot)."],
+    ["vA", "A · Pill on the suit", "A gold pill centred on the pip, with a thin white rim. Most readable; hides the middle of the suit."],
+    ["vB", "B · Pill under the suit", "The pip moves up a little and the pill sits across its lower edge, so the suit's shape still reads."],
+    ["vC", "C · Coin on the suit's shoulder", "A small round coin overlapping the pip's lower right. Reads like a sticker; long values (×1.25) get tight."],
+    ["vD", "D · Suit plate", "The pip shrinks onto a tinted plate with the multiplier underneath, so the card centre becomes the chip."],
+  ];
+  const hand = [
+    { r: "5", s: "♥", c: "H", made: true, chip: "×2" },
+    { r: "A", s: "♠", c: "S", made: true, chip: "×1.5" },
+    { r: "9", s: "♥", c: "H", chip: "×1.2", pulse: true },
+    { r: "J", s: "♥", c: "H" },
+  ];
+  const card = (k, tag) => `
+    <div class="card ${k.chip ? "has" : ""}" style="--c: var(--${k.c})">
+      ${tag ? `<div class="tag">${tag}</div>` : ""}
+      <div class="rank">${k.r}</div>
+      ${k.made ? `<div class="star">★</div>` : ""}
+      <div class="pip">${k.s}</div>
+      ${k.chip ? `<div class="chip ${k.pulse ? "pulse" : ""}">${k.chip}</div>` : ""}
+      <div class="rank flip">${k.r}</div>
+    </div>`;
+  document.getElementById("variants").innerHTML = variants.map(([cls, name, note]) => `
+    <section class="${cls}">
+      <h2>${name.replace(/^(\w)( ·)/, "<b>$1</b>$2")}</h2>
+      <p class="note">${note}</p>
+      <div class="scroll"><div class="row">
+        <div class="bed">${hand.map((k, i) => card(k, i === 0 ? "HAND" : "")).join("")}</div>
+        <div class="sbed starter">${card({ r: "3", s: "♠", c: "S" }, "STARTER")}</div>
+      </div></div>
+    </section>`).join("");
+</script>
+</body>
+</html>
