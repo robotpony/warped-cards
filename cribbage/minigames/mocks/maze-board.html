@@ -663,7 +663,7 @@
       if (x < M.W - 1 && !M.edges.has(M.key(i, i + 1))) walls += `M${xa + cs} ${ya}v${cs}`;
       if (y < M.H - 1 && !M.edges.has(M.key(i, i + M.W))) walls += `M${xa} ${ya + cs}h${cs}`;
     }
-    s += A.walls(walls, cs) + A.outerWall(0, 0, cs * M.W, cs * M.W, cs);
+    s += doubleWalls(walls, cs) + A.outerWall(0, 0, cs * M.W, cs * M.W, cs);
     const keysIn = new Set(); for (const i of vis) { const [x, y] = M.xy(i); if (x < M.W - 1) keysIn.add(M.key(i, i + 1)); if (y < M.H - 1) keysIn.add(M.key(i, i + M.W)); }
     for (const k of keysIn) {
       const e = M.edges.get(k); if (!e || (e.kind === "open" && !e.broken)) continue;
@@ -827,19 +827,30 @@
     const st = `fill="${A.P.tokens[seat]}" stroke="#fff" stroke-width="1.5"`;
     return seat === 0 ? `<circle cx="10" cy="10" r="6" ${st}/>` : seat === 1 ? `<rect x="4.5" y="4.5" width="11" height="11" rx="2" ${st}/>` : `<polygon points="10,3.5 17,15.5 3,15.5" ${st}/>`;
   }
-  // A door: a card laid at a slant across the path, showing the strength left over its suit.
-  // Its edge is the suit's neon colour, or the closer's token colour for a door someone closed.
+  // Walls: two thin neon lines with a few points of floor between them, so door cards sit in the gaps.
+  function doubleWalls(d, cs) {
+    const line = Math.max(1.6, cs * .04), gap = Math.max(3, cs * .11), w = gap + 2 * line;
+    return `<path d="${d}" stroke="#3CF2FF" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#nm-glow)"/>` +
+      `<path d="${d}" stroke="#0A0E1F" stroke-width="${gap}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  }
+  // A door: a playing card laid at a slant across the path. Its rank is the strength left and its suit the door's
+  // suit, set like a card: an index in two corners, the strength large in the middle, all turned with the card.
+  // The rim is the suit's neon colour, or the closer's token colour for a door someone closed.
   function doorMark(mx, my, cs, up, e) {
-    const left = e.strength - e.damage, ink = e.suit ? FACECOL[e.suit] : "#A85A00";
+    const left = e.strength - e.damage, ink = e.suit ? FACECOL[e.suit] : "#A85A00", g = e.suit ? GLYPH[e.suit] : "";
     const rim = e.closedBy !== undefined ? A.P.tokens[e.closedBy] : e.suit ? SUITCOL[e.suit] : "#FF8A3D";
-    const h = Math.max(22, cs * .8), w = h * .7, ang = up ? 22 : 112;
-    const num = String(left), fs = h * (num.length > 2 ? .3 : .36);
-    return `<g transform="translate(${mx} ${my})"><g transform="rotate(${ang})">` +
-      `<rect x="${-w / 2 + 1.5}" y="${-h / 2 + 2}" width="${w}" height="${h}" rx="${h * .1}" fill="#000" opacity=".5"/>` +
-      `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${h * .1}" fill="#F3ECDC" stroke="${rim}" stroke-width="${Math.max(1.6, h * .07)}"/>` +
-      (e.damage ? `<path d="M${-w * .3} ${-h * .42}L${-w * .05} ${-h * .1}L${-w * .22} ${h * .05}L${w * .05} ${h * .4}" fill="none" stroke="#2B2A26" stroke-width="1" opacity=".5"/>` : "") +
-      `</g><text x="0" y="${e.suit ? -h * .04 : h * .12}" text-anchor="middle" font-family="Saira Semi Condensed, sans-serif" font-weight="800" font-size="${fs}" fill="${ink}">${num}</text>` +
-      (e.suit ? `<text x="0" y="${h * .3}" text-anchor="middle" font-size="${h * .3}" fill="${ink}">${GLYPH[e.suit]}</text>` : "") + `</g>`;
+    const h = Math.max(24, cs * .82), w = h * .7, ang = up ? 18 : -72, num = String(left);
+    const F = `font-family="Saira Semi Condensed, sans-serif" font-weight="800" fill="${ink}" text-anchor="middle"`;
+    const idx = (x, y, flip) => `<g transform="translate(${x} ${y})${flip ? " rotate(180)" : ""}"><text y="${h * .1}" ${F} font-size="${h * .17}">${num}</text>` +
+      (g ? `<text y="${h * .25}" text-anchor="middle" font-size="${h * .14}" fill="${ink}">${g}</text>` : "") + `</g>`;
+    return `<g transform="translate(${mx} ${my}) rotate(${ang})">` +
+      `<rect x="${-w / 2 + 1.5}" y="${-h / 2 + 2}" width="${w}" height="${h}" rx="${h * .09}" fill="#000" opacity=".5"/>` +
+      `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${h * .09}" fill="#FDFCF8" stroke="${rim}" stroke-width="${Math.max(1.6, h * .06)}"/>` +
+      idx(-w / 2 + w * .17, -h / 2 + h * .02, false) + idx(w / 2 - w * .17, h / 2 - h * .02, true) +
+      `<text y="${h * (g ? .06 : .12)}" ${F} font-size="${h * (num.length > 2 ? .26 : .34)}">${num}</text>` +
+      (g ? `<text y="${h * .3}" text-anchor="middle" font-size="${h * .2}" fill="${ink}">${g}</text>` : "") +
+      (e.damage ? `<path d="M${-w * .32} ${-h * .3}L${-w * .08} ${-h * .05}L${-w * .2} ${h * .08}L${w * .1} ${h * .36}" fill="none" stroke="#2B2A26" stroke-width="1" opacity=".45"/>` : "") +
+      `</g>`;
   }
   function switchMark(mx, my, cs, up, e) {
     const L = cs * .46, col = "#C77DFF", r = Math.max(7, cs * .2);
