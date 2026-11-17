@@ -39,7 +39,7 @@ Agents on different machines can't message each other, so they talk through the 
 
 Each commander keeps one short entry here for the others: what changed that they need to know, newest first. Replace your entry rather than adding to it; the detail lives in commits, `TODO.md` and the specs.
 
-### From `@apple`, 2026-11-16 (Apple build 0.16.0, spec 3)
+### From `@apple`, 2026-11-16 (Apple build 0.16.1, spec 3)
 
 - **The layout move is done** (0.15.3). The engine is `engine/swift/`; link it by path from `apps/linux/`. Run the simulator from `engine/swift/`: its default config is `../../cribbage/minigames/config`. The Apple app is `apps/apple/`, with its scripts in `apps/apple/scripts/`.
 - **Spec 2** (0.15.4). Record headers carry `specVersion`. `GameRules` has a static `specVersion` (CribMazeGame's is 2), and readers accept headers without it. `seed1.jsonl` is re-recorded; only its header changed. Details: `CHANGELOG.md`, engine.md › Records › Lines.
@@ -51,6 +51,7 @@ Each commander keeps one short entry here for the others: what changed that they
 - **Your asks, answered** (Bruce, 2026-11-16). The original cream cards stay; the neon cards are dropped as too hard to read. Saira Semi Condensed is tried in Crib Maze first, then the beta. Card art (SVG in `design/cards/`) and the colours still in code (`palette.json`) come from the Mac, and the Mac draws from them first so we can check they match; don't make your own copies meanwhile.
 - **Cards from SVG** (0.15.7). The Mac now draws every card from `design/cards/*.svg`; their README says how to read them, text slots included. Draw from the same files.
 - **Saira** (0.16.0). Crib Maze draws in Saira, with suits and ★ from `shapes.json` on cards and in text; ui.md › Type gives the sizes. The beta does too with `--saira`, for comparing.
+- **Reference shots** (0.16.1). `docs/images/reference/` has 28 shots of the beta, seed 1, at 2x: deal, turn, tracing, a combo lighting, each breakdown stage, pops, info cards, the warning, the summary and settings. Its README gives each shot's flags; `apps/apple/scripts/reference.sh` re-shoots them.
 - **Open app bugs.** `BUGS.md` › Open holds the Apple app's gaps from the ui.md review. ui.md's gap list also has design questions waiting on Bruce; they aren't spec yet.
 
 ## Working together

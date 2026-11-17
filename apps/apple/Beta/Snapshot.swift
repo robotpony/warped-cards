@@ -1,5 +1,6 @@
 // Beta only: `--snapshot <png> [--seed N] [--turn N] [--trace g30,g31;g00,g01] [--select g10,g11] [--arm swapper|bomb|burn]
-// [--burn g11] [--play] [--crib-off] [--end]` (and `--deal [--pick 5H,5C] [--hint]`, `--breakdown g31,g21`)
+// [--burn g11] [--play] [--crib-off] [--end] [--info hand|crib|starter|tray|counter] [--pop g11,g12 [--bomb]]`
+// (and `--deal [--pick 5H,5C] [--hint]`, `--breakdown g31,g21 [--stage N]`, `--settings`)
 // renders the play screen to a PNG and quits. Used to check the screen from scripts, where screen capture isn't available.
 import AppKit
 import CribMaze
@@ -53,12 +54,30 @@ import SwiftUI
         if let kind = value("--arm") { session.arm(kind) }
         if let sel = value("--select") { session.selection = positions(Substring(sel)) }
         if args.contains("--end") { session.send(.endTurn) }
+        // `--info hand`: an info card open. `--pop g11,g12 [--bomb]`: those cards mid-pop, as a score
+        // with the breakdown off (or a bomb or burn) shows them.
+        if let topic = value("--info") {
+            session.info = ["hand": .hand, "crib": .crib, "starter": .starter, "tray": .tray, "counter": .counter][topic]
+        }
+        if let set = value("--pop") { session.snapshotFlash(Set(positions(Substring(set))), bomb: args.contains("--bomb")) }
+        // `--settings`: the settings panel on its own (a popover can't be rendered with the phone).
+        if args.contains("--settings") {
+            renderWindow(SidePanel(session: session).frame(width: 340, height: 620).environment(\.colorScheme, .dark), size: CGSize(width: 340, height: 620), to: out)
+            exit(0)
+        }
+        // Toasts from the deal (an extra card's prize) would cover the board: hidden unless `--toast`.
+        if !args.contains("--toast") { session.hideToast() }
         // `--breakdown g31,g21`: play that set's breakdown instantly and render its last frame.
         if let set = value("--breakdown"), var t = session.turn {
             session.dismissWarning()
             let before = t.state
             if let ev = try? t.apply(.trace(positions: positions(Substring(set)))), let score = ev.first(where: { if case .score = $0 { return true }; return false }) {
                 session.playback.instant = true
+                // `--stage N`: stop after the breakdown's Nth wait (ui.md › Cue sheet), not at its end.
+                if let n = value("--stage").flatMap(Int.init) {
+                    session.playback.stopAt = n
+                    session.playback.onStop = { render(session, to: out); exit(0) }
+                }
                 Task { @MainActor in
                     await session.playBreakdown(score, before: before)
                     render(session, to: out)
@@ -86,7 +105,28 @@ import SwiftUI
     }
 
     static func render(_ session: GameSession, to out: String) {
-        let view = PhoneView(session: session).padding(24).background(Theme.page).environment(\.colorScheme, .light)
+        render(PhoneView(session: session).padding(24).background(Theme.page).environment(\.colorScheme, .light), to: out)
+    }
+
+    /// Renders a view with AppKit controls (toggles, pickers) through an offscreen window, which
+    /// ImageRenderer can't draw. At the screen's scale.
+    static func renderWindow(_ view: some View, size: CGSize, to out: String) {
+        let host = NSHostingView(rootView: view)
+        host.frame = CGRect(origin: .zero, size: size)
+        let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        w.appearance = NSAppearance(named: .darkAqua)
+        w.contentView = host
+        w.setFrameOrigin(NSPoint(x: -10000, y: -10000))
+        w.orderFrontRegardless()
+        host.layoutSubtreeIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
+    }
+
+    /// Renders at 2x, the scale every reference shot uses (docs/images/reference/README.md).
+    static func render(_ view: some View, to out: String) {
         let r = ImageRenderer(content: view); r.scale = 2
         if let img = r.nsImage, let tiff = img.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
             try? png.write(to: URL(fileURLWithPath: out))

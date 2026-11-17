@@ -92,7 +92,14 @@ final class Playback {
 
     func id() -> Int { nextID += 1; return nextID }
 
+    /// Snapshots only: stop at the breakdown's Nth wait and call `onStop` (Snapshot.swift, `--stage`).
+    var stopAt: Int?
+    var onStop: (() -> Void)?
+    private var waits = 0
+
     func wait(_ ms: Double) async {
+        waits += 1
+        if let n = stopAt, waits == n { onStop?() }
         guard !skipping, !instant, ms > 0 else { return }
         try? await Task.sleep(for: .milliseconds(Motion.ms(ms)))
     }
@@ -135,7 +142,7 @@ final class Playback {
     func reset() {
         set = []; lit = []; litPower = []; leftOver = []; chipLevel = [:]; banner = nil; tally = []; tallyOn = false
         row = []; rowCards = [:]; rowOn = false; chipText = [:]; fly = nil
-        floats = []; active = false; skipping = false; holding = false
+        floats = []; active = false; skipping = false; holding = false; waits = 0
         release()
     }
 }

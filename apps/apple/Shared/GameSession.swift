@@ -91,6 +91,8 @@ final class GameSession {
     /// Cards popping before they clear: scored sets in gold, bomb blasts in red.
     private(set) var flash: Set<Pos> = []
     private(set) var flashIsBomb = false
+    /// Snapshots only: show cards mid-pop.
+    func snapshotFlash(_ ps: Set<Pos>, bomb: Bool) { flash = ps; flashIsBomb = bomb }
     /// While a move plays out, input waits.
     private(set) var busy = false { didSet { syncClock() } }
     /// Cards drawn into each grid column by the last move, so new cards drop in from above as a block.
@@ -499,6 +501,8 @@ final class GameSession {
     // MARK: Feed
 
     private func line(_ text: String, _ points: Int? = nil, prize: Bool = false) { feed.insert(FeedLine(id: feed.count, text: text, points: points, prize: prize), at: 0) }
+
+    func hideToast() { toastTask?.cancel(); toast = nil }
 
     func show(_ text: String) {
         toast = text
