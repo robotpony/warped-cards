@@ -215,7 +215,9 @@ Selection and combo looks ease in over 120 ms. The pop springs over 300 ms with 
 
 ### Type
 
-The design face is Saira Semi Condensed (palette.json `fonts.ui`). The app doesn't bundle it yet and uses the system font at its condensed width. Sizes in this spec are for that face. A port SHOULD bundle Saira Semi Condensed. palette.json's number face, Russo One, isn't used.
+The design face is Saira Semi Condensed (palette.json `fonts.ui`). Every build MUST bundle it from `design/fonts/saira-semi-condensed/` (decided 2026-11-16, so the builds look the same; Linux can't ship Apple's system font). The Apple app still uses the system font at its condensed width until it switches. Sizes in this spec are for Saira. palette.json's number face, Russo One, isn't used.
+
+Saira has no suit glyphs and no ★. Suits and the star MUST be drawn from `design/neon/shapes.json` (`S`, `H`, `D`, `C`, `star`) at the size and position the text would take, so every build draws the same shapes.
 
 Source: `Theme.swift`, `CardView.swift`, `BoardView.swift` (CellView, CellLook).
 
@@ -794,7 +796,7 @@ Each place the app relies on something Apple-specific, and what any platform MUS
 | Drawing and layout | A declarative UI toolkit; views placed by offset in a fixed board space | Any 2D scene or canvas. Cards placed by absolute position in the 352 × 480 board space |
 | Animation | Springs (duration and bounce), ease curves, keyframes, numeric text roll, views that move between places when they change parent | A tween library with springs and easing, keyframe tracks, and a way to fly a card between two parents |
 | Shapes | Vector paths, rounded rectangles, path union for the edge background | Vector paths with union (or draw two rounded rectangles and their outline carefully) |
-| Text | System font at its condensed width; a text-style selector so suit glyphs never draw as emoji | Bundle Saira Semi Condensed. Pick a font with ♠ ♥ ♦ ♣ glyphs, or draw the suits from shapes.json |
+| Text | System font at its condensed width; a text-style selector so suit glyphs never draw as emoji | Bundle Saira Semi Condensed from `design/fonts/`, and draw suits and ★ from shapes.json (Type) |
 | Pointer | A drag gesture with no minimum distance, then a 6 pt threshold; hover for tooltips | Raw pointer down, move and up events; tooltips on hover. On touch: the same, with no hover |
 | Cursor | A crosshair over the board while a bomb or burn is armed | A cursor API (none on touch) |
 | Settings panel | A popover anchored to the footer, dark appearance, native toggles, pickers and a text field | Any anchored panel or modal sheet with the same controls |

@@ -19,6 +19,7 @@ The rule: Apple's own frameworks first, no third-party packages by default. A ne
 | Instruments | With Xcode | Frame rate, audio glitches, bot search time | Effects need a frame budget, not a guess |
 | Node | Existing | The JS mocks' tests, reading the shared fixtures | Already in use (`node --test`) |
 | swiftly | Latest, from swift.org | Installs the Swift toolchain on Linux (`@linux`) | swift.org's own installer; installs per user and pins the same Swift as the Mac, so the engine builds with one compiler everywhere |
+| Saira Semi Condensed | 4 weights, Google Fonts, OFL 1.1 | The UI typeface for every build, from `design/fonts/` | Decided 2026-11-16 so the Mac and Linux builds look the same; open licence, so any build can ship it |
 | Godot | 4.7.2 | The Linux client (`apps/linux/`, `@linux`): scenes, shaders, particles, audio buses, input | Decided 2026-11-16 after a trial build. Open source, ships Linux ARM64 and Windows; the effects ui.md needs are built in |
 | SwiftGodot | 0.99.2 | Loads the Swift engine into Godot as an extension (`@linux`) | One engine for every platform, so no second copy of the rules; very active; works on Linux ARM64 with Swift 6.4.2 |
 
