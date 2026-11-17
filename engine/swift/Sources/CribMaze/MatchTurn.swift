@@ -1,4 +1,4 @@
-// The match turn (engine.md, match rules r25). Given a state, an action and
+// The match turn (engine.md, match rules r26). Given a state, an action and
 // the dice, it returns the new state and the events. No clock, no files, no
 // randomness of its own.
 import CardKit
@@ -48,13 +48,16 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var madeScores = 0, stepsFromMade = 0
     /// The opening count (r24): steps from counting the hand and the crib before the grid deals in.
     public var openingSteps = 0
+    /// The opening bonus (r26): power jokers won by the hand and crib counts.
+    public var openingJokers = 0
 }
 
 public enum MatchEvent: Codable, Sendable, Equatable {
     case turnStart(rulesVersion: String, dealer: Bool, hand: [CardRef], crib: [CardRef], starter: CardRef, grid: [CardRef?], stockSize: Int, timer: Int, cardBudget: Int, jokers: [String], tray: [String: Int])
     /// The opening count (r24): the hand, or the dealer's crib, counted with the starter as a classic
     /// show. `what` is "hand" or "crib". Cards and positions are the 4 cards then the starter.
-    case opening(what: String, positions: [String], cards: [CardRef], combos: [ComboOut], comboPoints: Int, madePercent: Int, points: Int)
+    /// `bonus` (r26) is the power jokers the count won for the tray, in the order drawn.
+    case opening(what: String, positions: [String], cards: [CardRef], combos: [ComboOut], comboPoints: Int, madePercent: Int, points: Int, bonus: [String])
     case traceRejected(positions: [String], reason: String)
     case leftoverWarning(positions: [String], leftOver: Int)
     case leftoverPenalty(positions: [String], leftOver: Int, cost: Int)
@@ -179,7 +182,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r25"
+    public static let rulesVersion = "match-r26"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -268,9 +271,19 @@ public struct MatchTurn: Sendable {
         if let cap = config.jokers.madeCapPercent, cap > 0 { made = min(made, cap) }
         let points = (cnt.total * made + 50) / 100
         state.steps += points; state.totals.steps += points; state.totals.openingSteps += points
+        // The opening bonus (r26): a power joker for every `per` points past `from`, picked by the
+        // prize weights from its own stream, into the tray at once.
+        var bonus: [String] = []
+        if let b = config.rules.match.opening?.bonus, points > b.from {
+            for _ in 0..<((points - b.from) / b.per) {
+                let kind = dice.pick(r.prize.special.entries, stream: "opening", purpose: "bonus")
+                state.tray[kind, default: 0] += 1; bonus.append(kind)
+            }
+            state.totals.openingJokers += bonus.count
+        }
         return .opening(what: what, positions: ps.map(Board.name), cards: cards.map(CardRef.init),
                         combos: cnt.combos.map { ComboOut(kind: $0.kind, size: $0.size, multiplier: $0.multiplier, points: $0.points, cards: $0.cards) },
-                        comboPoints: cnt.total, madePercent: made, points: points)
+                        comboPoints: cnt.total, madePercent: made, points: points, bonus: bonus)
     }
 
     // MARK: Drawing and refilling

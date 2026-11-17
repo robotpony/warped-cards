@@ -2,6 +2,12 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.19.0 — 2026-11-17
+
+### Added
+
+- A big hand or crib count wins power jokers: 1 for every 5 points past 10, so a 15 wins 1 and a 20 wins 2. They land in your power jokers before the grid deals in, ready for this turn.
+
 ## 0.18.1 — 2026-11-17
 
 ### Changed

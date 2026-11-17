@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 5, from the beta app at 0.18.1, rules r25
+Status: draft 3, 2026-11-17, spec 6, from the beta app at 0.19.0, rules r26
 
 ## Summary
 
@@ -284,10 +284,11 @@ With `opening` events (engine.md › The opening count), the session is busy and
 2. With the Breakdown setting on, the count plays as a score breakdown (Score breakdown › Cue sheet) with the same layout, pace, skip and hold: the 4 cards and the starter rise from their places into the row, the starter apart on the right. The banner's tag is "YOUR HAND" or "YOUR CRIB", its headline is the count's headline (or "Nothing to count"), and its suit chip reads "with the starter". The tally lists each combo, then, if a made card is counted, a "Joker card" line for each and a "Total multi" line; there is no starter line, no edge power, no left over and no power up. The total line is "Hand · Pair" (or "Crib · …") and the points. After the hold, the total flies to the step counter (when above 0) and the cards fly home.
 3. With the Breakdown setting off, a toast "Hand: 6 steps" (or "Crib: …") and a pop wait (340 ms).
 4. The step counter, which showed the steps before this count, rises by its points, with the steps bump.
+5. If the count won power jokers (`bonus`, r26), a toast "Hand bonus: +2 power jokers (bomb, reach)" (or "Crib bonus: …"), then each joker lands in its tray slot in the order drawn: the slot's count rises by 1 with the steps bump, then a settle wait. A pop wait follows the last. Until then the tray shows its count from before the opening.
 
-Then every grid column drops in from above, 4 card heights, in one board change (300 ms), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair".
+Then every grid column drops in from above, 4 card heights, in one board change (300 ms), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair", and a prize line for a bonus: "Hand bonus: +2 power jokers (bomb, reach)".
 
-Starting a new turn or game while the opening plays stops it. With animation off (snapshots), the turn shows at once, grid and all, with the counts' steps included.
+Starting a new turn or game while the opening plays stops it. With animation off (snapshots), the turn shows at once, grid and all, with the counts' steps and bonus jokers included, and the bonus toast (both counts' lines, joined with " · ").
 
 ### Tracing a set
 
@@ -753,7 +754,7 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib RPG) has
 
 - Records: every game is written as a GameRecord file under the app's data folder, `Records/<YYYY-MM-DD>/<time>-crib-maze.jsonl` (ARCHITECTURE.md › GameRecord). Writing starts at the player's first choice, so a game opened and left leaves no file. The deal's hint is kept as a `deal_hint` note.
 - Diagnostics: slow motion and the frame meter (see Settings panel). A hitch is a frame that took over 1.5 times the display's frame time while something was moving.
-- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
+- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 
@@ -930,7 +931,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.18.1 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r25` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.19.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r26` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins

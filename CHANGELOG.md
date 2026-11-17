@@ -2,6 +2,17 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 6 — 2026-11-17
+
+Match rules r26 (concept.md › Decisions, 2026-11-17).
+
+### Added
+
+- The opening bonus: `rules.json` › `match.opening.bonus` (`from` 10, `per` 5). A hand or crib count above `from` wins `(points − from) / per` power jokers for the tray, each picked by `prize.special` weights from the new dice stream `opening`, purpose `bonus` (engine.md › The opening count).
+- The `opening` event gains `bonus`, the kinds won in the order drawn (an empty list when none), and the totals gain `openingJokers`.
+- A second golden record, `seed12.jsonl`, whose second hand counts 24 × 1.31 = 31 and wins 4 power jokers. `seed1.jsonl` is re-recorded at spec 6.
+- ui.md: the bonus toast, and each joker landing in the tray after the count's steps (Scene: Match turn › The opening count).
+
 ## spec 5 — 2026-11-17
 
 Match rules r25 (concept.md › Decisions, 2026-11-17).

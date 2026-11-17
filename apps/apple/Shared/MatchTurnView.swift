@@ -162,7 +162,7 @@ struct PhoneView: View {
                 Group {
                     if i < known.count {
                         let kind = known[i]
-                        TrayCard(kind: kind, count: session.state?.tray[kind] ?? 0, w: 72,
+                        TrayCard(kind: kind, count: session.shownTray(kind), w: 72,
                                  armed: InputMode.arming(kind).map { session.mode == $0 } == true && session.armedSource == nil,
                                  countdown: kind == "reach" ? session.reachFraction : nil) {
                             if kind == "reach" {

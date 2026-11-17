@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 6, 2026-11-17, spec 5 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r25, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 6, 2026-11-17, spec 6 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r26, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -99,7 +99,8 @@ Before the grid plays, the hand is counted as a classic show: its 4 cards (h0 to
 - Made cards' multipliers apply, as on the grid: multiply 100 by each made card's percent in turn, rounding half up (`(made × m + 50) / 100`, integers), counting the starter's only when a combo uses it, then cap at `jokers.madeCapPercent` if it's above 0. Points are `(combo points × made + 50) / 100`.
 - Edge power doesn't apply, nothing powers up, nothing is left over or costs steps, the count doesn't mark a scored set and it is never the turn's best set.
 - Points add to the turn's steps and to `openingSteps` in the totals. A count of 0 still emits `opening`.
-- The opening uses no dice. In the app, it plays before the grid deals in (ui.md › Scene: Match turn).
+- The opening bonus (r26): with `opening.bonus`, a count whose points are above `bonus.from` wins `(points − from) / per` power jokers, dividing whole numbers and rounding down (15 to 19 is 1, 20 to 24 is 2, 25 to 29 is 3; a made card's multiplier can take it higher). Each count is ranked on its own, hand and crib apart, on its points after the made multiplier. Each joker's kind is picked by `prize.special` weights (stream `opening`, purpose `bonus`, one draw per joker), and it goes into the tray at once, so it can be used this turn. The kinds are the `opening` event's `bonus`, in the order drawn, and their number adds to `openingJokers` in the totals.
+- Without a bonus, the opening uses no dice. In the app, it plays before the grid deals in (ui.md › Scene: Match turn).
 - If a counted card isn't a playing card, the count is 0 (an extra card can't be dealt into a hand yet).
 
 The turn's deck size starts at the deck's card count. New made cards take IDs from 200, after the highest made card already in the deck, so a made card keeps its ID for the whole game.
@@ -325,7 +326,7 @@ Every event is written `{"<name>": {<fields>}}` (see Records › Encoding). The 
 | Event | Fields |
 |---|---|
 | `turnStart` | rulesVersion, dealer (true or false), hand (cards), crib (cards; empty for a non-dealer), starter (card), grid (16 cards in position order, `null` for an empty cell), stockSize, timer (seconds), cardBudget, jokers (kinds, in the order dealt), tray (count by kind) |
-| `opening` | what (`hand` or `crib`), positions (the 4, then `s`), cards (the same order), combos (as in `score`; card indexes into cards), comboPoints, madePercent, points (r24) |
+| `opening` | what (`hand` or `crib`), positions (the 4, then `s`), cards (the same order), combos (as in `score`; card indexes into cards), comboPoints, madePercent, points (r24), bonus: the power jokers won for the tray, in the order drawn, or an empty list (r26) |
 | `traceRejected` | positions, reason (`size`, `special`, `no_grid_card`, `edge_cards`, `not_touching`, `already_scored`) |
 | `leftoverWarning` | positions, leftOver (count) |
 | `leftoverPenalty` | positions, leftOver, cost |
@@ -345,7 +346,7 @@ Every event is written `{"<name>": {<fields>}}` (see Records › Encoding). The 
 
 A combo in `score` is `{kind, points, cards}` plus `size` or `multiplier` where the kind has one; `kind` is `fifteen`, `pair`, `run`, `flush` or `nobs`, and `cards` are indexes into the set's counted cards (Counting a set).
 
-`turnEnd` › totals, all whole numbers (counts or steps) unless noted: steps, stepsFromEdgePower, best (or none), scores, singles, multis, rejected, warnings, swaps, bombs, reaches, drawn, burns, made, penaltyTotal, leftOverTotal, stepsBySuit (steps by suit letter), stepsWithEdge, stepsWithoutEdge, extraSteps, clearBonus, reachCards, reachSeconds, reachScores, reachSteps, reachBest (or none), bigScores, bigSteps, madeScores, stepsFromMade, openingSteps.
+`turnEnd` › totals, all whole numbers (counts or steps) unless noted: steps, stepsFromEdgePower, best (or none), scores, singles, multis, rejected, warnings, swaps, bombs, reaches, drawn, burns, made, penaltyTotal, leftOverTotal, stepsBySuit (steps by suit letter), stepsWithEdge, stepsWithoutEdge, extraSteps, clearBonus, reachCards, reachSeconds, reachScores, reachSteps, reachBest (or none), bigScores, bigSteps, madeScores, stepsFromMade, openingSteps, openingJokers (r26).
 
 Values (reasons, purposes, kinds, tiers) stay snake_case text; names and fields are camelCase. These names follow `stats.md` › Event log by meaning, not by case.
 
@@ -361,7 +362,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r25`), specVersion (5), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
+| `header` | format (1), game (`crib-maze`), rules (`match-r26`), specVersion (6), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -402,6 +403,7 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 | `reveal` | Per extra card: `outcome:<kind>`, then `made_card` (and `made_multiplier`, r20) or `special_kind` if the outcome needs one |
 | `board` | `stock_insert` |
 | `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19) |
+| `opening` | Per opening count with a bonus: `bonus` per power joker won (r26) |
 | `prize` | `prize_special` |
 | `bot.<seat>` | A bot's own choices (see Bots) |
 
@@ -558,21 +560,22 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r25, as tuned on 2026-11-15, with the opening count added on 2026-11-16 and prizes retuned on 2026-11-17 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r26, as tuned on 2026-11-15, with the opening count added on 2026-11-16, and prizes retuned and the opening bonus added on 2026-11-17 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r25",
+  "rulesVersion": "match-r26",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
     "leftOverCost": 2, "starterJoins": true, "handFlush": true,
     "opening": {
       "hand": { "flushMin": 5, "handFlush4": true },
-      "crib": { "flushMin": 5, "handFlush4": false }
+      "crib": { "flushMin": 5, "handFlush4": false },
+      "bonus": { "from": 10, "per": 5 }
     },
     "maxEdgeCards": 1,
     "clearBonus": { "kind": "steps", "amount": 10 },
@@ -590,7 +593,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
 }
 ```
 
-`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `opening` (r24) counts the hand and crib before the grid plays, with classic show options (a hand flush needs its 4, a crib flush all 5); missing means no opening count, as in r23. `maxEdgeCards` (r24) is how many hand and crib cards one set may pick together; missing means no limit, and when given it MUST be 1 or more. `game.turns` (r23) is how many match turns a game has; missing means 1. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
+`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `opening` (r24) counts the hand and crib before the grid plays, with classic show options (a hand flush needs its 4, a crib flush all 5); missing means no opening count, as in r23. `opening.bonus` (r26) gives a power joker for every `per` points a count scores past `from`; missing means none, as in r25, and when given `from` MUST be 0 or more and `per` 1 or more. `maxEdgeCards` (r24) is how many hand and crib cards one set may pick together; missing means no limit, and when given it MUST be 1 or more. `game.turns` (r23) is how many match turns a game has; missing means 1. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 

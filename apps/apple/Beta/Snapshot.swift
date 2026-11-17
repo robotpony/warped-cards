@@ -35,6 +35,8 @@ import SwiftUI
         guard let out = value("--snapshot") else { return }
         session.animate = false
         if args.contains("--crib-off") { session.settings.dealer = false }
+        // `--strong`: the strong preset hand (4♥ 5♣ 6♦ J♠, starter 5♠), whose 17 wins an opening bonus (r26).
+        if args.contains("--strong") { session.settings.hand = "strong" }
         // `--deal [--pick 5H,5C] [--hint]`: render the deal screen instead of the turn.
         session.settings.deal = args.contains("--deal")
         if args.contains("--deal") {
@@ -71,10 +73,15 @@ import SwiftUI
         if !args.contains("--toast") { session.hideToast() }
         // `--opening hand|crib [--stage N]`: the opening count (r24) over the empty board, played
         // instantly to its hold, or stopped at its Nth wait.
-        if let what = value("--opening"), let e = session.events.first(where: { if case .opening(what, _, _, _, _, _, _) = $0 { return true }; return false }) {
-            var steps = 0
-            for x in session.events { if case .opening(let w, _, _, _, _, _, let p) = x { if w == what { break }; steps += p } }
-            session.snapshotOpening(steps: steps)
+        if let what = value("--opening"), let e = session.events.first(where: { if case .opening(what, _, _, _, _, _, _, _) = $0 { return true }; return false }) {
+            // Steps before this count; its own bonus jokers and later ones haven't landed yet.
+            var steps = 0, unlanded: [String] = [], reached = false
+            for x in session.events {
+                guard case .opening(let w, _, _, _, _, _, let p, let b) = x else { continue }
+                if w == what { reached = true }
+                if reached { unlanded += b } else { steps += p }
+            }
+            session.snapshotOpening(steps: steps, unlanded: unlanded)
             session.playback.instant = true
             if let n = value("--stage").flatMap(Int.init) {
                 session.playback.stopAt = n

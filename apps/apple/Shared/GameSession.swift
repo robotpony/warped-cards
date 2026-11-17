@@ -107,8 +107,16 @@ final class GameSession {
     /// The step count while the opening count plays, before its steps have landed; nil shows the turn's.
     private(set) var stepsShown: Int?
     var shownSteps: Int { stepsShown ?? state?.steps ?? 0 }
+    /// The opening bonus (r26): the tray as shown while the counts play, before their jokers land.
+    private(set) var trayShown: [String: Int]?
+    func shownTray(_ kind: String) -> Int { (trayShown ?? state?.tray)?[kind] ?? 0 }
     /// Snapshots only: the board as the opening count shows it, the grid waiting and the steps before it.
-    func snapshotOpening(steps: Int) { gridHidden = true; stepsShown = steps }
+    func snapshotOpening(steps: Int, unlanded: [String] = []) {
+        gridHidden = true; stepsShown = steps
+        var tray = state?.tray ?? [:]
+        for k in unlanded { tray[k, default: 0] -= 1 }
+        trayShown = tray
+    }
     /// While a move plays out, input waits.
     private(set) var busy = false { didSet { syncClock() } }
     /// Cards drawn into each grid column by the last move, so new cards drop in from above as a block.
@@ -256,7 +264,7 @@ final class GameSession {
             // Deal first: the turn starts once you've thrown to the crib.
             timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
             turn = nil; events = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
-            turnGen += 1; gridHidden = false; stepsShown = nil; busy = false
+            turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false
             playback.reset()
             dealing = DealState(dealt: dealt, botThrown: botThrown)
             watchHint()
@@ -269,25 +277,32 @@ final class GameSession {
     /// Shows the turn a step started.
     private func begin(_ step: Step<CribMazeGame>) {
         guard let t = run?.state.turn else { return }
-        turnGen += 1; gridHidden = false; stepsShown = nil; busy = false
+        turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
         let ev = step.events.compactMap(\.matchEvent)
         turn = t; events = ev; feed = []; breakdown = nil; mode = .trace; selection = []; armedSource = nil; warning = nil; toast = nil
         for e in ev { describe(e) }
         secondsLeft = t.config.rules.match.timerSeconds
         let openings = ev.filter { if case .opening = $0 { true } else { false } }
-        guard animate, playsOpening, !openings.isEmpty else { startTimer(); return }
+        guard animate, playsOpening, !openings.isEmpty else {
+            let won = openings.map(bonusLine).filter { !$0.isEmpty }
+            if !won.isEmpty { show(won.joined(separator: " · ")) }
+            startTimer(); return
+        }
         // r24: the hand and crib are counted over the empty board before the grid deals in.
         turnGen += 1
         let gen = turnGen
         busy = true; gridHidden = true
-        stepsShown = t.state.steps - openings.reduce(0) { if case .opening(_, _, _, _, _, _, let p) = $1 { $0 + p } else { $0 } }
+        stepsShown = t.state.steps - openings.reduce(0) { if case .opening(_, _, _, _, _, _, let p, _) = $1 { $0 + p } else { $0 } }
+        var tray = t.state.tray
+        for e in openings { if case .opening(_, _, _, _, _, _, _, let b) = e { for k in b { tray[k, default: 0] -= 1 } } }
+        trayShown = tray
         Task { [weak self] in
             guard let self else { return }
             try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
             for e in openings {
                 guard self.turnGen == gen else { return }
-                guard case .opening(_, _, _, _, _, _, let points) = e else { continue }
+                guard case .opening(_, _, _, _, _, _, let points, let bonus) = e else { continue }
                 if self.settings.breakdown {
                     await self.playOpening(e, cells: t.state.cells)
                     withAnimation(fx.motions.breakdown.tally.animation()) { self.playback.reset() }
@@ -299,7 +314,18 @@ final class GameSession {
                 withAnimation(fx.motions.board.stepsBump.animation()) { self.playback.bump = true }
                 try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
                 withAnimation(fx.motions.board.stepsUnbump.animation()) { self.playback.bump = false }
+                // r26: a high count's power jokers land in the tray, one at a time.
+                if !bonus.isEmpty {
+                    self.show(self.bonusLine(e))
+                    for k in bonus {
+                        guard self.turnGen == gen else { return }
+                        withAnimation(fx.motions.board.stepsBump.animation()) { self.trayShown?[k, default: 0] += 1 }
+                        try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.settle)))
+                    }
+                    try? await Task.sleep(for: .milliseconds(Motion.ms(fx.waits.board.pop)))
+                }
             }
+            self.trayShown = nil
             guard self.turnGen == gen else { return }
             // The grid deals in, every column dropping from above.
             self.drawnPerColumn = [4, 4, 4, 4]
@@ -314,8 +340,14 @@ final class GameSession {
 
     /// The opening count's line, for the feed and the quick flash: "Hand: 12 steps".
     func openingLine(_ e: MatchEvent) -> String {
-        guard case .opening(let what, _, _, _, _, _, let points) = e else { return "" }
+        guard case .opening(let what, _, _, _, _, _, let points, _) = e else { return "" }
         return "\(what == "crib" ? "Crib" : "Hand"): \(points) step\(points == 1 ? "" : "s")"
+    }
+
+    /// The opening bonus's line (r26): "Hand bonus: +2 power jokers (bomb, reach)".
+    func bonusLine(_ e: MatchEvent) -> String {
+        guard case .opening(let what, _, _, _, _, _, _, let bonus) = e, !bonus.isEmpty else { return "" }
+        return "\(what == "crib" ? "Crib" : "Hand") bonus: +\(bonus.count) power joker\(bonus.count == 1 ? "" : "s") (\(bonus.joined(separator: ", ")))"
     }
 
     /// Sends an action to the engine, stamped with the game time, and hands the step to the recorder.
@@ -635,9 +667,10 @@ final class GameSession {
         case .reachOver(_, let limit): line("Reach over: hand size back to \(limit)")
         case .noSetsLeft(_, let tray):
             show(tray.values.contains { $0 > 0 } ? "No sets score: use a power joker" : "No sets score")
-        case .opening(_, _, let cards, let combos, _, _, _):
+        case .opening(_, _, let cards, let combos, _, _, _, _):
             let what = combos.isEmpty ? "nothing to count" : combos.map { Self.comboName(kind: $0.kind, size: $0.size, multiplier: $0.multiplier) }.joined(separator: " + ")
             line("\(openingLine(e))  \(faces(cards))  \(what)")
+            if case .opening(_, _, _, _, _, _, _, let b) = e, !b.isEmpty { line(bonusLine(e), prize: true) }
         case .boardCleared(_, let amount): line("Board cleared! +\(amount) steps", prize: true)
         case .prizeWon(let tier, let best, _, let special): line("Prize: \(tier) (best set \(best)), wins a \(special)", prize: true)
         case .turnEnd(let reason, let totals):

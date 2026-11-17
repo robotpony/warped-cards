@@ -98,7 +98,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
                 switch e {
                 case .score(_, _, _, _, _, _, _, _, let p, _, _, _): steps += p
                 case .leftoverPenalty(_, _, let cost): steps -= cost
-                case .opening(_, _, _, _, _, _, let p): steps += p
+                case .opening(_, _, _, _, _, _, let p, _): steps += p
                 case .boardCleared(_, let a): steps += a
                 case .extraDrawn(_, let o, _, _, _, _): if o == "steps" { steps += c.jokers.outcomes["steps"]!.amount! }
                 default: break
@@ -389,7 +389,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         setup.fixedCrib = ["AH", "2H", "3H", "4H"]
         let (t, ev) = MatchTurn.start(config: c, setup: setup)
         let openings = ev.compactMap { e -> (String, Int, [String])? in
-            if case .opening(let w, let ps, _, _, _, _, let p) = e { return (w, p, ps) } else { return nil }
+            if case .opening(let w, let ps, _, _, _, _, let p, _) = e { return (w, p, ps) } else { return nil }
         }
         #expect(openings.map(\.0) == ["hand", "crib"])
         // 5 5 5 10 J: fifteens 5+10 ×3, 5+J ×3, 5+5+5 = 14; three 5s = 6; nobs (JC, 5C) = 1. 21 in all.
@@ -404,10 +404,33 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect((16...24).allSatisfy { t.state.power[$0] == c.rules.match.edgePower.start })
     }
 
+    // r26: a power joker for every 5 points past 10, for each count on its own.
+    @Test func aHighCountWinsPowerJokers() throws {
+        let c = try loadConfig()
+        var setup = TurnSetup(seed: 3, dealer: true, warned: true, fixedHand: ["5H", "5D", "10S", "JC"], fixedStarter: "5C")
+        setup.fixedCrib = ["AH", "2H", "3H", "4H"]
+        let (t, ev) = MatchTurn.start(config: c, setup: setup)
+        let bonus = ev.compactMap { e -> [String]? in if case .opening(_, _, _, _, _, _, _, let b) = e { b } else { nil } }
+        // The hand's 21 is 11 past 10: 2 jokers. The crib's 7 wins none.
+        #expect(bonus.map(\.count) == [2, 0])
+        #expect(bonus[0].allSatisfy { c.rules.specials.known.contains($0) })
+        // The turnStart tray, before the counts, plus the 2 won.
+        guard case .turnStart(_, _, _, _, _, _, _, _, _, _, let before) = ev[0] else { Issue.record("no turnStart"); return }
+        var want = before; for k in bonus[0] { want[k, default: 0] += 1 }
+        let extrasToTray = ev.contains { if case .extraDrawn(_, _, _, _, "tray", _) = $0 { true } else { false } }
+        if !extrasToTray { #expect(t.state.tray == want) }
+        #expect(t.state.totals.openingJokers == 2)
+        // Exactly 15 is one joker; 14 none.
+        for (pts, want) in [(14, 0), (15, 1), (19, 1), (20, 2), (29, 3)] {
+            let b = c.rules.match.opening!.bonus!
+            #expect((pts > b.from ? (pts - b.from) / b.per : 0) == want)
+        }
+    }
+
     @Test func nonDealerCountsOnlyTheHand() throws {
         let c = try loadConfig()
         let (_, ev) = MatchTurn.start(config: c, setup: TurnSetup(seed: 3, dealer: false, warned: true, fixedHand: ["5H", "5D", "10S", "JC"], fixedStarter: "5C"))
-        let whats = ev.compactMap { e -> String? in if case .opening(let w, _, _, _, _, _, _) = e { w } else { nil } }
+        let whats = ev.compactMap { e -> String? in if case .opening(let w, _, _, _, _, _, _, _) = e { w } else { nil } }
         #expect(whats == ["hand"])
     }
 

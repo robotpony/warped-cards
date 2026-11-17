@@ -23,7 +23,7 @@ public protocol GameRules {
     associatedtype Result: Codable & Sendable   // how a finished game came out
 
     static var gameID: String { get }           // "crib-maze"
-    static var rulesVersion: String { get }     // "match-r25"
+    static var rulesVersion: String { get }     // "match-r26"
     /// The spec version this build implements (PORTING.md › Versions): `specVersion` in spec.json.
     static var specVersion: Int { get }
 

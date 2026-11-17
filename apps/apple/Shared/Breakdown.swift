@@ -304,7 +304,7 @@ extension GameSession {
     /// show. The cards rise from their places into the row, as a set's do, and count aloud; there's
     /// no edge power, nothing left over and no power up. Made cards' multipliers still apply.
     func playOpening(_ e: MatchEvent, cells: [Card?]) async {
-        guard case .opening(let what, let names, _, let combos, let comboPoints, let made, let points) = e else { return }
+        guard case .opening(let what, let names, _, let combos, let comboPoints, let made, let points, _) = e else { return }
         let pb = playback, T = timing, W = fx.waits.breakdown
         let sel = names.compactMap(Board.parse)
         var n = 0

@@ -79,7 +79,7 @@ public protocol GameRules {
     associatedtype Result: Codable & Sendable   // how a finished game came out
 
     static var gameID: String { get }           // "crib-maze"
-    static var rulesVersion: String { get }     // "match-r25"
+    static var rulesVersion: String { get }     // "match-r26"
 
     static func start(_ config: Config, players: [PlayerSeat], dice: inout Dice) -> (State, [Event])
     static func apply(_ action: Action, by player: PlayerID?, to state: inout State, dice: inout Dice) throws -> [Event]

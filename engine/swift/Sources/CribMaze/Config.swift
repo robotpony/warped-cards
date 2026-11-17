@@ -27,7 +27,9 @@ public struct RulesConfig: Codable, Sendable, Equatable {
     public struct EdgePower: Codable, Sendable, Equatable {
         public var start: Int, step: Int, percentPerLevel: Int, combine: String, capPercent: Int
     }
-    public struct Opening: Codable, Sendable, Equatable { public var hand: CountOptions, crib: CountOptions }
+    /// Match rules r26: a power joker for every `per` points a count scores past `from`.
+    public struct OpeningBonus: Codable, Sendable, Equatable { public var from: Int, per: Int }
+    public struct Opening: Codable, Sendable, Equatable { public var hand: CountOptions, crib: CountOptions; public var bonus: OpeningBonus? }
     public struct Prize: Codable, Sendable, Equatable { public var rareAt: Int, epicAt: Int; public var special: Weights }
     public struct Match: Codable, Sendable, Equatable {
         public var maxSet: Int, flushMin: Int, timerSeconds: Int, cardBudget: Int, leftOverCost: Int
@@ -160,6 +162,7 @@ public struct Config: Codable, Sendable, Equatable {
         let m = rules.match
         if m.maxSet < 2 { try fail("match.maxSet must be 2 or more") }
         if let e = m.maxEdgeCards, e < 1 { try fail("match.maxEdgeCards must be 1 or more") }
+        if let b = m.opening?.bonus, b.from < 0 || b.per < 1 { try fail("match.opening.bonus needs from of 0 or more and per of 1 or more") }
         if m.prize.epicAt < m.prize.rareAt { try fail("prize.epicAt must be at least rareAt") }
         try weights(m.prize.special, "prize.special")
         for (k, _) in m.prize.special.entries where !rules.specials.known.contains(k) { try fail("prize.special names unknown \(k)") }
