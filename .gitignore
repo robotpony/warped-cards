@@ -7,3 +7,8 @@ apps/apple/.build-app-*.log
 apps/apple/CribMaze.xcodeproj/
 .DS_Store
 .build-release/
+# Linux client (apps/linux)
+apps/linux/.godot/
+apps/linux/bin/*.so
+apps/linux/extension/.build/
+apps/linux/extension/.swiftpm/

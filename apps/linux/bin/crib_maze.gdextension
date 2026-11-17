@@ -1,0 +1,15 @@
+[configuration]
+entry_symbol = "swift_entry_point"
+compatibility_minimum = 4.7
+
+[libraries]
+linux.debug.arm64 = "res://bin/libCribMazeGodot.so"
+linux.release.arm64 = "res://bin/libCribMazeGodot.so"
+linux.debug.x86_64 = "res://bin/libCribMazeGodot.so"
+linux.release.x86_64 = "res://bin/libCribMazeGodot.so"
+
+[dependencies]
+linux.debug.arm64 = {"res://bin/libSwiftGodot.so" : ""}
+linux.release.arm64 = {"res://bin/libSwiftGodot.so" : ""}
+linux.debug.x86_64 = {"res://bin/libSwiftGodot.so" : ""}
+linux.release.x86_64 = {"res://bin/libSwiftGodot.so" : ""}

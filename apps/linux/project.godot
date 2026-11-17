@@ -1,0 +1,17 @@
+; Crib Maze for Linux (apps/linux, owned by @linux). The build version is config/version
+; (PORTING.md › Versions); .claude/hooks/check-version-bump.sh reads it.
+config_version=5
+
+[application]
+config/name="Crib Maze"
+config/version="0.1.0"
+run/main_scene="res://scenes/main.tscn"
+
+[display]
+window/size/viewport_width=442
+window/size/viewport_height=880
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
