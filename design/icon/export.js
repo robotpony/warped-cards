@@ -37,7 +37,7 @@ const ICONS = {
   favicon: svg(layer("favicon")),
 };
 
-const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "cribmaze-icon-"));
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "crib-rpg-icon-"));
 
 // Draws an icon at 1024 with a transparent background.
 function draw(name) {
@@ -82,8 +82,8 @@ function main() {
   for (const px of [16, 32, 64, 128, 256, 512, 1024]) sized(p.mac, px, path.join(A, `mac-${px}.png`));
 
   fs.mkdirSync(L, { recursive: true });
-  fs.writeFileSync(path.join(L, "crib-maze.svg"), ICONS.linux);
-  for (const px of [16, 32, 48, 64, 128, 256, 512]) sized(p.linux, px, path.join(L, `crib-maze-${px}.png`));
+  fs.writeFileSync(path.join(L, "crib-rpg.svg"), ICONS.linux);
+  for (const px of [16, 32, 48, 64, 128, 256, 512]) sized(p.linux, px, path.join(L, `crib-rpg-${px}.png`));
 
   fs.mkdirSync(W, { recursive: true });
   fs.writeFileSync(path.join(W, "favicon.svg"), ICONS.favicon);

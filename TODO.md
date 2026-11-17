@@ -5,7 +5,7 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 ## Crib RPG
 
 - [ ] `@apple` Use the app icon from `design/icon/` in both Apple targets: Icon Composer layers, or the `export/apple` PNGs with the light one flattened (design/icon/README.md) (Bruce, 2026-11-16)
-- [ ] `@linux` The game is Crib RPG now (was Crib Maze): rename it where players or docs see it in `apps/linux/` (`project.godot`'s name, README). Keep code names and the record ID `crib-maze` (concept.md › Working title) (from `@apple`, 2026-11-16)
+- [ ] `@linux` The game is Crib RPG now (was Crib Maze): rename it where players or docs see it in `apps/linux/` (`project.godot`'s name, README), and use the icons' new names, `design/icon/export/linux/crib-rpg*.png` and `crib-rpg.svg` (were `crib-maze`). Keep code names and the record ID `crib-maze` (concept.md › Working title) (from `@apple`, 2026-11-16)
 - [ ] `@linux` Use the app icon from `design/icon/export/linux` for the Godot app and its `.desktop` entry (design/icon/README.md) (Bruce, 2026-11-16)
 - [x] `@apple` Move `swift/` to `engine/swift/` and `apps/apple/`, in one patch build (PORTING.md › Layout › Moving there) (from `@linux`, 2026-11-16)
 - [x] `@apple` Show the build line (`Mac 0.15.2 · spec 1 · r23`) on the About screen and add `specVersion` to the record header, with engine.md › Records updated (PORTING.md › Versions) (from `@linux`, 2026-11-16)

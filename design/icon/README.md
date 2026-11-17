@@ -32,8 +32,8 @@ Run it from the repo root on a Mac. It needs Google Chrome to draw the SVGs and 
 | `export/apple/ios-1024-dark.png` | iOS dark icon: the dark background with the same cards and star |
 | `export/apple/ios-1024-tinted.png` | iOS tinted icon: cards and star in grey on black; iOS adds the tint |
 | `export/apple/mac-16.png` to `mac-1024.png` | macOS: the rounded plate (824 on the 1024 canvas, 185 corners) with its shadow, at 16, 32, 64, 128, 256, 512 and 1024 |
-| `export/linux/crib-maze.svg` | Linux scalable icon (hicolor `scalable/apps`) |
-| `export/linux/crib-maze-16.png` to `-512.png` | Linux sized icons (hicolor `NxN/apps`) |
+| `export/linux/crib-rpg.svg` | Linux scalable icon (hicolor `scalable/apps`) |
+| `export/linux/crib-rpg-16.png` to `-512.png` | Linux sized icons (hicolor `NxN/apps`) |
 | `export/web/favicon.svg`, `favicon.ico`, `favicon-32.png` | Browser tab icon, from the favicon layer. The `.ico` holds 16, 32 and 48 |
 | `export/web/apple-touch-icon.png` | 180 px home screen icon for Safari |
 | `export/web/icon-192.png`, `icon-512.png` | Web app manifest icons |
