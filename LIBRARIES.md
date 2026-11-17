@@ -18,6 +18,7 @@ The rule: Apple's own frameworks first, no third-party packages by default. A ne
 | Swift Testing | With Swift | Unit, fixture and replay tests | Apple's current test framework; parameterized tests suit fixture files (Scorekeep still uses XCTest) |
 | Instruments | With Xcode | Frame rate, audio glitches, bot search time | Effects need a frame budget, not a guess |
 | Node | Existing | The JS mocks' tests, reading the shared fixtures | Already in use (`node --test`) |
+| swiftly | Latest, from swift.org | Installs the Swift toolchain on Linux (`@linux`) | swift.org's own installer; installs per user and pins the same Swift as the Mac, so the engine builds with one compiler everywhere |
 
 Settings carried over from Scorekeep: warnings fail the build, and the build number is the git commit count.
 

@@ -35,11 +35,18 @@ The Swift build is the reference build, not the spec. Where the Swift code does 
 
 ### Swift, on Linux or Windows
 
-The engine package (`swift/Package.swift`: GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, GameRecord, `cribmaze-sim`) imports Foundation and nothing from Apple's UI frameworks. It SHOULD build and pass `swift test` on Linux as is. Nobody has tried yet. Check these first:
+The engine package (`swift/Package.swift`: GameKit, CardKit, CribbageKit, CribMaze, CribMazeBots, GameRecord, `cribmaze-sim`) imports Foundation and nothing from Apple's UI frameworks.
 
-- Rung 8 (`goldenRecordsWriteTheSameBytes`): Foundation's `JSONEncoder` on Linux MUST sort keys by code point, as on the Mac. Older Linux Foundation sorted differently.
-- `ISO8601DateFormatter` with fractional seconds, `FileHandle`, and `CocoaError` in `GameRecord/Record.swift`.
-- Every test in `swift test`, not just the build.
+**Linux: passes, checked 2026-11-16** by `@linux` at spec 1, on Omarchy (Arch) on ARM64 with Swift 6.4.2. A clean `swift build` (warnings fail it) and all 68 tests in `swift test` pass with no code changes, including rung 8 (`goldenRecordsWriteTheSameBytes`): Linux Foundation's `JSONEncoder` sorts keys the same as the Mac's, and `ISO8601DateFormatter`, `FileHandle` and `CocoaError` in `GameRecord/Record.swift` all behave. Windows hasn't been tried.
+
+Setting up Swift on an Arch-based Linux:
+
+1. Install swiftly from swift.org, telling it the nearest supported platform: `swiftly init --skip-install --platform ubuntu24.04`.
+2. `swiftly install --use 6.4.2`. Run it outside the repo, or delete the `.swift-version` file it writes into the folder it's run from.
+3. The toolchain wants two libraries under their Ubuntu names. Install the old libxml2: `sudo pacman -S libxml2-legacy`. Link ncurses, which Arch builds only as the wide version: `sudo ln -s libncursesw.so.6 /usr/lib/libncurses.so.6` (pacman doesn't own this link). `LD_LIBRARY_PATH` isn't enough, because the build system clears it before linking.
+4. lldb also wants Python 3.12 and `libedit.so.2`. It isn't needed to build or test.
+
+Re-run the check after a Swift upgrade, and before a Linux build ships.
 
 If the engine passes, a Swift port is a new UI over the same engine. The apps (`swift/App`) are SwiftUI and stay Apple-only.
 
@@ -125,5 +132,5 @@ For every session working on the Swift build, not just porters:
 ## Open questions
 
 1. Answered 2026-11-16: each port keeps its own build version and names the spec version it implements (Versions).
-2. Which comes first off Apple: the Swift engine with a new UI, or another language? The Linux check above decides how much work the Swift path is.
+2. Which comes first off Apple: the Swift engine with a new UI, or another language? The Swift engine passes on Linux (Two ways to port), so the Swift path costs only a new UI. Still to choose: the Linux UI toolkit.
 3. Should the UI's cue timings move into config (`timing.json` or `fx.json`) before a port, so a port reads them instead of copying numbers? ui.md lists the numbers that are written into code today.
