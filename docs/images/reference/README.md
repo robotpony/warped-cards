@@ -4,7 +4,7 @@ What the Mac beta (Noddy Yookerspiel) shows, for other builds to match shot for 
 
 - Each phone shot is the 402 pt wide phone with 24 pt of page around it, rendered at 2x (900 px wide). The settings shot is the 340 × 620 pt panel at the Mac's screen scale (2x).
 - Every shot is a still from `--snapshot`, the beta's own renderer: `"Noddy Yookerspiel" --snapshot <file> --seed 1 <flags>`. Animations are at their end state, so motion isn't shown; ui.md › Motion and `config/fx.json` give the timings.
-- Toasts are hidden unless a shot asks for one. The beta uses the system font; Crib Maze, and the beta with `--saira`, use Saira Semi Condensed (ui.md › Type).
+- Toasts are hidden unless a shot asks for one. The beta uses the system font; Crib RPG, and the beta with `--saira`, use Saira Semi Condensed (ui.md › Type).
 - Where the app and ui.md disagree, follow ui.md: `BUGS.md` › Open and ui.md › Gaps list what the app gets wrong, and the shots show those bugs too.
 
 | Shot | Flags | Shows |

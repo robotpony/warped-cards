@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.17.1, rules r23
+Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.17.3, rules r23
 
 ## Summary
 
@@ -155,7 +155,7 @@ Source: `Theme.swift`, `BoardView.swift` (BoardLayout, EdgeBackground, EmptyCell
 
 ### Colours
 
-The app reads every colour from palette.json, bundled into the app (the table colours since 0.15.2, the rest since 0.15.6). A port MUST read them from there too. Cards use the original card art from `design/cards/cards.js`, whose colours are palette.json's `card` group; `face` and `suit` at the top level belong to the dropped neon cards.
+The app reads every colour from palette.json, bundled into the app (the table colours since 0.15.2, the rest since 0.15.6). A port MUST read them from there too. Cards are drawn from the SVG files in `design/cards/` (Cards), the original cream cards; their colours are palette.json's `card` group; `face` and `suit` at the top level belong to the dropped neon cards.
 
 | Role | Palette key or hex | Used for |
 |---|---|---|
@@ -190,7 +190,7 @@ Suit colours on card faces are the four-colour deck from cards.js, `card.suit`: 
 
 Cards are drawn from the SVG files in `design/cards/` (Apple 0.15.7; the files and their text slots are in its README), in a 50 × 70 unit box scaled to the card's width. A port MUST draw from the same files: the frame for every face, `joker-<kind>.svg` for special jokers (`swap` for the swapper), `extra-<kind>.svg` for extra cards and `back.svg` for backs. Text in the files marks where text goes; the app draws it at each `<text>`'s centre, size and tracking. A rect's outline starts at its top edge just after the top-left corner and runs clockwise, as SVG says, so dashes start in the same place in every build. The list below describes what the files draw.
 
-- Face: rounded 4.5 units, card face fill, 1.2 unit card rule outline. The rank at top left (centre at 9, 10.5), 16 units bold (14 for a 10, tracked −1.2), and again rotated 180° at bottom right (41, 59.5). A large suit glyph in the centre (25, 35), 34 units. Suit glyphs MUST draw as text, never as emoji.
+- Face: rounded 4.5 units, card face fill, 1.2 unit card rule outline. The rank at top left (centre at 9, 10.5), 16 units bold (14 for a 10, tracked −1.2), and again rotated 180° at bottom right (41, 59.5). The suit in the centre is its `design/neon/shapes.json` shape in a 28 unit box centred at (25, 36) (Type). A port MUST draw the shape. The beta, until it moves to Saira, still draws a 34 unit text glyph centred at (25, 35), about the same size and place (Gaps 18).
 - Special jokers: an inset border in joker purple at 50%, "JOKER" at the top and the kind's name at the bottom ("SWAP", "BOMB", "REACH", "BURN"), 8 units bold, and an icon: two arrows (swapper), a black bomb with a red spark (bomb), a red and gold flame (burn), a card with a dashed extra card and a red plus (reach). shapes.json's neon swap and bomb icons belong to the dropped neon cards and aren't used.
 - Extra cards (amber, teal, title, blank): the kind's name in capitals, 7 units bold, card soft colour, centred.
 - Back: crosshatch at 45°, lines 3.4 units apart, 0.7 units wide, card soft at 70%, inside a 41 × 61 unit inner outline.
@@ -758,7 +758,7 @@ damping   c = 4π (1 − b) / d
 x'' = −k (x − 1) − c x'          x(0) = 0, x'(0) = 0
 ```
 
-This is how SwiftUI's `spring(duration:bounce:)` is defined. `d` is the time the spring feels like it takes, not the time to settle: with a bounce it overshoots and keeps moving a little past `d`. A port MUST step this equation (or a tween with the same stiffness and damping) and stop when the value is within 0.001 of 1 and nearly still. A spring with bounce 0 is critically damped.
+This is how SwiftUI's `spring(duration:bounce:)` is defined. `d` is the time the spring feels like it takes, not the time to settle: with a bounce it overshoots and keeps moving a little past `d`. A port MUST step this equation (or a tween with the same stiffness and damping) and stop when the value is within 0.001 of 1 and its speed is under 0.01 a second (in the same 0 to 1 units), then set it to exactly 1. A spring with bounce 0 is critically damped.
 
 The overshoot is `e^(−πζ / √(1 − ζ²))` with ζ = 1 − b: `board.pop` (300 ms, 0.4) overshoots by about 9%, `deal.starter` (0.3) by about 5%, `breakdown.rowFly` (0.18) by about 1%.
 
@@ -800,7 +800,7 @@ Slow motion multiplies every motion and wait, except the clock's (`motions.clock
 | `waits.clock.*` | Seconds the clock counts down from; the warning's last percent; the urgency levels (percent of time left), each level's half-breath (ms) and swell (scale) |
 | `waits.slowMotion` | The beta's slow-motion factor |
 
-A float's keyframes use SwiftUI's cubic keyframes, a smooth spline through the keys. A port MAY ease in and out between keys instead.
+A float's keyframes are joined by a Catmull-Rom spline: a cubic curve through each key, whose slope at a key is set by the keys either side, starting and ending at rest. A port MAY ease in and out between keys instead.
 
 ## Hard-coded numbers
 
@@ -861,7 +861,7 @@ Each place the app relies on something Apple-specific, and what any platform MUS
 | Drawing and layout | A declarative UI toolkit; views placed by offset in a fixed board space | Any 2D scene or canvas. Cards placed by absolute position in the 352 × 480 board space |
 | Animation | Springs (duration and bounce), ease curves, keyframes, numeric text roll, views that move between places when they change parent | A tween library with springs and easing, keyframe tracks, and a way to fly a card between two parents |
 | Shapes | Vector paths, rounded rectangles, path union for the edge background | Vector paths with union (or draw two rounded rectangles and their outline carefully) |
-| Text | System font at its condensed width; a text-style selector so suit glyphs never draw as emoji | Bundle Saira Semi Condensed from `design/fonts/`, and draw suits and ★ from shapes.json (Type) |
+| Text | Crib RPG: Saira Semi Condensed from the bundle, with suits and ★ as shapes.json images inside the text. The beta: the system font at its condensed width, with a text-style selector so suit glyphs never draw as emoji, until it moves to Saira | Bundle Saira Semi Condensed from `design/fonts/`, and draw suits and ★ from shapes.json (Type) |
 | Pointer | A drag gesture with no minimum distance, then a 6 pt threshold; hover for tooltips | Raw pointer down, move and up events; tooltips on hover. On touch: the same, with no hover |
 | Cursor | A crosshair over the board while a bomb or burn is armed | A cursor API (none on touch) |
 | Settings panel | A popover anchored to the footer, dark appearance, native toggles, pickers and a text field | Any anchored panel or modal sheet with the same controls |
@@ -900,8 +900,8 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 15. The Command-N menu item is called "New Turn" but starts a new game.
 16. The deal always deals the bot's card first, even when the bot deals; the code comment says the dealer deals to the other player first.
 17. The drag hit area (70%) is fixed. ARCHITECTURE.md › Mac first, iOS later says it's a setting, as in the mock.
-18. Partly fixed: the app reads every colour from `palette.json` (0.15.6). It still doesn't read `shapes.json`, and the reach and burn icons are drawn only in Swift. Cards keep the cards.js art; the neon cards were dropped (2026-11-16).
-19. Fixed in 0.15.2: the app reads its breakdown base, step and minimum from `timing.json` › profiles.human, so tuning the file changes both the app and the simulator. The other `timing.json` numbers (Hard-coded numbers 2, 19) still aren't read.
+18. Mostly fixed: every colour comes from `palette.json` (0.15.6), cards from the SVGs in `design/cards/` (0.15.7, reach and burn included), and Crib RPG draws suits and ★ from `shapes.json` (0.16.0). Left: the beta keeps the system font and draws suits as text glyphs until Bruce decides on Saira for it (TODO.md).
+19. Fixed in 0.15.2: the app reads its breakdown base, step and minimum from `timing.json` › profiles.human, so tuning the file changes both the app and the simulator. The stuck board's wait reads `ending` since 0.15.5 (Hard-coded numbers 2), and the other waits come from `fx.json` (Hard-coded numbers 19, 0.15.5).
 20. Config fallbacks disagree: with no config, edge power per level falls back to 50% in the info card and chips but 10% in the breakdown. Config failing to load shows an error screen, so this only matters if a field goes missing.
 21. Reduce Motion (ARCHITECTURE.md › Presenter and cues) isn't supported, and there are no sound or haptic switches yet (none are needed until sound and haptics exist).
 22. rules.md's status line says match rules r22 is in the beta; the beta and `rules.json` are at r23.
@@ -912,10 +912,10 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.15.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r23` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.17.3 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r23` (`cribbage/minigames/config/rules.json`):
 
-- `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
+- `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins
-- `cribbage/minigames/config/`: `rules.json`, `timing.json`, `hints.json`
-- `design/neon/palette.json`, `design/neon/shapes.json`
+- `cribbage/minigames/config/`: `rules.json`, `timing.json`, `hints.json`, `fx.json`
+- `design/neon/palette.json`, `design/neon/shapes.json`, `design/cards/*.svg`, `design/fonts/saira-semi-condensed/`
 - Read alongside: [engine.md](engine.md), [rules.md](rules.md), [mocks/README.md](mocks/README.md), `ARCHITECTURE.md`

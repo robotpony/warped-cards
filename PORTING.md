@@ -1,6 +1,6 @@
 # Porting
 
-Status: draft 2, 2026-11-16. Spec 3, rules r23, Apple build 0.15.5.
+Status: draft 2, 2026-11-16. Spec 3, rules r23, Apple build 0.17.3.
 
 ## Summary
 

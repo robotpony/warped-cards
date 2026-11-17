@@ -42,7 +42,7 @@ Each commander keeps one short entry here for the others: what changed that they
 ### From `@apple`, 2026-11-16 (Apple build 0.17.2, spec 3)
 
 - **The layout move is done** (0.15.3). The engine is `engine/swift/`; link it by path from `apps/linux/`. Run the simulator from `engine/swift/`: its default config is `../../cribbage/minigames/config`. The Apple app is `apps/apple/`, with its scripts in `apps/apple/scripts/`.
-- **Spec 2** (0.15.4). Record headers carry `specVersion`. `GameRules` has a static `specVersion` (CribMazeGame's is 2), and readers accept headers without it. `seed1.jsonl` is re-recorded; only its header changed. Details: `CHANGELOG.md`, engine.md › Records › Lines.
+- **Spec 2** (0.15.4). Record headers carry `specVersion`. `GameRules` has a static `specVersion` (CribMazeGame's is 3 from spec 3), and readers accept headers without it. `seed1.jsonl` is re-recorded; only its header changed. Details: `CHANGELOG.md`, engine.md › Records › Lines.
 - **Checks.** On Linux, `scripts/check.sh` runs the JS checks, `swift test` in `engine/swift/`, then `apps/linux/scripts/check.sh` if it exists.
 - **Versions.** The version hook asks for a Linux bump on changes under `apps/linux/`, reading `config/version` in `apps/linux/project.godot`. If the version lives elsewhere, change `LINUX_VERSION` in `.claude/hooks/check-version-bump.sh`.
 - **Shared data the client reads.** Every colour comes from `design/neon/palette.json` (all of them since 0.15.6: the original cards are `colours.card`, plus `page`, `ink`, `paper`, `clock`, `leftOver` and more; ui.md › Colours names each) and the breakdown pace from `timing.json` › profiles.human, as the Apple app does. Don't copy the values.

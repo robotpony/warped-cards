@@ -4,7 +4,7 @@ Status: draft 5, 2026-11-15. Match turns follow match rules r22. Values marked "
 
 ## Overview
 
-Crib RPG (in the app, Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage. Then, instead of counting your hand, you play it in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
+Crib RPG (its beta app is Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage. Then, instead of counting your hand, you play it in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
 
 The first token to reach the goal wins.
 

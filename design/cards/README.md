@@ -27,7 +27,7 @@ Text in these files is a layout reference. Each `<text>` has an `id` and is cent
 | Slot | Centre | Size | Colour | Notes |
 |---|---|---|---|---|
 | Rank | 9, 10.5 | 16 (14 for a 10, tracked −1.2) | Suit colour | Drawn again turned 180° on 41, 59.5 |
-| Suit | 25, 35 | See below | Suit colour | From `design/neon/shapes.json` |
+| Suit | 25, 36 | 28 unit box | Suit colour | A `design/neon/shapes.json` shape, not text (see below) |
 | JOKER | 25, 9.5 | 8, tracked 1 | Joker purple | Special jokers |
 | Kind word | 25, 61.5 | 8, tracked 1 | Joker purple | SWAP, BOMB, REACH, BURN |
 | Extra name | 25, 35 | 7 | Card soft | AMBER, TEAL, TITLE, BLANK |
