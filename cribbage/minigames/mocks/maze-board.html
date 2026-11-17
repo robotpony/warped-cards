@@ -105,6 +105,7 @@
       <label>Bots <select id="bots"><option value="1" selected>1</option><option value="2">2</option></select>
         Bot 1 <select id="style1"></select> Bot 2 <select id="style2"></select></label>
       <label>Walk speed <select id="speed"><option value="70">normal</option><option value="30" selected>fast</option><option value="0">instant</option></select></label>
+      <label>Zoom <select id="zoom"><option value="54" selected>close: about 7 cells across, like maze-walk's fog</option><option value="38">medium: about 10 cells</option><option value="30">far: about 13 cells</option></select></label>
       <label><input type="checkbox" id="whole"> Show the whole maze (designer view)</label>
     </div>
 
@@ -162,7 +163,7 @@
   const STYLES = { balanced: "Balanced", racer: "Racer", timer: "Timer", closer: "Door closer", jokers: "Jokers" };
   const JOKERS = { key: "Key", burn: "Burn", bomb: "Bomb", swapper: "Swapper" };
   const JOKER_HINT = { key: "Used by itself: lets one play pass a wrong-suit gate or door", burn: "Break any door", bomb: "Blow open a wall beside you", swapper: "Swap places with any token" };
-  const LETTERS = "ABCDEFGH", CELL = 30, V = 380;
+  const LETTERS = "ABCDEFGH", V = 380;
   for (const id of ["style0", "style1", "style2"]) $(id).innerHTML = Object.entries(STYLES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   $("style0").value = "balanced"; $("style1").value = "balanced"; $("style2").value = "racer";
 
@@ -171,7 +172,7 @@
     return {
       length: +$("length").value, doors: +$("doors").value, doorBase: db, doorStep: ds, gates: +$("gates").value,
       switches: +$("switches").value, closeMul: +$("closeMul").value, closeWhere: $("closeWhere").value, closeMax: +$("closeMax").value, bots: +$("bots").value,
-      styles: [$("style0").value, $("style1").value, $("style2").value], speed: +$("speed").value, whole: $("whole").checked,
+      styles: [$("style0").value, $("style1").value, $("style2").value], speed: +$("speed").value, whole: $("whole").checked, zoom: +$("zoom").value,
     };
   };
   const seedValue = (t) => /^\d+$/.test(String(t).trim()) ? BigInt.asUintN(64, BigInt(String(t).trim())) : D.fnv1a64(String(t));
@@ -604,7 +605,7 @@
   function render() {
     if (G.headless) return;
     const M = G.M, c = G.c, me = G.P[0], an = G.anim, myTurn = G.phase === "maze" && cur().human && !an && G.won === null;
-    const cs = c.whole ? V / M.W : CELL, span = V, full = cs * M.W;
+    const cs = c.whole ? V / M.W : c.zoom, span = V, full = cs * M.W;
     const svg = $("maze"); svg.setAttribute("width", span); svg.setAttribute("height", span); svg.setAttribute("viewBox", `0 0 ${span} ${span}`);
     const posOf = (p) => an && an.p === p ? an.cells[Math.min(an.i, an.cells.length - 1)] : p.pos;
     const focus = an ? an.p : (G.phase === "maze" ? cur() : me);
@@ -643,7 +644,7 @@
     // Junction arrows.
     // Junction arrows near the tokens and along the previewed path, so the board stays readable.
     const near = new Set(pv ? pv.cells : []);
-    const isNear = (i) => near.has(i) || G.P.some(p => manhattan(M, i, posOf(p)) <= 7);
+    const isNear = (i) => near.has(i) || G.P.some(p => manhattan(M, i, posOf(p)) <= Math.ceil(V / cs / 2));
     if (cs >= 14) for (const i of vis) {
       if (!isJunction(M, i) || !(c.whole || isNear(i))) continue;
       s += junctionMark(cx(i), cy(i), cs, M.ptr[i]);
@@ -719,7 +720,7 @@
   const isJunction = (M, i) => exitsOf(M, i).filter(d => !M.dead[i * 4 + d]).length >= 3;
   // A junction: a dark disc with a gold ring, and a bold arrow the way the next token goes.
   function junctionMark(x, y, cs, d) {
-    const r = cs * .3, ang = Math.atan2(DIRS[d][1], DIRS[d][0]) * 180 / Math.PI, k = r * .62;
+    const r = Math.min(cs * .3, 13), ang = Math.atan2(DIRS[d][1], DIRS[d][0]) * 180 / Math.PI, k = r * .62;
     return `<g transform="translate(${x} ${y}) rotate(${ang})"><circle r="${r}" fill="#0A0E1F" stroke="#FFD447" stroke-width="${Math.max(1.5, cs * .06)}"/>` +
       `<path d="M${-k * .7} 0H${k * .55}M${k * .1} ${-k * .6}L${k * .75} 0L${k * .1} ${k * .6}" fill="none" stroke="#FFD447" stroke-width="${Math.max(2, cs * .09)}" stroke-linecap="round" stroke-linejoin="round"/></g>`;
   }
@@ -781,7 +782,7 @@
   $("seed").addEventListener("keydown", (e) => { if (e.key === "Enter") start($("seed").value || "1"); });
   $("newSeed").addEventListener("click", () => { const s = String(Math.floor(Math.random() * 1e9)); $("seed").value = s; start(s); });
   for (const id of ["length", "doors", "doorBase", "gates", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
-  for (const id of ["speed", "whole"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
+  for (const id of ["speed", "whole", "zoom"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
   $("runBtn").addEventListener("click", () => {
     const n = +$("runN").value, t0 = performance.now(); $("runBtn").disabled = true; $("runOut").textContent = "Running…";
     runGames(n, (html) => { $("runOut").innerHTML = html + `<p class="muted">${((performance.now() - t0) / 1000).toFixed(1)} s</p>`; $("runBtn").disabled = false; }, (k) => { $("runOut").textContent = `Running… ${k} of ${n}`; });
