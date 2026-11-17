@@ -1,16 +1,16 @@
 # Crib RPG: Rules
 
-Status: draft 6, 2026-11-17. Match turns follow match rules r27. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 7, 2026-11-17. Match turns follow match rules r27. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
-Crib RPG (its beta app is Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage, and count them as in cribbage. Then you play your hand in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
+Crib RPG (its beta app is Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage, and count them as in cribbage. Then you play your hand in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then pegging happens on a maze: every set you made on the grid becomes a play, and players take turns walking their plays through the maze, one step a point, instead of pegging along a board. Prizes along the way add cards and powers to the game.
 
 The first token to reach the goal wins.
 
 - Players: 2 or 3 (you and one or two computer players)
 - Deck: one shared deck, starting as a standard 52-card deck plus extra cards: the title card, a blank card, and 0 or more jokers, decided each round when the deck is shuffled
-- Length: short (61-step main route) or standard (121-step main route)
+- Length: about 6 to 12 rounds, like cribbage (the maze's size is tuned for it)
 
 ## How a game fits together
 
@@ -27,14 +27,14 @@ Game ............................ until a token reaches the goal
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
 | Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, the shop, pegging on the maze |
 | Phase | A stage, or one step of the match turn. Every phase, in order, with what the first version includes: [concept.md › Phases](concept.md#phases) |
-| Turn | One player's go within a stage: a card played in pegging, or a match turn |
-| Play | One go on the maze: a pegging score, walked as its steps, or grid points spent on a gate, a switch or a shift. Players take turns, as in pegging (how: to design) |
+| Turn | One player's go within a stage: a match turn, or one play on the maze |
+| Play | One set scored on the grid (or a hand or crib count), used on the maze: walked as its steps, or spent to close a door or flip a switch. Players take turns using them |
 | Minigame | A game played in a stage beside or in place of a classic cribbage step. The match game is the first: it follows counting your hand. More may follow |
-| Match turn | One player's turn of the match game, on the scoring grid. Its points are spent on the maze during pegging |
+| Match turn | One player's turn of the match game, on the scoring grid. Its sets become that player's plays for pegging on the maze |
 
 ## Classic rules we use
 
-Dealing, discarding, cutting the starter, his heels and pegging all follow classic cribbage. For the classic wording, see Scorekeep's How to play page: `~/projects/utilities/scorekeep/docs/rules/cribbage.md`. These rules only cover what's different, plus three-player play, which that page doesn't include.
+Dealing, discarding, cutting the starter and his heels follow classic cribbage. Pegging doesn't: it's the maze (see 5). For the classic wording, see Scorekeep's How to play page: `~/projects/utilities/scorekeep/docs/rules/cribbage.md`. These rules only cover what's different, plus three-player play, which that page doesn't include.
 
 ## Setup
 
@@ -269,7 +269,7 @@ Not designed yet: items; the title and blank card prizes; how many jokers a roun
 
 At the end, your best score wins one prize: a special joker for your power jokers. A bigger best score wins a better tier: common below 28 steps, rare from 28, epic from 34 (to tune; r25). How match prizes relate to maze prizes: not designed yet. Timer and budget: to tune (180 seconds and the whole stock for now).
 
-Your token doesn't move during the turn. Each scoring set becomes a bundle of steps with a suit, and after the turn you walk them through the maze (not designed yet).
+Your token doesn't move during the turn. Each scoring set becomes a play, with its cards, steps and suit, used on the maze in pegging (see 5).
 
 Computer players' match turns aren't played out on screen: you see each result (steps, best set and prize).
 
@@ -279,16 +279,17 @@ After the scoring grid, before pegging, you can shop. What you pay with isn't de
 
 ### 5. Pegging on the maze
 
-> Under revision (2026-11-17): the maze is the pegging. You move by choosing from the sets you made on the grid. Whether classic play to 31 stays anywhere is open (concept.md › Decisions). This section is rewritten once the open questions there are answered.
+Pegging is the maze. Classic play to 31 is gone: all the scoring happens on the grid, and pegging is where those scores move you, in turns (decided 2026-11-17). It's an echo of classic pegging, where the cards you hold turn into scores one play at a time.
 
-Peg as in classic cribbage. The player to the dealer's left plays first, and the count runs up to 31. With three players, play passes to the left; a player who can't play says "go" and sits out until the count starts again. The last player to play before the count starts again scores the go (or the 31).
+Every set you scored on the grid is a **play**, and so are your hand and crib counts from the show. A play has its cards, its steps (its points, after multipliers) and its suit. A typical hand gives each player about 14 plays and 226 steps (medium bot, r27).
 
-Every point you peg is one step, moved right away, before the next card is played. See Moving through the maze.
+Players take turns, starting with the player to the dealer's left, until every play is used. On your turn you may play one joker, then you must use one play, in one of three ways:
 
-- Your scoring grid points come with you. You spend them opening gates, hitting switches and shifting the maze, while pegging moves your token. Players take turns on the maze, and each turn is a set of choices: where to turn, which jokers to apply, which doors to close. How the points are spent, and how that takes turns with pegging: to design.
-- Power carries over. A hand card's power level from the scoring grid multiplies the points it pegs (to tune; it needs simulator numbers first).
+- **Walk it:** move your token its steps (see Moving through the maze). Before you choose, the board shows where each play would take you.
+- **Close a door with it:** put a door on an open passage that no token stands beside. The door takes the play's suit, and its steps as strength. A play with no suit can't make a door. You can close one door a hand (to tune).
+- **Flip a switch with it:** see Switches.
 
-After pegging, the cards go back to their owners' hands.
+Which play to use, and when, is the game: a big play can carry you through a door of its suit, and the order you arrive at a junction decides which way you go.
 
 ### 6. Next round
 
@@ -296,21 +297,19 @@ All cards go back into the deck, and the deck is shuffled. The deck lasts the wh
 
 ## Moving through the maze
 
-The maze rules below are a first draft. The maze will change to be more of a board game, with circular paths. Its place in the round stays the same, and the game still ends when a token exits the maze. Game length comes from the maze's size, its circular paths and its gates.
-
-Gates take points or suits to open, or a special joker. You can play special jokers during pegging on the maze. Your grid points open gates, hit switches and shift the maze; pegging moves your token. Which jokers open which gates, and what switches and shifts do: not designed yet.
+The maze is a grid of passages built from the game's seed, with a main route from start to goal (600 steps in the mock, to tune for a game of 6 to 12 rounds), loops that circle back, suit gates, doors and switches.
 
 - One point is one step, and you must take every step.
-- At a fork, choose a branch. The main route always stays open. A branch may be shorter or longer than the main route, and it may hold gates, prizes or traps.
+- Walks go forward. A walk never turns into a dead end or a pocket the goal isn't in; it only walks one when it has no other way (after a bounce).
+- **Junctions.** Where two ways both lead on, a junction's arrow decides: you go the way it points, and the arrow turns to the other way for whoever comes next. Arriving first or second matters, since one way is often a loop that circles back.
 - All tokens share the maze and may stand on the same cell.
-- The game ends the instant a token reaches the goal. Scoring that hasn't happened yet doesn't count.
+- The game ends the instant a token reaches the goal.
 
 ### Suit gates
 
 A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps of that suit.
 
-- Pegging: the card that completes a score gives its suit. A fifteen made by playing the 5♥ gives 2 heart steps.
-- Match turns: each set's steps carry the suit that appears most often among its cards, hand, crib and starter included. If two or more suits tie for most, the steps carry no suit: they walk open paths but can't pass a suit gate.
+- Each play's steps carry the suit that appears most often among its cards, hand, crib and starter included. If two or more suits tie for most, the steps carry no suit: they walk open paths but can't pass a suit gate.
 
 | Set | Suits | Its steps carry |
 |---|---|---|
@@ -322,25 +321,27 @@ A gate marked with a suit (♥ ♠ ♦ ♣) opens only for steps of that suit.
 
 So a set built around one suit is worth more than its steps: a run of 3 hearts walks through a heart gate that a mixed run of 3 can't, and a 2-card set of two suits never passes a gate.
 
-If your steps reach a gate of the wrong suit, you bounce: walking into the gate costs one step, and the rest of your steps take you back the way you came. A special door stops you instead, and the rest of your steps are lost.
+If your steps reach a gate of the wrong suit, you bounce: walking into the gate costs one step, and the rest of your steps take you back the way you came. A door of the wrong suit stops you instead, and the rest of your steps are lost.
 
 ### Doors
 
-Some doors must be knocked down. A door has a strength, and the steps you spend on it break it down instead of moving you. A big score can still break through, but it doesn't carry you as far.
+A door has a suit and a strength, and you need both: only steps of its suit wear it down, and the steps spent on it don't move you. Steps of another suit stop at the door. The door shows its suit and the strength left.
 
-- Pegging steps and match steps both count against a door.
-- Damage stays on a door between turns, whoever did it.
-- Once a door is down, it's open for every player.
+- Doors on the main route get stronger toward the goal (12, 18, 24 and so on in the mock, to tune).
+- A door you close takes your play's suit, and its steps as strength. Whether opening it should need the same suit (as now) or the same cards: not designed yet.
+- Damage stays on a door between turns, whoever did it. Once a door is down, it's open for every player.
 
-Door strengths and where doors go: not designed yet.
+### Switches
+
+A switch is a pair of passages, one open and one shut, marked with the same letter. Flipping it (with a play) swaps them, for everyone. Each switch flips once a round, and no setting of the switches can cut a cell off from the goal.
 
 ### Fog
 
 Each token sees a few cells around it (how many: to tune). Cells anyone has seen stay revealed.
 
-### Prize cells
+### Stars
 
-Reaching a prize cell wins its prize. Whether you must land on it exactly, and whether it refills: not designed yet.
+Stars sit on the loops. A play that ends on one wins a joker: a key (lets one play past a wrong-suit gate or door), a burn (breaks any door), a bomb (opens a wall beside you; a big shortcut leaves a door of half the steps it saves) or a swapper (swap places with another token, not back in the same round). Odds and what else stars give: to tune.
 
 ## Prizes
 

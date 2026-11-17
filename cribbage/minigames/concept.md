@@ -6,7 +6,7 @@ The player-facing rules are in [rules.md](rules.md). How we measure and tune the
 
 ## Summary
 
-Crib RPG is cribbage made into a video game for iPhone. You still build a hand, throw to the crib and peg to 31, but your points move a token through a maze instead of a peg along a board. Scoring your hand becomes a match game played on a grid of cards. Prizes from the maze and from big matches add cards and powers to the game, so every game builds up differently.
+Crib RPG is cribbage made into a video game for iPhone. You still build a hand and throw to the crib. Scoring your hand becomes a match game played on a grid of cards, and pegging becomes a maze: every set you scored is a play, and players take turns walking their plays through the maze instead of pegging along a board. Prizes from the maze and from big matches add cards and powers to the game, so every game builds up differently.
 
 One human plays against one or two bots. A game lasts about as long as classic cribbage.
 
@@ -22,8 +22,8 @@ Three things change:
 
 ## Where the fun is
 
-- Every peg moves you, right away. A fifteen isn't 2 points on a board; it's 2 steps that might carry you past a fork, or into a gate.
-- Which card scores matters. A fifteen made with the 5♥ opens heart gates. Holding the right suit for the gate ahead is a new reason to keep or throw a card.
+- Every set you score is a play you hold, like a dice roll you already know. A double run isn't 16 points on a board; it's 16 steps you choose when to walk, to beat someone to a junction or break a door.
+- Which cards score matters. A run of hearts wears down heart doors that a mixed run can't touch, so the suits on the grid matter on the maze.
 - Forks are a gamble: a shorter branch with a gate and a prize, or the long safe way round.
 - The match board rewards the counting skill cribbage players already have. Every set is counted like a hand, so spotting a double run or a hidden fifteen pays, and you score only what you find.
 - Edge cards power up as you use them, so a turn builds: a 5 in your hand multiplies every set it joins a little more, up to a cap. There's one score, steps.
@@ -45,9 +45,8 @@ Round
   Match turns .......... the scoring grid, one per player, in show order: bots'
                          results first, as a sequence, then yours
   Shop ................. after the scoring grid, before pegging
-  Pegging .............. on the maze: classic play to 31, each point a step; grid
-                         points open gates, hit switches and shift the maze;
-                         grid power multiplies pegging
+  Pegging .............. on the maze: players take turns using the sets they
+                         scored on the grid as plays (no play to 31)
   Next round ........... the deal passes left; hands repeat until a player
                          exits the maze
 ```
@@ -99,7 +98,7 @@ Phases of a game
 | 5d | The grid | rules.md › 3; engine.md › Match turn; ui.md › Scene: Match turn | Yes (r27) | Yes |
 | 5e | Turn end | rules.md › 3 › Ending the turn; ui.md › Scene: Turn summary | Yes: prize tier, summary, next turn | Yes |
 | 6 | Shop | rules.md › 4 | No; not designed | Yes |
-| 7 | Pegging on the maze | rules.md › 5 (to rewrite); concept.md › The maze walk | No; `mocks/maze-board.html` v2 drifted (play to 31, a points pool) and is to be reworked | Yes: players take turns walking their grid sets as plays, chosen from a list of cards and steps, as in `mocks/maze-walk.html` |
+| 7 | Pegging on the maze | rules.md › 5, Moving through the maze; concept.md › The maze walk. engine.md › Classic still specs play to 31, to retire when the engine builds the maze | No; browser mock `mocks/maze-board.html` v3 (2026-11-17) | Yes: players take turns walking their grid sets as plays, chosen from a list of cards and steps, as in `mocks/maze-walk.html` |
 | 8 | Maze walk | Merged into 7 (2026-11-17) | | Smart choices decide it: which play to make, where to turn, which jokers to play, which doors to close |
 | 9 | Next round | rules.md › 6 | Yes, as the next of 3 turns: the deck carries over, the deal alternates | Yes |
 | | Game end | rules.md › Winning | After 3 turns (r23), with your steps in the summary; no winner yet, since the bot plays no grid turn | Yes: the first token to exit the maze |
@@ -171,15 +170,12 @@ Why it works this way, from the mocks:
 
 ## The maze walk
 
-Notes for a mini game not designed yet (2026-11-14). After a match turn, your scored sets become steps in the maze, and you walk them with choices where there are any.
+The maze walk is the pegging (2026-11-17); rules.md › 5 and Moving through the maze have the current rules, and `mocks/maze-board.html` plays them. Notes behind it:
 
-- Each scoring set is a bundle of steps with a suit (the set's most common suit). Pegging steps already carry the suit of the card that scored them.
-- You choose which bundle to spend next (decided 2026-11-14), so a heart bundle can be saved for the heart gate. The mechanics need thinking.
-- It should feel like a party board game: each bundle is like a dice roll you already hold, and the fun is choosing where it takes you. Choices at forks, cells that do something when you land on or pass them (prizes, gates, doors), and maybe special jokers played on the board.
-- Doors absorb steps. A big bundle can knock down a door; the steps spent on it don't move you.
-- If there are no choices to make, the walk plays itself, quickly.
-- Players take turns on the maze, unlike the scoring phase, where the bots' scores are only summarized (Bruce, 2026-11-17). Each turn is a set of choices: where to turn, which jokers to apply, which doors to close on the others.
-- Open: can you hold steps back for a later round? Must you land exactly on a cell to trigger it? How long can the walk take before it drags?
+- Every set scored on the grid, and the hand and crib counts, is a play: cards, steps and suit, shown as a list to pick from (as in `mocks/maze-walk.html`). All of them, not a best few; the maze balances the volume with loops that circle back and doors that take more steps.
+- It plays like a party board game: walks go forward, junctions alternate between the players who reach them, and the choice is which play to use when. The board previews where each play lands.
+- Doors need a suit and a strength. Closing a door spends a play; switches, bombs and other jokers come second.
+- Open: whether 14 plays each a round (28 to 42 turns) drags; whether you see the other players' plays.
 
 ## Transitions and effects
 
@@ -455,6 +451,8 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | The maze is the pegging, and the grid is the scoring phase (Bruce). You move by choosing from the hands you formed on the grid, shown as a list of plays (cards and steps), as in `mocks/maze-walk.html`. This reverses classic cribbage's order on purpose, so all the scoring sits in the grid. Supersedes 2026-11-15's split (grid points work the maze, pegging moves the tokens). Phases 7 and 8 merge. Whether classic play to 31 stays anywhere: open |
 | 2026-11-17 | Junctions alternate, as on a party board game (Bruce): the first player through goes the way it points, the next goes the other way. Timing matters, since doors cost cards or combos to get through. Secondary: switch cards, bombs and in-maze switches |
 | 2026-11-17 | Bots are balanced by default. Bot runs can be set to push on given features (doors, switches, junction timing, jokers), so each feature gets tested (Bruce) |
+| 2026-11-17 | Pegging is the maze, with no classic play to 31 (Bruce): pegging applies the scored card combos from the grid, an echo of classic pegging. Every scored set is a play, plus the hand and crib counts; the maze balances the volume with loops that circle back and doors that take more steps. One step a point; the maze grows to fit a game of 6 to 12 rounds, like cribbage. Junctions flip each time a token passes. Doors have a strength and a suit, and need both. You can close doors on others with a play (whether opening it needs the same suit or the same cards: open). Suit gates stay. Bot runs with styles go in the mock |
+| 2026-11-17 | `mocks/maze-board.html` v3 plays it, with real grid turns: 180 medium-bot turns recorded with `cribmaze-sim record` (`mocks/maze-sets.js`; about 14 plays and 226 steps a turn). Walks go forward: they skip dead ends and pockets, and junctions choose only between ways that both lead on (a junction at every fork made the walk a random walk; no game finished in 40 rounds). A wrong-suit door stops a play rather than bouncing it (2026-11-13). One door closed a round, and each switch flips once a round (bots fought over them: 100 doors and 118 flips a game). Defaults: 600-step route on a 37×37 maze, 6 doors from 12 strength. Bot runs, 30 games each: balanced against balanced, 5 to 14 rounds, median 9, 27 in 6 to 12; balanced beats racer 26 to 4 and timer 20 to 10; door closers stretch games to a median of 12 |
 
 ## Open questions
 
@@ -463,9 +461,9 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 3. Can tokens get in each other's way at a gate or a fork?
 4. Match turn timer and card budget: starting values come from the simulator. With play-out (r8), does a 180-second timer (raised from 90 on 2026-11-15) leave a person room to clear the board?
 5. Edge power has no cap since r21. Does a cap come back as a mechanic the player can see and change with jokers, and how big do scores get over 5 to 13 hands?
-6. Gates, switches and shifts: what each costs in grid points or suits, which special jokers open which gates, and how a hand's grid points are split between them.
-7. Pegging moves the tokens and grid points work the maze (2026-11-15). Is a hand's pegging enough movement to finish in 5 to 13 hands, and does grid power multiplying pegging keep the two in step?
-8. The maze walk: how choosing bundle order plays, holding steps back, and how long it can take.
+6. A door you close: does opening it need the same suit (as in the mock) or the same cards?
+7. About 14 plays each a round is 28 to 42 maze turns. Does that drag, and should small plays merge or walk themselves?
+8. Seat order: in bot runs the first seat wins more often (18 to 12 with two balanced bots). Is that the deal order, and does it need a fix?
 9. The shop: what you pay with now that pips are gone (steps, prizes or something new), what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps or a prize, and how big?
 11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.
