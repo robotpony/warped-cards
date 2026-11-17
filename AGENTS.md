@@ -9,11 +9,13 @@ Who works on Warped Cards, where they run, and what each one owns. Claude Code s
 | Handle | Role | Runs on | Checkout | Owns |
 |---|---|---|---|---|
 | `@bruce` | Owner. Final say on anything that changes play | | | Everything |
-| `@apple` | Apple commander: the Swift engine, the Mac and iOS apps | Mac | The Mac's own checkout (shared into the Linux VM at `/mnt/mac/games/warped-cards`) | `swift/`, `MARKETING_VERSION` |
-| `@linux` | Linux commander: the Linux port | Linux VM | `~/src/warped-cards-linux`, its own clone | The Linux port's folder |
+| `@apple` | Apple commander: the Swift engine, the Mac and iOS apps | Mac | The Mac's own checkout (shared into the Linux VM at `/mnt/mac/games/warped-cards`) | `apps/apple/` and its build version; `engine/swift/` as the reference build (both in `swift/` until the move) |
+| `@linux` | Linux commander: the Linux port | Linux VM | `~/src/warped-cards-linux`, its own clone | `apps/linux/` and its build version |
 | `@scorekeep` | Classic cribbage rule wording | Mac | The scorekeep repo | `scorekeep/docs/rules/cribbage.md` |
 
-The shared parts belong to no single agent: the specs (`rules.md`, `engine.md`, `ui.md`), `config/`, `fixtures/`, `spec.json`, `design/`, and the root docs. Any agent MAY change them, following the checks in Working together below.
+The shared parts belong to no single agent: the specs (`rules.md`, `engine.md`, `ui.md`), `config/`, `fixtures/`, `spec.json`, `design/`, and the root docs. Any agent MAY change them, following the checks in Working together below. The folder layout is in PORTING.md › Layout.
+
+`engine/swift/` is shared code with one keeper: `@apple` changes it, and other clients file mentions for what they need. This MAY change once a second Swift client ships.
 
 A commander MAY spawn helpers for focused work. A helper uses its commander's handle and a suffix, such as `@linux-ui`, and works only in its commander's area. It gets a row here only if it lasts beyond one task.
 

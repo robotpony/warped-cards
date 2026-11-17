@@ -32,7 +32,7 @@ Swift is the first build, not the only one: Linux and Windows ports are planned,
 
 ## Agents
 
-Who works where, what each agent owns, and how they leave each other work: `AGENTS.md`. Agents on different machines talk through `PLAN.md`, `TODO.md` and `BUGS.md` lines that start with a handle in backticks, such as `` `@apple` ``. On starting, pull and grep for your handle.
+Shared code sits under `engine/`, each platform's client under `apps/<platform>/` (`PORTING.md` › Layout, decided 2026-11-16; the Apple build is still in `swift/` until it moves). Who works where, what each agent owns, and how they leave each other work: `AGENTS.md`. Agents on different machines talk through `PLAN.md`, `TODO.md` and `BUGS.md` lines that start with a handle in backticks, such as `` `@apple` ``. On starting, pull and grep for your handle.
 
 ## Commits
 

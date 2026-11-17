@@ -8,6 +8,39 @@ Warped Cards SHOULD run beyond Apple platforms: Linux and Windows first, in Swif
 
 The engine can be ported today: `engine.md`, the config files and the fixtures describe it fully, and a drift check keeps the spec in step with the Swift code. The UI is less ready. Its spec, `ui.md`, is a first draft taken from the beta app.
 
+## Layout
+
+Decided 2026-11-16. Shared code sits under `engine/`, each platform's client under `apps/`:
+
+```
+cribbage/minigames/   the game: rules, engine.md, ui.md, config, fixtures, spec.json   shared
+design/               the look: palette, shapes, cards                                shared
+engine/swift/         the Swift engine package, used by every Swift client             shared
+engine/<language>/    another language's engine, only if a client can't use Swift     shared
+apps/apple/           the SwiftUI app for Mac and iOS                                  @apple
+apps/linux/           the Linux client                                                 @linux
+apps/windows/         later                                                            @windows
+scripts/              checks every build uses (check.sh, the spec test)
+apps/<platform>/scripts/   that platform's build, run and release scripts
+```
+
+- A client uses an engine and reads the shared data where it is. It MUST NOT copy config, fixtures or design data.
+- Each `apps/<platform>/` has a `README.md` (how to set up, build and run), its own `CHANGELOG.md`, and its own build version (Versions).
+- Nothing in `engine/` may depend on `apps/`.
+- Who owns each folder: [AGENTS.md](AGENTS.md).
+
+### Moving there
+
+The Apple build moves first (`@apple`, from `swift/`). Until it does, `swift/` is the engine and `swift/App` is the Apple app. Delete this subsection once the move lands.
+
+1. `git mv` the package (`Package.swift`, `Sources`, `Tests`) to `engine/swift/`, and `swift/App` to `apps/apple/`. Use `git mv`, so history follows the files.
+2. Fix the paths that count folders: `#filePath` test paths gain one `../` (`Tests/*/`), the simulator's default `--config` folder (`../cribbage/minigames/config` becomes `../../cribbage/minigames/config`), and `project.yml`'s package path (`..`) and resource paths (`../../`).
+3. Fix every other path to `swift/`: `scripts/`, `.claude/commands/`, `.claude/hooks/check-version-bump.sh`, `.gitignore`, `spec.test.js`, and the docs (`git grep -n "swift/"`).
+4. Split the scripts: `debug.sh` and `release.sh` move to `apps/apple/scripts/`; `check.sh` stays in `scripts/` and runs the engine tests and each platform's checks that the machine can run.
+5. Give the Apple app its own `apps/apple/CHANGELOG.md` (the current `CHANGELOG.md` moves there) and `README.md`. The top-level `CHANGELOG.md` then lists spec changes only.
+6. The version hook checks per platform: a change under `apps/apple/` or `engine/swift/` needs an Apple bump; a change under `apps/linux/` needs a Linux bump.
+7. Check: `scripts/check.sh` passes, `/debug` runs the beta, and the golden records still verify. One commit, as a patch build.
+
 ## What's true
 
 | Area | Source of truth | When it and the code disagree |
@@ -54,7 +87,7 @@ If the engine passes, a Swift port is a new UI over the same engine. The apps (`
 
 Build the engine from engine.md and climb the rungs in order: dice, counting, classic hands, pegging, then the records (read, scripted, verify, written). Don't read the Swift to learn the rules. When the spec is unclear, say so, fix the spec (with Bruce's say on anything that changes play), then build.
 
-A port lives in its own top-level folder (for example `rust/` or `web/`), reads `cribbage/minigames/config/` and `cribbage/minigames/fixtures/` where they are, and MUST NOT copy them. Its language, tools and libraries get a row in [LIBRARIES.md](LIBRARIES.md) first.
+A port's engine lives in `engine/<language>/` and its client in `apps/<platform>/` (Layout). It reads `cribbage/minigames/config/` and `cribbage/minigames/fixtures/` where they are, and MUST NOT copy them. Its language, tools and libraries get a row in [LIBRARIES.md](LIBRARIES.md) first.
 
 ## Same game, every build
 
