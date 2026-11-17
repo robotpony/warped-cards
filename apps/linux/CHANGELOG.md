@@ -2,6 +2,12 @@
 
 The Linux build's changes, for players. Newest first. Style: CLAUDE.md › Commits.
 
+## 0.3.0 — 2026-11-16
+
+### Added
+
+- The score breakdown: a scored set's cards fly up into a row, a banner names the set, and each combo, power and left-over card is counted out in a tally before the total flies to the steps number. Tap to skip to the end, and tap again to move on.
+
 ## 0.2.0 — 2026-11-16
 
 ### Added

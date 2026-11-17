@@ -18,7 +18,7 @@ var load_error := ""
 ## Settings live for the session only (ui.md › Settings panel).
 var settings := {
 	"dealer": true, "timer": true, "hand": "random", "budget": 0,
-	"breakdown": false, "hints": true, "deal": false, "sharedDeck": true,   # breakdown and deal: on once their scenes are built
+	"breakdown": true, "hints": true, "deal": false, "sharedDeck": true,   # deal: on once its scene is built
 }
 var breakdown_base := 1200.0
 

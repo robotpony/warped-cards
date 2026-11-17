@@ -57,6 +57,12 @@ func _initialize() -> void:
 	var far = JSON.parse_string(engine.preview("[0,3]"))
 	expect(far.get("problem") == "not_touching", "preview names the rule a trace breaks")
 	expect(engine.isLine("[0,1,2]") and not engine.isLine("[0,5,2]"), "isLine knows a straight line")
+	var f := {"kind": "fifteen", "points": 2, "cards": []}
+	expect(Breakdown.headline([f, {"kind": "pair", "points": 2, "cards": [], "size": 2}]) == "Pair"
+		and Breakdown.headline([f, f]) == "Two fifteens" and Breakdown.headline([f]) == "Fifteen"
+		and Breakdown.display_name({"kind": "run", "points": 6, "multiplier": 2, "size": 3}) == "Double run of 3"
+		and Breakdown.display_name({"kind": "pair", "points": 6, "size": 3}) == "Pair royal",
+		"breakdown headlines and combo names (ui.md › Score breakdown)")
 	var g = JSON.parse_string(engine.gameState())
 	expect(g.stage == "playing" and int(g.turn) == 1 and int(g.deck.count) == 52, "gameState gives the stage, the turn and the deck")
 	var before := int(t.steps)

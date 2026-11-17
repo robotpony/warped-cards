@@ -18,8 +18,10 @@ shoot turn-toast --toast
 shoot trace --select g00,g01
 shoot trace-combo --select g02,g03
 shoot armed-bomb --arm bomb
-shoot pop --pop g02,g03
+shoot pop --pop g02,g03 --no-breakdown
 shoot pop-bomb --pop g00 --bomb
 shoot warning --trace g02,g03,g13
 for t in hand crib starter tray counter; do shoot "info-$t" --info "$t"; done
 shoot summary --end --after 1500
+for n in 1 2 3 4 5 6 7 8 9; do shoot "breakdown-$n" --breakdown g32,g33,c3,h2 --stage "$n" --after 500; done
+shoot breakdown-hold --breakdown g32,g33,c3,h2 --after 300

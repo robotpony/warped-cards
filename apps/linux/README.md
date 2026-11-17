@@ -1,16 +1,15 @@
 # Crib RPG for Linux
 
-Status: 0.2.0, 2026-11-16, spec 3, rules r23. Owner: `@linux` (AGENTS.md).
+Status: 0.3.0, 2026-11-16, spec 3, rules r23. Owner: `@linux` (AGENTS.md).
 
 The Linux client: a Godot 4.7 project that runs the shared Swift engine (`engine/swift/`) through SwiftGodot. It plays the same game as the Mac from the same seed, and reads config, fixtures, the palette, the card art, the icons and the font where they live in the repo. Decided 2026-11-16 (PORTING.md › Open questions 2).
 
-It plays the match turn as ui.md describes it: the board, tracing, combos lighting, the help line, pops, board changes, power jokers, the pick counter, the turn clock and timers, toasts, the left-over warning, info cards and the turn summary.
+It plays the match turn as ui.md describes it: the board, tracing, combos lighting, the help line, pops, board changes, power jokers, the pick counter, the turn clock and timers, toasts, the score breakdown, the left-over warning, info cards and the turn summary.
 
 Not built yet, so these are off for now:
 
-- The score breakdown: scores pop, as with the Mac's Breakdown setting off. Next.
 - The deal: hands come off the top of the deck, as with the Mac's Deal setting off.
-- The settings panel, and with it the build line on screen (`Linux 0.2.0 · spec 3 · r23`; the check prints it).
+- The settings panel, and with it the build line on screen (`Linux 0.3.0 · spec 3 · r23`; the check prints it), and with it the breakdown speed and the Breakdown setting (on).
 
 ## Set up
 
@@ -31,7 +30,7 @@ Keys: Control-N starts a new game, Control-R plays the same seed again (ui.md �
 
 The check confirms the extension loads, the engine's spec and rules versions match `spec.json` and `rules.json`, config and `fx.json` load, every golden record verifies inside Godot, and actions, state and previews come through the bridge.
 
-`run.sh` passes the game's own options on: `--seed N`, and the snapshot flags `main.gd` lists (`--select`, `--trace`, `--drag`, `--arm`, `--pop`, `--info`, `--end`, `--shot file.png`), which match the Mac's in `docs/images/reference/README.md`.
+`run.sh` passes the game's own options on: `--seed N`, and the snapshot flags `main.gd` lists (`--select`, `--trace`, `--drag`, `--arm`, `--pop`, `--breakdown` with `--stage`, `--taps`, `--info`, `--end`, `--shot file.png`), which match the Mac's in `docs/images/reference/README.md`.
 
 ## How it fits together
 
@@ -45,6 +44,7 @@ apps/linux/
     session.gd .......... the game controller: actions, presented state, timers, toasts, help line
     board.gd, cell.gd ... the board, its input, and each card's looks
     parts.gd ............ header, help line, power jokers, pick counter, clock, toast
+    breakdown.gd ........ the score breakdown over the board
     covers.gd ........... left-over warning, info cards, turn summary, deck panel
     card_art.gd ......... cards from design/cards/*.svg, text slots in Saira
     look.gd ............. palette.json colours, Saira, shapes.json suits in text
@@ -76,7 +76,7 @@ Saira's lines are taller than the system font's, so the phone is about 27 pt tal
 
 ## Versions
 
-The build version is `config/version` in `project.godot`, `major.minor.patch` as in CLAUDE.md › Versions and tracking. The version hook asks for a bump when `apps/linux/` changes. The build line reads `Linux 0.2.0 · spec 3 · r23`.
+The build version is `config/version` in `project.godot`, `major.minor.patch` as in CLAUDE.md › Versions and tracking. The version hook asks for a bump when `apps/linux/` changes. The build line reads `Linux 0.3.0 · spec 3 · r23`.
 
 ## Known problems
 

@@ -3,7 +3,8 @@ extends Control
 ## frame, its covers, and the window around it. Command-line options for checking against the
 ## reference shots in docs/images/reference/ (its README lists them): --seed N, --no-breakdown,
 ## --select g00,g01 (a trace in progress), --trace g00,g01 (send a trace), --arm bomb,
-## --pop g02,g03 [--bomb], --info hand, --end, --toast, and --shot file.png [--after ms], which
+## --pop g02,g03 [--bomb], --breakdown g32,g33 [--stage N] (a scored set's breakdown, stopped at
+## its Nth wait, or at the hold), --info hand, --end, --toast, and --shot file.png [--after ms], which
 ## saves the phone at 2x with 24 pt of page around it, as the reference shots are, and quits.
 ## scripts/reference.sh shoots the set.
 
@@ -11,6 +12,7 @@ var session: Session
 var phone: Control
 var board: Board
 var header: Parts.Header
+var breakdown: Breakdown
 var cover_root: Control
 var _cover_key := ""
 var _cover: Control
@@ -92,6 +94,12 @@ func _build() -> void:
 	board.session = session
 	board.position = Vector2((Look.PHONE_W - Look.BOARD_W) / 2, y)
 	phone.add_child(board)
+	breakdown = Breakdown.new()
+	breakdown.session = session
+	breakdown.board = board
+	breakdown.header = header
+	breakdown.position = board.position
+	phone.add_child(breakdown)
 	y += Look.BOARD_H + 10
 	var help := Parts.HelpLine.new()
 	help.session = session
@@ -193,6 +201,13 @@ func _covers() -> void:
 	if _cover:
 		cover_root.add_child(_cover)   # each cover fills its parent by its anchors
 
+## While a breakdown plays, a tap anywhere on the phone skips it, or moves on from the hold
+## (ui.md › Score breakdown › Skipping).
+func _input(e: InputEvent) -> void:
+	if breakdown and breakdown.active and (e is InputEventMouseButton and e.pressed or e is InputEventScreenTouch and e.pressed):
+		breakdown.tap()
+		get_viewport().set_input_as_handled()
+
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventKey and e.pressed and e.ctrl_pressed:
 		if e.keycode == KEY_N:
@@ -257,6 +272,25 @@ func _script() -> void:
 			session.submit(_names(parts[1]))
 		else:
 			session.submit(_names(parts[0]))
+	if _arg("--breakdown") != "":
+		session.settings.breakdown = true
+		var stage := int(_arg("--stage", "0"))
+		breakdown.stop_at = stage if stage > 0 else -1
+		session.submit(_names(_arg("--breakdown")))
+		if shooting and _arg("--taps") == "":
+			if stage > 0 and not breakdown.at_stop:
+				await breakdown.stopped
+			elif stage <= 0 and not breakdown.holding:
+				await breakdown.held
+	if _arg("--taps") != "":
+		# Taps on the phone, each the given ms after the last ("400,400"): skips and moves on.
+		for ms in _arg("--taps").split(","):
+			await get_tree().create_timer(int(ms) / 1000.0).timeout
+			var down := InputEventMouseButton.new()
+			down.button_index = MOUSE_BUTTON_LEFT
+			down.pressed = true
+			down.position = phone.position + Vector2(Look.PHONE_W / 2, 300)
+			get_viewport().push_input(down, true)
 	if _flag("--end"):
 		session.send({"endTurn": {}})
 	if shooting:
