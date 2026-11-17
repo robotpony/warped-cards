@@ -378,6 +378,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-16 | The Mac release app is renamed Crib RPG (was Crib Maze), also known as Noddy Yookerspiel or Crib Jokers (Bruce). Its bundle ID and target stay `cribmaze`, so settings carry over |
 | 2026-11-16 | The game is renamed Crib RPG in the specs and the app, not only the Mac app (Bruce). Code names, the record ID `crib-maze` and history (changelogs, dated decisions) keep Crib Maze |
 | 2026-11-16 | App icon: four cream cards in a 2 × 2 grid, one suit each, on joker purple with a gold star where they meet; no text. One set of layers in `design/icon/` exported for macOS, iOS, Linux and web, with a simpler favicon |
+| 2026-11-16 | Saira Semi Condensed is kept, in every build and the beta too; the beta drops the system font and draws suits and ★ from `shapes.json` (Bruce) |
 
 ## Open questions
 
