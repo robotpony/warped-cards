@@ -92,18 +92,25 @@ Phases of a game
 | 2 | Cut for first deal | rules.md › Setup; engine.md › Classic | No: the first dealer comes from config, then the deal alternates | Yes |
 | 3 | Deal and discard | rules.md › 1; ui.md › Scene: Deal | Yes: 2 players, drag to sort, pick 2 for the crib, the discard hint | Yes |
 | 4 | Cut the starter | rules.md › 2 | Partly: the starter is dealt with the hand; no cut, no his heels | Yes, with his heels |
-| 5a | Bots' turns | rules.md › 3 | No: the bot discards, but plays no grid turn | Yes, as results only |
+| 5a | Bots' turns | rules.md › 3 | No: the bot discards, but plays no grid turn | Yes: the scoring phase summarizes the bots' scores; bots don't play their grid turns out on screen |
 | 5b | The show | rules.md › 3 › Setting up; engine.md › The opening count; ui.md › The opening count | Yes (r24), with the opening bonus (r26, from 6 in r27) | Yes |
 | 5c | Grid intro | ui.md › The opening count | Yes, on a game's first turn only (0.20.1) | Yes; wording to iterate |
 | 5d | The grid | rules.md › 3; engine.md › Match turn; ui.md › Scene: Match turn | Yes (r27) | Yes |
 | 5e | Turn end | rules.md › 3 › Ending the turn; ui.md › Scene: Turn summary | Yes: prize tier, summary, next turn | Yes |
 | 6 | Shop | rules.md › 4 | No; not designed | Yes |
-| 7 | Pegging on the maze | rules.md › 5; engine.md › Classic (pegging specced, not built) | No | Yes |
-| 8 | Maze walk | concept.md › The maze walk; rules.md › Moving through the maze | No; notes only | Yes |
+| 7 | Pegging on the maze | rules.md › 5; engine.md › Classic (pegging specced, not built) | No | Yes: players take turns on the maze |
+| 8 | Maze walk | concept.md › The maze walk; rules.md › Moving through the maze | No; notes only | Yes: players take turns, and smart choices decide it: where to turn, which jokers to play, which doors to close |
 | 9 | Next round | rules.md › 6 | Yes, as the next of 3 turns: the deck carries over, the deal alternates | Yes |
 | | Game end | rules.md › Winning | After 3 turns (r23), with your steps in the summary; no winner yet, since the bot plays no grid turn | Yes: the first token to exit the maze |
 
-The first version includes every phase (Bruce, 2026-11-17). The order of work: playtest the grid (5b to 5e) first, then prototype the other phases. Record each change of scope in Decisions and change its row.
+The first version includes every phase (Bruce, 2026-11-17). The order of work (Bruce, 2026-11-17):
+
+1. Playtest the grid (5b to 5e).
+2. Prototype pegging on the maze and the maze walk together (7 and 8).
+3. Prototype the shop (6).
+4. Prototype the cut and the bots' turns (2, 4 and 5a).
+
+The two halves of a round play differently. The scoring phase (5) is solitaire: you play your grid, and the bots' scores are summarized. The maze phase (7 and 8) takes turns, player by player, and hinges on smart choices: where to turn, which jokers to apply, which doors to close. Record each change of scope in Decisions and change its row.
 
 ## The maze
 
@@ -170,6 +177,7 @@ Notes for a mini game not designed yet (2026-11-14). After a match turn, your sc
 - It should feel like a party board game: each bundle is like a dice roll you already hold, and the fun is choosing where it takes you. Choices at forks, cells that do something when you land on or pass them (prizes, gates, doors), and maybe special jokers played on the board.
 - Doors absorb steps. A big bundle can knock down a door; the steps spent on it don't move you.
 - If there are no choices to make, the walk plays itself, quickly.
+- Players take turns on the maze, unlike the scoring phase, where the bots' scores are only summarized (Bruce, 2026-11-17). Each turn is a set of choices: where to turn, which jokers to apply, which doors to close on the others.
 - Open: can you hold steps back for a later round? Must you land exactly on a cell to trigger it? How long can the walk take before it drags?
 
 ## Transitions and effects
@@ -440,6 +448,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Fill patterns (Bruce): the grid's first deal-in comes in one of five patterns, all five tried: rain, deal, spiral, wave and scatter (ui.md › The grid fills). Refills keep falling from above. The pick is presentation only, from the turn's seed |
 | 2026-11-17 | The first version includes every phase in Phases, the shop, pegging and the maze walk too (Bruce). The grid is playtested first; the other phases are prototyped after |
 | 2026-11-17 | The multiplier coin (Bruce, pick C from `mocks/card-chips.html`, moved to the bottom left over the card's edge, with a coin edge): a card's multiplier no longer covers the word tags. The made card's ★ moves inside, under the rank |
+| 2026-11-17 | Prototype order after the grid playtest (Bruce): pegging on the maze and the maze walk together, then the shop, then the cut and the bots' turns. The scoring phase summarizes the bots' scores; the maze phase takes turns, and hinges on smart choices: where to turn, which jokers to apply, which doors to close (concept.md › Phases) |
 
 ## Open questions
 

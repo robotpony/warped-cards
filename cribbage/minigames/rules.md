@@ -63,7 +63,7 @@ Cut and turn up the starter as in classic cribbage. If it's a Jack, the dealer s
 
 In classic cribbage you'd count your hand after pegging. In Crib RPG, each player counts their hand and then takes a match turn on the scoring grid, before pegging, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
-The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
+The computer players' turns come first, summarized as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging; you never watch them play their grids. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
 These are match rules r27, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
@@ -283,7 +283,7 @@ Peg as in classic cribbage. The player to the dealer's left plays first, and the
 
 Every point you peg is one step, moved right away, before the next card is played. See Moving through the maze.
 
-- Your scoring grid points come with you. You spend them opening gates, hitting switches and shifting the maze, while pegging moves your token. How the points are spent, and how that takes turns with pegging: to design.
+- Your scoring grid points come with you. You spend them opening gates, hitting switches and shifting the maze, while pegging moves your token. Players take turns on the maze, and each turn is a set of choices: where to turn, which jokers to apply, which doors to close. How the points are spent, and how that takes turns with pegging: to design.
 - Power carries over. A hand card's power level from the scoring grid multiplies the points it pegs (to tune; it needs simulator numbers first).
 
 After pegging, the cards go back to their owners' hands.
