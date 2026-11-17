@@ -48,20 +48,23 @@
   .pl .nm { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 13px; }
   .pl b { font-size: 15px; }
   svg.maze { display: block; margin: 0 auto; flex: none; touch-action: manipulation; border-radius: 10px; background: var(--bg); }
-  .prompt { min-height: 20px; font-size: 14px; text-align: center; color: var(--gold); font-weight: 600; }
-  .dock { background: var(--panel); border: 1px solid var(--rim); border-radius: 12px; padding: 7px 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
+  .prompt { height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; text-align: center; color: var(--gold); font-weight: 600; }
+  .dock { background: var(--panel); border: 0; border-top: 1px solid var(--rim); border-radius: 0; margin: 0 -10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
   .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .lbl { font-size: 11px; font-weight: 700; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
   /* Plays: maze-walk's tiles (steps and suit, then every card) on its cream. */
   .plays { display: flex; flex-wrap: wrap; gap: 6px; overflow-y: auto; min-height: 0; padding: 3px; align-content: flex-start; }
-  .play { font: inherit; border: 0; border-radius: 10px; background: #F3ECDC; color: #2B2A26; padding: 4px 9px 3px; cursor: pointer; text-align: left; line-height: 1.15; }
+  .play { position: relative; font: inherit; border: 2px dashed #E8B84A; border-radius: 10px; background: #F3ECDC; color: #2B2A26; padding: 4px 9px 3px; cursor: pointer; text-align: left; line-height: 1.15; }
   .play b { font-size: 18px; font-weight: 800; } .play .su { font-size: 15px; font-weight: 600; }
   .play small { display: block; font-size: 11px; }
   .play small i { font-style: normal; font-weight: 700; }
   .play.sel { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 10px rgba(255,212,71,.55); }
-  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 9px; font-size: 11.5px; color: var(--muted); padding: 2px 6px 0; }
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; font-size: 11px; color: var(--muted); padding: 2px 6px 0; }
   .legend span { display: inline-flex; align-items: center; gap: 4px; } .legend svg { flex: none; }
-  .play:disabled { opacity: .35; cursor: default; }
+  .play.off { cursor: default; }
+  .ov { position: absolute; inset: -2px; border-radius: 10px; background: rgba(10,14,31,.78); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .ob { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--gold); background: #0A0E1F; color: var(--gold); font: 800 15px/1 inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .ob.on { background: var(--gold); color: #0A0E1F; } .ob:disabled { opacity: .35; cursor: default; } .ob svg { display: block; }
   .jk { font: inherit; font-size: 13px; font-weight: 700; border: 1.5px solid var(--violet); color: var(--violet); background: transparent; border-radius: 8px; padding: 2px 8px; cursor: pointer; }
   .jk:disabled { opacity: .35; cursor: default; } .jk.on { background: var(--violet); color: var(--bg); }
   .acts .btn { font-size: 13px; padding: 3px 9px; }
@@ -104,7 +107,7 @@
         at most <select id="closeMax"><option value="1" selected>1</option><option value="2">2</option><option value="99">any</option></select> a hand</label>
       <label>Bots <select id="bots"><option value="1" selected>1</option><option value="2">2</option></select>
         Bot 1 <select id="style1"></select> Bot 2 <select id="style2"></select></label>
-      <label>Walk speed <select id="speed"><option value="70">normal</option><option value="30" selected>fast</option><option value="0">instant</option></select></label>
+      <label>Walk speed <select id="speed"><option value="160">normal</option><option value="90" selected>fast</option><option value="0">instant</option></select></label>
       <label>Zoom <select id="zoom"><option value="54" selected>close: about 7 cells across, like maze-walk's fog</option><option value="38">medium: about 10 cells</option><option value="30">far: about 13 cells</option></select></label>
       <label><input type="checkbox" id="whole"> Show the whole maze (designer view)</label>
     </div>
@@ -389,7 +392,7 @@
   // needs its suit and takes steps until it breaks. A wrong suit bounces off (one step) and
   // walks back. A key lets one wrong suit through.
   function walk(p, play) {
-    const M = G.M, out = { cells: [], won: false, ev: [] };
+    const M = G.M, out = { cells: [], won: false, ev: [], turns: [] };
     let n = play.p;
     while (n > 0) { if (out.cells.length > 5000) throw new Error("walk loop " + play.p);
       const i = p.pos, ex = exitsOf(M, i), from = p.prev >= 0 ? dirTo(M, i, p.prev) : -1;
@@ -401,7 +404,7 @@
         for (let k = 0; k < 4; k++) { const t = (M.ptr[i] + k) % 4; if (cand.includes(t)) { d = t; break; } }
         const turnable = ex.filter(x => !M.dead[i * 4 + x]);
         for (let k = 1; k <= 4; k++) { const t = (d + k) % 4; if ((turnable.length ? turnable : ex).includes(t)) { M.ptr[i] = t; break; } }
-        out.ev.push("junction");
+        out.ev.push("junction"); out.turns.push([i, d]);
       }
       const to = stepTo(M, i, d), e = M.adj[i * 4 + d];
       if ((e.kind === "gate" || e.kind === "door") && e.suit && e.suit !== play.s) {
@@ -444,9 +447,8 @@
       then();
     };
     if (G.headless || !G.c.speed) return finish();
-    G.anim = { p, cells: [startCell, ...r.cells], i: 0 };
-    const tick = () => { G.anim.i++; if (G.anim.i >= G.anim.cells.length) { G.anim = null; return finish(); } render(); later(tick, G.c.speed); };
-    render(); later(tick, G.c.speed);
+    G.anim = { p, cells: [startCell, ...r.cells], turns: r.turns, i: 0, t0: performance.now() + 350, done: finish };
+    render();
   }
   function landOn(p) {
     if (!G.M.prizes.has(p.pos)) return;
@@ -605,22 +607,38 @@
   function render() {
     if (G.headless) return;
     const M = G.M, c = G.c, me = G.P[0], an = G.anim, myTurn = G.phase === "maze" && cur().human && !an && G.won === null;
-    const cs = c.whole ? V / M.W : c.zoom, span = V, full = cs * M.W;
-    const svg = $("maze"); svg.setAttribute("width", span); svg.setAttribute("height", span); svg.setAttribute("viewBox", `0 0 ${span} ${span}`);
-    const posOf = (p) => an && an.p === p ? an.cells[Math.min(an.i, an.cells.length - 1)] : p.pos;
+    const now = performance.now(), span = V;
+    // Walk progress: a hop a step, after a short pause while the camera pulls back.
+    let hopK = 0, hopF = 0;
+    if (an) { const t = Math.max(0, (now - an.t0) / c.speed); hopK = Math.min(Math.floor(t), an.cells.length - 1); hopF = hopK >= an.cells.length - 1 ? 0 : t - hopK; an.i = hopK; }
+    const posOf = (p) => an && an.p === p ? an.cells[an.i] : p.pos;
     const focus = an ? an.p : (G.phase === "maze" ? cur() : me);
-    const X = (i) => M.xy(i)[0] * cs, Y = (i) => M.xy(i)[1] * cs, cx = (i) => X(i) + cs / 2, cy = (i) => Y(i) + cs / 2;
-    // Camera: scroll when the focus token is within 3 cells of the view's edge.
-    const maxT = Math.max(0, full - span), margin = cs * 3, fx = cx(posOf(focus)), fy = cy(posOf(focus));
-    const clamp = (v) => Math.min(maxT, Math.max(0, v)), follow = (p, t) => p - t < margin ? p - margin : p - t > span - margin ? p - span + margin : t;
-    G.cam = c.whole ? [0, 0] : [clamp(follow(fx, G.cam ? G.cam[0] : fx - span / 2)), clamp(follow(fy, G.cam ? G.cam[1] : fy - span / 2))];
-    const [tx, ty] = G.cam, x0 = Math.max(0, Math.floor(tx / cs) - 1), x1 = Math.min(M.W - 1, Math.ceil((tx + span) / cs)), y0 = Math.max(0, Math.floor(ty / cs) - 1), y1 = Math.min(M.H - 1, Math.ceil((ty + span) / cs));
-    const vis = []; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) vis.push(M.id(x, y));
-    const mid = (k) => { const [a, b] = k.split(":").map(Number); return [(cx(a) + cx(b)) / 2, (cy(a) + cy(b)) / 2, M.xy(a)[1] === M.xy(b)[1]]; };
 
     // The selected play's path, worked out ahead.
     let pv = null;
     if (myTurn && G.sel && (!G.mode || G.mode === "walk")) pv = preview(me, G.sel);
+
+    // Camera target, in cells: fit the walk (or the previewed walk); otherwise close in on the player whose turn it is.
+    const fit = an ? an.cells : pv ? [me.pos, ...pv.cells] : null;
+    let tcs = c.zoom, tx0, ty0;
+    if (c.whole) { tcs = V / M.W; tx0 = ty0 = M.W / 2; }
+    else if (fit && fit.length > 1) {
+      let a = 1e9, b = 1e9, d = -1, e = -1; for (const i of fit) { const [x, y] = M.xy(i); a = Math.min(a, x); b = Math.min(b, y); d = Math.max(d, x); e = Math.max(e, y); }
+      tcs = Math.max(V / M.W, Math.min(c.zoom, V / (Math.max(d - a, e - b) + 3))); tx0 = (a + d + 1) / 2; ty0 = (b + e + 1) / 2;
+    } else { const [x, y] = M.xy(posOf(focus)); tx0 = x + .5; ty0 = y + .5; }
+    const clampC = (v, cs) => { const h = V / cs / 2; return M.W <= 2 * h ? M.W / 2 : Math.min(M.W - h, Math.max(h, v)); };
+    tx0 = clampC(tx0, tcs); ty0 = clampC(ty0, tcs);
+    const vw = G.view;
+    if (!vw || c.whole || !c.speed) G.view = { cs: tcs, x: tx0, y: ty0, t: now };
+    else { const k = 1 - Math.exp(-(now - vw.t) / 160); G.view = { cs: Math.exp(Math.log(vw.cs) + (Math.log(tcs) - Math.log(vw.cs)) * k), x: vw.x + (tx0 - vw.x) * k, y: vw.y + (ty0 - vw.y) * k, t: now }; }
+    const settled = Math.abs(G.view.cs - tcs) < .05 && Math.abs(G.view.x - tx0) < .01 && Math.abs(G.view.y - ty0) < .01;
+    const cs = G.view.cs;
+    const svg = $("maze"); svg.setAttribute("width", span); svg.setAttribute("height", span); svg.setAttribute("viewBox", `0 0 ${span} ${span}`);
+    const X = (i) => M.xy(i)[0] * cs, Y = (i) => M.xy(i)[1] * cs, cx = (i) => X(i) + cs / 2, cy = (i) => Y(i) + cs / 2;
+    G.cam = [G.view.x * cs - span / 2, G.view.y * cs - span / 2];
+    const [tx, ty] = G.cam, x0 = Math.max(0, Math.floor(tx / cs) - 1), x1 = Math.min(M.W - 1, Math.ceil((tx + span) / cs)), y0 = Math.max(0, Math.floor(ty / cs) - 1), y1 = Math.min(M.H - 1, Math.ceil((ty + span) / cs));
+    const vis = []; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) vis.push(M.id(x, y));
+    const mid = (k) => { const [a, b] = k.split(":").map(Number); return [(cx(a) + cx(b)) / 2, (cy(a) + cy(b)) / 2, M.xy(a)[1] === M.xy(b)[1]]; };
 
     let s = A.defs();
     if (!c.whole) for (const i of vis) s += A.floor(X(i), Y(i), cs, false);
@@ -631,7 +649,7 @@
       if (x < M.W - 1 && !M.edges.has(M.key(i, i + 1))) walls += `M${xa + cs} ${ya}v${cs}`;
       if (y < M.H - 1 && !M.edges.has(M.key(i, i + M.W))) walls += `M${xa} ${ya + cs}h${cs}`;
     }
-    s += A.walls(walls, cs) + A.outerWall(0, 0, full, full, cs);
+    s += A.walls(walls, cs) + A.outerWall(0, 0, cs * M.W, cs * M.W, cs);
     const keysIn = new Set(); for (const i of vis) { const [x, y] = M.xy(i); if (x < M.W - 1) keysIn.add(M.key(i, i + 1)); if (y < M.H - 1) keysIn.add(M.key(i, i + M.W)); }
     for (const k of keysIn) {
       const e = M.edges.get(k); if (!e || (e.kind === "open" && !e.broken)) continue;
@@ -643,11 +661,11 @@
     }
     // Junction arrows.
     // Junction arrows near the tokens and along the previewed path, so the board stays readable.
-    const near = new Set(pv ? pv.cells : []);
+    const near = new Set(pv ? pv.cells : []), taken = new Map((an ? an.turns : pv ? pv.turns : []) || []);
     const isNear = (i) => near.has(i) || G.P.some(p => manhattan(M, i, posOf(p)) <= Math.ceil(V / cs / 2));
     if (cs >= 14) for (const i of vis) {
-      if (!isJunction(M, i) || !(c.whole || isNear(i))) continue;
-      s += junctionMark(cx(i), cy(i), cs, M.ptr[i]);
+      if (!isJunction(M, i) || !(c.whole || isNear(i) || taken.has(i))) continue;
+      s += taken.has(i) ? junctionMark(cx(i), cy(i), cs, taken.get(i), true) : junctionMark(cx(i), cy(i), cs, M.ptr[i], false);
     }
     for (const i of M.prizes) if (c.whole || vis.includes(i)) s += A.prize(X(i), Y(i), cs);
     if (pv) {
@@ -662,7 +680,14 @@
     const order = G.P.filter(p => p !== focus).concat([focus]);
     for (const p of order) {
       const at = posOf(p), mates = G.P.filter(q => posOf(q) === at), k = mates.indexOf(p), off = mates.length > 1 ? (k - (mates.length - 1) / 2) * cs * .28 : 0;
-      s += A.token(cx(at) + off, cy(at) + off * .3, Math.max(cs, 16), { who: p.seat, small: mates.length > 1 });
+      let px = cx(at) + off, py = cy(at) + off * .3;
+      if (an && an.p === p && hopF > 0) {
+        const b = an.cells[an.i + 1], e = hopF < .5 ? 2 * hopF * hopF : 1 - 2 * (1 - hopF) * (1 - hopF), lift = Math.sin(Math.PI * hopF) * cs * .38;
+        px = cx(at) + (cx(b) - cx(at)) * e; py = cy(at) + (cy(b) - cy(at)) * e;
+        s += `<ellipse cx="${px}" cy="${py + cs * .22}" rx="${cs * (.24 - .08 * Math.sin(Math.PI * hopF))}" ry="${cs * .07}" fill="#000" opacity=".45"/>`;
+        py -= lift;
+      }
+      s += A.token(px, py, Math.max(cs, 16), { who: p.seat, small: mates.length > 1 });
     }
     $("mazeCam").innerHTML = s;
     $("mazeCam").setAttribute("transform", `translate(${-tx} ${-ty})`);
@@ -673,6 +698,7 @@
       hud = A.pointer(o + dx * k, o + dy * k, Math.atan2(dy, dx) * 180 / Math.PI + 90, "G", 40);
     }
     $("mazeHud").innerHTML = hud;
+    if ((an || !settled) && !G.raf) G.raf = requestAnimationFrame(frame);
     if (!$("legend").innerHTML) $("legend").innerHTML = legend();
 
     const F = an ? (G.lastF || field()) : (G.lastF = field());
@@ -699,13 +725,16 @@
 
     let d = "";
     if (G.phase === "done") d += `<div class="row" style="justify-content:space-between"><span class="muted">Hand ${G.hand} done</span><button class="btn go" id="nextHand">Deal the next hand</button></div>`;
-    d += `<div class="row" style="justify-content:space-between"><span class="lbl">Your plays · ${left(me).length} left</span>`;
-    if (myTurn && G.sel) d += `<span class="row acts"><button class="btn go" data-act="walk">Walk ${G.sel.p}</button><button class="btn${G.mode === "close" ? " on" : ""}" data-act="close" ${G.sel.s ? "" : "disabled title=\"A play with no suit can't make a door\""}>Close a door</button>${M.switches.length ? `<button class="btn${G.mode === "flip" ? " on" : ""}" data-act="flip">Flip</button>` : ""}</span>`;
-    d += `</div>`;
-    if (myTurn && G.mode === "flip") d += `<div class="row acts"><span class="lbl">Spend it on switch</span>${M.switches.map((_, k) => `<button class="btn" data-flip="${k}" ${canFlip(k) ? "" : "disabled title=\"Flipped this hand\""}>${LETTERS[k]} ⇄</button>`).join("")}</div>`;
-    d += `<div class="plays">${me.plays.filter(x => !x.used).map(x => `<button class="play${G.sel === x ? " sel" : ""}" data-play="${x.id}" ${myTurn ? "" : "disabled"} title="${x.k}">
+    d += `<div class="row"><span class="lbl">Your plays · ${left(me).length} left</span></div>`;
+    // The chosen play gets its choices laid over it: walk (▶), close a door, flip a switch.
+    const doorIcon = `<svg width="18" height="20" viewBox="0 0 18 20"><rect x="4" y="2" width="10" height="15" rx="1.5" transform="rotate(22 9 10)" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+    const over = (x) => !(myTurn && G.sel === x) ? "" : `<div class="ov">${G.mode === "flip"
+      ? M.switches.map((_, k) => `<button class="ob" data-flip="${k}" ${canFlip(k) ? "" : "disabled title=\"Flipped this hand\""}>${LETTERS[k]}</button>`).join("") + `<button class="ob" data-act="flip" title="Back">✕</button>`
+      : `<button class="ob" data-act="walk" title="Walk ${x.p}">▶</button><button class="ob${G.mode === "close" ? " on" : ""}" data-act="close" title="${x.s ? "Close a door" : "A play with no suit can't make a door"}" ${x.s && (me.closed || 0) < c.closeMax ? "" : "disabled"}>${doorIcon}</button>` +
+        (M.switches.length ? `<button class="ob" data-act="flip" title="Flip a switch">⇄</button>` : "")}</div>`;
+    d += `<div class="plays">${me.plays.filter(x => !x.used).map(x => `<div class="play${G.sel === x ? " sel" : ""}${myTurn ? "" : " off"}" role="button" data-play="${x.id}" title="${x.k}">
         <b>${x.p}</b> <span class="su" style="color:${x.s ? FACECOL[x.s] : "inherit"}">${x.s ? GLYPH[x.s] : "no suit"}</span>
-        <small>${x.c.split(" ").map(t => cardText(t, FACECOL)).join(" ")}</small></button>`).join("")}</div>`;
+        <small>${x.c.split(" ").map(t => cardText(t, FACECOL)).join(" ")}</small>${over(x)}</div>`).join("")}</div>`;
     const js = Object.keys(JOKERS).filter(j => me.jokers[j]);
     d += `<div class="row"><span class="lbl">Jokers</span>${js.map(j => `<button class="jk${G.mode === j ? " on" : ""}" data-joker="${j}" ${myTurn && j !== "key" && me.jokerUsed !== G.turnNo ? "" : "disabled"} title="${JOKER_HINT[j]}">${JOKERS[j]}${me.jokers[j] > 1 ? " ×" + me.jokers[j] : ""}</button>`).join("") || `<span class="muted" style="font-size:13px">Stars give jokers</span>`}</div>`;
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
@@ -714,24 +743,31 @@
     if (G.won !== null) { const p = G.P[G.won]; $("wonTitle").textContent = p.human ? "You reach the goal!" : `${p.name} reaches the goal`; $("wonText").textContent = `Hand ${G.hand}. Seed ${G.seedText}.`; }
     $("log").textContent = G.log.slice(-80).map(e => JSON.stringify(e)).join("\n"); $("log").scrollTop = 1e9;
   }
+  // The frame loop: runs while a token hops or the camera moves.
+  function frame(now) {
+    G.raf = 0;
+    const an = G.anim;
+    if (an && (now - an.t0) / G.c.speed >= an.cells.length - 1) { G.anim = null; G.view.t = now; an.done(); render(); return; }
+    render();
+  }
   function previewCost(pv) { const S = snapshot(); const me = G.P[0], play = G.sel; walk(me, play); const v = costField()[me.pos]; restore(S); return v; }
   const cardText = (t, col = SUITCOL) => { const s = t.slice(-1), r = t.slice(0, -1); return `<i style="color:${col[s]}">${r}${GLYPH[s]}</i>`; };
   // A real fork: three or more ways that lead on. Corridors and dead ends are never junctions.
   const isJunction = (M, i) => exitsOf(M, i).filter(d => !M.dead[i * 4 + d]).length >= 3;
-  // A junction: a dark disc with a gold ring, and a bold arrow the way the next token goes.
-  function junctionMark(x, y, cs, d) {
-    const r = Math.min(cs * .3, 13), ang = Math.atan2(DIRS[d][1], DIRS[d][0]) * 180 / Math.PI, k = r * .62;
-    return `<g transform="translate(${x} ${y}) rotate(${ang})"><circle r="${r}" fill="#0A0E1F" stroke="#FFD447" stroke-width="${Math.max(1.5, cs * .06)}"/>` +
-      `<path d="M${-k * .7} 0H${k * .55}M${k * .1} ${-k * .6}L${k * .75} 0L${k * .1} ${k * .6}" fill="none" stroke="#FFD447" stroke-width="${Math.max(2, cs * .09)}" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  // A junction: a small chevron the way the next token goes. Hot: the way this walk takes, in gold.
+  function junctionMark(x, y, cs, d, hot) {
+    const ang = Math.atan2(DIRS[d][1], DIRS[d][0]) * 180 / Math.PI, k = cs * (hot ? .17 : .13), o = cs * .2;
+    return `<path transform="translate(${x} ${y}) rotate(${ang})" d="M${o - k * .5} ${-k}L${o + k * .5} 0L${o - k * .5} ${k}" fill="none" stroke="${hot ? "#FFD447" : "#3CF2FF"}" ` +
+      `stroke-width="${Math.max(hot ? 2.2 : 1.4, cs * (hot ? .07 : .045))}" stroke-linecap="round" stroke-linejoin="round" opacity="${hot ? 1 : .45}"/>`;
   }
   // The key under the maze: each piece drawn with the same code as on the board.
   function legend() {
-    const ic = (w, inner) => `<svg width="${w}" height="22" viewBox="0 0 ${w} 22">${inner}</svg>`;
+    const ic = (w, inner, h = 22) => `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="overflow:visible">${inner}</svg>`;
     const items = [
       [ic(18, `<g transform="translate(-1 -1)">${tokenIcon(0)}</g>`), "you"],
       [ic(18, `<g transform="translate(-1 -1)">${tokenIcon(1)}</g>`), "bot"],
-      [ic(22, junctionMark(11, 11, 30, 1)), "junction"],
-      [ic(40, doorMark(20, 11, 30, true, { suit: "H", strength: 12, damage: 0 })), "door"],
+      [ic(18, junctionMark(4, 11, 40, 1, true)), "junction"],
+      [ic(24, doorMark(12, 13, 20, true, { suit: "H", strength: 12, damage: 0 }), 26), "door"],
       [ic(22, A.gate(11, 11, 22, true, "S")), "gate"],
       [ic(22, switchMark(11, 11, 22, true, { sw: 0 })), "switch"],
       [ic(22, A.prize(0, 0, 22)), "star"],
@@ -742,13 +778,19 @@
     const st = `fill="${A.P.tokens[seat]}" stroke="#fff" stroke-width="1.5"`;
     return seat === 0 ? `<circle cx="10" cy="10" r="6" ${st}/>` : seat === 1 ? `<rect x="4.5" y="4.5" width="11" height="11" rx="2" ${st}/>` : `<polygon points="10,3.5 17,15.5 3,15.5" ${st}/>`;
   }
-  // A door: a laser in its suit's colour (orange with no suit), and a badge with suit and strength left.
+  // A door: a card laid at a slant across the path, showing the strength left over its suit.
+  // Its edge is the suit's neon colour, or the closer's token colour for a door someone closed.
   function doorMark(mx, my, cs, up, e) {
-    const col = e.suit ? SUITCOL[e.suit] : "#FF8A3D", L = cs * .48, w = Math.max(3, cs * .12), left = e.strength - e.damage;
-    const ring = e.closedBy !== undefined ? A.P.tokens[e.closedBy] : col, t = (e.suit ? GLYPH[e.suit] : "") + left;
-    const bw = Math.max(26, 8 + t.length * 7), bh = 16;
-    return `<line x1="${mx - (up ? 0 : L)}" y1="${my - (up ? L : 0)}" x2="${mx + (up ? 0 : L)}" y2="${my + (up ? L : 0)}" stroke="${col}" stroke-width="${w}" stroke-dasharray="6 3" filter="url(#nm-glow)"/>` +
-      `<rect x="${mx - bw / 2}" y="${my - bh / 2}" width="${bw}" height="${bh}" rx="5" fill="#0A0E1F" stroke="${ring}" stroke-width="1.8"/>` + A.text(mx, my + .5, t, 11, col);
+    const left = e.strength - e.damage, ink = e.suit ? FACECOL[e.suit] : "#A85A00";
+    const rim = e.closedBy !== undefined ? A.P.tokens[e.closedBy] : e.suit ? SUITCOL[e.suit] : "#FF8A3D";
+    const h = Math.max(22, cs * .8), w = h * .7, ang = up ? 22 : 112;
+    const num = String(left), fs = h * (num.length > 2 ? .3 : .36);
+    return `<g transform="translate(${mx} ${my})"><g transform="rotate(${ang})">` +
+      `<rect x="${-w / 2 + 1.5}" y="${-h / 2 + 2}" width="${w}" height="${h}" rx="${h * .1}" fill="#000" opacity=".5"/>` +
+      `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${h * .1}" fill="#F3ECDC" stroke="${rim}" stroke-width="${Math.max(1.6, h * .07)}"/>` +
+      (e.damage ? `<path d="M${-w * .3} ${-h * .42}L${-w * .05} ${-h * .1}L${-w * .22} ${h * .05}L${w * .05} ${h * .4}" fill="none" stroke="#2B2A26" stroke-width="1" opacity=".5"/>` : "") +
+      `</g><text x="0" y="${e.suit ? -h * .04 : h * .12}" text-anchor="middle" font-family="Saira Semi Condensed, sans-serif" font-weight="800" font-size="${fs}" fill="${ink}">${num}</text>` +
+      (e.suit ? `<text x="0" y="${h * .3}" text-anchor="middle" font-size="${h * .3}" fill="${ink}">${GLYPH[e.suit]}</text>` : "") + `</g>`;
   }
   function switchMark(mx, my, cs, up, e) {
     const L = cs * .46, col = "#C77DFF", r = Math.max(7, cs * .2);
@@ -767,8 +809,8 @@
     const bomb = t.closest("[data-bomb]"); if (bomb && G.mode === "bomb") { if (useJoker(me, "bomb", +bomb.dataset.bomb)) { G.mode = null; render(); } }
   });
   $("dock").addEventListener("click", (ev) => {
-    const b = ev.target.closest("button"); if (!b || b.disabled) return;
-    const me = G.P[0];
+    const me = G.P[0], b = ev.target.closest("button, .play");
+    if (!b || b.disabled || b.classList.contains("off")) return;
     if (b.id === "nextHand") { G.turnNo = (G.turnNo || 0) + 1; return startHand(); }
     if (b.dataset.play) { const x = me.plays.find(x => x.id === b.dataset.play); G.sel = G.sel === x ? null : x; G.mode = null; G.flash = null; return render(); }
     if (b.dataset.act === "walk") { G.turnNo = (G.turnNo || 0) + 1; return doWalk(me, G.sel, endTurn); }
