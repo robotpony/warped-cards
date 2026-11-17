@@ -58,7 +58,7 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 
 ## Phase 7 · Tuning
 
-- [ ] Playtest the grid (phases 5b to 5e), then prototype the other first-version phases in order: pegging on the maze with the maze walk, then the shop, then the cut and the bots' turns (`concept.md` › Phases, Bruce 2026-11-17)
+- [ ] Playtest the grid (phases 5b to 5e), then prototype the other first-version phases in order: pegging on the maze with the maze walk (a browser mock first), then the shop, then the cut and the bots' turns (`concept.md` › Phases, Bruce 2026-11-17)
 - [ ] Tune with simulation and playtests until the numbers hold up (`stats.md` › Targets)
 - [ ] Playtest r26 at its current edge power (25% of steps, was 52%), then add tools that raise scores rather than retuning it (Bruce, `concept.md` › Decisions, 2026-11-17)
 - [ ] Retune prizes and made multipliers for a game of hands; later hands score more as the deck builds (`concept.md` › Decisions, r23)

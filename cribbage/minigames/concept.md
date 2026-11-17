@@ -106,7 +106,7 @@ Phases of a game
 The first version includes every phase (Bruce, 2026-11-17). The order of work (Bruce, 2026-11-17):
 
 1. Playtest the grid (5b to 5e).
-2. Prototype pegging on the maze and the maze walk together (7 and 8).
+2. Prototype pegging on the maze and the maze walk together (7 and 8), as a browser mock first, like `mocks/maze-walk.html`, to work out the turns and choices quickly; the beta follows once it plays well.
 3. Prototype the shop (6).
 4. Prototype the cut and the bots' turns (2, 4 and 5a).
 
@@ -449,6 +449,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | The first version includes every phase in Phases, the shop, pegging and the maze walk too (Bruce). The grid is playtested first; the other phases are prototyped after |
 | 2026-11-17 | The multiplier coin (Bruce, pick C from `mocks/card-chips.html`, moved to the bottom left over the card's edge, with a coin edge): a card's multiplier no longer covers the word tags. The made card's ★ moves inside, under the rank |
 | 2026-11-17 | Prototype order after the grid playtest (Bruce): pegging on the maze and the maze walk together, then the shop, then the cut and the bots' turns. The scoring phase summarizes the bots' scores; the maze phase takes turns, and hinges on smart choices: where to turn, which jokers to apply, which doors to close (concept.md › Phases) |
+| 2026-11-17 | The maze prototype (pegging on the maze and the maze walk) starts as a browser mock, not in the beta, to work out the turns and choices quickly (Bruce) |
 
 ## Open questions
 
