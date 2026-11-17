@@ -1,6 +1,6 @@
 # Crib RPG: Rules
 
-Status: draft 6, 2026-11-17. Match turns follow match rules r26. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 6, 2026-11-17. Match turns follow match rules r27. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -64,7 +64,7 @@ In classic cribbage you'd count your hand after pegging. In Crib RPG, each playe
 
 The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
-These are match rules r26, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r27, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -92,7 +92,8 @@ A turn at a glance:
 #### Setting up
 
 1. Shuffle every card that isn't in a hand, the crib or the starter. This is the stock.
-2. Count your hand with the starter, as in a classic show: fifteens, pairs, runs, a flush of your 4 cards (5 if the starter matches) and his nobs. If you dealt, count the crib the same way; a crib flush needs all 5 cards. Each count moves you that many steps. A card a joker made still multiplies its count, but edge power doesn't, nothing powers up, and the count is never your best set. A big count wins power jokers: 1 for every 5 points past 10, so 15 wins 1, 20 wins 2 and 25 wins 3 (to tune; r26). The hand and crib are ranked apart, and the jokers are picked like a prize, straight into your power jokers for this turn.
+2. Count your hand with the starter, as in a classic show: fifteens, pairs, runs, a flush of your 4 cards (5 if the starter matches) and his nobs. If you dealt, count the crib the same way; a crib flush needs all 5 cards. Each count moves you that many steps. A card a joker made still multiplies its count, but edge power doesn't, nothing powers up, and the count is never your best set. A big count wins power jokers: 1 for every 5 points past 6, so 11 wins 1, 16 wins 2, 21 wins 3 and 26 wins 4 (to tune; r27). The hand and crib are ranked apart, and the jokers are picked like a prize, straight into your power jokers for this turn.
+3. A card then says what the grid is for. Tap Start: the grid deals in and the timer starts.
 3. Lay your hand along the bottom, in the order you sorted it, and the starter in the corner. The dealer lays the crib down the side; for anyone else the side stays empty, so the crib is the dealer's advantage.
 4. Deal a 4 x 4 grid face up from the stock.
 

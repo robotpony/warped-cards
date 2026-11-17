@@ -1,4 +1,4 @@
-// The match turn (engine.md, match rules r26). Given a state, an action and
+// The match turn (engine.md, match rules r27). Given a state, an action and
 // the dice, it returns the new state and the events. No clock, no files, no
 // randomness of its own.
 import CardKit
@@ -182,7 +182,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r26"
+    public static let rulesVersion = "match-r27"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice

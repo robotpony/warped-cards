@@ -71,6 +71,8 @@ import SwiftUI
         }
         // Toasts from the deal (an extra card's prize) would cover the board: hidden unless `--toast`.
         if !args.contains("--toast") { session.hideToast() }
+        // `--intro`: the grid intro card over the empty board, after the opening count (0.20.0).
+        if args.contains("--intro") { session.snapshotIntro(); render(session, to: out); exit(0) }
         // `--opening hand|crib [--stage N]`: the opening count (r24) over the empty board, played
         // instantly to its hold, or stopped at its Nth wait.
         if let what = value("--opening"), let e = session.events.first(where: { if case .opening(what, _, _, _, _, _, _, _) = $0 { return true }; return false }) {

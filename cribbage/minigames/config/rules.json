@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rulesVersion": "match-r26",
+  "rulesVersion": "match-r27",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4,
@@ -13,7 +13,7 @@
     "opening": {
       "hand": { "flushMin": 5, "handFlush4": true },
       "crib": { "flushMin": 5, "handFlush4": false },
-      "bonus": { "from": 10, "per": 5 }
+      "bonus": { "from": 6, "per": 5 }
     },
     "maxEdgeCards": 1,
     "clearBonus": { "kind": "steps", "amount": 10 },

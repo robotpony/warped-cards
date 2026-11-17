@@ -84,6 +84,7 @@ struct PhoneView: View {
                 Color.clear.contentShape(Rectangle()).onTapGesture { session.playback.tap() }
             }
         }
+        .overlay { if let i = session.gridIntro { GridIntroCard(intro: i) { session.startGrid() } } }
         .overlay { Toast(text: session.toast) }
         .overlay { if let left = session.warning { WarningCard(left: left, cost: session.config?.rules.match.leftOverCost ?? 2) { session.dismissWarning() } } }
         .overlay { if let topic = session.info { InfoCard(topic: topic, session: session) { session.info = nil } } }
@@ -270,6 +271,39 @@ struct WarningCard: View {
             .background(RoundedRectangle(cornerRadius: 16).fill(Theme.paper).shadow(color: .black.opacity(0.55), radius: 16, y: 12))
             .padding(.horizontal, 20)
         }
+    }
+}
+
+/// The grid intro (ui.md › The opening count): after the hand and crib are counted, what the grid
+/// is for, over the empty board. Start deals the grid in and starts the timer.
+struct GridIntroCard: View {
+    let intro: GameSession.GridIntro
+    let start: () -> Void
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.25)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Score the grid").font(Theme.font(22, .bold))
+                Text("Your \(intro.counted) counted \(intro.steps) step\(intro.steps == 1 ? "" : "s").")
+                Text("Collect more steps for your step counter by matching crib hands on the grid. Drag across touching cards that make fifteens, pairs, runs or flushes.")
+                if let n = intro.maxEdgeCards {
+                    Text((n == 1 ? "A set can use one card from your hand or crib" : "A set can use up to \(n) cards from your hand and crib")
+                         + (intro.starterJoins ? ", and the starter joins every set." : "."))
+                } else if intro.starterJoins {
+                    Text("The starter joins every set.")
+                }
+                Text(intro.timerSeconds > 0 ? "Start \u{00B7} \(intro.timerSeconds / 60):\(String(format: "%02d", intro.timerSeconds % 60)) on the clock" : "Start")
+                    .font(Theme.font(15, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.felt)).foregroundStyle(Theme.feltText)
+                    .contentShape(Rectangle()).onTapGesture(perform: start).padding(.top, 4)
+            }
+            .font(Theme.font(15, .regular)).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+            .foregroundStyle(Theme.ink)
+            .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Theme.paper).shadow(color: .black.opacity(0.55), radius: 16, y: 12))
+            .padding(.horizontal, 20)
+        }
+        .transition(.opacity)
     }
 }
 

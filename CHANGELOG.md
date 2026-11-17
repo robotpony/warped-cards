@@ -2,6 +2,18 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 7 — 2026-11-17
+
+Match rules r27 (concept.md › Decisions, 2026-11-17).
+
+### Changed
+
+- The opening bonus starts lower: `match.opening.bonus.from` is 6 (was 10), so 11 wins 1 power joker, 16 wins 2, 21 wins 3 and 26 wins 4. `seed1.jsonl` and `seed12.jsonl` are re-recorded; seed 12's 31 now wins 5.
+
+### Added
+
+- ui.md: the grid intro, a card after the opening count that says what the grid is for and waits for Start before the grid deals in and the timer starts (Scene: Match turn › The opening count). The reference set adds `grid-intro`.
+
 ## spec 6 — 2026-11-17
 
 Match rules r26 (concept.md › Decisions, 2026-11-17).

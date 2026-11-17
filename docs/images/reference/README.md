@@ -1,6 +1,6 @@
 # Reference screenshots
 
-What the Mac beta (Noddy Yookerspiel) shows, for other builds to match shot for shot. Made by `apps/apple/scripts/reference.sh` from Apple build 0.19.0, spec 6; re-shoot when a scene changes.
+What the Mac beta (Noddy Yookerspiel) shows, for other builds to match shot for shot. Made by `apps/apple/scripts/reference.sh` from Apple build 0.20.0, spec 7; re-shoot when a scene changes.
 
 - Each phone shot is the 402 pt wide phone with 24 pt of page around it, rendered at 2x (900 px wide). The settings shot is the 340 × 620 pt panel at the Mac's screen scale (2x).
 - Every shot is a still from `--snapshot`, the beta's own renderer: `"Noddy Yookerspiel" --snapshot <file> --seed 1 <flags>`. Animations are at their end state, so motion isn't shown; ui.md › Motion and `config/fx.json` give the timings.
@@ -15,6 +15,7 @@ What the Mac beta (Noddy Yookerspiel) shows, for other builds to match shot for 
 | [opening-hand](opening-hand.png) | `--seed 1 --opening hand` | The opening count (r24): the hand and starter counted over the empty board, at the hold |
 | [opening-crib-4](opening-crib-4.png) | `--seed 1 --opening crib --stage 4` | The opening count of the crib, its first combo lit |
 | [opening-bonus](opening-bonus.png) | `--seed 1 --strong --opening hand` | The opening bonus (r26): the strong preset hand counts 17, its power joker not yet landed |
+| [grid-intro](grid-intro.png) | `--seed 1 --intro` | The grid intro (0.20.0): after the opening count, what the grid is for, waiting for Start |
 | [turn-bonus](turn-bonus.png) | `--seed 1 --strong --toast` | The turn after the opening bonus: the toast, and the reach joker landed in the tray |
 | [turn](turn.png) | `--seed 1` | The match turn as it starts, after the opening count |
 | [turn-toast](turn-toast.png) | `--seed 1 --toast` | A prize toast over the board (the blank card's +5 steps) |

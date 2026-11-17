@@ -107,6 +107,24 @@ final class GameSession {
     /// The step count while the opening count plays, before its steps have landed; nil shows the turn's.
     private(set) var stepsShown: Int?
     var shownSteps: Int { stepsShown ?? state?.steps ?? 0 }
+    /// The grid intro (0.20.0): after the opening count, a card saying what the grid is for, held
+    /// until Start is tapped. Nil when it isn't showing.
+    struct GridIntro: Equatable { let counted: String; let steps: Int; let starterJoins: Bool; let maxEdgeCards: Int?; let timerSeconds: Int }
+    private(set) var gridIntro: GridIntro?
+    private var introResume: CheckedContinuation<Void, Never>?
+    /// Start on the grid intro: the grid deals in and the timer starts.
+    func startGrid() { gridIntro = nil; introResume?.resume(); introResume = nil }
+    func snapshotIntro() {
+        guard let t = turn else { return }
+        gridHidden = true; gridIntro = intro(t)
+    }
+    private func intro(_ t: MatchTurn) -> GridIntro {
+        let crib = events.contains { if case .opening("crib", _, _, _, _, _, _, _) = $0 { true } else { false } }
+        let m = t.config.rules.match
+        return GridIntro(counted: crib ? "hand and crib" : "hand", steps: t.state.totals.openingSteps, starterJoins: m.starterJoins ?? false,
+                         maxEdgeCards: m.maxEdgeCards, timerSeconds: m.timerSeconds)
+    }
+
     /// The opening bonus (r26): the tray as shown while the counts play, before their jokers land.
     private(set) var trayShown: [String: Int]?
     func shownTray(_ kind: String) -> Int { (trayShown ?? state?.tray)?[kind] ?? 0 }
@@ -264,7 +282,7 @@ final class GameSession {
             // Deal first: the turn starts once you've thrown to the crib.
             timerTask?.cancel(); reachTask?.cancel(); deadTask?.cancel()
             turn = nil; events = []; feed = []; breakdown = nil; selection = []; warning = nil; toast = nil; info = nil
-            turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false
+            turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false; startGrid()
             playback.reset()
             dealing = DealState(dealt: dealt, botThrown: botThrown)
             watchHint()
@@ -277,7 +295,7 @@ final class GameSession {
     /// Shows the turn a step started.
     private func begin(_ step: Step<CribMazeGame>) {
         guard let t = run?.state.turn else { return }
-        turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false
+        turnGen += 1; gridHidden = false; stepsShown = nil; trayShown = nil; busy = false; startGrid()
         playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
         let ev = step.events.compactMap(\.matchEvent)
         turn = t; events = ev; feed = []; breakdown = nil; mode = .trace; selection = []; armedSource = nil; warning = nil; toast = nil
@@ -327,6 +345,13 @@ final class GameSession {
             }
             self.trayShown = nil
             guard self.turnGen == gen else { return }
+            // The grid intro: what the grid is for, until Start (the demo and films don't wait).
+            if !self.playback.autoContinue {
+                self.hideToast()
+                withAnimation(fx.motions.breakdown.tally.animation()) { self.gridIntro = self.intro(t) }
+                await withCheckedContinuation { self.introResume = $0 }
+                guard self.turnGen == gen else { return }
+            }
             // The grid deals in, every column dropping from above.
             self.drawnPerColumn = [4, 4, 4, 4]
             withAnimation(fx.motions.board.change.animation()) { self.gridHidden = false }

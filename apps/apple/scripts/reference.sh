@@ -24,6 +24,7 @@ deal-hint|--deal --hint|The deal with the discard hint showing
 opening-hand|--opening hand|The opening count (r24): the hand and starter counted over the empty board, at the hold
 opening-crib-4|--opening crib --stage 4|The opening count of the crib, its first combo lit
 opening-bonus|--strong --opening hand|The opening bonus (r26): the strong preset hand counts 17, its power joker not yet landed
+grid-intro|--intro|The grid intro (0.20.0): after the opening count, what the grid is for, waiting for Start
 turn-bonus|--strong --toast|The turn after the opening bonus: the toast, and the reach joker landed in the tray
 turn||The match turn as it starts, after the opening count
 turn-toast|--toast|A prize toast over the board (the blank card'"'"'s +5 steps)

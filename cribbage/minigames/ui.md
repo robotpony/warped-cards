@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 6, from the beta app at 0.19.0, rules r26
+Status: draft 3, 2026-11-17, spec 7, from the beta app at 0.20.0, rules r27
 
 ## Summary
 
@@ -233,7 +233,8 @@ The match turn is one scene with an input mode and a few covers. These are its s
 Match turn states
 
   Starting ........ the session shows the engine's turn_start
-    Opening ....... busy: the hand, then the crib, counted over the empty board; the grid deals in
+    Opening ....... busy: the hand, then the crib, counted over the empty board
+    Grid intro .... the intro card waits for Start; then the grid deals in
   Tracing ......... the default; trace sets, tap jokers
     Selecting ..... cards picked, not yet submitted
   Armed ........... a swapper, bomb or burn waits for its target
@@ -249,7 +250,8 @@ Match turn states
 | From | Trigger | To |
 |---|---|---|
 | Starting | Turn shown | Opening (with `opening` events and animation on), else Tracing |
-| Opening | The last count's steps land and the grid has dealt in | Tracing (or Stuck, if the first board has no sets) |
+| Opening | The last count's steps and bonus jokers land | Grid intro |
+| Grid intro | Tap Start | Tracing, once the grid has dealt in (or Stuck, if the first board has no sets) |
 | Opening | Tap anywhere | Holding (skips to the count's end), as in a breakdown |
 | Tracing | Tap or drag onto a card | Selecting |
 | Selecting | Release a drag with 2 or more cards, or tap the last card again | Playing out (if it scores, is rejected, or costs steps), or Warned |
@@ -286,7 +288,20 @@ With `opening` events (engine.md › The opening count), the session is busy and
 4. The step counter, which showed the steps before this count, rises by its points, with the steps bump.
 5. If the count won power jokers (`bonus`, r26), a toast "Hand bonus: +2 power jokers (bomb, reach)" (or "Crib bonus: …"), then each joker lands in its tray slot in the order drawn: the slot's count rises by 1 with the steps bump, then a settle wait. A pop wait follows the last. Until then the tray shows its count from before the opening.
 
-Then every grid column drops in from above, 4 card heights, in one board change (300 ms), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair", and a prize line for a bonus: "Hand bonus: +2 power jokers (bomb, reach)".
+Then the grid intro (0.20.0): any toast is hidden and a card fades in over the empty board, styled like the left-over warning (paper card, 20 pt from the phone's sides, the board dimmed 25% behind it). It reads:
+
+```
+  Score the grid
+  Your hand and crib counted 13 steps.        ("Your hand counted …" for the non-dealer)
+  Collect more steps for your step counter by matching crib hands on the grid.
+  Drag across touching cards that make fifteens, pairs, runs or flushes.
+  A set can use one card from your hand or crib, and the starter joins every set.
+  [ Start · 3:00 on the clock ]
+```
+
+The rule line follows config: `maxEdgeCards` (one card, or "up to N cards from your hand and crib", or left out with no limit) and `starterJoins`. The button names the timer as m:ss, or just "Start" with no timer. Only Start dismisses it; the session stays busy and the timer doesn't run until then. The demo and films don't show it.
+
+After Start, every grid column drops in from above, 4 card heights, in one board change (300 ms), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair", and a prize line for a bonus: "Hand bonus: +2 power jokers (bomb, reach)".
 
 Starting a new turn or game while the opening plays stops it. With animation off (snapshots), the turn shows at once, grid and all, with the counts' steps and bonus jokers included, and the bonus toast (both counts' lines, joined with " · ").
 
@@ -754,7 +769,7 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib RPG) has
 
 - Records: every game is written as a GameRecord file under the app's data folder, `Records/<YYYY-MM-DD>/<time>-crib-maze.jsonl` (ARCHITECTURE.md › GameRecord). Writing starts at the player's first choice, so a game opened and left leaves no file. The deal's hint is kept as a `deal_hint` note.
 - Diagnostics: slow motion and the frame meter (see Settings panel). A hitch is a frame that took over 1.5 times the display's frame time while something was moving.
-- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
+- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--intro` (the grid intro card over the empty board), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 
@@ -931,7 +946,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.19.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r26` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.20.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins
