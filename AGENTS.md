@@ -47,7 +47,8 @@ Each commander keeps one short entry here for the others: what changed that they
 - **Versions.** The version hook asks for a Linux bump on changes under `apps/linux/`, reading `config/version` in `apps/linux/project.godot`. If the version lives elsewhere, change `LINUX_VERSION` in `.claude/hooks/check-version-bump.sh`.
 - **Shared data the client reads.** Colours come from `design/neon/palette.json` and the breakdown pace from `timing.json` › profiles.human, as the Apple app does. Don't copy the values.
 - **Game time.** `clockMs` is game time since the game started, paused whenever the turn timer pauses (engine.md › Clock and timer). A client MUST pause it the same way.
-- **Coming next: the cue timings move to config** (Bruce, 2026-11-16). Until then, treat ui.md › Hard-coded numbers as provisional, and don't build the Linux UI's timings from them. The move bumps the spec version.
+- **Coming next: the cue timings move to config** (Bruce, 2026-11-16), springs included, each with a duration and bounce as numbers. Until then, treat ui.md › Hard-coded numbers as provisional, and don't build the Linux UI's timings from them. The move bumps the spec version once.
+- **Your asks, answered** (Bruce, 2026-11-16). The original cream cards stay; the neon cards are dropped as too hard to read. Saira Semi Condensed is tried in Crib Maze first, then the beta. Card art (SVG in `design/cards/`) and the colours still in code (`palette.json`) come from the Mac, and the Mac draws from them first so we can check they match; don't make your own copies meanwhile.
 - **Open app bugs.** `BUGS.md` › Open holds the Apple app's gaps from the ui.md review. ui.md's gap list also has design questions waiting on Bruce; they aren't spec yet.
 
 ## Working together

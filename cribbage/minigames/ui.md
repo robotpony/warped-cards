@@ -182,14 +182,14 @@ The app reads the table colours (`bg`, `text`, `panel`, `rim`, `cyan`, `magenta`
 | Tray stack | #A99E86, #CFC6B3 | The cards behind a tray card when you hold 2 or more |
 | Bezel | #111111 | Phone frame |
 
-Suit colours on card faces are the four-colour deck from cards.js: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D. palette.json's `suit` colours are for neon cards and aren't used yet.
+Suit colours on card faces are the four-colour deck from cards.js: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D. palette.json's `suit` colours are left from the neon cards, which were dropped on 2026-11-16 as too hard to read.
 
 ### Cards
 
 Cards are drawn in cards.js's 50 × 70 unit box, scaled to the card's width.
 
 - Face: rounded 4.5 units, card face fill, 1.2 unit card rule outline. The rank at top left (centre at 9, 10.5), 16 units bold (14 for a 10, tracked −1.2), and again rotated 180° at bottom right (41, 59.5). A large suit glyph in the centre (25, 35), 34 units. Suit glyphs MUST draw as text, never as emoji.
-- Special jokers: an inset border in joker purple at 50%, "JOKER" at the top and the kind's name at the bottom ("SWAP", "BOMB", "REACH", "BURN"), 8 units bold, and an icon: two arrows (swapper), a black bomb with a red spark (bomb), a red and gold flame (burn), a card with a dashed extra card and a red plus (reach). shapes.json has neon versions of the swap and bomb icons; the app doesn't use them yet.
+- Special jokers: an inset border in joker purple at 50%, "JOKER" at the top and the kind's name at the bottom ("SWAP", "BOMB", "REACH", "BURN"), 8 units bold, and an icon: two arrows (swapper), a black bomb with a red spark (bomb), a red and gold flame (burn), a card with a dashed extra card and a red plus (reach). shapes.json's neon swap and bomb icons belong to the dropped neon cards and aren't used.
 - Extra cards (amber, teal, title, blank): the kind's name in capitals, 7 units bold, card soft colour, centred.
 - Back: crosshatch at 45°, lines 3.4 units apart, 0.7 units wide, card soft at 70%, inside a 41 × 61 unit inner outline.
 
@@ -215,7 +215,7 @@ Selection and combo looks ease in over 120 ms. The pop springs over 300 ms with 
 
 ### Type
 
-The design face is Saira Semi Condensed (palette.json `fonts.ui`). Every build MUST bundle it from `design/fonts/saira-semi-condensed/` (decided 2026-11-16, so the builds look the same; Linux can't ship Apple's system font). The Apple app still uses the system font at its condensed width until it switches. Sizes in this spec are for Saira. palette.json's number face, Russo One, isn't used.
+The design face is Saira Semi Condensed (palette.json `fonts.ui`). Every build MUST bundle it from `design/fonts/saira-semi-condensed/` (decided 2026-11-16, so the builds look the same; Linux can't ship Apple's system font). The Apple app tries it in Crib Maze first (decided 2026-11-16); the beta keeps the system font at its condensed width until Bruce has seen the trial. Sizes in this spec are for Saira. palette.json's number face, Russo One, isn't used.
 
 Saira has no suit glyphs and no ★. Suits and the star MUST be drawn from `design/neon/shapes.json` (`S`, `H`, `D`, `C`, `star`) at the size and position the text would take, so every build draws the same shapes.
 
@@ -835,7 +835,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 15. The Command-N menu item is called "New Turn" but starts a new game.
 16. The deal always deals the bot's card first, even when the bot deals; the code comment says the dealer deals to the other player first.
 17. The drag hit area (70%) is fixed. ARCHITECTURE.md › Mac first, iOS later says it's a setting, as in the mock.
-18. Partly fixed in 0.15.2: the app reads the table colours from `palette.json`. It still doesn't read `shapes.json`, a few colours aren't in the palette (page, ink, the starter bed, the clock's green, orange and red, the left-over reds), and cards use the cards.js art, not the neon card values or icons.
+18. Partly fixed in 0.15.2: the app reads the table colours from `palette.json`. It still doesn't read `shapes.json`, a few colours aren't in the palette (page, ink, the starter bed, the clock's green, orange and red, the left-over reds), and the reach and burn icons are drawn only in Swift. Cards keep the cards.js art; the neon cards were dropped (2026-11-16).
 19. Fixed in 0.15.2: the app reads its breakdown base, step and minimum from `timing.json` › profiles.human, so tuning the file changes both the app and the simulator. The other `timing.json` numbers (Hard-coded numbers 2, 19) still aren't read.
 20. Config fallbacks disagree: with no config, edge power per level falls back to 50% in the info card and chips but 10% in the breakdown. Config failing to load shows an error screen, so this only matters if a field goes missing.
 21. Reduce Motion (ARCHITECTURE.md › Presenter and cues) isn't supported, and there are no sound or haptic switches yet (none are needed until sound and haptics exist).

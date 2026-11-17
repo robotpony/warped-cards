@@ -373,6 +373,8 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-15 | A game runs 5 to 13 hands. Maze size, circular paths and gates are scaled for a typical game in that range. Grid points are spent opening gates, hitting switches and shifting the maze; pegging moves the tokens, so both matter. How the split works: to design |
 | 2026-11-15 | The 3-turn game doesn't stay as a test mode: the maze replaces it shortly, and the game becomes hands until a player exits the maze. Made and burned cards last the whole game, across every hand. GameRecord comes next on the engine track, before more deck edits. The first human playtest follows a plan (`playtests/plan.md`), and the first GitHub release waits on it. The playtest waits for the maze, to test the whole sequence of a game |
 | 2026-11-15 | The maze will change, to be more of a board game with circular paths; its place in the round stays the same. Game length comes from the maze's size, its circular paths and clearing its gates. Gates take points or suits to open, or special jokers, which can be played during pegging on the maze |
+| 2026-11-16 | Cards keep the original cream art from `design/cards/cards.js`, with four-colour suits. The neon cards are dropped: they were too hard to read (Bruce) |
+| 2026-11-16 | One typeface for every build, Saira Semi Condensed, so the Mac and Linux builds look the same. The Mac tries it in Crib Maze first; the beta follows once Bruce has seen it |
 
 ## Open questions
 
