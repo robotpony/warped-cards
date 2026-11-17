@@ -1,6 +1,6 @@
 # Crib Maze: UI Spec
 
-Status: draft 1, 2026-11-16, from the beta app at 0.15.1, rules r23
+Status: draft 1, 2026-11-16, spec 1, from the beta app at 0.15.1, rules r23
 
 ## Summary
 

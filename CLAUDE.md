@@ -26,8 +26,13 @@ Swift is the first build, not the only one: Linux and Windows ports are planned,
 
 ## Versions and tracking
 
-- Versions are `major.minor.patch`, pre-1.0: patch for fixes, tweaks, refactors and docs; minor when a capability is added or removed; major only when Bruce asks. A borderline change is patch; a fix plus a feature is minor. The version lives in `MARKETING_VERSION` (`swift/App/project.yml`). The top `CHANGELOG.md` entry is the newest build a player would notice, so it can be older than the version. No build numbers, VERSION file or hand-made tags.
+- Two versions, kept apart (`PORTING.md` › Versions, decided 2026-11-16). The **spec version** (`specVersion` in `cribbage/minigames/spec.json`, a whole number) names the shared contract and bumps when a port would have to change something; a rules version bump always bumps it. Each platform has its own **build version**, below for the Apple build, and says which spec version it implements.
+- Build versions are `major.minor.patch`, pre-1.0: patch for fixes, tweaks, refactors and docs; minor when a capability is added or removed; major only when Bruce asks. A borderline change is patch; a fix plus a feature is minor. The version lives in `MARKETING_VERSION` (`swift/App/project.yml`). The top `CHANGELOG.md` entry is the newest build a player would notice, so it can be older than the version. No build numbers, VERSION file or hand-made tags.
 - `.claude/hooks/check-version-bump.sh` refuses a commit that changes the engine, the apps or `config/*.json` without a version bump. A build with nothing a player would notice still bumps (patch); it gets no changelog entry, only the commit message.
+
+## Agents
+
+Who works where, what each agent owns, and how they leave each other work: `AGENTS.md`. Agents on different machines talk through `PLAN.md`, `TODO.md` and `BUGS.md` lines that start with a handle in backticks, such as `` `@apple` ``. On starting, pull and grep for your handle.
 
 ## Commits
 

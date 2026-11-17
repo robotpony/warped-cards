@@ -121,3 +121,21 @@ test("the spec's status names the current rules version", () => {
   const status = spec.split('\n').find((l) => l.startsWith('Status:'));
   assert.ok(new RegExp(`\\b${r}\\b`).test(status), `engine.md's status line should cover ${r}: ${status}`);
 });
+
+// Versions (PORTING.md › Versions): spec.json names the rules version it covers, and the
+// specs a port reads name the spec version they describe.
+const specVersion = JSON.parse(read('cribbage/minigames/spec.json'));
+
+test('spec.json covers the current rules version', () => {
+  const rules = JSON.parse(read('cribbage/minigames/config/rules.json'));
+  assert.ok(Number.isInteger(specVersion.specVersion) && specVersion.specVersion > 0, 'spec.json: specVersion must be a whole number above 0');
+  assert.strictEqual(specVersion.rulesVersion, rules.rulesVersion, 'spec.json is behind config/rules.json: bump specVersion and its rulesVersion');
+});
+
+test('the specs name the current spec version', () => {
+  const want = new RegExp(`\\bspec ${specVersion.specVersion}\\b`, 'i');
+  for (const doc of ['cribbage/minigames/engine.md', 'cribbage/minigames/ui.md', 'PORTING.md']) {
+    const status = read(doc).split('\n').find((l) => l.startsWith('Status:'));
+    assert.ok(want.test(status), `${doc}'s status line should name spec ${specVersion.specVersion}: ${status}`);
+  }
+});

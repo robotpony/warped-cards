@@ -1,6 +1,6 @@
 # Porting
 
-Status: draft 1, 2026-11-16. Rules r23, app 0.15.2.
+Status: draft 2, 2026-11-16. Spec 1, rules r23, Apple build 0.15.2.
 
 ## Summary
 
@@ -80,6 +80,23 @@ Every place a build needs a platform's own feature sits behind an interface, wit
 
 Assets SHOULD be kept in open formats (WAV or OGG, PNG or SVG, JSON for patterns and palettes). Apple-only formats are built from them, not the other way round.
 
+## Versions
+
+Decided 2026-11-16. Two versions, kept apart:
+
+| Version | What it names | Where it lives | Bumped when |
+|---|---|---|---|
+| Spec version, `spec 1` | The shared contract: rules.md, engine.md, ui.md, config, fixtures and the record format | `specVersion` in [spec.json](cribbage/minigames/spec.json) | A port would have to change something: an action, event, field, fixture, config shape, record encoding or scene behaviour. Wording fixes don't bump it |
+| Build version, `0.15.2` | One platform's build | Each platform's own place (Apple: `MARKETING_VERSION` in `swift/App/project.yml`) | That platform's own testing and releases, as in CLAUDE.md › Versions and tracking |
+
+- The spec version is one whole number. It never resets.
+- A rules version bump (`match-r23` to `match-r24`) always bumps the spec version too. `spec.json` names the rules version it covers, and the drift check fails if that's behind `config/rules.json`.
+- The status lines of engine.md, ui.md and this doc name the spec version they describe.
+- Each build MUST say which spec version it implements and how far up the fixture rungs it passes, for example `Linux 0.1.0 · spec 1 · r23 · rungs 1 to 8`. Records and the About screen show this line.
+- Two builds that name the same spec version MUST play the same game from the same seed, config and actions. Their build versions can differ freely.
+
+Who works on which platform, and how agents leave each other work: [AGENTS.md](AGENTS.md).
+
 ## Keeping the spec true
 
 For every session working on the Swift build, not just porters:
@@ -88,7 +105,7 @@ For every session working on the Swift build, not just porters:
 - New numbers or tables go in config, and the config section of engine.md shows the file's shape.
 - New behaviour comes with a fixture a port can check, not only a Swift test. If the golden records don't reach it, add a record or a fixture case (fixtures/README.md › What the records don't reach yet).
 - Specs describe behaviour in plain words. They MUST NOT lean on one language's ideas (Swift's `Codable`, optionals, protocols, JS objects). Name the data, its order and its encoding.
-- `cribbage/minigames/fixtures/spec.test.js` (run by `scripts/check.sh`) fails when engine.md misses an action, an event or a field, when a config file's shape changes, or when the status line falls behind the rules version. Fix the spec, don't loosen the test.
+- `cribbage/minigames/fixtures/spec.test.js` (run by `scripts/check.sh`) fails when engine.md misses an action, an event or a field, when a config file's shape changes, or when the status lines fall behind the rules or spec version. Fix the spec, don't loosen the test.
 
 ## Status
 
@@ -107,6 +124,6 @@ For every session working on the Swift build, not just porters:
 
 ## Open questions
 
-1. Do ports share the app's version (`MARKETING_VERSION`), or keep their own and name the rules version they play?
+1. Answered 2026-11-16: each port keeps its own build version and names the spec version it implements (Versions).
 2. Which comes first off Apple: the Swift engine with a new UI, or another language? The Linux check above decides how much work the Swift path is.
 3. Should the UI's cue timings move into config (`timing.json` or `fx.json`) before a port, so a port reads them instead of copying numbers? ui.md lists the numbers that are written into code today.
