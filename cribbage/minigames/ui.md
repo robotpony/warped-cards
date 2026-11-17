@@ -1,6 +1,6 @@
 # Crib Maze: UI Spec
 
-Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.17.0, rules r23
+Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.17.1, rules r23
 
 ## Summary
 
@@ -735,7 +735,7 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib RPG) has
 
 - Records: every game is written as a GameRecord file under the app's data folder, `Records/<YYYY-MM-DD>/<time>-crib-maze.jsonl` (ARCHITECTURE.md › GameRecord). Writing starts at the player's first choice, so a game opened and left leaves no file. The deal's hint is kept as a `deal_hint` note.
 - Diagnostics: slow motion and the frame meter (see Settings panel). A hitch is a frame that took over 1.5 times the display's frame time while something was moving.
-- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match.
+- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window; `reference.sh --motion` films all four into `docs/images/reference/motion/`.
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 

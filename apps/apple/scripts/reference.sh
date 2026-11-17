@@ -1,6 +1,7 @@
 #!/bin/sh
 # Shoot the reference screenshots other builds match against, and write their README.
 #   apps/apple/scripts/reference.sh            Debug build of the beta, then every shot
+#   apps/apple/scripts/reference.sh --motion   the shots, then the slow-motion films (about 2 minutes)
 # Shots go to docs/images/reference/. Re-run whenever a scene changes (TODO.md, from @linux).
 set -eu
 cd "$(dirname "$0")/../../.."
@@ -67,3 +68,26 @@ echo "$SHOTS" | while IFS='|' read -r name flags what; do
   echo "| [$name]($name.png) | \`--seed 1${flags:+ $flags}\` | $what |" >> "$OUT/README.md"
 done
 echo "Wrote $(ls "$OUT"/*.png | wc -l | tr -d ' ') shots to $OUT"
+
+# `--motion`: also film the main cues at 5x slow motion (about 2 minutes), into $OUT/motion/.
+[ "${1:-}" = "--motion" ] || exit 0
+mkdir -p "$OUT/motion"
+cat > "$OUT/motion/README.md" <<EOF
+# Motion reference
+
+The main cues filmed from the Mac beta at 5x slow motion (\`fx.json\` › waits.slowMotion), seed 1, by \`apps/apple/scripts/reference.sh --motion\` from Apple build $VERSION, spec $SPEC. One second of video is a fifth of a second of game. The beta films its own offscreen window (\`--film <file> --cue <cue>\`); each frame is stamped with when it was taken, so the pace is true even where the frame rate dips (about 15 to 25 frames a second of video, 75 to 125 a second of game time).
+
+The numbers behind every motion are in \`config/fx.json\` and ui.md › Motion; these films are for checking a port's feel against them, not for reading values off.
+
+| Film | Shows |
+|---|---|
+EOF
+FILMS='deal|The deal: twelve cards in, one every 90 ms, each on a 300 ms spring (the throw needs a tap, so it is not here)
+trace|Tracing 8♥ then 7♣: the selected look on each card, the fifteen lighting, then the score pop with the breakdown off, and the board change as new cards fall in
+breakdown|A breakdown of A♥ 7♦ 6♦ A♦ (a fifteen, a pair, two edge cards): every cue in ui.md › Cue sheet, through the hold (the film does not wait) and the fly home
+bomb|A bomb armed, then fired on the top-left card: the bomb pop and the board change'
+echo "$FILMS" | while IFS='|' read -r cue what; do
+  perl -e 'alarm 240; exec @ARGV' "$APP" --film "$PWD/$OUT/motion/$cue.mp4" --cue "$cue" --seed 1
+  echo "| [$cue.mp4]($cue.mp4) | $what |" >> "$OUT/motion/README.md"
+done
+echo "Wrote $(ls "$OUT"/motion/*.mp4 | wc -l | tr -d ' ') films to $OUT/motion"

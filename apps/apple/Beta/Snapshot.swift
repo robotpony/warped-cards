@@ -3,6 +3,7 @@
 // (and `--deal [--pick 5H,5C] [--hint]`, `--breakdown g31,g21 [--stage N]`, `--settings`)
 // renders the play screen to a PNG and quits. Used to check the screen from scripts, where screen capture isn't available.
 import AppKit
+import AVFoundation
 import CribMaze
 import SwiftUI
 
@@ -30,6 +31,7 @@ import SwiftUI
             }
             return
         }
+        if let dir = value("--film") { Film.run(session, cue: value("--cue") ?? "deal", to: dir, seed: value("--seed").flatMap(UInt64.init) ?? 1); return }
         guard let out = value("--snapshot") else { return }
         session.animate = false
         if args.contains("--crib-off") { session.settings.dealer = false }
@@ -130,6 +132,90 @@ import SwiftUI
         let r = ImageRenderer(content: view); r.scale = 2
         if let img = r.nsImage, let tiff = img.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
             try? png.write(to: URL(fileURLWithPath: out))
+        }
+    }
+}
+
+/// `--film <file.mp4> --cue deal|trace|breakdown|bomb`: plays one cue in an offscreen window and
+/// films the window, so the video shows the cue five times slower than the game plays it
+/// (fx.json › waits.slowMotion). Screen capture isn't needed: the window draws itself. Drawing a
+/// frame takes about 120 ms, so the cue plays at 15x and each frame is stamped at a third of the
+/// time it was taken: about 24 frames a second of video.
+@MainActor enum Film {
+    static func run(_ session: GameSession, cue: String, to out: String, seed: UInt64) {
+        session.settings.timer = false
+        session.settings.deal = cue == "deal"
+        session.settings.breakdown = cue == "breakdown"
+        session.playback.autoContinue = true
+        session.newTurn(seed: seed)
+        let slow = fx.waits.slowMotion, filmed = slow * 3
+        Motion.scale = filmed
+        session.hideToast()
+        let size = CGSize(width: 450, height: 960)
+        let host = NSHostingView(rootView: PhoneView(session: session).padding(24).background(Theme.page).environment(\.colorScheme, .light))
+        host.frame = CGRect(origin: .zero, size: size)
+        let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        w.contentView = host
+        w.setFrameOrigin(NSPoint(x: -10000, y: -10000))
+        w.orderFrontRegardless()
+
+        // Each cue: what to do, at what game time in ms, and how long to film in all (game ms).
+        let s = { (n: String) in Board.parse(n)! }
+        let steps: [(Double, () -> Void)]
+        let length: Double
+        switch cue {
+        case "trace":   // a combo lighting as the trace grows, then the pop and the board change
+            steps = [(400, { session.selection = [s("g02")] }), (900, { session.selection = [s("g02"), s("g03")] }),
+                     (1500, { session.selection = []; session.submit([s("g02"), s("g03")]) })]
+            length = 3000
+        case "breakdown":
+            steps = [(400, { session.submit([s("g32"), s("g33"), s("c3"), s("h2")]) })]
+            length = 8000
+        case "bomb":
+            steps = [(400, { session.arm("bomb") }), (900, { session.submit([s("g00")]) })]
+            length = 2400
+        default:        // the deal: twelve cards in, then nothing (the throw needs a tap on the view)
+            steps = []
+            length = 2000
+        }
+
+        guard let writer = try? AVAssetWriter(outputURL: URL(fileURLWithPath: out), fileType: .mp4) else { exit(1) }
+        try? FileManager.default.removeItem(atPath: out)
+        let px = (w: Int(size.width * 2), h: Int(size.height * 2))
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: px.w, AVVideoHeightKey: px.h])
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB, kCVPixelBufferWidthKey as String: px.w, kCVPixelBufferHeightKey as String: px.h])
+        writer.add(input)
+        writer.startWriting()
+        writer.startSession(atSourceTime: .zero)
+
+        Task { @MainActor in
+            let start = Date()
+            var pending = steps, frame: Int64 = 0
+            while true {
+                let real = Date().timeIntervalSince(start), game = real * 1000 / filmed
+                while let next = pending.first, next.0 <= game { pending.removeFirst(); next.1() }
+                if game > length { break }
+                if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds), let pool = adaptor.pixelBufferPool, input.isReadyForMoreMediaData {
+                    host.cacheDisplay(in: host.bounds, to: rep)
+                    var buf: CVPixelBuffer?
+                    CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buf)
+                    if let buf, let img = rep.cgImage {
+                        CVPixelBufferLockBaseAddress(buf, [])
+                        let ctx = CGContext(data: CVPixelBufferGetBaseAddress(buf), width: px.w, height: px.h, bitsPerComponent: 8,
+                                            bytesPerRow: CVPixelBufferGetBytesPerRow(buf), space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                            bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
+                        ctx?.draw(img, in: CGRect(x: 0, y: 0, width: px.w, height: px.h))
+                        CVPixelBufferUnlockBaseAddress(buf, [])
+                        // Stamped with when it was taken, scaled to 5x, so a slow frame doesn't speed the video up.
+                        adaptor.append(buf, withPresentationTime: CMTime(seconds: real * slow / filmed, preferredTimescale: 600))
+                        frame += 1
+                    }
+                }
+                try? await Task.sleep(for: .milliseconds(2))   // lets the run loop step the animations
+            }
+            input.markAsFinished()
+            await writer.finishWriting()
+            exit(writer.status == .completed ? 0 : 1)
         }
     }
 }
