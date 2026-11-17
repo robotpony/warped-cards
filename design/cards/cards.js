@@ -109,7 +109,7 @@
 
   // ---- Extra cards in the deck: the title card and a blank ---------------
   // Placeholder art. With the amber and teal jokers (below), these are the deck's 4
-  // extra cards. Drawing one plays a reveal (Crib Maze rules › Jokers and extra cards).
+  // extra cards. Drawing one plays a reveal (Crib RPG rules › Jokers and extra cards).
 
   const EXTRAS = {
     title: { name: "Title card", note: "Turns into a prize when drawn" },

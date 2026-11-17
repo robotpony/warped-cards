@@ -1,6 +1,6 @@
-# Crib Maze: Maze Inspiration
+# Crib RPG: Maze Inspiration
 
-Status: research notes, 2026-11-14. What maze and race games do well that Crib Maze could borrow, gathered before the maze walk mock. Decisions stay in [concept.md](concept.md); this doc only feeds them. Rule summaries come mostly from fan wikis and rules sites (linked), so check numbers against official rulebooks before a spec quotes them.
+Status: research notes, 2026-11-14. What maze and race games do well that Crib RPG could borrow, gathered before the maze walk mock. Decisions stay in [concept.md](concept.md); this doc only feeds them. Rule summaries come mostly from fan wikis and rules sites (linked), so check numbers against official rulebooks before a spec quotes them.
 
 ## Summary
 
@@ -53,7 +53,7 @@ Betrayal at House on the Hill draws its house as you explore ([rules](https://ga
 
 Formula D's gear sets the die, from a d4 in first to a d30 in sixth, and you shift up one gear a turn ([Wikipedia](https://en.wikipedia.org/wiki/Formula_D_(board_game))). Camel Up moves 1 to 3 a die, and the excitement comes from stacking and betting ([rules](https://officialgamerules.org/game-rules/camel-up/)). Borrow a speed cap per move that rises by zone, with steps over the cap going somewhere useful.
 
-## Ideas for Crib Maze
+## Ideas for Crib RPG
 
 1. **Spend or convert.** Spend a bundle as steps, or turn it into door damage, a wall shift or a fog reveal. *Scale problem.*
 2. **Speed cap per zone.** At most 15, then 20, then 31 steps a move; overflow goes to a bank that can only be converted. *Scale problem.*

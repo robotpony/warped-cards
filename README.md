@@ -1,6 +1,6 @@
 # Noddy Yookerspiel (Cribbage Jokers)
 
-Cribbage with jokers, made into a video game: 1 player against 1 or 2 bots, on one standard 52-card deck plus a few jokers. You still discard to the crib, peg to 31 and count fifteens, but each round has two kinds of play, a scoring grid and pegging, and the points you make move you along a board that forks and holds prizes. The design docs use its working title, Crib Maze.
+Cribbage with jokers, made into a video game: 1 player against 1 or 2 bots, on one standard 52-card deck plus a few jokers. You still discard to the crib, peg to 31 and count fifteens, but each round has two kinds of play, a scoring grid and pegging, and the points you make move you along a board that forks and holds prizes. The design docs use its working title, Crib RPG.
 
 This repo, Warped Cards, holds the free card game demos and the specs, simulations and tests behind them.
 
@@ -52,7 +52,7 @@ Rendered from the beta with `--snapshot` (seed 2; seed 7 for the deck, with `--b
 
 | Game | What it is | Status |
 |---|---|---|
-| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib Maze) | Mac beta 0.14.0 (a 3-turn game: the deal, the scoring grid, and a deck that lasts the game), match rules r23, rules draft 5 |
+| Noddy Yookerspiel | Cribbage with jokers: a scoring grid in place of counting hands, pegging as in classic cribbage, and a maze in place of the pegboard (design name: Crib RPG) | Mac beta 0.14.0 (a 3-turn game: the deal, the scoring grid, and a deck that lasts the game), match rules r23, rules draft 5 |
 | Classic cribbage | The classic game, sharing the same engine | Engine spec and fixtures; no app yet |
 
 ## Downloads
@@ -137,7 +137,7 @@ The HTML mocks open straight from disk: see [mocks/README.md](cribbage/minigames
 
 ## Docs
 
-- Crib Maze: [rules](cribbage/minigames/rules.md) (player-facing), [concept](cribbage/minigames/concept.md) (intent, decisions, plan), [engine](cribbage/minigames/engine.md) (spec for ports), [stats](cribbage/minigames/stats.md), [ideation](cribbage/minigames/ideation.md), [maze inspiration](cribbage/minigames/maze-inspiration.md).
+- Crib RPG: [rules](cribbage/minigames/rules.md) (player-facing), [concept](cribbage/minigames/concept.md) (intent, decisions, plan), [engine](cribbage/minigames/engine.md) (spec for ports), [stats](cribbage/minigames/stats.md), [ideation](cribbage/minigames/ideation.md), [maze inspiration](cribbage/minigames/maze-inspiration.md).
 - App: [ARCHITECTURE.md](ARCHITECTURE.md) (Swift app, engine, records, effects) and [LIBRARIES.md](LIBRARIES.md) (tools and libraries).
 - Design: the [card renderer](design/cards/index.html) and the [neon asset gallery](design/neon/).
 - Tracking: [PLAN.md](PLAN.md), [TODO.md](TODO.md), [BUGS.md](BUGS.md), [CHANGELOG.md](CHANGELOG.md) (spec changes), [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md) (the Mac app).

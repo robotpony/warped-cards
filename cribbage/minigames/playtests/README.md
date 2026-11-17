@@ -1,4 +1,4 @@
-# Crib Maze playtests
+# Crib RPG playtests
 
 The first human playtest of the beta follows [plan.md](plan.md).
 

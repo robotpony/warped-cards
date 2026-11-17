@@ -1,4 +1,4 @@
-# Crib Maze mocks
+# Crib RPG mocks
 
 Clickable HTML mocks in an iPhone frame (393 x 852 pt, cards at 64 pt). Open the files straight from disk. Cards come from the shared renderer in `design/cards/cards.js`; scoring comes from `scoring.js`, shared by the mocks, with tests in `scoring.test.js` (run `node --test cribbage/minigames/mocks/` from the repo root).
 

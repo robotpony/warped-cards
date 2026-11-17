@@ -4,7 +4,7 @@ Status: agreed, 2026-11-14. Tools and libraries are listed in [LIBRARIES.md](LIB
 
 ## Summary
 
-The first app is a Mac beta of Crib Maze, built for playing, testing and tuning. It plays the match turn from the mocks first, records every game so it can be replayed and measured, and has a lab for trying animation, sound and haptic ideas. iOS follows from the same code.
+The first app is a Mac beta of Crib RPG, built for playing, testing and tuning. It plays the match turn from the mocks first, records every game so it can be replayed and measured, and has a lab for trying animation, sound and haptic ideas. iOS follows from the same code.
 
 The game and the UI are separate. The rules live in a pure Swift package with no UI, no wall clock and no unseeded randomness, so the same code runs the app, the bots, the simulator and the tests. Swift replaces the Python engine we'd planned: one rules implementation, not two. The numbers and tables the rules need live in JSON config files, and the engine spec is plain Markdown, so the engine can be ported later from the spec, the config and the test fixtures. The app sends the engine a player's choice and gets back what happened; a presenter turns that into animation, sound and haptics on a timeline.
 
@@ -22,7 +22,7 @@ Out of scope for now: online play, accounts, sync, sending logs from release bui
 ## Layers
 
 ```
-Crib Maze app (SwiftUI, Mac first, then iOS)
+Crib RPG app (SwiftUI, Mac first, then iOS)
   Scenes ............ match turn now; deal, pegging, maze, shop later
   Presenter ......... turns engine events into cues on a timeline
   GameFX ............ plays cues: animation, sound, haptics
@@ -36,16 +36,16 @@ Engine (Swift package, no UI)
   GameKit ........... game protocols, seeded dice, steps, clock time
   CardKit ........... cards, ranks, suits, decks, jokers
   CribbageKit ....... classic counting and pegging rules
-  CribMaze .......... Crib Maze rules: match turn, the game and its deck, jokers, config loading
+  CribMaze .......... Crib RPG rules: match turn, the game and its deck, jokers, config loading
   CribMazeBots ...... bots, from random to perfect
 
 GameRecord (Swift package target, reusable)                  [beta app only]
   writer, reader, replayer, generic counts
-CribMazeStats ...... Crib Maze stats over records             [beta app, CLI]
+CribMazeStats ...... Crib RPG stats over records             [beta app, CLI]
 cribmaze-sim ....... command-line simulator, replay checker, reports
 ```
 
-Arrows only point down. The engine knows nothing about the app, GameRecord or GameFX. GameRecord knows GameKit's protocols but not Crib Maze. GameFX knows nothing about cards.
+Arrows only point down. The engine knows nothing about the app, GameRecord or GameFX. GameRecord knows GameKit's protocols but not Crib RPG. GameFX knows nothing about cards.
 
 ## How a move flows
 
@@ -68,7 +68,7 @@ Bots use the same path. A bot picks an action from its view of the game, and Gam
 
 ### Core protocol
 
-Each game implements one protocol from GameKit. Classic cribbage and Crib Maze share it, so the simulator can run either.
+Each game implements one protocol from GameKit. Classic cribbage and Crib RPG share it, so the simulator can run either.
 
 ```swift
 public protocol GameRules {
@@ -106,7 +106,7 @@ public struct Step<G: GameRules>: Codable, Sendable {
 
 `GameRun<G>` in GameKit holds a game's state and dice and turns each action into a step: it numbers the steps, keeps only the rolls the action drew, and leaves the state as it was when an action is illegal. The beta, the simulator and the replayer all play through it.
 
-Crib Maze plays as `CribMazeGame`, a game of hands (`engine.md` › The game as steps). Each hand is a deal and a match turn now; pegging and the maze join the same hand as they're built, so a record holds 5 to 13 hands without a format change.
+Crib RPG plays as `CribMazeGame`, a game of hands (`engine.md` › The game as steps). Each hand is a deal and a match turn now; pegging and the maze join the same hand as they're built, so a record holds 5 to 13 hands without a format change.
 
 ### Rules for the engine
 
@@ -240,11 +240,11 @@ As built (format 1, 0.15.0):
 
 A record from another rules version MAY still replay in scripted mode, but stats MUST NOT pool records across rules versions (`stats.md` › Mock playtests).
 
-`cribmaze-sim replay <file or folder>... [--scripted] [--counts]` checks records from the command line and exits 1 if any differ; it says which step and which roll or event, and notes a record made under other rules. In scripted mode `Dice` hands back the recorded rolls and, at the first one out of step, says where and carries on from the seed, so the replay reports it instead of stopping. Each Crib Maze hand starts its dice again from the hand's seed (`Dice.reseed`); scripted dice carry on through their script.
+`cribmaze-sim replay <file or folder>... [--scripted] [--counts]` checks records from the command line and exits 1 if any differ; it says which step and which roll or event, and notes a record made under other rules. In scripted mode `Dice` hands back the recorded rolls and, at the first one out of step, says where and carries on from the seed, so the replay reports it instead of stopping. Each Crib RPG hand starts its dice again from the hand's seed (`Dice.reseed`); scripted dice carry on through their script.
 
 ### Stats
 
-GameRecord counts what any game has: events by type, rolls by stream and purpose (so the beta app can check that amber jokers really land 90, 9, 1), time between actions. CribMazeStats adds Crib Maze's own: steps per turn, singles and multis, combos, left-over costs, suits and ties, clear-board rate, prizes by tier, bot against person. Both run in the beta app's dashboard and in `cribmaze-sim report`.
+GameRecord counts what any game has: events by type, rolls by stream and purpose (so the beta app can check that amber jokers really land 90, 9, 1), time between actions. CribMazeStats adds Crib RPG's own: steps per turn, singles and multis, combos, left-over costs, suits and ties, clear-board rate, prizes by tier, bot against person. Both run in the beta app's dashboard and in `cribmaze-sim report`.
 
 ## Presentation and effects
 
@@ -311,7 +311,7 @@ A beta window that plays any cue, or any cue sheet from a record, on a test boar
 | Target | Bundle ID | Links | For |
 |---|---|---|---|
 | Noddy Yookerspiel (the beta) | `ca.robotpony.cribmaze.beta` | Engine, GameFX, GameRecord, CribMazeStats, beta tools | Bruce and testers: play, record, replay, tune |
-| Crib Maze | `ca.robotpony.cribmaze` | Engine, GameFX | Players |
+| Crib RPG | `ca.robotpony.cribmaze` | Engine, GameFX | Players |
 
 Two targets, not one target with a flag: a release build can't reach tracking code by mistake, because it isn't linked. The targets share every scene; the beta target adds its tools and wires a `RecordWriter` into GameSession at its one composition root. They install side by side with different bundle IDs. Both start as Mac apps, on macOS 26; the iOS destinations, on iOS 26, get added to the same targets later.
 
@@ -367,7 +367,7 @@ engine/swift/
     GameRecord/  CribMazeStats/  GameFX/  cribmaze-sim/
   Tests/ ................... one test target per module
 apps/apple/
-  project.yml ............ XcodeGen: Crib Maze, Noddy Yookerspiel
+  project.yml ............ XcodeGen: Crib RPG, Noddy Yookerspiel
   Shared/ ................ scenes, presenter, GameSession
   Beta/ .................. records, replay, stats, animation lab, tuning
   Resources/ ............. sounds, haptic patterns, card art
@@ -420,7 +420,7 @@ Each phase ends with something that runs. Phases A to D are engine work and can 
 
 ## Card counting: why fresh
 
-Crib Maze counts more than a cribbage hand. A set is up to 5 cards traced on a grid, every card must belong to a combo or cost steps, combos light up card by card while tracing, sets carry a suit (or none on a tie), and bots search the board for sets. So the counter needs to report which cards each combo uses, not just a total, and it has to be fast enough for a perfect bot to check every path. Classic hands and pegging still need to score exactly as classic cribbage does, per SCOREKEEP's rules doc.
+Crib RPG counts more than a cribbage hand. A set is up to 5 cards traced on a grid, every card must belong to a combo or cost steps, combos light up card by card while tracing, sets carry a suit (or none on a tie), and bots search the board for sets. So the counter needs to report which cards each combo uses, not just a total, and it has to be fast enough for a perfect bot to check every path. Classic hands and pegging still need to score exactly as classic cribbage does, per SCOREKEEP's rules doc.
 
 The plan: write CribbageKit from the engine spec, with combos as first-class results (kind, cards, points). The shared fixtures check it, starting with every case in `scoring.test.js` plus classic hands with known counts (29, 28, 24, 0, his nobs, flush rules for hand and crib). When the fixtures pass, run ScorekeepCore's counting over the same classic hands as a cross-check. If Scorekeep's code turns out to do the classic part well, we'll talk about sharing it then.
 

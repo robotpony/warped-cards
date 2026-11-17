@@ -4,12 +4,12 @@ The tracker for Warped Cards' work, phase by phase. Each item is one line that p
 
 Where things live:
 
-- **Concept, decisions and learnings for each game:** the game's `concept.md` (Crib Maze: [cribbage/minigames/concept.md](cribbage/minigames/concept.md)).
+- **Concept, decisions and learnings for each game:** the game's `concept.md` (Crib RPG: [cribbage/minigames/concept.md](cribbage/minigames/concept.md)).
 - **Player-facing rules:** the game's `rules.md`. **Stats and the simulator:** `stats.md`.
 - **Mocks and their findings:** `mocks/README.md`. **Playtest data and plans:** `playtests/`.
 - **Small next tasks:** [TODO.md](TODO.md). **Bugs:** [BUGS.md](BUGS.md). **Changes:** [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md) (the Mac app), [CHANGELOG.md](CHANGELOG.md) (spec).
 
-Phases are Crib Maze's, as in its concept doc's Plan section. Two tracks run side by side: design (rules and mocks) and engine (spec, Swift engine, simulator). The Mac beta app follows the engine; iOS comes after it. How the code fits together: [ARCHITECTURE.md](ARCHITECTURE.md).
+Phases are Crib RPG's, as in its concept doc's Plan section. Two tracks run side by side: design (rules and mocks) and engine (spec, Swift engine, simulator). The Mac beta app follows the engine; iOS comes after it. How the code fits together: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 A game, as decided 2026-11-15: title, menu, start, cut for first dealer, then hands (deal, scoring grid, shop, pegging on the maze) until a player exits the maze, in 5 to 13 hands (`concept.md` › Decisions).
 

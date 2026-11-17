@@ -1,4 +1,4 @@
-# Crib Maze: Concept
+# Crib RPG: Concept
 
 Status: concept, 2026-11-14. Working title. The match turn has been mocked and bot-tested (match rules r15); nothing else has been playtested or simulated, so most numbers here are starting guesses.
 
@@ -6,7 +6,7 @@ The player-facing rules are in [rules.md](rules.md). How we measure and tune the
 
 ## Summary
 
-Crib Maze is cribbage made into a video game for iPhone. You still build a hand, throw to the crib and peg to 31, but your points move a token through a maze instead of a peg along a board. Scoring your hand becomes a match game played on a grid of cards. Prizes from the maze and from big matches add cards and powers to the game, so every game builds up differently.
+Crib RPG is cribbage made into a video game for iPhone. You still build a hand, throw to the crib and peg to 31, but your points move a token through a maze instead of a peg along a board. Scoring your hand becomes a match game played on a grid of cards. Prizes from the maze and from big matches add cards and powers to the game, so every game builds up differently.
 
 One human plays against one or two bots. A game lasts about as long as classic cribbage.
 
@@ -238,11 +238,11 @@ What the mocks and bot runs have taught us so far. Details and numbers are in [m
 
 ## Working title
 
-"Crib Maze" is a placeholder. The Mac release app is called Crib RPG from 0.17.0 (Bruce, 2026-11-16), also known as Noddy Yookerspiel (the beta) or Crib Jokers; the game itself is still Crib Maze in the docs. Options to react to (none checked yet against existing games or App Store names):
+The game is Crib RPG (Bruce, 2026-11-16), also known as Noddy Yookerspiel (the Mac beta) or Crib Jokers. It was Crib Maze until then, and code names keep that: the `CribMaze` target and package, `CribMazeGame`, and the record ID `crib-maze`, since records and ports depend on them. Crib RPG still needs a name search before it is used publicly. The options weighed before (none checked against existing games or App Store names):
 
 | Name | Why it might work |
 |---|---|
-| Crib Maze | Plain and clear: says what it is |
+| Crib Maze | Plain and clear: says what it is (the working title until 2026-11-16) |
 | Cribyrinth | A pun on labyrinth; memorable, a little silly |
 | Warped Crib | Fits the warped family of projects; hints that the rules bend |
 | Fifteen Two | The first words of every cribbage count; players will know it at once |
@@ -251,7 +251,7 @@ What the mocks and bot runs have taught us so far. Details and numbers are in [m
 | Thirty-One Ways | The pegging count plus routes through the maze |
 | Crooked Crib | A crib board that doesn't go straight |
 
-We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descriptive subtitle ("Fifteen Two: a cribbage maze"). Any choice needs a name search before it's used publicly.
+Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with Crib Maze as the descriptive subtitle.
 
 ## Decisions
 
@@ -376,6 +376,7 @@ We lean toward Fifteen Two or Pegway for an app name, and Crib Maze as the descr
 | 2026-11-16 | Cards keep the original cream art from `design/cards/cards.js`, with four-colour suits. The neon cards are dropped: they were too hard to read (Bruce) |
 | 2026-11-16 | One typeface for every build, Saira Semi Condensed, so the Mac and Linux builds look the same. The Mac tries it in Crib Maze first; the beta follows once Bruce has seen it |
 | 2026-11-16 | The Mac release app is renamed Crib RPG (was Crib Maze), also known as Noddy Yookerspiel or Crib Jokers (Bruce). Its bundle ID and target stay `cribmaze`, so settings carry over |
+| 2026-11-16 | The game is renamed Crib RPG in the specs and the app, not only the Mac app (Bruce). Code names, the record ID `crib-maze` and history (changelogs, dated decisions) keep Crib Maze |
 | 2026-11-16 | App icon: four cream cards in a 2 × 2 grid, one suit each, on joker purple with a gold star where they meet; no text. One set of layers in `design/icon/` exported for macOS, iOS, Linux and web, with a simpler favicon |
 
 ## Open questions

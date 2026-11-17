@@ -1,4 +1,4 @@
-# Crib Maze for Apple platforms
+# Crib RPG for Apple platforms
 
 The SwiftUI app for Mac (iOS later), in two editions: Crib RPG, the release app (Crib Maze before 0.17.0), and Noddy Yookerspiel, the beta with records, replay and tuning tools. It uses the Swift engine in [engine/swift/](../../engine/swift/) and reads the shared config and design data where they are. Owned by `@apple` ([AGENTS.md](../../AGENTS.md)).
 
@@ -26,7 +26,7 @@ The Xcode project (`CribMaze.xcodeproj`) is generated from [project.yml](project
 project.yml    XcodeGen: both apps, the engine package, the bundled config and palette
 Shared/        scenes, GameSession, effects, theme
 Beta/          Noddy Yookerspiel only: records, replay, snapshots
-Release/       Crib Maze's stand-ins for the beta's tools
+Release/       Crib RPG's stand-ins for the beta's tools
 scripts/       debug.sh (build and run), release.sh (sign, notarize, publish; RELEASING.md)
 ```
 

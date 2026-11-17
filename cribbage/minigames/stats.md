@@ -1,4 +1,4 @@
-# Crib Maze: Stats and Simulator
+# Crib RPG: Stats and Simulator
 
 Status: ideation, 2026-11-14. Phase 2 of the plan in [concept.md](concept.md).
 
@@ -29,7 +29,7 @@ What we compare:
 - Bot against bot: random, greedy and planning, and the same bot with different skill settings, such as how well they find sets.
 - Seat against seat: dealer first or second, and seat order with 3 players.
 - Rules against rules: the same bots under two rule sets (A/B), so a rule change shows its effect directly.
-- Crib Maze against classic: the same bots playing classic cribbage, with points instead of steps.
+- Crib RPG against classic: the same bots playing classic cribbage, with points instead of steps.
 
 What we look for:
 

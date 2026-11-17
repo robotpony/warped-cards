@@ -1,6 +1,6 @@
 # App icon
 
-Crib Maze's icon on every platform: four cream cards in a 2 × 2 grid, one suit each in the four-colour deck, on joker purple, with a gold star where the cards meet. No text; the app name sits under the icon (Bruce, 2026-11-16, version E2 in `index.html`).
+Crib RPG's icon on every platform: four cream cards in a 2 × 2 grid, one suit each in the four-colour deck, on joker purple, with a gold star where the cards meet. No text; the app name sits under the icon (Bruce, 2026-11-16, version E2 in `index.html`).
 
 ## Source
 

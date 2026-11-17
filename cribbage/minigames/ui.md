@@ -1,10 +1,10 @@
-# Crib Maze: UI Spec
+# Crib RPG: UI Spec
 
 Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.17.1, rules r23
 
 ## Summary
 
-This spec describes how the Crib Maze beta app (Noddy Yookerspiel, `apps/apple`) looks and behaves above the engine: its scenes, what the player can do in each, what plays when the engine reports something, and how long it takes. It is written so a port to Linux or Windows, in another language and UI toolkit, can rebuild the same game feel without reading Swift.
+This spec describes how the Crib RPG beta app (Noddy Yookerspiel, `apps/apple`) looks and behaves above the engine: its scenes, what the player can do in each, what plays when the engine reports something, and how long it takes. It is written so a port to Linux or Windows, in another language and UI toolkit, can rebuild the same game feel without reading Swift.
 
 The engine is specced in [engine.md](engine.md). This spec starts where that one stops: the app sends the engine actions and gets back events, and everything here is how those events reach the player. Player-facing names come from [rules.md](rules.md). The HTML match turn mock is frozen at r16; from r17 on, the beta app is the only source of truth for UI behaviour, and this spec records it.
 

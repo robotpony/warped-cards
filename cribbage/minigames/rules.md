@@ -1,10 +1,10 @@
-# Crib Maze: Rules
+# Crib RPG: Rules
 
 Status: draft 5, 2026-11-15. Match turns follow match rules r22. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
-Crib Maze (in the app, Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage. Then, instead of counting your hand, you play it in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
+Crib RPG (in the app, Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage. Then, instead of counting your hand, you play it in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
 
 The first token to reach the goal wins.
 
@@ -60,7 +60,7 @@ Cut and turn up the starter as in classic cribbage. If it's a Jack, the dealer s
 
 ### 3. Match turns: the scoring grid
 
-In classic cribbage you'd count your hand after pegging. In Crib Maze, each player takes a match turn on the scoring grid instead, before pegging, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
+In classic cribbage you'd count your hand after pegging. In Crib RPG, each player takes a match turn on the scoring grid instead, before pegging, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
 The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 

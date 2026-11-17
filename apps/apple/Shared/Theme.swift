@@ -81,7 +81,7 @@ enum Theme {
     static let edgePad: CGFloat = 6
     static let edgePadOuter: CGFloat = 9
 
-    /// Whether the UI face is Saira Semi Condensed (design/fonts/, bundled into both apps). Crib Maze
+    /// Whether the UI face is Saira Semi Condensed (design/fonts/, bundled into both apps). Crib RPG
     /// uses it; the beta keeps the system font at its condensed width unless launched with `--saira`
     /// (Bruce, 2026-11-16: try it in the release app, Crib RPG, first). ui.md › Type.
     static let saira: Bool = {

@@ -2,9 +2,10 @@
 
 Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 
-## Crib Maze
+## Crib RPG
 
 - [ ] `@apple` Use the app icon from `design/icon/` in both Apple targets: Icon Composer layers, or the `export/apple` PNGs with the light one flattened (design/icon/README.md) (Bruce, 2026-11-16)
+- [ ] `@linux` The game is Crib RPG now (was Crib Maze): rename it where players or docs see it in `apps/linux/` (`project.godot`'s name, README). Keep code names and the record ID `crib-maze` (concept.md › Working title) (from `@apple`, 2026-11-16)
 - [ ] `@linux` Use the app icon from `design/icon/export/linux` for the Godot app and its `.desktop` entry (design/icon/README.md) (Bruce, 2026-11-16)
 - [x] `@apple` Move `swift/` to `engine/swift/` and `apps/apple/`, in one patch build (PORTING.md › Layout › Moving there) (from `@linux`, 2026-11-16)
 - [x] `@apple` Show the build line (`Mac 0.15.2 · spec 1 · r23`) on the About screen and add `specVersion` to the record header, with engine.md › Records updated (PORTING.md › Versions) (from `@linux`, 2026-11-16)
@@ -14,7 +15,7 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 - [x] `@apple` Slow-motion recordings (5x) of the cues, as WebM or MP4 or frame sequences: a trace, a breakdown, a pop, a board change, the deal. Stills can't show motion (from `@linux`, 2026-11-16)
 - [x] `@apple` Draw the cards from the SVGs in `design/cards/` (README there) instead of `CardView.swift`'s own paths, text drawn by the app, and check the Mac looks the same before Linux uses them. (ui.md › Cards; the original cards stay, Bruce 2026-11-16) (from `@linux`, 2026-11-16; SVGs from the card guru designer session, 5a19fe5)
 - [x] `@apple` Colours still in code go into `palette.json`: page, ink, card face, rule and soft, the four-colour suits, starter bed, clock colours, left-over reds. The Mac reads them first, so we can check it looks the same before Linux uses them (ui.md › Look, Gaps 18) (from `@linux`, 2026-11-16)
-- [x] `@apple` Try Saira Semi Condensed in Crib Maze (the `CribMaze` target) first: bundle it from `design/fonts/saira-semi-condensed/` and draw suits and ★ from `shapes.json`, since Saira has neither, and set the real suit size in `design/cards/face-sample.svg` (24 units is a guess). The beta switches once Bruce has seen it (ui.md › Type; Bruce 2026-11-16) (from `@linux`, 2026-11-16)
+- [x] `@apple` Try Saira Semi Condensed in Crib RPG (the `CribMaze` target) first: bundle it from `design/fonts/saira-semi-condensed/` and draw suits and ★ from `shapes.json`, since Saira has neither, and set the real suit size in `design/cards/face-sample.svg` (24 units is a guess). The beta switches once Bruce has seen it (ui.md › Type; Bruce 2026-11-16) (from `@linux`, 2026-11-16)
 - [ ] `@bruce` Look at Saira in Crib RPG (or the beta with `--saira`): keep it, and move the beta over? The window grows about 25 pt with it. The beta's look waits on this (ui.md › Type) (from `@apple`, 2026-11-16)
 - [x] `@linux` Spec 2: record headers carry `specVersion`, and `GameRules` gains `static var specVersion` (engine.md › Records › Lines; CHANGELOG.md) (from `@apple`, 2026-11-16)
 - [x] `@linux` The version hook reads the Linux build version from `apps/linux/project.godot` (`config/version`); change `LINUX_VERSION` in `.claude/hooks/check-version-bump.sh` if it lives elsewhere (from `@apple`, 2026-11-16)

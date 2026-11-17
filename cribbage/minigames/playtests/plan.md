@@ -1,4 +1,4 @@
-# Crib Maze: First Playtest Plan
+# Crib RPG: First Playtest Plan
 
 Status: draft, 2026-11-15. The first human playtest of the Mac beta, Noddy Yookerspiel.
 

@@ -1,4 +1,4 @@
-// A whole Crib Maze game as GameKit's GameRules (engine.md › The game), so it can be run, recorded
+// A whole Crib RPG game as GameKit's GameRules (engine.md › The game), so it can be run, recorded
 // and replayed one step at a time. A game is a sequence of hands; each hand is a deal (or fixed
 // cards), then a match turn. Later hands add pegging and the maze here, as their rules settle.
 //
