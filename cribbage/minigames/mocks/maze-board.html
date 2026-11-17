@@ -42,7 +42,16 @@
   .screen { position: absolute; inset: 0; padding: 54px 10px 14px; display: flex; flex-direction: column; gap: 6px; }
   .top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); padding: 0 4px; }
   .phase { font-weight: 800; letter-spacing: .08em; font-size: 11px; color: var(--bg); background: var(--gold); border-radius: 999px; padding: 1px 8px; }
-  .players { display: flex; gap: 4px; }
+  .hdr { display: flex; gap: 8px; align-items: stretch; padding: 0 2px; }
+  .hand { flex: none; display: flex; flex-direction: column; justify-content: center; line-height: 1; padding-right: 4px; }
+  .hand b { font-size: 26px; font-weight: 800; color: var(--text); } .hand span { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .hand small { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .players { display: flex; gap: 4px; flex: 1; min-width: 0; }
+  .pl { cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .pl .rk { font-size: 15px; font-weight: 800; } .pl .pc { font-size: 13px; color: var(--muted); }
+  .mazewrap { position: relative; flex: none; }
+  .tip { position: absolute; left: 8px; right: 8px; bottom: 8px; background: rgba(10,14,31,.94); border: 1.5px solid var(--gold); border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0,0,0,.5); cursor: pointer; }
+  .tip[hidden] { display: none; } .tip b { color: var(--gold); } .tip p { margin: 0; } .tip p + p { margin-top: 4px; }
   .pl { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--rim); border-radius: 9px; padding: 3px 6px; font-size: 12px; line-height: 1.25; }
   .pl.now { border-color: var(--gold); box-shadow: 0 0 8px rgba(255,212,71,.35); }
   .pl .nm { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 13px; }
@@ -59,8 +68,6 @@
   .play small { display: block; font-size: 11px; }
   .play small i { font-style: normal; font-weight: 700; }
   .play.sel { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 16px rgba(255,212,71,.7); transition: transform .12s; }
-  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; font-size: 11px; color: var(--muted); padding: 2px 6px 0; }
-  .legend span { display: inline-flex; align-items: center; gap: 4px; } .legend svg { flex: none; }
   .play.off { cursor: default; }
   /* Play sheet: choosing a play covers the plays with its choices, one row each, and Cancel last. */
   .dock { position: relative; }
@@ -91,10 +98,9 @@
 <main>
   <div class="phone" aria-label="The maze board on a phone">
     <div class="screen">
-      <div class="top"><span id="handLabel">Hand 1</span><span class="phase">PEGGING</span><span id="seedLabel"></span></div>
-      <div class="players" id="players"></div>
-      <svg class="maze" id="maze" role="img" aria-label="The maze"><g id="mazeCam"></g><g id="mazeHud"></g></svg>
-      <div class="legend" id="legend"></div>
+      <div class="hdr"><div class="hand" id="handLabel"></div><div class="players" id="players"></div></div>
+      <div class="mazewrap"><svg class="maze" id="maze" role="img" aria-label="The maze"><g id="mazeCam"></g><g id="mazeHud"></g></svg>
+        <div class="tip" id="tip" hidden></div></div>
       <div class="prompt" id="prompt" aria-live="polite"></div>
       <div class="dock" id="dock"></div>
     </div>
@@ -106,7 +112,7 @@
     <p class="muted">v3, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). The maze is maze-walk's seeded grid maze in the neon look, sized up so one step is one point.</p>
 
     <div class="card">
-      <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button></label>
+      <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button> <span class="muted" id="mazeSize"></span></label>
       <label>Route <select id="length"><option value="600" selected>600 steps</option><option value="900">900 steps</option><option value="1200">1,200 steps</option></select> <span class="muted" id="sizeNote"></span></label>
       <label>Doors on the route <select id="doors"><option value="4">4</option><option value="6" selected>6</option><option value="9">9</option></select>
         strength <select id="doorBase"><option value="12:6" selected>12, 18, 24 …</option><option value="20:10">20, 30, 40 …</option><option value="30:15">30, 45, 60 …</option></select></label>
@@ -579,7 +585,7 @@
     doWalk(p, a.act === "walk" ? a.play : left(p)[0], endTurn);
   }
   function botLive() { const p = cur(); if (p.human || G.won !== null || G.phase !== "maze" || G.anim) return; applyBot(p); }
-  function endTurn() { G.sel = null; G.mode = null; if (!G.headless) render(); if (G.headless) return; later(nextTurn, 150); }
+  function endTurn() { G.sel = null; G.mode = null; if (!G.headless) showTip(null); if (!G.headless) render(); if (G.headless) return; later(nextTurn, 150); }
 
   // ---------- Bot runs: whole games, every seat a bot, no animation ----------
   // One game a tick, so the page stays responsive; progress(k) after each game, done(html) at the end.
@@ -709,15 +715,16 @@
     }
     $("mazeHud").innerHTML = hud;
     if ((an || !settled) && !G.raf) G.raf = requestAnimationFrame(frame);
-    if (!$("legend").innerHTML) $("legend").innerHTML = legend();
 
     const F = an ? (G.lastF || field()) : (G.lastF = field());
-    $("handLabel").textContent = `Hand ${G.hand} · ${G.dealer === 0 ? "your deal" : G.P[G.dealer].name + " deals"}`;
-    $("seedLabel").textContent = `seed ${G.seedText} · ${M.W}×${M.H}`;
-    $("players").innerHTML = G.P.map(p => {
-      const now = G.phase === "maze" && G.turn === p.seat && G.won === null, l = left(p);
-      return `<div class="pl${now ? " now" : ""}"><div class="nm"><svg width="14" height="14" viewBox="0 0 20 20">${tokenIcon(p.seat)}</svg>${p.name}</div>` +
-        `<b>${Math.round(F[posOf(p)])}</b> to go · ${l.length} ${l.length === 1 ? "play" : "plays"}, ${l.reduce((a, x) => a + x.p, 0)} steps</div>`;
+    $("handLabel").innerHTML = `<span>Hand</span><b>${G.hand}</b>`;
+    $("mazeSize").textContent = `${M.W}×${M.H} maze`;
+    // Players: place (1st, 2nd, 3rd by distance to the goal) and % of the way still to go. Tap for more.
+    const F0 = F[M.start] || 1, dist = G.P.map(p => F[posOf(p)]);
+    $("players").innerHTML = G.P.map((p, k) => {
+      const now = G.phase === "maze" && G.turn === p.seat && G.won === null, rank = 1 + dist.filter(v => v < dist[k]).length;
+      return `<div class="pl${now ? " now" : ""}" data-who="${p.seat}" title="${p.name}"><svg width="16" height="16" viewBox="0 0 20 20">${tokenIcon(p.seat)}</svg>` +
+        `<span class="rk">${["1st", "2nd", "3rd"][rank - 1]}</span><span class="pc">${Math.min(100, Math.round(100 * dist[k] / F0))}%</span></div>`;
     }).join("");
 
     let prompt = "";
@@ -731,7 +738,7 @@
     else if (G.mode === "bomb") prompt = "Tap a wall beside you";
     else if (G.mode === "burn") prompt = "Tap a door to burn";
     else if (G.sel) prompt = pv ? `${G.sel.p} steps: ${pv.won ? "reaches the goal!" : `ends ${Math.round(previewCost(pv))} from the goal`}${pv.ev.includes("bounce") ? " · bounces" : ""}${pv.ev.includes("door_hit") ? " · hits a door" : ""}` : "";
-    else prompt = "Your turn: pick a play";
+    else prompt = "";
     $("prompt").textContent = prompt;
 
     let d = "";
@@ -789,20 +796,6 @@
     return `<path transform="translate(${x} ${y}) rotate(${ang})" d="M${o - k * .5} ${-k}L${o + k * .5} 0L${o - k * .5} ${k}" fill="none" stroke="${hot ? "#FFD447" : "#3CF2FF"}" ` +
       `stroke-width="${Math.max(hot ? 2.2 : 1.4, cs * (hot ? .07 : .045))}" stroke-linecap="round" stroke-linejoin="round" opacity="${hot ? 1 : .45}"/>`;
   }
-  // The key under the maze: each piece drawn with the same code as on the board.
-  function legend() {
-    const ic = (w, inner, h = 22) => `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="overflow:visible">${inner}</svg>`;
-    const items = [
-      [ic(18, `<g transform="translate(-1 -1)">${tokenIcon(0)}</g>`), "you"],
-      [ic(18, `<g transform="translate(-1 -1)">${tokenIcon(1)}</g>`), "bot"],
-      [ic(18, junctionMark(4, 11, 40, 1, true)), "junction"],
-      [ic(24, doorMark(12, 13, 20, true, { suit: "H", strength: 12, damage: 0 }), 26), "door"],
-      [ic(22, A.gate(11, 11, 22, true, "S")), "gate"],
-      [ic(22, switchMark(11, 11, 22, true, { sw: 0 })), "switch"],
-      [ic(22, A.prize(0, 0, 22)), "star"],
-    ];
-    return items.map(([svg, t]) => `<span>${svg}${t}</span>`).join("");
-  }
   function tokenIcon(seat) {
     const st = `fill="${A.P.tokens[seat]}" stroke="#fff" stroke-width="1.5"`;
     return seat === 0 ? `<circle cx="10" cy="10" r="6" ${st}/>` : seat === 1 ? `<rect x="4.5" y="4.5" width="11" height="11" rx="2" ${st}/>` : `<polygon points="10,3.5 17,15.5 3,15.5" ${st}/>`;
@@ -840,9 +833,42 @@
   }
 
   // ---------- Input ----------
+  // Tapping the maze explains what's there (when no tap is being asked for).
+  const WAYS = ["up", "right", "down", "left"];
+  function explainAt(ev) {
+    const M = G.M, r = $("maze").getBoundingClientRect(), cs = G.view.cs;
+    const wx = (ev.clientX - r.left) * (V / r.width) + G.cam[0], wy = (ev.clientY - r.top) * (V / r.height) + G.cam[1];
+    const x = Math.floor(wx / cs), y = Math.floor(wy / cs); if (x < 0 || y < 0 || x >= M.W || y >= M.H) return null;
+    const i = M.id(x, y), fx = wx / cs - x, fy = wy / cs - y, out = [];
+    // The passage nearest the tap, if the tap is near a cell's side.
+    const side = [[fy, 0], [1 - fx, 1], [1 - fy, 2], [fx, 3]].sort((a, b) => a[0] - b[0])[0];
+    const e = side[0] < .3 ? M.adj[i * 4 + side[1]] : null;
+    const sname = (q) => q ? `<span style="color:${SUITCOL[q]}">${GLYPH[q]}</span>` : "no suit";
+    if (e && e.kind === "door") out.push(`<b>Door ${sname(e.suit)}, ${e.strength - e.damage} left</b> (of ${e.strength}). Only ${e.suit ? sname(e.suit) : "any"} steps wear it down, and steps spent on it don't move you. Another suit stops here and loses the rest of its walk.${e.closedBy !== undefined ? ` Closed by ${G.P[e.closedBy].name}.` : ""}`);
+    else if (e && e.broken) out.push(`<b>A broken door.</b> Open for everyone.`);
+    else if (e && e.kind === "gate") out.push(`<b>Gate ${sname(e.suit)}.</b> Only ${sname(e.suit)} steps pass, and it never wears down. Another suit bounces off: one step into it, then the rest of the walk goes back.`);
+    else if (e && e.kind === "switch") out.push(`<b>Switch ${LETTERS[e.sw]}</b>, now ${e.on ? "open" : "shut"}. Flipping it (with a play) swaps it with its pair, for everyone, once a hand.`);
+    for (const p of G.P) if (p.pos === i) out.push(`<b>${p.name}</b>${p.human ? "" : ` (${STYLES[G.c.styles[p.seat]]} bot)`}: ${left(p).length} plays left.`);
+    if (i === M.goal) out.push(`<b>The goal.</b> The first token here wins.`);
+    if (i === M.start) out.push(`<b>The start.</b>`);
+    if (M.prizes.has(i)) out.push(`<b>A star.</b> End a walk here to win a joker.`);
+    if (isJunction(M, i)) out.push(`<b>A junction.</b> The next token through goes ${WAYS[M.ptr[i]]}; then it turns to the next way, so the one after goes another way.`);
+    if (!out.length) out.push(`An open path.`);
+    return out.map(t => `<p>${t}</p>`).join("");
+  }
+  function showTip(html) { const t = $("tip"); if (!html) { t.hidden = true; return; } t.innerHTML = html; t.hidden = false; }
+  $("tip").addEventListener("click", () => showTip(null));
+  $("players").addEventListener("click", (ev) => {
+    const el = ev.target.closest("[data-who]"); if (!el) return;
+    const p = G.P[+el.dataset.who], l = left(p), F = field();
+    showTip(`<p><b>${p.name}</b>${p.human ? "" : ` · ${STYLES[G.c.styles[p.seat]]} bot`}${G.turn === p.seat ? " · their turn" : ""}</p>` +
+      `<p>${Math.round(F[p.pos])} steps to the goal. ${l.length} ${l.length === 1 ? "play" : "plays"} left, ${l.reduce((a, x) => a + x.p, 0)} steps in all.</p>` +
+      `<p>Jokers: ${Object.keys(JOKERS).filter(j => p.jokers[j]).map(j => JOKERS[j] + (p.jokers[j] > 1 ? " ×" + p.jokers[j] : "")).join(", ") || "none"}. Doors closed this hand: ${p.closed || 0}.</p>`);
+  });
   $("maze").addEventListener("click", (ev) => {
-    if (!(G.phase === "maze" && cur().human && !G.anim && G.won === null)) return;
     const me = G.P[0], t = ev.target;
+    const asking = G.phase === "maze" && cur().human && !G.anim && G.won === null && ["close", "burn", "bomb"].includes(G.mode);
+    if (!asking) return showTip(explainAt(ev));
     const pass = t.closest("[data-pass]");
     if (pass && G.mode === "close" && G.sel) { if (doClose(me, G.sel, pass.dataset.pass)) endTurn(); return; }
     if (pass && G.mode === "burn") { if (useJoker(me, "burn", pass.dataset.pass)) { G.mode = null; render(); } return; }
