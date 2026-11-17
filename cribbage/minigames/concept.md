@@ -86,24 +86,24 @@ Phases of a game
   Game end ................... a token exits the maze (the beta: after 3 turns)
 ```
 
-| # | Phase | Specs | In the beta now (0.21.0) | v1 target |
+| # | Phase | Specs | In the beta now (0.21.1) | v1 target |
 |---|---|---|---|---|
-| 1 | Title and options | concept.md › A round | Settings panel only (Game tab: Restart game); no title screen | Proposed: yes, a simple title and options screen |
-| 2 | Cut for first deal | rules.md › Setup; engine.md › Classic | No: the first dealer comes from config, then the deal alternates | Proposed: yes |
+| 1 | Title and options | concept.md › A round | Settings panel only (Game tab: Restart game); no title screen | Yes |
+| 2 | Cut for first deal | rules.md › Setup; engine.md › Classic | No: the first dealer comes from config, then the deal alternates | Yes |
 | 3 | Deal and discard | rules.md › 1; ui.md › Scene: Deal | Yes: 2 players, drag to sort, pick 2 for the crib, the discard hint | Yes |
-| 4 | Cut the starter | rules.md › 2 | Partly: the starter is dealt with the hand; no cut, no his heels | Proposed: yes, with his heels |
-| 5a | Bots' turns | rules.md › 3 | No: the bot discards, but plays no grid turn | Proposed: yes, as results only |
+| 4 | Cut the starter | rules.md › 2 | Partly: the starter is dealt with the hand; no cut, no his heels | Yes, with his heels |
+| 5a | Bots' turns | rules.md › 3 | No: the bot discards, but plays no grid turn | Yes, as results only |
 | 5b | The show | rules.md › 3 › Setting up; engine.md › The opening count; ui.md › The opening count | Yes (r24), with the opening bonus (r26, from 6 in r27) | Yes |
 | 5c | Grid intro | ui.md › The opening count | Yes, on a game's first turn only (0.20.1) | Yes; wording to iterate |
 | 5d | The grid | rules.md › 3; engine.md › Match turn; ui.md › Scene: Match turn | Yes (r27) | Yes |
 | 5e | Turn end | rules.md › 3 › Ending the turn; ui.md › Scene: Turn summary | Yes: prize tier, summary, next turn | Yes |
-| 6 | Shop | rules.md › 4 | No; not designed | To decide: v1 or later |
-| 7 | Pegging on the maze | rules.md › 5; engine.md › Classic (pegging specced, not built) | No | To decide: classic pegging on a simple track for v1, or the maze |
-| 8 | Maze walk | concept.md › The maze walk; rules.md › Moving through the maze | No; notes only | To decide: v1 or later |
+| 6 | Shop | rules.md › 4 | No; not designed | Yes |
+| 7 | Pegging on the maze | rules.md › 5; engine.md › Classic (pegging specced, not built) | No | Yes |
+| 8 | Maze walk | concept.md › The maze walk; rules.md › Moving through the maze | No; notes only | Yes |
 | 9 | Next round | rules.md › 6 | Yes, as the next of 3 turns: the deck carries over, the deal alternates | Yes |
-| | Game end | rules.md › Winning | After 3 turns (r23), with your steps in the summary; no winner yet, since the bot plays no grid turn | To decide: needs 7 and 8 |
+| | Game end | rules.md › Winning | After 3 turns (r23), with your steps in the summary; no winner yet, since the bot plays no grid turn | Yes: the first token to exit the maze |
 
-Rows marked "Proposed" or "To decide" are open until Bruce settles them; record each answer in Decisions and change its row.
+The first version includes every phase (Bruce, 2026-11-17). The order of work: playtest the grid (5b to 5e) first, then prototype the other phases. Record each change of scope in Decisions and change its row.
 
 ## The maze
 
@@ -438,6 +438,8 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | The grid intro (Bruce): after the hand and crib are counted, and before the grid deals in, a card explains the grid ("collect more steps for your step counter by matching crib hands") and waits for Start, so the timer starts only once you've read it. Shown on the game's first turn only (Bruce, 0.20.1) |
 | 2026-11-17 | Phases (Bruce): one list of every phase of a game, in order, with what the beta has and what v1 targets, kept in concept.md › Phases. It is the target set for the first version, to iterate on; rules.md, ui.md and engine.md point to it |
 | 2026-11-17 | Fill patterns (Bruce): the grid's first deal-in comes in one of five patterns, all five tried: rain, deal, spiral, wave and scatter (ui.md › The grid fills). Refills keep falling from above. The pick is presentation only, from the turn's seed |
+| 2026-11-17 | The first version includes every phase in Phases, the shop, pegging and the maze walk too (Bruce). The grid is playtested first; the other phases are prototyped after |
+| 2026-11-17 | The multiplier coin (Bruce, pick C from `mocks/card-chips.html`, moved to the bottom left over the card's edge, with a coin edge): a card's multiplier no longer covers the word tags. The made card's ★ moves inside, under the rank |
 
 ## Open questions
 

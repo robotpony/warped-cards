@@ -64,6 +64,20 @@
       "ring": "#FF5A5A",
       "text": "#FF7A7A",
       "names": "#C00000"
+    },
+    "coin": {
+      "gold": {
+        "face": "#FFD447",
+        "light": "#FFF3B8",
+        "rim": "#B8860B",
+        "edge": "#7A5A00"
+      },
+      "cyan": {
+        "face": "#3CF2FF",
+        "light": "#DDFDFF",
+        "rim": "#128C99",
+        "edge": "#0B5C66"
+      }
     }
   },
   "contrast": {

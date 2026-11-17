@@ -2,6 +2,12 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.21.1 — 2026-11-17
+
+### Changed
+
+- A card's multiplier is now a gold coin on its bottom left edge, so it no longer covers the HAND, CRIB and STARTER tags. A joker-made card's ★ sits inside the card, under its rank, and the numbers showing your trace order sit at the bottom right.
+
 ## 0.21.0 — 2026-11-17
 
 ### Added

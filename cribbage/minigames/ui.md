@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 9, from the beta app at 0.21.0, rules r27
+Status: draft 3, 2026-11-17, spec 10, from the beta app at 0.21.1, rules r27
 
 ## Summary
 
@@ -164,7 +164,7 @@ The app reads every colour from palette.json, bundled into the app (the table co
 | Panel | `panel` (#121A33) | Edge background, power jokers panel, footer, hint box |
 | Rim | `rim` (#2E3A66) | Footer top line |
 | Cyan | `cyan` (#3CF2FF) | Edge background outline, picked pips, power (edge multipliers) in the breakdown, tally border, "Tap to continue", settings tint, turn titles on the summary |
-| Gold | `gold` (#FFD447) | Steps, track, edge card rings, HAND and CRIB tags, toast, banner, combo light, power chips, full pick counter, hint ring |
+| Gold | `gold` (#FFD447) | Steps, track, edge card rings, HAND and CRIB tags, toast, banner, combo light, full pick counter, hint ring. The multiplier coin has its own golds (`coin.gold`: face #FFD447, light #FFF3B8, rim #B8860B, edge #7A5A00) and cyans (`coin.cyan`) |
 | Violet | `joker.special` (#C77DFF) | Power jokers panel, tray counts, reach countdown, reach pips, the bot's crib tag |
 | Overlay | `bg` at 95% | Turn summary background |
 | Page | `page` (#05070F) | Around the phone |
@@ -203,15 +203,15 @@ Each card on the board takes one look from its state. Looks combine where it mak
 |---|---|
 | Edge card (hand, crib) | 2 pt `gold` ring, plus a soft 4 pt `gold` halo at 22% when not selected |
 | Starter | 2 pt `text` ring, tilted −5°, a hard drop shadow (black 35%, 4 pt down) |
-| Selected (in the trace) | 2 pt white ring, raised 2 pt, scaled 1.04, hard drop shadow. A white numbered badge (18 pt circle) at bottom left gives its order |
+| Selected (in the trace) | 2 pt white ring, raised 2 pt, scaled 1.04, hard drop shadow. A white numbered badge (18 pt circle) at bottom right gives its order (bottom left before 0.21.1; the multiplier coin has it now) |
 | In a combo while tracing | 3 pt white ring, white glow (55%), 8% white wash, raised 4 pt, scaled 1.1 |
 | Armed board joker | 3 pt white ring, raised 6 pt |
 | Popped before clearing (score, breakdown off) | 3 pt white ring, `gold` glow, scaled 1.12 |
 | Popped before clearing (bomb, burn) | 3 pt white ring, red glow, scaled 1.18 |
 | Dimmed (breakdown, not in the set) | A `bg` wash at 72% |
-| Joker-made card | A 16 pt `gold` circle with ★ at top left |
-| Power chip | Edge cards with a power level, and joker-made cards, show their multiplier ("×1.2") at top right: 12 pt bold on a `gold` capsule, 18 pt tall. While the breakdown lights it, the chip turns `cyan` and grows to 1.5× |
-| Word tags | "HAND" on h0 and "CRIB" on c0 (`gold` capsule, ink text); "STARTER" on the starter (`text` capsule, `bg` text). 10 pt bold, 16 pt tall, 10 pt above the card; 10 pt to the left when the card has a chip |
+| Joker-made card | A ★ inside the card, 11 pt bold in `coin.gold.edge`, 5 pt in and 22 pt down, under the rank (0.21.1; it was a `gold` badge on the top left corner, over the word tag) |
+| Multiplier coin | Edge cards with a power level, and joker-made cards, show their multiplier ("×1.2") on a coin at the bottom left, over the card's left edge (0.21.1, Bruce's pick C from `mocks/card-chips.html`; it was a capsule at top right, which covered the word tags). The coin is 26 pt across, centred 4 pt in from the card's left edge and 9 pt up from its bottom (it reaches 9 pt past the edge), drawn from `palette.json` › coin: the edge (`edge`) showing 7% of its size below the face; the face, a radial gradient from `light` (at 35% across, 30% down) to `face`; a reeded rim, a ring 10% of its size wide in `rim`, dashed 5% on, 5% off; an inner ring at 16% in, `rim` at 60%; the text, ink, bold, 36% of its size, shrinking to fit; a soft shadow (black 35%, 1.5 pt down). While the breakdown lights it, the coin is cyan (`coin.cyan`) and grows to 1.4×. In the breakdown's row the coin is 38 pt, before the row's scale |
+| Word tags | "HAND" on h0 and "CRIB" on c0 (`gold` capsule, ink text); "STARTER" on the starter (`text` capsule, `bg` text). 10 pt bold, 16 pt tall, 10 pt above the card, centred |
 
 Selection and combo looks ease in over 120 ms. The pop springs over 300 ms with a strong bounce.
 
@@ -517,7 +517,7 @@ Breakdown over the board (352 pt wide)
 
 - The board is covered by a `bg` panel at 94%, reaching 17 pt past the edge background, so nothing behind it shows. It fades in and out over 300 ms.
 - Banner: a `gold` capsule (corner 12, gold glow) holding a tag ("SINGLE" or "MULTI ×n", 11 pt bold, `gold` on ink), the headline (22 pt bold, ink) and a suit chip (13 pt, on #FFFDF7): the suit glyph, or "no suit".
-- Set row: the set's cards in count order (the starter last), each 50 × 70 pt, with a 2 pt white ring and a soft shadow. The starter is set 18 pt apart and tagged "STARTER" (13 pt bold). Edge cards with power show their chip (15 pt bold).
+- Set row: the set's cards in count order (the starter last), each 50 × 70 pt, with a 2 pt white ring and a soft shadow. The starter is set 18 pt apart and tagged "STARTER" (13 pt bold). Edge cards with power show their multiplier coin (38 pt, bottom left).
 - Tally: a panel (`bg` at 92%, corner 12, `cyan` border at 35%, drop shadow) with one line per part. Each line has a name on the left, its cards as mini cards beside its points, its points (48 pt column; 64 pt for the total) and a running total. Lines are at least 24 pt tall, 16 pt medium; the total line is 20 pt bold under a 1 pt rule. Points are `gold`, power lines `cyan`, left-over lines #FF7A7A, the total `text`. Lines slide in from 10 pt left as they fade in, over 220 ms.
 - A tally too tall for the 332 pt below its top scales down to fit, from its top edge.
 - Mini cards: 22 × 26 pt min, card face fill, rank and suit in the suit's colour (12 pt bold), card rule outline; joker-made cards have a `gold` outline. A special joker shows ★.
@@ -964,7 +964,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.21.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.21.1 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins

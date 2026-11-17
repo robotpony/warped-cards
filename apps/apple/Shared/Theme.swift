@@ -68,6 +68,9 @@ enum Theme {
     static let leftOver = Palette.colour("leftOver.ring", 0xFF5A5A)
     static let leftOverText = Palette.colour("leftOver.text", 0xFF7A7A)
     static let leftOverNames = Palette.colour("leftOver.names", 0xC00000)
+    // The multiplier coin (palette.json › coin): face, highlight, reeded rim, edge.
+    static let coinGold = ["face", "light", "rim", "edge"].map { Palette.colour("coin.gold.\($0)", ["face": 0xFFD447, "light": 0xFFF3B8, "rim": 0xB8860B, "edge": 0x7A5A00][$0]!) }
+    static let coinCyan = ["face", "light", "rim", "edge"].map { Palette.colour("coin.cyan.\($0)", ["face": 0x3CF2FF, "light": 0xDDFDFF, "rim": 0x128C99, "edge": 0x0B5C66][$0]!) }
 
     // Sizes: the mock's, a 64 pt card (k scales them all).
     static let k: CGFloat = 1

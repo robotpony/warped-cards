@@ -534,14 +534,11 @@ struct RowCard: View {
             .overlay(alignment: .top) {
                 if starter && on {
                     Text("STARTER").font(Theme.font(13, .bold)).tracking(1).padding(.horizontal, 7).frame(height: 20)
-                        .background(Capsule().fill(Theme.feltText)).foregroundStyle(Theme.felt).fixedSize().offset(x: pb.chipText[p] != nil ? -22 : 0, y: -24)
+                        .background(Capsule().fill(Theme.feltText)).foregroundStyle(Theme.felt).fixedSize().offset(y: -24)
                 }
             }
-            .overlay(alignment: .topTrailing) {
-                if let t = pb.chipText[p] {
-                    Text(t).font(Theme.font(15, .bold)).padding(.horizontal, 7).frame(height: 22)
-                        .background(Capsule().fill(power ? Theme.power : Theme.gold)).foregroundStyle(Theme.ink).fixedSize().offset(x: 8, y: -8)
-                }
+            .overlay(alignment: .bottomLeading) {
+                if let t = pb.chipText[p] { Coin(text: t, cyan: power, size: 38).offset(x: -14, y: -5) }
             }
             .shadow(color: lit ? Theme.gold.opacity(0.85) : power ? Theme.power.opacity(0.8) : left ? Theme.leftOver.opacity(0.7) : .black.opacity(0.4),
                     radius: lit || power || left ? 9 : 5, y: lit || power || left ? 0 : 3)

@@ -268,12 +268,13 @@ struct CellView: View, Equatable {
             }
             .rotationEffect(starter ? .degrees(-5) : .zero)
             .overlay(alignment: .top) { tag }
-            .overlay(alignment: .topTrailing) { chip }
+            .overlay(alignment: .bottomLeading) { chip }
+            // A made card's star sits inside the card, under the rank, clear of the word tags.
             .overlay(alignment: .topLeading) {
-                if card.kind == .made { badge("★", Theme.gold, Theme.ink, 16).offset(x: -5, y: -5) }
+                if card.kind == .made { Theme.text("★", 11).font(Theme.font(11, .bold)).foregroundStyle(Theme.coinGold[3]).offset(x: 5, y: 22) }
             }
-            .overlay(alignment: .bottomLeading) {
-                if let order = l.order { badge("\(order + 1)", .white, Theme.felt, 18).offset(x: -4, y: 4) }
+            .overlay(alignment: .bottomTrailing) {
+                if let order = l.order { badge("\(order + 1)", .white, Theme.felt, 18).offset(x: 4, y: 4) }
             }
             // One blurred glow, and only while a card is lit, popped or in a combo.
             .shadow(color: glow ?? .clear, radius: glow == nil ? 0 : (l.hit ? 10 : 9))
@@ -292,17 +293,15 @@ struct CellView: View, Equatable {
             Text(text).font(Theme.font(10, .bold)).tracking(0.8).padding(.horizontal, 6).frame(height: 16)
                 .background(Capsule().fill(p == Board.starter ? Theme.feltText : Theme.gold))
                 .foregroundStyle(p == Board.starter ? Theme.felt : Theme.ink)
-                // With a power chip on the right, the tag moves left so both read.
-                .offset(x: look.chipText != nil ? -10 : 0, y: -10)
+                .offset(y: -10)
         }
     }
 
-    /// The power chip: this card's multiplier once it has a level.
+    /// The multiplier coin: a made card's multiplier, or an edge card's power, on the card's
+    /// bottom left edge, half over it (ui.md › Cards › The multiplier coin).
     @ViewBuilder private var chip: some View {
         if let text = look.chipText {
-            Text(text).font(Theme.font(12, .bold)).padding(.horizontal, 6).frame(height: 18)
-                .background(Capsule().fill(look.chipPulse ? Theme.power : Theme.gold)).foregroundStyle(Theme.ink)
-                .scaleEffect(look.chipPulse ? 1.5 : 1).offset(x: 6, y: -6)
+            Coin(text: text, cyan: look.chipPulse).scaleEffect(look.chipPulse ? 1.4 : 1).offset(x: -9, y: -4)
         }
     }
 
@@ -316,5 +315,26 @@ private struct Toss: ViewModifier {
     let angle: Double, scale: CGFloat, anchor: UnitPoint
     func body(content: Content) -> some View {
         content.rotationEffect(.degrees(angle), anchor: anchor).scaleEffect(scale, anchor: anchor)
+    }
+}
+
+/// The multiplier coin (ui.md › Cards › The multiplier coin): a gold coin with a highlight, a
+/// reeded rim and an edge showing below it, so it reads as a coin sitting on the card.
+struct Coin: View {
+    let text: String
+    var cyan = false
+    var size: CGFloat = 26
+    var body: some View {
+        let c = cyan ? Theme.coinCyan : Theme.coinGold
+        ZStack {
+            Circle().fill(c[3]).offset(y: size * 0.07)   // the coin's edge, seen below its face
+            Circle().fill(RadialGradient(colors: [c[1], c[0]], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.6))
+            Circle().strokeBorder(c[2], style: StrokeStyle(lineWidth: size * 0.1, dash: [size * 0.05, size * 0.05]))   // reeding
+            Circle().inset(by: size * 0.16).stroke(c[2].opacity(0.6), lineWidth: max(0.75, size * 0.03))
+            Text(text).font(Theme.font(size * 0.36, .bold)).foregroundStyle(Theme.ink)
+                .lineLimit(1).minimumScaleFactor(0.6).padding(.horizontal, size * 0.17)
+        }
+        .frame(width: size, height: size)
+        .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1.5)
     }
 }

@@ -77,6 +77,18 @@
               background: rgba(255, 212, 71, .35); border: calc(1.5px * var(--k)) solid var(--gold); z-index: 1; }
   .vD .chip.pulse { background: rgba(60, 242, 255, .3); border-color: var(--cyan); }
   .vD .has .pip { z-index: 2; }
+
+  /* Chosen (C, moved): a coin on the bottom left, over the card's edge, with a reeded rim and an edge. */
+  .vE .chip { position: absolute; left: calc(4px * var(--k)); bottom: calc(9px * var(--k)); transform: translate(-50%, 50%);
+              width: calc(26px * var(--k)); height: calc(26px * var(--k)); border-radius: 50%; font-size: calc(9.4px * var(--k)); padding: 0;
+              background: radial-gradient(circle at 35% 30%, #FFF3B8, #FFD447 60%);
+              box-shadow: 0 calc(1.8px * var(--k)) 0 #7A5A00, 0 calc(2.5px * var(--k)) calc(2px * var(--k)) rgba(0,0,0,.35); }
+  .vE .chip::before { content: ""; position: absolute; inset: 0; border-radius: 50%;
+              background: repeating-conic-gradient(#B8860B 0 6deg, transparent 6deg 12deg);
+              -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%); mask: radial-gradient(circle, transparent 62%, #000 63%); }
+  .vE .chip::after { content: ""; position: absolute; inset: 16%; border-radius: 50%; border: 1px solid rgba(184, 134, 11, .6); }
+  .vE .chip.pulse { background: radial-gradient(circle at 35% 30%, #DDFDFF, #3CF2FF 60%); box-shadow: 0 calc(1.8px * var(--k)) 0 #0B5C66, 0 calc(2.5px * var(--k)) calc(2px * var(--k)) rgba(0,0,0,.35); }
+  .vE .chip.pulse::before { background: repeating-conic-gradient(#128C99 0 6deg, transparent 6deg 12deg); }
 </style>
 </head>
 <body>
@@ -92,6 +104,7 @@
     ["vB", "B · Pill under the suit", "The pip moves up a little and the pill sits across its lower edge, so the suit's shape still reads."],
     ["vC", "C · Coin on the suit's shoulder", "A small round coin overlapping the pip's lower right. Reads like a sticker; long values (×1.25) get tight."],
     ["vD", "D · Suit plate", "The pip shrinks onto a tinted plate with the multiplier underneath, so the card centre becomes the chip."],
+    ["vE", "Chosen · C, moved to the bottom left", "Bruce's pick (2026-11-17): the coin moves to the bottom left, over the card's edge, and gets a coin's reeded rim and an edge below its face. In the beta from 0.21.1 (ui.md › A card on the board)."],
   ];
   const hand = [
     { r: "5", s: "♥", c: "H", made: true, chip: "×2" },

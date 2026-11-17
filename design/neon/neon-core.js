@@ -34,6 +34,12 @@
     },
     clock: { green: "#39E07A", orange: "#FF9F1C", red: "#FF4D4D" },
     leftOver: { ring: "#FF5A5A", text: "#FF7A7A", names: "#C00000" },
+    // The multiplier coin on a card's bottom left edge (2026-11-17): face, highlight, reeded rim and
+    // the edge seen below it. Gold for a made card or a power level; cyan while a power level pulses.
+    coin: {
+      gold: { face: "#FFD447", light: "#FFF3B8", rim: "#B8860B", edge: "#7A5A00" },
+      cyan: { face: "#3CF2FF", light: "#DDFDFF", rim: "#128C99", edge: "#0B5C66" },
+    },
   };
   const FONT = `"Russo One", "Saira Semi Condensed", system-ui, sans-serif`;
   const n = (v) => Math.round(v * 100) / 100;

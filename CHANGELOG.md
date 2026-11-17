@@ -2,6 +2,15 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 10 — 2026-11-17
+
+Rules unchanged (r27).
+
+### Changed
+
+- ui.md › A card on the board: a card's multiplier is a coin at its bottom left, over the card's left edge, with a reeded rim and an edge, so it no longer covers the HAND, CRIB and STARTER tags. A made card's ★ moves inside, under the rank, and the trace's order badge moves to the bottom right. The coin's colours are new in `design/neon/palette.json` › coin.
+- concept.md › Phases: the first version includes every phase.
+
 ## spec 9 — 2026-11-17
 
 Rules unchanged (r27).
