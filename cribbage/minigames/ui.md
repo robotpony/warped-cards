@@ -1,6 +1,6 @@
 # Crib Maze: UI Spec
 
-Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.15.6, rules r23
+Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.15.7, rules r23
 
 ## Summary
 
@@ -188,7 +188,7 @@ Suit colours on card faces are the four-colour deck from cards.js, `card.suit`: 
 
 ### Cards
 
-Cards are drawn in cards.js's 50 × 70 unit box, scaled to the card's width.
+Cards are drawn from the SVG files in `design/cards/` (Apple 0.15.7; the files and their text slots are in its README), in a 50 × 70 unit box scaled to the card's width. A port MUST draw from the same files: the frame for every face, `joker-<kind>.svg` for special jokers (`swap` for the swapper), `extra-<kind>.svg` for extra cards and `back.svg` for backs. Text in the files marks where text goes; the app draws it at each `<text>`'s centre, size and tracking. A rect's outline starts at its top edge just after the top-left corner and runs clockwise, as SVG says, so dashes start in the same place in every build. The list below describes what the files draw.
 
 - Face: rounded 4.5 units, card face fill, 1.2 unit card rule outline. The rank at top left (centre at 9, 10.5), 16 units bold (14 for a 10, tracked −1.2), and again rotated 180° at bottom right (41, 59.5). A large suit glyph in the centre (25, 35), 34 units. Suit glyphs MUST draw as text, never as emoji.
 - Special jokers: an inset border in joker purple at 50%, "JOKER" at the top and the kind's name at the bottom ("SWAP", "BOMB", "REACH", "BURN"), 8 units bold, and an icon: two arrows (swapper), a black bomb with a red spark (bomb), a red and gold flame (burn), a card with a dashed extra card and a red plus (reach). shapes.json's neon swap and bomb icons belong to the dropped neon cards and aren't used.

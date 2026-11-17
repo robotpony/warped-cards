@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 echo "== JS fixtures and the spec drift check"
-node --test cribbage/minigames/
+node --test cribbage/minigames/ design/
 echo "== Engine: build and test (engine/swift)"
 (cd engine/swift && swift test --quiet)
 case "$(uname -s)" in

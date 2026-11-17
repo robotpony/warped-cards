@@ -11,7 +11,7 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
-    MARKETING_VERSION: "0.15.6"
+    MARKETING_VERSION: "0.15.7"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_IDENTITY: "-"
@@ -35,6 +35,10 @@ targetTemplates:
         type: folder
         buildPhase: resources
       - path: ../../design/neon/palette.json
+        buildPhase: resources
+      # The card art (design/cards/README.md), bundled as the folder "cards".
+      - path: ../../design/cards
+        type: folder
         buildPhase: resources
     dependencies:
       - package: CribMazeEngine

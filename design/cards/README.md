@@ -50,7 +50,10 @@ The SVGs carry hex values so they open anywhere. The same colours are in `design
 
 Suits, `card.suit`: spades #000000, hearts #E00000, diamonds #0070E0, clubs #00843D.
 
-## Differences from the Mac to check
+## Reading them
 
-- SwiftUI rounds corners with its smooth (continuous) curve; the SVGs use plain arcs. At these radii the gap is under a tenth of a unit.
+The Mac draws these files since Apple 0.15.7 (`apps/apple/Shared/CardArt.swift`), and a port MUST draw from them too. They use only `svg`, `g`, `rect`, `circle`, `path` (M L H V C Z), `text` and a rect `clipPath`, with translate, rotate and scale transforms; `cards.test.js` keeps them to that subset and checks every colour is in `palette.json`.
+
+- Corners are plain circular arcs; the Mac matches them (it used SwiftUI's smoother curve before 0.15.7, under a tenth of a unit different).
+- A rect's outline starts after its top-left corner and runs clockwise, as SVG says, so the reach icon's dashes start in the same place in every build.
 - The back's hatching is a list of lines clipped to the inner box, not an SVG pattern, so readers without pattern support draw it the same. The lines start where the Mac's start.
