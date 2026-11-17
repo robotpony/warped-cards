@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 7, from the beta app at 0.20.0, rules r27
+Status: draft 3, 2026-11-17, spec 8, from the beta app at 0.20.1, rules r27
 
 ## Summary
 
@@ -225,6 +225,8 @@ Source: `Theme.swift`, `CardView.swift`, `BoardView.swift` (CellView, CellLook).
 
 ## Scene: Match turn
 
+The match turn is phases 5b to 5e of a game: the show, the grid intro, the grid and the turn end. Every phase, in order, with what v1 includes: [concept.md › Phases](concept.md#phases).
+
 ### States
 
 The match turn is one scene with an input mode and a few covers. These are its states, from the player's side.
@@ -234,7 +236,7 @@ Match turn states
 
   Starting ........ the session shows the engine's turn_start
     Opening ....... busy: the hand, then the crib, counted over the empty board
-    Grid intro .... the intro card waits for Start; then the grid deals in
+    Grid intro .... the game's first turn: the intro card waits for Start
   Tracing ......... the default; trace sets, tap jokers
     Selecting ..... cards picked, not yet submitted
   Armed ........... a swapper, bomb or burn waits for its target
@@ -250,7 +252,7 @@ Match turn states
 | From | Trigger | To |
 |---|---|---|
 | Starting | Turn shown | Opening (with `opening` events and animation on), else Tracing |
-| Opening | The last count's steps and bonus jokers land | Grid intro |
+| Opening | The last count's steps and bonus jokers land | Grid intro on the game's first turn; else Tracing, once the grid has dealt in |
 | Grid intro | Tap Start | Tracing, once the grid has dealt in (or Stuck, if the first board has no sets) |
 | Opening | Tap anywhere | Holding (skips to the count's end), as in a breakdown |
 | Tracing | Tap or drag onto a card | Selecting |
@@ -288,7 +290,7 @@ With `opening` events (engine.md › The opening count), the session is busy and
 4. The step counter, which showed the steps before this count, rises by its points, with the steps bump.
 5. If the count won power jokers (`bonus`, r26), a toast "Hand bonus: +2 power jokers (bomb, reach)" (or "Crib bonus: …"), then each joker lands in its tray slot in the order drawn: the slot's count rises by 1 with the steps bump, then a settle wait. A pop wait follows the last. Until then the tray shows its count from before the opening.
 
-Then the grid intro (0.20.0): any toast is hidden and a card fades in over the empty board, styled like the left-over warning (paper card, 20 pt from the phone's sides, the board dimmed 25% behind it). It reads:
+Then, on the game's first turn only, the grid intro (0.20.0; first turn only from 0.20.1): any toast is hidden and a card fades in over the empty board, styled like the left-over warning (paper card, 20 pt from the phone's sides, the board dimmed 25% behind it). It reads:
 
 ```
   Score the grid
@@ -946,7 +948,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.20.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.20.1 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins

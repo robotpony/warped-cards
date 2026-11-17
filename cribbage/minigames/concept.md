@@ -54,6 +54,57 @@ Round
 
 Classic rule wording comes from Scorekeep's page, `~/projects/utilities/scorekeep/docs/rules/cribbage.md`. Scorekeep covers 2 players only, so the 3-player deal is defined in our rules.
 
+## Phases
+
+Every phase of a game, in the order a player meets them, and which of them make the first version (v1). This is the one list to iterate on: rules.md, ui.md and engine.md describe each phase, and point here for the order and the target (Bruce, 2026-11-17). A phase is a stage of the round (rules.md › How a game fits together) or one step of the match turn.
+
+```
+Phases of a game
+
+  Once a game
+    1  Title and options ..... players, bot levels, game length, timer, hints
+    2  Cut for first deal .... the lowest card deals first
+
+  Every round
+    3  Deal and discard ...... 6 cards, sort them, throw 2 to the crib
+    4  Cut the starter ....... a jack gives the dealer 2 (his heels)
+    5  Match turns ........... one per player, in show order
+         5a  Bots' turns ...... a quick sequence of results, hands face down
+         5b  The show ......... your hand, then your crib if you dealt, counted
+                                as in cribbage; a big count wins power jokers
+         5c  Grid intro ....... the game's first turn only: what the grid is
+                                for; Start deals the grid and starts the clock
+         5d  The grid ......... trace sets, use power jokers, until the clock,
+                                a cleared board or no sets left
+         5e  Turn end ......... the best set wins a prize; the turn summary
+    6  Shop .................. spend on jokers and discovered cards
+    7  Pegging on the maze ... classic play to 31, each point a step
+    8  Maze walk ............. grid steps spent on the maze: gates, switches,
+                               shifts, bundles walked by suit
+    9  Next round ............ the deal passes left
+
+  Game end ................... a token exits the maze (the beta: after 3 turns)
+```
+
+| # | Phase | Specs | In the beta now (0.20.1) | v1 target |
+|---|---|---|---|---|
+| 1 | Title and options | concept.md › A round | Settings panel only (Game tab: Restart game); no title screen | Proposed: yes, a simple title and options screen |
+| 2 | Cut for first deal | rules.md › Setup; engine.md › Classic | No: the first dealer comes from config, then the deal alternates | Proposed: yes |
+| 3 | Deal and discard | rules.md › 1; ui.md › Scene: Deal | Yes: 2 players, drag to sort, pick 2 for the crib, the discard hint | Yes |
+| 4 | Cut the starter | rules.md › 2 | Partly: the starter is dealt with the hand; no cut, no his heels | Proposed: yes, with his heels |
+| 5a | Bots' turns | rules.md › 3 | No: the bot discards, but plays no grid turn | Proposed: yes, as results only |
+| 5b | The show | rules.md › 3 › Setting up; engine.md › The opening count; ui.md › The opening count | Yes (r24), with the opening bonus (r26, from 6 in r27) | Yes |
+| 5c | Grid intro | ui.md › The opening count | Yes, on a game's first turn only (0.20.1) | Yes; wording to iterate |
+| 5d | The grid | rules.md › 3; engine.md › Match turn; ui.md › Scene: Match turn | Yes (r27) | Yes |
+| 5e | Turn end | rules.md › 3 › Ending the turn; ui.md › Scene: Turn summary | Yes: prize tier, summary, next turn | Yes |
+| 6 | Shop | rules.md › 4 | No; not designed | To decide: v1 or later |
+| 7 | Pegging on the maze | rules.md › 5; engine.md › Classic (pegging specced, not built) | No | To decide: classic pegging on a simple track for v1, or the maze |
+| 8 | Maze walk | concept.md › The maze walk; rules.md › Moving through the maze | No; notes only | To decide: v1 or later |
+| 9 | Next round | rules.md › 6 | Yes, as the next of 3 turns: the deck carries over, the deal alternates | Yes |
+| | Game end | rules.md › Winning | After 3 turns (r23), with your steps in the summary; no winner yet, since the bot plays no grid turn | To decide: needs 7 and 8 |
+
+Rows marked "Proposed" or "To decide" are open until Bruce settles them; record each answer in Decisions and change its row.
+
 ## The maze
 
 The maze replaces the pegboard. A pegboard is a track where every point moves you one hole; the maze is that track with forks, gates and prizes.
@@ -384,7 +435,8 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Edge power stays as it is for r25 and r26: playtest at these levels, and add other tools to raise scores rather than retuning it (Bruce) |
 | 2026-11-17 | Match rules r26, the opening bonus (Bruce): the hand and crib counts are ranked, and a higher count wins more power jokers, 1 for every 5 points past 10 (`opening.bonus` from 10, per 5). Each count is ranked on its own (Bruce chose this over adding hand and crib), on its points after a made card's multiplier. The jokers are special jokers for the tray (Bruce chose these over amber or teal jokers in the stock), picked by the prize weights from their own dice stream, so the end-of-turn prize doesn't shift. `cribmaze-sim run`, 1,000 turns, seed 1, bots keeping the classic best hand: dealers win 2.1 power jokers a hundred turns, non-dealers 1.3, the same at every bot level, since bots keep alike. Steps barely move (medium dealer 224.8 a turn; game 749 steps). A classic count of 15 or more is rare, so the bonus is a treat, not a lever; lower `from` to make it common
 | 2026-11-17 | Match rules r27: the opening bonus starts at 6, not 10 (Bruce), so 11 wins 1 power joker, 16 wins 2, 21 wins 3 and 26 wins 4. `cribmaze-sim run`, medium, 1,000 turns, seed 1: dealers win 9.7 power jokers a hundred turns (was 2.1), non-dealers 5.5 (was 1.3). Steps don't move (game 749.5), since bots rarely need the extra jokers |
-| 2026-11-17 | The grid intro (Bruce): after the hand and crib are counted, and before the grid deals in, a card explains the grid ("collect more steps for your step counter by matching crib hands") and waits for Start, so the timer starts only once you've read it. Shown every turn in the beta for now |
+| 2026-11-17 | The grid intro (Bruce): after the hand and crib are counted, and before the grid deals in, a card explains the grid ("collect more steps for your step counter by matching crib hands") and waits for Start, so the timer starts only once you've read it. Shown on the game's first turn only (Bruce, 0.20.1) |
+| 2026-11-17 | Phases (Bruce): one list of every phase of a game, in order, with what the beta has and what v1 targets, kept in concept.md › Phases. It is the target set for the first version, to iterate on; rules.md, ui.md and engine.md point to it |
 
 ## Open questions
 

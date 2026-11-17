@@ -2,6 +2,15 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 8 — 2026-11-17
+
+Rules unchanged (r27).
+
+### Changed
+
+- ui.md: the grid intro shows on a game's first turn only (Scene: Match turn › The opening count).
+- concept.md › Phases lists every phase of a game in order, with what the beta has and what the first version targets; rules.md, ui.md and engine.md point to it. `seed1.jsonl` and `seed12.jsonl` are re-recorded with spec 8 in their headers.
+
 ## spec 7 — 2026-11-17
 
 Match rules r27 (concept.md › Decisions, 2026-11-17).

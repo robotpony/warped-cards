@@ -26,6 +26,7 @@ Game ............................ until a token reaches the goal
 | Game | From setup until a token reaches the goal. Special jokers won as prizes, power slots, cards a joker made, and prizes in the deck last the whole game |
 | Round | One deal, with every stage played once. The deal then passes to the left. How many jokers are in the deck is decided at each round's shuffle, and special jokers made by a joker's reveal last only for the round |
 | Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, the shop, pegging on the maze |
+| Phase | A stage, or one step of the match turn. Every phase, in order, with what the first version includes: [concept.md › Phases](concept.md#phases) |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
 | Play | One go on the maze: a pegging score, walked as its steps, or grid points spent on a gate, a switch or a shift. Players take turns, as in pegging (how: to design) |
 | Minigame | A game played in a stage beside or in place of a classic cribbage step. The match game is the first: it follows counting your hand. More may follow |
@@ -91,11 +92,13 @@ A turn at a glance:
 
 #### Setting up
 
+The match turn's own phases (the show, the grid intro, the grid, the turn end) are listed with the rest of the game's in [concept.md › Phases](concept.md#phases).
+
 1. Shuffle every card that isn't in a hand, the crib or the starter. This is the stock.
-2. Count your hand with the starter, as in a classic show: fifteens, pairs, runs, a flush of your 4 cards (5 if the starter matches) and his nobs. If you dealt, count the crib the same way; a crib flush needs all 5 cards. Each count moves you that many steps. A card a joker made still multiplies its count, but edge power doesn't, nothing powers up, and the count is never your best set. A big count wins power jokers: 1 for every 5 points past 6, so 11 wins 1, 16 wins 2, 21 wins 3 and 26 wins 4 (to tune; r27). The hand and crib are ranked apart, and the jokers are picked like a prize, straight into your power jokers for this turn.
-3. A card then says what the grid is for. Tap Start: the grid deals in and the timer starts.
-3. Lay your hand along the bottom, in the order you sorted it, and the starter in the corner. The dealer lays the crib down the side; for anyone else the side stays empty, so the crib is the dealer's advantage.
-4. Deal a 4 x 4 grid face up from the stock.
+2. Lay your hand along the bottom, in the order you sorted it, and the starter in the corner. The dealer lays the crib down the side; for anyone else the side stays empty, so the crib is the dealer's advantage.
+3. The show: count your hand with the starter, as in a classic show: fifteens, pairs, runs, a flush of your 4 cards (5 if the starter matches) and his nobs. If you dealt, count the crib the same way; a crib flush needs all 5 cards. Each count moves you that many steps. A card a joker made still multiplies its count, but edge power doesn't, nothing powers up, and the count is never your best set. A big count wins power jokers: 1 for every 5 points past 6, so 11 wins 1, 16 wins 2, 21 wins 3 and 26 wins 4 (to tune; r27). The hand and crib are ranked apart, and the jokers are picked like a prize, straight into your power jokers for this turn.
+4. On a game's first turn, a card then says what the grid is for. Tap Start to go on.
+5. Deal a 4 x 4 grid face up from the stock. The timer starts.
 
 #### Tracing a set
 

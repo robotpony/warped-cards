@@ -2,6 +2,12 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.20.1 — 2026-11-17
+
+### Changed
+
+- The card that explains the grid shows on a game's first turn only.
+
 ## 0.20.0 — 2026-11-17
 
 ### Added

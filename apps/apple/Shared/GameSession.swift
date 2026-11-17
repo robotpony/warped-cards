@@ -345,8 +345,9 @@ final class GameSession {
             }
             self.trayShown = nil
             guard self.turnGen == gen else { return }
-            // The grid intro: what the grid is for, until Start (the demo and films don't wait).
-            if !self.playback.autoContinue {
+            // The grid intro: what the grid is for, until Start, on the game's first turn only
+            // (the demo and films don't wait).
+            if !self.playback.autoContinue, (self.game?.results.isEmpty ?? true) {
                 self.hideToast()
                 withAnimation(fx.motions.breakdown.tally.animation()) { self.gridIntro = self.intro(t) }
                 await withCheckedContinuation { self.introResume = $0 }
