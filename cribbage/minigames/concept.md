@@ -450,6 +450,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | The multiplier coin (Bruce, pick C from `mocks/card-chips.html`, moved to the bottom left over the card's edge, with a coin edge): a card's multiplier no longer covers the word tags. The made card's ★ moves inside, under the rank |
 | 2026-11-17 | Prototype order after the grid playtest (Bruce): pegging on the maze and the maze walk together, then the shop, then the cut and the bots' turns. The scoring phase summarizes the bots' scores; the maze phase takes turns, and hinges on smart choices: where to turn, which jokers to apply, which doors to close (concept.md › Phases) |
 | 2026-11-17 | The maze prototype (pegging on the maze and the maze walk) starts as a browser mock, not in the beta, to work out the turns and choices quickly (Bruce) |
+| 2026-11-17 | The first maze prototype is `mocks/maze-board.html`, a proposal to react to: pegging steps walk you at once, then a round of maze turns spends grid points on one action each (move, turn a ring, close a door, a joker). Bot-only runs at the defaults end in 3 to 5 hands with 1 bot |
 
 ## Open questions
 
