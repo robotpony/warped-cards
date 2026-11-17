@@ -82,7 +82,7 @@ Door types, branch rules, traps and the maze generator get their own design phas
 
 ## Match turns
 
-Match turns replace counting hands and the crib. Each player takes one turn, in classic show order. The full rules are in [rules.md](rules.md) section 4; this is the shape and the reasons.
+Each player takes one match turn, in classic show order. Since r24 it starts with a classic count of the hand and the crib, then the grid deals in. The full rules are in [rules.md](rules.md) section 4; this is the shape and the reasons.
 
 ```
 Match board (one player's turn)
@@ -97,7 +97,7 @@ Match board (one player's turn)
 
 - The stock is every card not in a hand, the crib or the starter (39 cards with 2 players, 35 with 3), shuffled fresh for each turn.
 - You trace sets of 2 to 5 touching cards, like words in Boggle. A set scores at once if every card is part of a cribbage combo, counted like a hand. A card left over costs steps, after a one-time warning, so guessing has a price.
-- Every set needs a grid card, so the hand and crib can't simply be counted. The hand you built is what your sets grow from, and the cards beside it decide how well it does.
+- The hand and crib are counted once, as a classic show, before the grid deals in (r24). On the grid a set picks at most one hand or crib card, so they can't be counted again. The hand you built is what your sets grow from, and the cards beside it decide how well it does.
 - Scored grid cards clear and the stock refills. Edge cards stay and power up.
 - Special jokers (swapper, bomb) are the only way to change the board. They're scarce and kept all game.
 - Edge power multiplies the steps of the sets an edge card is in (r15), so the hand you kept grows in value as the turn goes on. The multiplier is capped, so it can't run away.
@@ -379,6 +379,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-16 | The game is renamed Crib RPG in the specs and the app, not only the Mac app (Bruce). Code names, the record ID `crib-maze` and history (changelogs, dated decisions) keep Crib Maze |
 | 2026-11-16 | App icon: four cream cards in a 2 × 2 grid, one suit each, on joker purple with a gold star where they meet; no text. One set of layers in `design/icon/` exported for macOS, iOS, Linux and web, with a simpler favicon |
 | 2026-11-16 | Saira Semi Condensed is kept, in every build and the beta too; the beta drops the system font and draws suits and ★ from `shapes.json` (Bruce) |
+| 2026-11-16 | Match rules r24, from Bruce's playtest. The hand, and the crib for the dealer, are counted first as a classic show, over the empty board, before the grid deals in. The count uses classic rules; only a made card's multiplier applies, with no edge power, no power up, and it is never the best set. On the grid a set picks at most one hand or crib card (`maxEdgeCards` 1), so the hand can't be counted again. Supersedes "every set needs a grid card" (2026-11-14) as the reason the hand can't simply be counted, and 2026-11-13's "match turns replace counting". The order you sort your hand in during the deal is the hand row's order. `cribmaze-sim game`, medium bot, 300 games, seed 1: r23 2,540 steps a game; the opening count alone 2,575 (about 12 a turn); the one-card limit alone 713; both 749 (turns 227, 228 and 294). Epic prizes fall from 22 to 34% a turn to 0 to 4%, so prizes and edge power need retuning for r24 |
 
 ## Open questions
 

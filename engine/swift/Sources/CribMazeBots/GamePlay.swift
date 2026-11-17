@@ -25,8 +25,9 @@ extension MatchBot {
                 dice.reseed(s.game.turnSeed)
                 try send(.startHand(options), by: seat)
             case .dealing(let dealt, _, _):
-                let thrown = Deal.classicKeep(dealt.player, scoring: s.config.files.rules.scoring).thrown
-                try send(.discard(thrown: thrown.map(CardRef.init)), by: seat)
+                // A bot lays its 4 kept cards along the hand row in card ID order (r24).
+                let keep = Deal.classicKeep(dealt.player, scoring: s.config.files.rules.scoring)
+                try send(.discard(thrown: keep.thrown.map(CardRef.init), kept: keep.keep.sorted { $0.id < $1.id }.map(CardRef.init)), by: seat)
             case .playing(let t):
                 acted += 1
                 try send(.match(choose(t, dice: &dice)), by: seat)

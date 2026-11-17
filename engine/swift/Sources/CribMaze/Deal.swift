@@ -69,10 +69,13 @@ public enum Deal {
     /// The match turn's setup from a finished deal: the player's kept 4, the starter, the crib
     /// (the player's and bot's throws; on the grid only when the player deals) and the bot's hand,
     /// which stays out of the stock.
-    public static func setup(seed: UInt64, dealer: Bool, dealt: Dealt, thrown: [Card], botThrown: [Card], tray: [String: Int]? = nil, warned: Bool = false, deck: [Card]? = nil) -> TurnSetup {
+    /// `kept` is the player's 4 in the order they sorted them (r24), laid h0 to h3; without it, the
+    /// order they were dealt.
+    public static func setup(seed: UInt64, dealer: Bool, dealt: Dealt, thrown: [Card], botThrown: [Card], kept: [Card]? = nil, tray: [String: Int]? = nil, warned: Bool = false, deck: [Card]? = nil) -> TurnSetup {
         let thrownIDs = Set(thrown.map(\.id)), botIDs = Set(botThrown.map(\.id))
+        let hand = kept ?? dealt.player.filter { !thrownIDs.contains($0.id) }
         var s = TurnSetup(seed: seed, dealer: dealer, tray: tray, warned: warned,
-                          fixedHand: dealt.player.filter { !thrownIDs.contains($0.id) }.map(\.notation),
+                          fixedHand: hand.map(\.notation),
                           fixedStarter: dealt.starter.notation)
         // The dealer's own throw goes first in the crib, as it lies down the side.
         s.fixedCrib = (dealer ? thrown + botThrown : botThrown + thrown).map(\.notation)
@@ -80,7 +83,7 @@ public enum Deal {
         // From a game's deck, the cards themselves: made cards share notation with standard ones.
         if let deck {
             s.deck = deck
-            s.dealt = DealtCards(hand: dealt.player.filter { !thrownIDs.contains($0.id) }, crib: dealer ? thrown + botThrown : botThrown + thrown,
+            s.dealt = DealtCards(hand: hand, crib: dealer ? thrown + botThrown : botThrown + thrown,
                                  held: dealt.bot.filter { !botIDs.contains($0.id) }, starter: dealt.starter)
         }
         return s

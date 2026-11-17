@@ -34,7 +34,7 @@ func botGame(_ config: Config, seed: UInt64, writer: RecordWriter<CribMazeGame>?
             while !g.over {
                 let dealt = g.deal()
                 let keep = Deal.classicKeep(dealt.player, scoring: config.rules.scoring), botKeep = Deal.classicKeep(dealt.bot, scoring: config.rules.scoring)
-                var (t, ev) = MatchTurn.start(config: config, setup: g.setup(dealt: dealt, thrown: keep.thrown, botThrown: botKeep.thrown, warned: true))
+                var (t, ev) = MatchTurn.start(config: config, setup: g.setup(dealt: dealt, thrown: keep.thrown, botThrown: botKeep.thrown, kept: keep.keep.sorted { $0.id < $1.id }, warned: true))
                 var ends: [Int: Int] = [:], acted = 0
                 while !t.state.over {
                     var d = t.dice

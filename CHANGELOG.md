@@ -2,6 +2,18 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 4 — 2026-11-16
+
+Match rules r24 (concept.md › Decisions, 2026-11-16).
+
+### Added
+
+- The opening count: before the grid plays, the hand (and the dealer's crib) is counted with the starter as a classic show, from `rules.json` › `match.opening`, and emits `opening` (what, positions, cards, combos, comboPoints, madePercent, points). Made cards' multipliers apply; edge power, power up, left over and the best set don't. Its steps also go to the new `openingSteps` total (engine.md › The opening count).
+- `match.maxEdgeCards` (1): a set picks at most that many hand and crib cards together, or the trace is rejected with the new reason `edge_cards` (engine.md › Trace, step 2b).
+- The `discard` action takes `kept`, the player's other 4 in the order they lie along the hand row. Without it, the dealt order, as before. A bot in the player's seat sends its keep in card ID order.
+- `seed1.jsonl` is re-recorded at spec 4: every hand now has `opening` events and a sorted keep, and the steps change.
+- ui.md: the opening count over the empty board and the grid's deal-in (Scene: Match turn › Starting a turn), sorting the hand in the deal, and the deal button's new words. The reference shots and films add the opening count; the breakdown shots use a set with one edge card.
+
 ## spec 3 — 2026-11-16
 
 ### Added

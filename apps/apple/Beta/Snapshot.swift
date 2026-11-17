@@ -69,6 +69,24 @@ import SwiftUI
         }
         // Toasts from the deal (an extra card's prize) would cover the board: hidden unless `--toast`.
         if !args.contains("--toast") { session.hideToast() }
+        // `--opening hand|crib [--stage N]`: the opening count (r24) over the empty board, played
+        // instantly to its hold, or stopped at its Nth wait.
+        if let what = value("--opening"), let e = session.events.first(where: { if case .opening(what, _, _, _, _, _, _) = $0 { return true }; return false }) {
+            var steps = 0
+            for x in session.events { if case .opening(let w, _, _, _, _, _, let p) = x { if w == what { break }; steps += p } }
+            session.snapshotOpening(steps: steps)
+            session.playback.instant = true
+            if let n = value("--stage").flatMap(Int.init) {
+                session.playback.stopAt = n
+                session.playback.onStop = { render(session, to: out); exit(0) }
+            }
+            Task { @MainActor in
+                await session.playOpening(e, cells: session.state?.cells ?? [])
+                render(session, to: out)
+                exit(0)
+            }
+            return
+        }
         // `--breakdown g31,g21`: play that set's breakdown instantly and render its last frame.
         if let set = value("--breakdown"), var t = session.turn {
             session.dismissWarning()
@@ -136,7 +154,7 @@ import SwiftUI
     }
 }
 
-/// `--film <file.mp4> --cue deal|trace|breakdown|bomb`: plays one cue in an offscreen window and
+/// `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb`: plays one cue in an offscreen window and
 /// films the window, so the video shows the cue five times slower than the game plays it
 /// (fx.json › waits.slowMotion). Screen capture isn't needed: the window draws itself. Drawing a
 /// frame takes about 120 ms, so the cue plays at 15x and each frame is stamped at a third of the
@@ -145,7 +163,9 @@ import SwiftUI
     static func run(_ session: GameSession, cue: String, to out: String, seed: UInt64) {
         session.settings.timer = false
         session.settings.deal = cue == "deal"
-        session.settings.breakdown = cue == "breakdown"
+        session.settings.breakdown = cue == "breakdown" || cue == "opening"
+        // Only the opening cue plays the opening count; the others start from the dealt board.
+        session.playsOpening = cue == "opening"
         session.playback.autoContinue = true
         session.newTurn(seed: seed)
         let slow = fx.waits.slowMotion, filmed = slow * 3
@@ -169,8 +189,11 @@ import SwiftUI
                      (1500, { session.selection = []; session.submit([s("g02"), s("g03")]) })]
             length = 3000
         case "breakdown":
-            steps = [(400, { session.submit([s("g32"), s("g33"), s("c3"), s("h2")]) })]
+            steps = [(400, { session.submit([s("g31"), s("g32"), s("g33"), s("c3")]) })]
             length = 8000
+        case "opening":   // r24: the hand and crib counted over the empty board, then the grid deals in
+            steps = []
+            length = 30000
         case "bomb":
             steps = [(400, { session.arm("bomb") }), (900, { session.submit([s("g00")]) })]
             length = 2400
@@ -192,9 +215,9 @@ import SwiftUI
             let start = Date()
             var pending = steps, frame: Int64 = 0
             while true {
-                let real = Date().timeIntervalSince(start), game = real * 1000 / filmed
-                while let next = pending.first, next.0 <= game { pending.removeFirst(); next.1() }
-                if game > length { break }
+                let real = Date().timeIntervalSince(start), t = real * 1000 / filmed
+                while let next = pending.first, next.0 <= t { pending.removeFirst(); next.1() }
+                if t > length { break }
                 if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds), let pool = adaptor.pixelBufferPool, input.isReadyForMoreMediaData {
                     host.cacheDisplay(in: host.bounds, to: rep)
                     var buf: CVPixelBuffer?

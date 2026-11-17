@@ -1,7 +1,7 @@
 #!/bin/sh
 # Shoot the reference screenshots other builds match against, and write their README.
 #   apps/apple/scripts/reference.sh            Debug build of the beta, then every shot
-#   apps/apple/scripts/reference.sh --motion   the shots, then the slow-motion films (about 2 minutes)
+#   apps/apple/scripts/reference.sh --motion   the shots, then the slow-motion films (about 5 minutes)
 # Shots go to docs/images/reference/. Re-run whenever a scene changes (TODO.md, from @linux).
 set -eu
 cd "$(dirname "$0")/../../.."
@@ -17,27 +17,29 @@ VERSION=$(sed -n 's/.*MARKETING_VERSION: "\(.*\)"/\1/p' apps/apple/project.yml)
 SPEC=$(sed -n 's/.*"specVersion": \([0-9]*\).*/\1/p' cribbage/minigames/spec.json)
 
 # name|flags|what it shows. Every shot is seed 1, turn 1, unless its flags say otherwise.
-# The breakdown set g32,g33,c3,h2 is A♥ 7♦ 6♦ A♦: a fifteen, a pair and two edge cards.
+# The breakdown set g31,g32,g33,c3 is A♣ A♥ 7♦ 6♦: a fifteen, a pair and one edge card (r24 allows one).
 SHOTS='deal|--deal|The deal: the bot'"'"'s backs, your six cards, the empty crib slots
 deal-picked|--deal --pick 3S,QD|The deal with two cards picked
 deal-hint|--deal --hint|The deal with the discard hint showing
-turn||The match turn as it starts
+opening-hand|--opening hand|The opening count (r24): the hand and starter counted over the empty board, at the hold
+opening-crib-4|--opening crib --stage 4|The opening count of the crib, its first combo lit
+turn||The match turn as it starts, after the opening count
 turn-toast|--toast|A prize toast over the board (the blank card'"'"'s +5 steps)
 trace|--select g00,g01|Tracing two cards that make no combo
 trace-combo|--select g02,g03|A combo lighting while tracing (8♥ 7♣, a fifteen)
 armed-bomb|--arm bomb|A bomb armed, waiting for its target
 pop|--pop g02,g03|A scored set mid-pop, with the breakdown off
 pop-bomb|--pop g00 --bomb|A bombed card mid-pop
-breakdown-1|--breakdown g32,g33,c3,h2 --stage 1|Breakdown, cue sheet order 1: the breakdown starts and the board dims
-breakdown-2|--breakdown g32,g33,c3,h2 --stage 2|Order 2: the cards are up in the row
-breakdown-3|--breakdown g32,g33,c3,h2 --stage 3|Order 3: the banner is in
-breakdown-4|--breakdown g32,g33,c3,h2 --stage 4|Orders 4 and 6: the tally is in and the first combo (the fifteen) is lit
-breakdown-5|--breakdown g32,g33,c3,h2 --stage 5|Order 6: the fifteen unlit, before the next combo
-breakdown-6|--breakdown g32,g33,c3,h2 --stage 6|Order 6: the second combo (the pair) lit
-breakdown-7|--breakdown g32,g33,c3,h2 --stage 7|Order 6: the pair unlit
-breakdown-8|--breakdown g32,g33,c3,h2 --stage 8|Order 12: power up, the edge cards lit with their new chips
-breakdown-9|--breakdown g32,g33,c3,h2 --stage 9|Order 13: the total line
-breakdown-hold|--breakdown g32,g33,c3,h2|Order 14: the hold, waiting for a tap
+breakdown-1|--breakdown g31,g32,g33,c3 --stage 1|Breakdown, cue sheet order 1: the breakdown starts and the board dims
+breakdown-2|--breakdown g31,g32,g33,c3 --stage 2|Order 2: the cards are up in the row
+breakdown-3|--breakdown g31,g32,g33,c3 --stage 3|Order 3: the banner is in
+breakdown-4|--breakdown g31,g32,g33,c3 --stage 4|Orders 4 and 6: the tally is in and the first combo (the fifteen) is lit
+breakdown-5|--breakdown g31,g32,g33,c3 --stage 5|Order 6: the fifteen unlit, before the next combo
+breakdown-6|--breakdown g31,g32,g33,c3 --stage 6|Order 6: the second combo (the pair) lit
+breakdown-7|--breakdown g31,g32,g33,c3 --stage 7|Order 6: the pair unlit
+breakdown-8|--breakdown g31,g32,g33,c3 --stage 8|Order 12: power up, the edge cards lit with their new chips
+breakdown-9|--breakdown g31,g32,g33,c3 --stage 9|Order 13: the total line
+breakdown-hold|--breakdown g31,g32,g33,c3|Order 14: the hold, waiting for a tap
 warning|--trace g02,g03,g13|The left-over warning (8♥ 7♣ J♠: the J is left over)
 info-hand|--info hand|Info card: the hand
 info-crib|--info crib|Info card: the crib
@@ -69,7 +71,7 @@ echo "$SHOTS" | while IFS='|' read -r name flags what; do
 done
 echo "Wrote $(ls "$OUT"/*.png | wc -l | tr -d ' ') shots to $OUT"
 
-# `--motion`: also film the main cues at 5x slow motion (about 2 minutes), into $OUT/motion/.
+# `--motion`: also film the main cues at 5x slow motion (about 5 minutes), into $OUT/motion/.
 [ "${1:-}" = "--motion" ] || exit 0
 mkdir -p "$OUT/motion"
 cat > "$OUT/motion/README.md" <<EOF
@@ -83,11 +85,12 @@ The numbers behind every motion are in \`config/fx.json\` and ui.md › Motion; 
 |---|---|
 EOF
 FILMS='deal|The deal: twelve cards in, one every 90 ms, each on a 300 ms spring (the throw needs a tap, so it is not here)
+opening|The opening count (r24): the hand, then the crib, rise into the row and count aloud over the empty board, their steps fly to the counter, then the grid deals in
 trace|Tracing 8♥ then 7♣: the selected look on each card, the fifteen lighting, then the score pop with the breakdown off, and the board change as new cards fall in
-breakdown|A breakdown of A♥ 7♦ 6♦ A♦ (a fifteen, a pair, two edge cards): every cue in ui.md › Cue sheet, through the hold (the film does not wait) and the fly home
+breakdown|A breakdown of A♣ A♥ 7♦ 6♦ (a fifteen, a pair, one edge card): every cue in ui.md › Cue sheet, through the hold (the film does not wait) and the fly home
 bomb|A bomb armed, then fired on the top-left card: the bomb pop and the board change'
 echo "$FILMS" | while IFS='|' read -r cue what; do
-  perl -e 'alarm 240; exec @ARGV' "$APP" --film "$PWD/$OUT/motion/$cue.mp4" --cue "$cue" --seed 1
+  perl -e 'alarm 1500; exec @ARGV' "$APP" --film "$PWD/$OUT/motion/$cue.mp4" --cue "$cue" --seed 1
   echo "| [$cue.mp4]($cue.mp4) | $what |" >> "$OUT/motion/README.md"
 done
 echo "Wrote $(ls "$OUT"/motion/*.mp4 | wc -l | tr -d ' ') films to $OUT/motion"

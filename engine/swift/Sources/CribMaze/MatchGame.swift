@@ -82,8 +82,8 @@ public struct MatchGame: Codable, Sendable, Equatable {
     public func deal() -> Dealt { Deal.deal(seed: turnSeed, deck: deck.cards, botDeck: botDeck?.cards) }
 
     /// The setup for this turn after a deal.
-    public func setup(dealt: Dealt, thrown: [Card], botThrown: [Card], warned: Bool = false) -> TurnSetup {
-        Deal.setup(seed: turnSeed, dealer: dealer, dealt: dealt, thrown: thrown, botThrown: botThrown, tray: tray, warned: warned, deck: deck.cards)
+    public func setup(dealt: Dealt, thrown: [Card], botThrown: [Card], kept: [Card]? = nil, warned: Bool = false) -> TurnSetup {
+        Deal.setup(seed: turnSeed, dealer: dealer, dealt: dealt, thrown: thrown, botThrown: botThrown, kept: kept, tray: tray, warned: warned, deck: deck.cards)
     }
 
     /// The setup for this turn with no deal: the hand comes off the top of the game's deck, or is

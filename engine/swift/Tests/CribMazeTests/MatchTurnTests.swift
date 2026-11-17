@@ -98,6 +98,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
                 switch e {
                 case .score(_, _, _, _, _, _, _, _, let p, _, _, _): steps += p
                 case .leftoverPenalty(_, _, let cost): steps -= cost
+                case .opening(_, _, _, _, _, _, let p): steps += p
                 case .boardCleared(_, let a): steps += a
                 case .extraDrawn(_, let o, _, _, _, _): if o == "steps" { steps += c.jokers.outcomes["steps"]!.amount! }
                 default: break
@@ -377,5 +378,68 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
     @Test func classicKeepTakesTheBestHand() {
         let six = "4H 5C 6D 6S KC 9D".split(separator: " ").compactMap { Card.parse(String($0)) }
         #expect(Set(Deal.classicKeep(six).thrown.map(\.notation)) == ["KC", "9D"])
+    }
+}
+
+// Match rules r24: the opening count, the hand and crib limit in a set, and the kept order.
+@Suite struct OpeningTests {
+    @Test func countsHandAndCribBeforeTheGrid() throws {
+        let c = try loadConfig()
+        var setup = TurnSetup(seed: 3, dealer: true, warned: true, fixedHand: ["5H", "5D", "10S", "JC"], fixedStarter: "5C")
+        setup.fixedCrib = ["AH", "2H", "3H", "4H"]
+        let (t, ev) = MatchTurn.start(config: c, setup: setup)
+        let openings = ev.compactMap { e -> (String, Int, [String])? in
+            if case .opening(let w, let ps, _, _, _, _, let p) = e { return (w, p, ps) } else { return nil }
+        }
+        #expect(openings.map(\.0) == ["hand", "crib"])
+        // 5 5 5 10 J: fifteens 5+10 ×3, 5+J ×3, 5+5+5 = 14; three 5s = 6; nobs (JC, 5C) = 1. 21 in all.
+        #expect(openings[0].1 == 21)
+        #expect(openings[0].2 == ["h0", "h1", "h2", "h3", "s"])
+        // A 2 3 4 hearts, 5C: run of 5 = 5, fifteen A+2+3+4+5 = 2; no crib flush without the starter. 7.
+        #expect(openings[1].1 == 7)
+        #expect(t.state.totals.openingSteps == 28)
+        #expect(t.state.steps >= 28)
+        #expect(t.state.bestPoints == nil)
+        // Nobody powers up from the opening count.
+        #expect((16...24).allSatisfy { t.state.power[$0] == c.rules.match.edgePower.start })
+    }
+
+    @Test func nonDealerCountsOnlyTheHand() throws {
+        let c = try loadConfig()
+        let (_, ev) = MatchTurn.start(config: c, setup: TurnSetup(seed: 3, dealer: false, warned: true, fixedHand: ["5H", "5D", "10S", "JC"], fixedStarter: "5C"))
+        let whats = ev.compactMap { e -> String? in if case .opening(let w, _, _, _, _, _, _) = e { w } else { nil } }
+        #expect(whats == ["hand"])
+    }
+
+    @Test func aSetTakesOneHandOrCribCard() throws {
+        let c = try loadConfig()
+        var setup = TurnSetup(seed: 3, dealer: true, warned: true, fixedHand: ["5H", "5D", "10S", "JC"], fixedStarter: "5C")
+        setup.fixedCrib = ["AH", "2H", "3H", "4H"]
+        let (t, _) = MatchTurn.start(config: c, setup: setup)
+        let h2 = Board.hand.lowerBound + 2, h3 = Board.hand.lowerBound + 3, c3 = Board.crib.lowerBound + 3
+        let g32 = 14, g33 = 15
+        #expect(t.traceProblem([g32, h2, h3]) == "edge_cards")
+        #expect(t.traceProblem([g33, h3, c3]) == "edge_cards")
+        #expect(t.traceProblem([g32, h3]) != "edge_cards")
+    }
+
+    @Test func keptOrderLaysTheHandRow() throws {
+        let c = try loadConfig()
+        var dice = Dice(seed: 9)
+        var (state, _) = CribMazeGame.start(.init(c, firstDealer: true), players: [.human(0), .bot(1, level: "classic")], dice: &dice)
+        let ev = try CribMazeGame.apply(.startHand(.init(deal: true, warned: true)), by: 0, to: &state, dice: &dice)
+        guard case .deal(let player, _, _) = ev.last else { Issue.record("no deal"); return }
+        let thrown = Array(player.prefix(2)), kept = Array(player.suffix(4).reversed())
+        let e2 = try CribMazeGame.apply(.discard(thrown: thrown, kept: kept), by: 0, to: &state, dice: &dice)
+        guard case .discard(let k, _, _, _) = e2.first else { Issue.record("no discard"); return }
+        #expect(k.map(\.id) == kept.map(\.id))
+        let hand = Board.hand.map { state.turn!.state.cells[$0]!.id }
+        #expect(hand == kept.map(\.id))
+        // kept must be the other 4, each once.
+        var again = CribMazeGame.start(.init(c, firstDealer: true), players: [.human(0), .bot(1, level: "classic")], dice: &dice).0
+        _ = try CribMazeGame.apply(.startHand(.init(deal: true, warned: true)), by: 0, to: &again, dice: &dice)
+        guard case .dealing(let d, _, _) = again.stage else { Issue.record("not dealing"); return }
+        let bad = [CardRef(d.player[2]), CardRef(d.player[2]), CardRef(d.player[3]), CardRef(d.player[4])]
+        #expect(throws: IllegalAction.self) { try CribMazeGame.apply(.discard(thrown: d.player.prefix(2).map(CardRef.init), kept: bad), by: 0, to: &again, dice: &dice) }
     }
 }

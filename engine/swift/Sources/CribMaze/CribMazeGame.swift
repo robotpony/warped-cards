@@ -12,7 +12,7 @@ public enum CribMazeGame: GameRules {
     public static let gameID = "crib-maze"
     public static var rulesVersion: String { MatchTurn.rulesVersion }
     /// Keep in step with `specVersion` in cribbage/minigames/spec.json (spec.test.js checks it).
-    public static let specVersion = 3
+    public static let specVersion = 4
 
     /// The config files, plus who deals first. Encoded flat, so a record's config reads like the files.
     public struct Config: Codable, Sendable, Equatable {
@@ -85,8 +85,9 @@ public enum CribMazeGame: GameRules {
     public enum Action: Sendable, Equatable {
         /// Starts the next hand (the app sends it, with its settings).
         case startHand(HandOptions)
-        /// The player's 2 cards for the crib.
-        case discard(thrown: [CardRef])
+        /// The player's 2 cards for the crib, and (r24) the 4 they keep, in the order they sorted
+        /// them, which is the order they lie along the hand row. Without `kept`, the dealt order.
+        case discard(thrown: [CardRef], kept: [CardRef]? = nil)
         case match(MatchAction)
     }
 
@@ -128,14 +129,19 @@ public enum CribMazeGame: GameRules {
                 ev += startTurn(g.setup(fixedHand: o.fixedHand, fixedStarter: o.fixedStarter, warned: o.warned), o, &state, &dice)
             }
             return ev
-        case (.discard(let thrown), .dealing(let dealt, let botThrown, let o)):
+        case (.discard(let thrown, let kept), .dealing(let dealt, let botThrown, let o)):
             let ids = thrown.map(\.id)
             let cards = ids.compactMap { id in dealt.player.first { $0.id == id } }
             guard cards.count == 2, Set(ids).count == 2 else { throw IllegalAction("throw 2 of your 6 cards to the crib") }
-            let keep = dealt.player.filter { !ids.contains($0.id) }
+            var keep = dealt.player.filter { !ids.contains($0.id) }
+            if let k = kept {
+                let order = k.compactMap { r in keep.first { $0.id == r.id } }
+                guard order.count == 4, Set(order.map(\.id)).count == 4 else { throw IllegalAction("kept must be the other 4 of your 6, each once") }
+                keep = order
+            }
             let botKeep = dealt.bot.filter { c in !botThrown.contains { $0.id == c.id } }
             var ev: [Event] = [.discard(kept: keep.map(CardRef.init), thrown: cards.map(CardRef.init), botKept: botKeep.map(CardRef.init), botThrown: botThrown.map(CardRef.init))]
-            ev += startTurn(state.game.setup(dealt: dealt, thrown: cards, botThrown: botThrown, warned: o.warned), o, &state, &dice)
+            ev += startTurn(state.game.setup(dealt: dealt, thrown: cards, botThrown: botThrown, kept: keep, warned: o.warned), o, &state, &dice)
             return ev
         case (.match(let a), .playing(var t)):
             t.dice = dice
@@ -204,14 +210,14 @@ private func firstKey(_ decoder: Decoder) throws -> String? {
 }
 
 extension CribMazeGame.Action: Codable {
-    private enum Own: Codable { case startHand(options: CribMazeGame.HandOptions), discard(thrown: [CardRef]) }
+    private enum Own: Codable { case startHand(options: CribMazeGame.HandOptions), discard(thrown: [CardRef], kept: [CardRef]?) }
 
     public init(from decoder: Decoder) throws {
         switch try firstKey(decoder) {
         case "startHand", "discard":
             switch try Own(from: decoder) {
             case .startHand(let o): self = .startHand(o)
-            case .discard(let t): self = .discard(thrown: t)
+            case .discard(let t, let k): self = .discard(thrown: t, kept: k)
             }
         default: self = .match(try MatchAction(from: decoder))
         }
@@ -220,7 +226,7 @@ extension CribMazeGame.Action: Codable {
     public func encode(to encoder: Encoder) throws {
         switch self {
         case .startHand(let o): try Own.startHand(options: o).encode(to: encoder)
-        case .discard(let t): try Own.discard(thrown: t).encode(to: encoder)
+        case .discard(let t, let k): try Own.discard(thrown: t, kept: k).encode(to: encoder)
         case .match(let a): try a.encode(to: encoder)
         }
     }

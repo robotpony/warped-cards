@@ -2,6 +2,18 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.18.0 — 2026-11-16
+
+### Added
+
+- Each turn starts by counting your hand with the starter, as in cribbage, then your crib if you dealt, over the empty board. The steps land, then the grid deals in.
+- Drag your cards to sort them while you pick for the crib. The 4 you keep lie along the hand row in that order.
+
+### Changed
+
+- A set can use only one card from your hand and crib, since they've already been counted.
+- The deal's button says "Pick 2 for the crib", then "Score the hand" once you've picked.
+
 ## 0.17.0 — 2026-11-16
 
 ### Added

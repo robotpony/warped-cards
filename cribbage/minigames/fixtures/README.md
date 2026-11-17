@@ -33,4 +33,4 @@ Rung 6 before 7: scripted replay checks the rules without the dice, so a dice bu
 
 ## What the records don't reach yet
 
-`seed1.jsonl` is a 3-hand bot game: deals and discards, traces, swaps, bombs, reaches, extra cards and made cards, stock out, no sets left and cleared boards. It never has a burn, a `reachOver`, `timeUp` or `endTurn`, a rejected trace, a left-over warning or penalty (bots are always warned and never trace a bad set), or own decks. Add a record when a rules version adds something the records don't reach (scripted actions in a test are fine), so every port is checked on it.
+`seed1.jsonl` is a 3-hand bot game: deals and discards (with a sorted `kept`), opening counts of hands and cribs, traces, swaps, bombs, reaches, extra cards and made cards, stock out, no sets left and cleared boards. It never has a burn, a `reachOver`, `timeUp` or `endTurn`, a rejected trace (Swift's OpeningTests check `edge_cards`), a left-over warning or penalty (bots are always warned and never trace a bad set), or own decks. Add a record when a rules version adds something the records don't reach (scripted actions in a test are fine), so every port is checked on it.

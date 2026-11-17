@@ -51,7 +51,7 @@ func runGame(_ args: [String]) {
             let dealt = freshDeck ? Deal.deal(seed: g.turnSeed) : g.deal()
             let keep = Deal.classicKeep(dealt.player, scoring: config.rules.scoring), botKeep = Deal.classicKeep(dealt.bot, scoring: config.rules.scoring)
             per[k].madeDealt += (keep.keep + [dealt.starter]).filter { $0.kind == .made }.count
-            var setup = g.setup(dealt: dealt, thrown: keep.thrown, botThrown: botKeep.thrown, warned: true)
+            var setup = g.setup(dealt: dealt, thrown: keep.thrown, botThrown: botKeep.thrown, kept: keep.keep.sorted { $0.id < $1.id }, warned: true)
             if freshTray { setup.tray = config.rules.specials.start }
             if freshDeck { setup.deck = nil; setup.dealt = nil }
             var (t, ev) = MatchTurn.start(config: config, setup: setup)

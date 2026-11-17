@@ -112,10 +112,10 @@ struct PhoneView: View {
     private var stepsRow: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(session.state?.steps ?? 0)").font(Theme.font(44, .bold)).contentTransition(.numericText())
+                Text("\(session.shownSteps)").font(Theme.font(44, .bold)).contentTransition(.numericText())
                     .foregroundStyle(session.playback.bump ? Theme.gold : Theme.feltText)
                     .scaleEffect(session.playback.bump ? 1.25 : 1, anchor: .leading)
-                    .animation(fx.motions.board.numberRoll.animation(), value: session.state?.steps)
+                    .animation(fx.motions.board.numberRoll.animation(), value: session.shownSteps)
                     .onGeometryChange(for: CGPoint.self, of: { g in
                         let f = g.frame(in: .named("phone")); return CGPoint(x: f.minX + 24, y: f.midY)
                     }) { session.playback.stepsAt = $0 }
@@ -143,9 +143,9 @@ struct PhoneView: View {
         GeometryReader { g in
             ZStack(alignment: .leading) {
                 Capsule().fill(Theme.feltText.opacity(0.15))
-                Capsule().fill(Theme.gold).frame(width: g.size.width * min(1, max(0, CGFloat(session.state?.steps ?? 0) / 121)))
+                Capsule().fill(Theme.gold).frame(width: g.size.width * min(1, max(0, CGFloat(session.shownSteps) / 121)))
                     .shadow(color: Theme.gold.opacity(0.7), radius: 3)
-                    .animation(fx.motions.board.stepsCount.animation(), value: session.state?.steps)
+                    .animation(fx.motions.board.stepsCount.animation(), value: session.shownSteps)
             }
         }
         .frame(height: 6)
@@ -728,6 +728,9 @@ struct DealView: View {
     @State private var botIn = false
     @State private var starterUp = false
     @State private var throwing = false
+    /// The card being dragged to sort your hand, and how far it's moved.
+    @State private var dragID: Int?
+    @State private var dragX: CGFloat = 0
 
     init(session: GameSession) {
         self.session = session
@@ -850,7 +853,7 @@ struct DealView: View {
                 .transition(.opacity)
             } else {
                 HStack {
-                    Text(session.dealer ? "You deal. Throw 2 to your crib." : "The bot deals. Throw 2 to its crib.")
+                    Text(session.dealer ? "You deal. Drag to sort, tap 2 for your crib." : "The bot deals. Drag to sort, tap 2 for its crib.")
                         .font(Theme.font(14, .regular)).opacity(0.8)
                     Spacer()
                     Text("Hint").font(Theme.font(13, .semibold)).foregroundStyle(Theme.feltText.opacity(0.75))
@@ -864,26 +867,37 @@ struct DealView: View {
         .animation(fx.motions.hint.show.animation(), value: d.hint?.principle)
     }
 
-    // Your hand, fanned like cards held in your hand.
+    // Your hand, fanned like cards held in your hand. Drag a card sideways to sort (r24): the 4 you
+    // keep go along the hand row in this order.
     private func hand(_ d: DealState) -> some View {
-        let held = d.dealt.player.enumerated().filter { !d.picked.contains($0.element) }
+        let held = d.held
         let hinted = Set(d.hint?.cards.map(\.id) ?? [])
         let n = held.count, mid = Double(n - 1) / 2
-        return HStack(spacing: n > 4 ? -18 : -4) {
-            ForEach(Array(held.enumerated()), id: \.element.element.id) { k, pair in
-                let (i, c) = pair
+        let spacing: CGFloat = n > 4 ? -18 : -4, pitch = Self.handW + spacing
+        return HStack(spacing: spacing) {
+            ForEach(Array(held.enumerated()), id: \.element.id) { k, c in
+                let i = d.dealt.player.firstIndex(of: c) ?? k
                 let visible = shown > i * 2 + 1   // yours are dealt second, alternating
                 let tilt = (Double(k) - mid) * 5
+                let isDragged = dragID == c.id
                 CardFace(card: c, width: Self.handW)
                     .hintBlink(hinted.contains(c.id), cornerRadius: 8)
                     .matchedGeometryEffect(id: c.id, in: ns)
-                    .rotationEffect(.degrees(tilt), anchor: .bottom)
+                    .rotationEffect(.degrees(isDragged ? 0 : tilt), anchor: .bottom)
                     .offset(y: abs(Double(k) - mid) * abs(Double(k) - mid) * 3)   // a gentle arc
+                    .scaleEffect(isDragged ? 1.06 : 1, anchor: .bottom)
+                    .offset(x: isDragged ? dragX : 0, y: isDragged ? -10 : 0)
                     .opacity(visible ? 1 : 0)
                     .offset(y: visible ? 0 : -200)
-                    .zIndex(Double(k))
+                    .zIndex(isDragged ? 100 : Double(k))
                     .contentShape(Rectangle())
                     .onTapGesture { if !throwing && d.picked.count < 2 { withAnimation(fx.motions.board.pick.animation()) { session.togglePick(c) } } }
+                    .gesture(DragGesture(minimumDistance: 6)
+                        .onChanged { v in guard !throwing else { return }; dragID = c.id; dragX = v.translation.width }
+                        .onEnded { v in
+                            let to = k + Int((v.translation.width / pitch).rounded())
+                            withAnimation(fx.motions.board.pick.animation()) { session.moveHeld(c, to: to); dragID = nil; dragX = 0 }
+                        })
             }
         }
         .frame(height: Self.handW * 1.4 + 20)
@@ -892,7 +906,7 @@ struct DealView: View {
 
     private func button(_ d: DealState) -> some View {
         let ready = d.picked.count == 2 && !throwing
-        return Text(throwing ? "Cutting the starter…" : ready ? "Throw to the crib" : "Tap \(2 - d.picked.count) card\(d.picked.count == 1 ? "" : "s") for the crib")
+        return Text(throwing ? "Cutting the starter…" : ready ? "Score the hand" : d.picked.isEmpty ? "Pick 2 for the crib" : "Pick 1 more for the crib")
             .font(Theme.font(16, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
             .background(RoundedRectangle(cornerRadius: 10).fill(ready ? Theme.gold : Theme.feltText.opacity(0.12)))
             .foregroundStyle(ready ? Theme.ink : Theme.feltText.opacity(0.6))

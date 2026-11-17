@@ -1,10 +1,10 @@
 # Crib RPG: Rules
 
-Status: draft 5, 2026-11-15. Match turns follow match rules r22. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 6, 2026-11-16. Match turns follow match rules r24. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
-Crib RPG (its beta app is Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage. Then, instead of counting your hand, you play it in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
+Crib RPG (its beta app is Noddy Yookerspiel) is cribbage on a maze. You build a hand and throw to the crib as in cribbage, and count them as in cribbage. Then you play your hand in a quick match game, the scoring grid: find cribbage combos on a grid of cards, using your hand and the crib along its edges. Then you peg to 31 as in cribbage, and every point you score moves your token through a maze instead of along a pegboard. Prizes along the way add cards and powers to the game.
 
 The first token to reach the goal wins.
 
@@ -28,7 +28,7 @@ Game ............................ until a token reaches the goal
 | Stage | One part of a round. In order: deal and discard, cut the starter, match turns on the scoring grid, the shop, pegging on the maze |
 | Turn | One player's go within a stage: a card played in pegging, or a match turn |
 | Play | One go on the maze: a pegging score, walked as its steps, or grid points spent on a gate, a switch or a shift. Players take turns, as in pegging (how: to design) |
-| Minigame | A game played in a stage in place of a classic cribbage step. The match game is the first: it replaces counting your hand. More may follow |
+| Minigame | A game played in a stage beside or in place of a classic cribbage step. The match game is the first: it follows counting your hand. More may follow |
 | Match turn | One player's turn of the match game, on the scoring grid. Its points are spent on the maze during pegging |
 
 ## Classic rules we use
@@ -52,7 +52,7 @@ Dealing, discarding, cutting the starter, his heels and pegging all follow class
 
 The crib belongs to the dealer and always has 4 cards.
 
-Picking your crib cards is untimed. If you pause, a hint may name one principle and blink the cards it's about, such as "Keep your 5s: every ten-card on the grid makes 15 with them." It never tells you what to throw. Tap Hint to see it sooner; turn hints off in the settings.
+Picking your crib cards is untimed. Drag your cards to sort them: the 4 you keep lie along the bottom of the scoring grid in that order, and only the last one touches the starter. If you pause, a hint may name one principle and blink the cards it's about, such as "Keep your 5s: every ten-card on the grid makes 15 with them." It never tells you what to throw. Tap Hint to see it sooner; turn hints off in the settings.
 
 ### 2. Cut the starter
 
@@ -60,11 +60,11 @@ Cut and turn up the starter as in classic cribbage. If it's a Jack, the dealer s
 
 ### 3. Match turns: the scoring grid
 
-In classic cribbage you'd count your hand after pegging. In Crib RPG, each player takes a match turn on the scoring grid instead, before pegging, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
+In classic cribbage you'd count your hand after pegging. In Crib RPG, each player counts their hand and then takes a match turn on the scoring grid, before pegging, in classic show order: the players after the dealer first, then the dealer, who plays the hand and the crib in the same turn.
 
 The computer players' turns come first, as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
-These are match rules r22, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r24, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -82,17 +82,19 @@ Match board (one player's turn)
 
 A turn at a glance:
 
-1. Trace a set of 2 to 4 touching cards. It scores at once, counted like a cribbage hand.
-2. Scored grid cards clear and the stock refills the grid. Your hand, crib and starter stay and power up.
-3. Use your power jokers to change the board.
-4. When the stock runs out, play out the cards that are left.
-5. The turn ends on the timer, a cleared board, or a board with no sets left. Your best score wins a prize.
+1. Your hand is counted with the starter, as in a classic show. If you dealt, so is your crib. Then the grid deals in.
+2. Trace a set of 2 to 4 touching cards. It scores at once, counted like a cribbage hand.
+3. Scored grid cards clear and the stock refills the grid. Your hand, crib and starter stay and power up.
+4. Use your power jokers to change the board.
+5. When the stock runs out, play out the cards that are left.
+6. The turn ends on the timer, a cleared board, or a board with no sets left. Your best score wins a prize.
 
 #### Setting up
 
 1. Shuffle every card that isn't in a hand, the crib or the starter. This is the stock.
-2. Deal a 4 x 4 grid face up from the stock.
-3. Lay your hand along the bottom and the starter in the corner. The dealer lays the crib down the side; for anyone else the side stays empty, so the crib is the dealer's advantage.
+2. Count your hand with the starter, as in a classic show: fifteens, pairs, runs, a flush of your 4 cards (5 if the starter matches) and his nobs. If you dealt, count the crib the same way; a crib flush needs all 5 cards. Each count moves you that many steps. A card a joker made still multiplies its count, but edge power doesn't, nothing powers up, and the count is never your best set.
+3. Lay your hand along the bottom, in the order you sorted it, and the starter in the corner. The dealer lays the crib down the side; for anyone else the side stays empty, so the crib is the dealer's advantage.
+4. Deal a 4 x 4 grid face up from the stock.
 
 #### Tracing a set
 
@@ -100,7 +102,7 @@ Drag across touching cards and let go, or tap them one by one and tap the last o
 
 - Cards touch their 8 neighbours, diagonals included. Hand, crib and starter cards follow the same rule.
 - Your hand size is how many cards a set can pick: 2 to 4, plus the starter, which joins for free. The hand size counter in the bar along the bottom shows how many you've picked. A reach joker raises your hand size for a while; later, some combos and prizes may too.
-- Every set MUST include at least one grid card. Your hand, crib and starter can't score on their own.
+- A set MAY pick at most one card from your hand and crib together (the starter doesn't count). So every set includes grid cards: your hand and crib were counted at the start and can't score on their own again.
 - The same set of cards can't score twice in a turn.
 
 #### The starter joins every set
@@ -162,7 +164,7 @@ A card that isn't part of any combo is left over. Each one costs 2 steps (to tun
 
 - The first time you trace a set with a card left over, a warning explains this rule instead, and nothing happens.
 - Your steps for the turn can go below 0.
-- A set the game rejects for another reason costs nothing: fewer than 2 cards, no grid card, or a set already scored.
+- A set the game rejects for another reason costs nothing: fewer than 2 cards, more than one hand or crib card, or a set already scored.
 
 #### After a score
 

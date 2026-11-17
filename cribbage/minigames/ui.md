@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 2, 2026-11-16, spec 3, from the beta app at 0.17.3, rules r23
+Status: draft 3, 2026-11-16, spec 4, from the beta app at 0.18.0, rules r24
 
 ## Summary
 
@@ -42,8 +42,8 @@ The window is a phone. Every scene draws inside it; there are no other windows i
 App flow (one game is 3 turns, config game.turns)
 
   Launch ........................ a new game, random seed
-    Deal (if the Deal setting is on) .... pick 2 for the crib
-    Match turn .................. trace sets until the turn ends
+    Deal (if the Deal setting is on) .... sort your hand, pick 2 for the crib
+    Match turn .................. count the hand and crib, then trace sets until the turn ends
     Turn summary ................ the turn's numbers, the deck
       [Next turn] ............... back to Deal, for the next turn
       after the last turn:
@@ -232,7 +232,8 @@ The match turn is one scene with an input mode and a few covers. These are its s
 ```
 Match turn states
 
-  Starting ........ the session shows the engine's turn_start; timers start
+  Starting ........ the session shows the engine's turn_start
+    Opening ....... busy: the hand, then the crib, counted over the empty board; the grid deals in
   Tracing ......... the default; trace sets, tap jokers
     Selecting ..... cards picked, not yet submitted
   Armed ........... a swapper, bomb or burn waits for its target
@@ -247,7 +248,9 @@ Match turn states
 
 | From | Trigger | To |
 |---|---|---|
-| Starting | Turn shown | Tracing (or Stuck, if the first board has no sets) |
+| Starting | Turn shown | Opening (with `opening` events and animation on), else Tracing |
+| Opening | The last count's steps land and the grid has dealt in | Tracing (or Stuck, if the first board has no sets) |
+| Opening | Tap anywhere | Holding (skips to the count's end), as in a breakdown |
 | Tracing | Tap or drag onto a card | Selecting |
 | Selecting | Release a drag with 2 or more cards, or tap the last card again | Playing out (if it scores, is rejected, or costs steps), or Warned |
 | Selecting | Release a drag with fewer than 2 cards; tap the only card again | Tracing (selection cleared) |
@@ -271,7 +274,20 @@ Source: `GameSession.swift` (send, commit, submit, arm, watchDeadBoard), `BoardV
 
 ### Starting a turn
 
-When a turn starts, the session resets everything the screen shows for a turn: no selection, input mode back to tracing, no armed joker, no warning, toast or info card, an empty feed, no reach timers and no grace count. It then shows the engine's turn as it is, with no deal-in animation: the grid, the hand, the crib and the starter simply appear. Any extra card resolved during setup shows its toast (see Cue sheets). The turn timer is set to `match.timerSeconds` (config, 180) and starts.
+When a turn starts, the session resets everything the screen shows for a turn: no selection, input mode back to tracing, no armed joker, no warning, toast or info card, an empty feed, no reach timers and no grace count. It then shows the engine's turn. The hand, the crib and the starter appear in their places; the grid's cells stay empty. Any extra card resolved during setup shows its toast (see Cue sheets). The turn timer is set to `match.timerSeconds` (config, 180).
+
+#### The opening count (r24)
+
+With `opening` events (engine.md › The opening count), the session is busy and plays each count in turn: the hand, then the crib for the dealer.
+
+1. A settle wait (320 ms).
+2. With the Breakdown setting on, the count plays as a score breakdown (Score breakdown › Cue sheet) with the same layout, pace, skip and hold: the 4 cards and the starter rise from their places into the row, the starter apart on the right. The banner's tag is "YOUR HAND" or "YOUR CRIB", its headline is the count's headline (or "Nothing to count"), and its suit chip reads "with the starter". The tally lists each combo, then, if a made card is counted, a "Joker card" line for each and a "Total multi" line; there is no starter line, no edge power, no left over and no power up. The total line is "Hand · Pair" (or "Crib · …") and the points. After the hold, the total flies to the step counter (when above 0) and the cards fly home.
+3. With the Breakdown setting off, a toast "Hand: 6 steps" (or "Crib: …") and a pop wait (340 ms).
+4. The step counter, which showed the steps before this count, rises by its points, with the steps bump.
+
+Then every grid column drops in from above, 4 card heights, in one board change (300 ms), followed by a settle wait. The session stops being busy and the turn timer starts. The feed gets a line per count: "Hand: 6 steps  4♥ 2♦ A♦ 4♦ K♥  fifteen + fifteen + pair".
+
+Starting a new turn or game while the opening plays stops it. With animation off (snapshots), the turn shows at once, grid and all, with the counts' steps included.
 
 ### Tracing a set
 
@@ -541,8 +557,9 @@ The session hands each action's events to the screen in the order the engine emi
 
 | Event | Cue | Duration | From |
 |---|---|---|---|
-| `turn_start` | The turn appears; the timer starts | Instant | Timer: config |
-| `trace_rejected` | Toast with the reason: "Sets are 2 to N cards", "A special joker can't be in a set", "Every set needs a grid card", "The cards must touch", "That set already scored" | Toast, 2,400 ms | Hard-coded |
+| `turn_start` | The turn appears, its grid empty while an opening count plays; the timer starts after it | Instant | Timer: config |
+| `opening` | The opening count over the empty board, then the grid deals in (Scene: Match turn › Starting a turn) | Breakdown pace, or a 340 ms pop; 300 ms deal-in | Hard-coded |
+| `trace_rejected` | Toast with the reason: "Sets are 2 to N cards", "A special joker can't be in a set", "Every set needs a grid card", "A set can use only one hand or crib card", "The cards must touch", "That set already scored" | Toast, 2,400 ms | Hard-coded |
 | `leftover_warning` | The left-over warning covers the board (see Overlays). Timers pause | Until "Got it" | Cost: config `leftOverCost` |
 | `leftover_penalty` | Steps drop (number and track animate). Feed line "K♠ 9♦  no combo: K♠ 9♦ left over  −4". No other cue | Steps: quick spring; track 400 ms | Hard-coded |
 | `score` | See What starts a move. Feed line with the set, single or multi, combos, points, suit and edge power. The last score's panel in settings updates | See Score breakdown | Breakdown: hard-coded |
@@ -583,11 +600,11 @@ Deal (full phone, 24 pt side padding, 36 pt top)
   YOUR CRIB (gold) or BOT'S CRIB (violet)
     [your 2 slots] [bot's 2 slots] ............ [deck, starter on top]
 
-  You deal. Throw 2 to your crib. ............. (Hint)
+  You deal. Drag to sort, tap 2 for your crib. ... (Hint)
 
   your 6 cards, 70 pt, fanned like a held hand
 
-  [ Tap 2 cards for the crib ]
+  [ Pick 2 for the crib ]
 ```
 
 | Part | Look |
@@ -597,9 +614,9 @@ Deal (full phone, 24 pt side padding, 36 pt top)
 | Bot's cards | Card backs 44 pt wide, overlapping by 18 pt, each turned 3° more than the last. Labelled "BOT" or "BOT · DEALS" |
 | Crib slots | 54 pt cards. Empty slots are dashed `gold` outlines at 45% on `panel` at 60%; the bot's empty slots are at 50% |
 | Deck | A card back, 54 pt; the starter turns up on it, tagged "STARTER" |
-| Hint row | At least 44 pt tall. Before a hint: "You deal. Throw 2 to your crib." or "The bot deals. Throw 2 to its crib.", 14 pt at 80%, and a "Hint" capsule button. With a hint: a `panel` box with a `gold` border at 60%, a gold light bulb and the principle's line |
+| Hint row | At least 44 pt tall. Before a hint: "You deal. Drag to sort, tap 2 for your crib." or "The bot deals. Drag to sort, tap 2 for its crib.", 14 pt at 80%, and a "Hint" capsule button. With a hint: a `panel` box with a `gold` border at 60%, a gold light bulb and the principle's line |
 | Your hand | 70 pt cards, overlapping by 18 pt (4 pt once 4 or fewer are left), each turned 5° from the middle around its bottom edge, and dropped into a gentle arc (3 pt × distance from the middle, squared) |
-| Button | Full width, 12 pt padding, 16 pt semibold. Grey ("Tap 2 cards for the crib", "Tap 1 card for the crib") until 2 are picked, then `gold` "Throw to the crib", then "Cutting the starter…" |
+| Button | Full width, 12 pt padding, 16 pt semibold. Grey ("Pick 2 for the crib", then "Pick 1 more for the crib") until 2 are picked, then `gold` "Score the hand", then "Cutting the starter…" |
 
 ### States and input
 
@@ -607,7 +624,7 @@ Deal (full phone, 24 pt side padding, 36 pt top)
 Deal states
 
   Dealing in ...... 12 cards, one at a time
-  Picking ......... tap cards to and from the crib; untimed
+  Picking ......... tap cards to and from the crib, drag to sort; untimed
   Hinted .......... a hint shows (asked, or after a pause)
   Throwing ........ the bot throws, the starter turns
   Done ............ the match turn starts
@@ -615,10 +632,11 @@ Deal states
 
 - Dealing in: 12 cards, one every 90 ms, alternating, the bot's first. Each springs in over 300 ms with a light bounce: the bot's rise from 60 pt below, yours drop from 200 pt above. The bot always gets the first card, whoever deals (see Gaps).
 - Picking: tap a card in your hand to throw it to the next empty crib slot; tap a card in a crib slot to take it back. Each move is a 250 ms snappy slide between the two places. A third card can't be picked. Input is open during the deal-in.
+- Sorting (r24): drag a card in your hand sideways, at least 6 pt. It follows the pointer, lifted 10 pt, scaled 1.06 from its bottom edge, upright, and drawn above the others. On release it moves to the place nearest where it was dropped: its place plus the drag's distance over the card pitch (52 pt with 5 or 6 cards, 66 pt with 4 or fewer), rounded, held to the hand. The cards settle with the 250 ms snappy slide. A card taken back from the crib goes to the right end. The 4 you keep lie along the hand row in this order (h0 on the left), sent as the `discard` action's `kept`. Sorting counts as a change for the hint's 8 s pause.
 - Hint: one principle about your deal, never which cards to throw. It shows after 8 s (hard-coded) without a pick or unpick, if the Hints setting is on, or at once on "Hint". The cards it's about blink a gold ring. Once shown it stays for the deal. The hint is picked from `hints.json` › `discard` (config: each principle's worth and `minWorth`). If you ask and nothing stands out, a toast says "Nothing stands out: keep cards that work together". The principles' lines are in the engine (`Principles`), for example "Keep your 5s: every ten-card on the grid makes 15 with them."
-- Throwing: tap "Throw to the crib" with 2 picked. Picking locks. The bot's 2 cards fly face down into its crib slots (450 ms spring); 550 ms later the starter turns up on the deck (400 ms spring with a bounce, scaling up from 60%); 900 ms later the match turn starts. 1,450 ms in all. Nothing here is skippable.
+- Throwing: tap "Score the hand" with 2 picked. Picking locks. The bot's 2 cards fly face down into its crib slots (450 ms spring); 550 ms later the starter turns up on the deck (400 ms spring with a bounce, scaling up from 60%); 900 ms later the match turn starts. 1,450 ms in all. Nothing here is skippable.
 
-Source: `MatchTurnView.swift` (DealView), `GameSession.swift` (togglePick, showHint, watchHint, throwToCrib), `Hints.swift`.
+Source: `MatchTurnView.swift` (DealView), `GameSession.swift` (togglePick, moveHeld, showHint, watchHint, throwToCrib), `Hints.swift`.
 
 ## Scene: Turn summary
 
@@ -735,7 +753,7 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib RPG) has
 
 - Records: every game is written as a GameRecord file under the app's data folder, `Records/<YYYY-MM-DD>/<time>-crib-maze.jsonl` (ARCHITECTURE.md › GameRecord). Writing starts at the player's first choice, so a game opened and left leaves no file. The deal's hint is kept as a `deal_hint` note.
 - Diagnostics: slow motion and the frame meter (see Settings panel). A hitch is a frame that took over 1.5 times the display's frame time while something was moving.
-- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window; `reference.sh --motion` films all four into `docs/images/reference/motion/`.
+- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|trace|breakdown|bomb` films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 
@@ -912,7 +930,7 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.17.3 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r23` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.18.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r24` (`cribbage/minigames/config/rules.json`):
 
 - `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins

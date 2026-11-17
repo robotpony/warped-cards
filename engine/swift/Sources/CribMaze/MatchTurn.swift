@@ -1,4 +1,4 @@
-// The match turn (engine.md, match rules r23). Given a state, an action and
+// The match turn (engine.md, match rules r24). Given a state, an action and
 // the dice, it returns the new state and the events. No clock, no files, no
 // randomness of its own.
 import CardKit
@@ -46,10 +46,15 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var bigScores = 0, bigSteps = 0
     /// Made cards' multipliers (r20): sets scored with one, and the steps their multipliers added.
     public var madeScores = 0, stepsFromMade = 0
+    /// The opening count (r24): steps from counting the hand and the crib before the grid deals in.
+    public var openingSteps = 0
 }
 
 public enum MatchEvent: Codable, Sendable, Equatable {
     case turnStart(rulesVersion: String, dealer: Bool, hand: [CardRef], crib: [CardRef], starter: CardRef, grid: [CardRef?], stockSize: Int, timer: Int, cardBudget: Int, jokers: [String], tray: [String: Int])
+    /// The opening count (r24): the hand, or the dealer's crib, counted with the starter as a classic
+    /// show. `what` is "hand" or "crib". Cards and positions are the 4 cards then the starter.
+    case opening(what: String, positions: [String], cards: [CardRef], combos: [ComboOut], comboPoints: Int, madePercent: Int, points: Int)
     case traceRejected(positions: [String], reason: String)
     case leftoverWarning(positions: [String], leftOver: Int)
     case leftoverPenalty(positions: [String], leftOver: Int, cost: Int)
@@ -174,7 +179,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r23"
+    public static let rulesVersion = "match-r24"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -234,12 +239,39 @@ public struct MatchTurn: Sendable {
         ev.append(.turnStart(rulesVersion: Self.rulesVersion, dealer: setup.dealer, hand: hand.map(CardRef.init), crib: setup.dealer ? crib.map(CardRef.init) : [],
                              starter: CardRef(starter), grid: Board.grid.map { t.state.cells[$0].map(CardRef.init) }, stockSize: t.state.stock.count,
                              timer: config.rules.match.timerSeconds, cardBudget: config.rules.match.cardBudget, jokers: extraKinds, tray: t.state.tray))
+        if let o = config.rules.match.opening {
+            ev.append(t.countOpening("hand", Array(Board.hand), o.hand))
+            if setup.dealer { ev.append(t.countOpening("crib", Array(Board.crib), o.crib)) }
+        }
         ev += t.resolveExtras()
         ev += t.afterAction()
         return (t, ev)
     }
 
     private init(config: Config, state: MatchState, dice: Dice) { self.config = config; self.state = state; self.dice = dice }
+
+    /// The opening count (r24): 4 cards and the starter, counted as a classic show. Made cards'
+    /// multipliers apply (the starter's only when a combo uses it, as on the grid); edge power
+    /// doesn't, nothing powers up, and the count is never the turn's best set.
+    mutating func countOpening(_ what: String, _ four: [Pos], _ o: CountOptions) -> MatchEvent {
+        let ps = four + [Board.starter]
+        let cards = ps.map { state.cells[$0]! }
+        var opts = o
+        if let st = state.cells[Board.starter], let j = four.firstIndex(where: { state.cells[$0]?.rank == 11 && state.cells[$0]?.suit == st.suit }) {
+            opts.nobs = [4, j]
+        }
+        // Only playing cards count (an extra card can't be dealt into a hand yet).
+        let cnt = cards.allSatisfy({ $0.isPlaying && $0.suit != nil }) ? count(cards.map { (rank: $0.rank, suit: $0.suit!) }, opts, scoring: config.rules.scoring) : Count(combos: [], leftOver: Array(0..<5))
+        let starterUsed = cnt.combos.contains { $0.cards.contains(4) }
+        var made = 100
+        for (i, c) in cards.enumerated() where i < 4 || starterUsed { if let m = c.percent { made = (made * m + 50) / 100 } }
+        if let cap = config.jokers.madeCapPercent, cap > 0 { made = min(made, cap) }
+        let points = (cnt.total * made + 50) / 100
+        state.steps += points; state.totals.steps += points; state.totals.openingSteps += points
+        return .opening(what: what, positions: ps.map(Board.name), cards: cards.map(CardRef.init),
+                        combos: cnt.combos.map { ComboOut(kind: $0.kind, size: $0.size, multiplier: $0.multiplier, points: $0.points, cards: $0.cards) },
+                        comboPoints: cnt.total, madePercent: made, points: points)
+    }
 
     // MARK: Drawing and refilling
 
@@ -395,6 +427,7 @@ public struct MatchTurn: Sendable {
         if picked(ps).count < 2 || picked(ps).count > pickLimit || Set(ps).count != ps.count { return "size" }
         for p in ps { guard let c = state.cells[p] else { return "size" }; if c.isSpecial { return "special" } }
         if !ps.contains(where: Board.isGrid) { return "no_grid_card" }
+        if let m = r.maxEdgeCards, ps.filter({ Board.hand.contains($0) || Board.crib.contains($0) }).count > m { return "edge_cards" }
         if !Board.connected(ps) { return "not_touching" }
         if state.scoredSets.contains(scoredKey(ps)) { return "already_scored" }
         return nil

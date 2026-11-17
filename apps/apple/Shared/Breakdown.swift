@@ -299,6 +299,74 @@ extension GameSession {
     }
 }
 
+extension GameSession {
+    /// Plays the opening count (r24): the hand, or the crib, counted with the starter as a classic
+    /// show. The cards rise from their places into the row, as a set's do, and count aloud; there's
+    /// no edge power, nothing left over and no power up. Made cards' multipliers still apply.
+    func playOpening(_ e: MatchEvent, cells: [Card?]) async {
+        guard case .opening(let what, let names, _, let combos, let comboPoints, let made, let points) = e else { return }
+        let pb = playback, T = timing, W = fx.waits.breakdown
+        let sel = names.compactMap(Board.parse)
+        var n = 0
+        func stepMs() -> Double { defer { n += 1 }; return max(T.min, T.base * pow(T.accel, Double(n))) }
+        let card = { (p: Pos) in cells[p] }
+        let title = what == "crib" ? "Crib" : "Hand"
+        let head = combos.isEmpty ? "Nothing to count" : Self.headline(combos)
+
+        pb.reset(); pb.active = true
+        for p in sel { pb.rowCards[p] = cells[p] }
+        await pb.wait(W.beforeRow * T.scale)
+        pb.row = sel
+        withAnimation(fx.motions.breakdown.setLeave.animation()) { pb.set = sel }
+        if pb.instant { pb.rowOn = true } else {
+            try? await Task.sleep(for: .milliseconds(Int(W.rowBeat)))
+            pb.rowOn = true
+        }
+        await pb.wait(W.beforeBanner * T.scale)
+        withAnimation(fx.motions.breakdown.banner.animation()) { pb.banner = Banner(kind: what == "crib" ? "YOUR CRIB" : "YOUR HAND", head: head, suit: "with the starter") }
+        await pb.wait(W.beforeTally * T.scale)
+        withAnimation(fx.motions.breakdown.tally.animation()) { pb.tallyOn = true }
+        var total = 0
+        for c in combos {
+            let ps = c.cards.map { sel[$0] }
+            total += c.points
+            withAnimation(fx.motions.breakdown.light.animation()) { pb.lit = Set(ps) }
+            pb.float(ps, "+\(c.points)", Self.displayName(c))
+            pb.line(Self.displayName(c), Self.signed(c.points), "\(total)", cards: ps.compactMap(card))
+            let ms = stepMs()
+            await pb.wait(ms * W.comboLitPercent / 100)
+            withAnimation(fx.motions.breakdown.unlight.animation()) { pb.lit = [] }
+            await pb.wait(ms * (100 - W.comboLitPercent) / 100)
+        }
+        if made > 100 {
+            let usesStarter = combos.contains { $0.cards.contains(4) }
+            for (i, p) in sel.enumerated() where (i < 4 || usesStarter) && cells[p]?.percent != nil {
+                withAnimation(fx.motions.breakdown.light.animation()) { pb.litPower = [p] }
+                let m = multiplierText(percent: cells[p]!.percent!)
+                pb.float([p], m, "joker card", .power)
+                pb.line("Joker card", m, "", .power, cards: [card(p)].compactMap { $0 })
+                await pb.wait(stepMs())
+                withAnimation(fx.motions.breakdown.unlight.animation()) { pb.litPower = [] }
+            }
+            pb.line("Total multi", multiplierText(percent: made), "\(points)", .power)
+            await pb.wait(stepMs())
+        }
+        _ = comboPoints
+        pb.line("\(title) · \(head)", Self.signed(points), "", .total)
+        await pb.wait(max(T.min, W.afterTotal * T.scale))
+        await pb.hold()
+        if !pb.instant {
+            if let from = pb.totalAt, points > 0 {
+                pb.fly = FlyText(text: Self.signed(points), from: from)
+                withAnimation(fx.motions.breakdown.totalFly.animation()) { pb.fly?.arrived = true }
+            }
+            withAnimation(fx.motions.breakdown.tally.animation()) { pb.tallyOn = false; pb.banner = nil }
+            pb.rowOn = false
+            try? await Task.sleep(for: .milliseconds(Motion.ms(W.flyHome)))
+        }
+    }
+}
+
 /// Where the breakdown sits over the board: the banner on top, the set's cards in a row
 /// under it (the starter on the right, a little apart), then the tally.
 enum RowLayout {

@@ -103,7 +103,8 @@ struct BoardView: View {
 
     private var placed: [(p: Pos, card: Card)] {
         guard let cells = session.state?.cells else { return [] }
-        return (0..<Board.count).compactMap { p in cells[p].map { (p, $0) } }
+        // r24: while the hand and crib are counted, the grid's cards wait to deal in.
+        return (0..<Board.count).filter { !(session.gridHidden && Board.isGrid($0)) }.compactMap { p in cells[p].map { (p, $0) } }
     }
 
     /// A word tag under a point: tapping HAND, CRIB or STARTER explains it.

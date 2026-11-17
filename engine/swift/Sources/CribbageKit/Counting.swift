@@ -44,6 +44,7 @@ public struct Count: Sendable, Equatable {
     public var total: Int { combos.reduce(0) { $0 + $1.points } }
     /// Indexes in no combo.
     public let leftOver: [Int]
+    public init(combos: [Combo], leftOver: [Int]) { self.combos = combos; self.leftOver = leftOver }
 }
 
 /// Counts cards given as (rank, suit). Order: fifteens, pairs, runs, flush, his nobs.
