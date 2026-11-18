@@ -134,6 +134,11 @@
   .play:disabled { opacity: .35; cursor: default; }
   .suits { display: flex; gap: 8px; } .suits button { font: inherit; font-size: 22px; width: 44px; height: 40px; border-radius: 9px; background: var(--paper); border: 2px solid transparent; cursor: pointer; }
   .suits button.on { border-color: var(--cyan); box-shadow: 0 0 10px rgba(60,242,255,.6); }
+  .topay { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+  .topay b { font-size: 64px; font-weight: 800; line-height: .9; color: var(--gold); text-shadow: 0 0 18px rgba(255,212,71,.45); font-variant-numeric: tabular-nums; }
+  .topay span { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); line-height: 1.35; }
+  .topay span em { display: block; font-style: normal; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--text); }
+  .topay span em.ok { color: var(--green); }
   .paynote { font-size: 13px; line-height: 1.3; } .paynote b { color: var(--gold); } .paynote .bad { color: var(--red); } .paynote .ok { color: var(--green); }
   .sh-bar { display: flex; gap: 8px; margin-top: 2px; }
   .sh-bar .buy { flex: 1; font: inherit; font-weight: 800; font-size: 16px; color: var(--bg); background: var(--gold); border: 0; border-radius: 999px; padding: 9px; cursor: pointer; }
@@ -516,12 +521,13 @@
     const n = it.cat === "play" ? "2 · " : "";
     if (c.model === "coins") {
       payOk = me.coins >= price;
-      h += `<div class="step">${n}Pay</div><div class="paynote">${price} of your ${me.coins} coins. ${payOk ? `<span class="ok">You'll have ${me.coins - price} left.</span>` : `<span class="bad">Not enough coins.</span>`} Your plays aren't touched.</div>`;
+      h += `<div class="step">${n}Pay</div><div class="topay"><b>${price}</b><span>coins to pay<em class="${payOk ? "ok" : ""}">you have ${me.coins}</em></span></div><div class="paynote">${price} of your ${me.coins} coins. ${payOk ? `<span class="ok">You'll have ${me.coins - price} left.</span>` : `<span class="bad">Not enough coins.</span>`} Your plays aren't touched.</div>`;
     } else {
       const avail = me.plays.filter(x => !S.target.includes(x.id)); // a play you edit can't also pay
       const pl = payPlan(me, price, c.model, S.pay), byId = Object.fromEntries(pl.plan.map(q => [q.id, q]));
       payOk = pl.owe === 0 && S.pay.length > 0;
-      h += `<div class="step">${n}Pay ${price} steps: ${c.model === "plays" ? "tap whole plays" : "tap plays to take it from, in order"}</div>
+      h += `<div class="step">${n}Pay: ${c.model === "plays" ? "tap whole plays" : "tap plays to take it from, in order"}</div>
+        <div class="topay"><b>${price}</b><span>steps to pay<em class="${payOk ? "ok" : ""}">${S.pay.length ? `${pl.paid} of ${price} covered` : "none picked yet"}</em></span></div>
         <div class="tiles">${avail.map(x => { const q = byId[x.id];
           const note = q ? (c.model === "plays" ? `<span class="now">spent</span>` : q.left ? `<span class="now">${x.p} → ${q.left}</span>` : `<span class="now">gone</span>`) : "";
           return tile(x, q ? "sel" : "", note); }).join("")}</div>`;
