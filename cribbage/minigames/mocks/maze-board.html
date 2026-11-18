@@ -96,7 +96,22 @@
   .fc b { font-size: 18px; font-weight: 800; } .fc span { font-size: 16px; margin-top: 2px; padding-left: 1px; }
   .fan:not(.off) .fc:hover { margin-top: -8px; }
   .fan.off .fc { cursor: default; filter: saturate(.6) brightness(.8); }
-  .tray { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; border-top: 1px solid var(--rim); }
+  /* Power jokers tray: as the scoring turn's (ui.md › Power jokers). */
+  .pj { position: relative; margin-top: auto; padding: 18px 8px 8px; border-radius: 12px; background: var(--panel); border: 1px solid rgba(199,125,255,.5); }
+  .pj-tag { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); height: 16px; padding: 0 10px; border-radius: 999px; background: #C77DFF; color: var(--bg);
+            font-size: 10px; font-weight: 800; letter-spacing: .08em; display: flex; align-items: center; white-space: nowrap; }
+  .pj-slots { display: flex; justify-content: space-evenly; }
+  .pjs { position: relative; width: 64px; padding: 0; border: 0; background: none; cursor: pointer; transition: transform .12s ease-out, box-shadow .12s; border-radius: 6px; }
+  .pjs img { display: block; width: 64px; height: auto; position: relative; z-index: 2; border-radius: 6px; }
+  .pjs.none { opacity: .3; } .pjs:disabled { cursor: default; }
+  .pjs.on { transform: translateY(-10px); box-shadow: 0 0 0 3px #fff, 0 8px 14px rgba(0,0,0,.5); }
+  .pjb { position: absolute; width: 64px; height: 90px; border-radius: 6px; background: #CFC6B3; border: 1px solid #A99E86; z-index: 1; }
+  .pjb.b1 { left: 3px; top: -3px; } .pjb.b2 { left: 6px; top: -6px; background: #A99E86; }
+  .cnt { position: absolute; right: -5px; bottom: -5px; z-index: 3; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #C77DFF; color: var(--bg); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .pjk { position: relative; display: block; } .pjk i, .pjk em { position: absolute; left: 0; right: 0; text-align: center; z-index: 3; font-style: normal; color: #6A1B9A; }
+  .pjk i { top: 26px; font-size: 26px; } .pjk em { bottom: 10px; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+  .pj-note { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 24px; }
+  .pj-note .btn { font-size: 13px; padding: 2px 12px; }
   /* Play sheet: choosing a play covers the plays with its choices, one row each, and Cancel last. */
   .dock { position: relative; }
   .sheet { position: absolute; inset: 0; z-index: 6; background: var(--panel); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; animation: rise .14s ease-out both; }
@@ -139,24 +154,26 @@
 
   <div class="side">
     <h1>Maze board mock</h1>
-    <p class="muted">v3, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). The maze is maze-walk's seeded grid maze in the neon look, sized up so one step is one point.</p>
+    <p class="muted">v9, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). Rules: <code>rules.md</code> › 5 and Moving through the maze. Tap anything on the maze to have it explained.</p>
 
     <div class="card">
       <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button> <span class="muted" id="mazeSize"></span></label>
       <label>Route <select id="length"><option value="600">600 steps</option><option value="900" selected>900 steps</option><option value="1200">1,200 steps</option></select> <span class="muted" id="sizeNote"></span></label>
       <label>Doors on the route <select id="doors"><option value="4">4</option><option value="6" selected>6</option><option value="9">9</option></select>
         strength <select id="doorBase"><option value="12:6" selected>12, 18, 24 …</option><option value="20:10">20, 30, 40 …</option><option value="30:15">30, 45, 60 …</option></select></label>
-      <label>Variants (ways round part of the golden path) <select id="variants"><option value="0">none</option><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option></select>
+      <label>Variants: a way round every golden door, plus shortcuts <select id="variants"><option value="0">none</option><option value="3">3</option><option value="6" selected>6</option><option value="10">10</option></select>
         shortest loop <select id="minLoop"><option value="20">20 cells</option><option value="30" selected>30 cells</option><option value="50">50 cells</option></select></label>
       <label>Switches <select id="switches"><option value="0">none</option><option value="4" selected>4</option><option value="8">8</option></select></label>
       <label>Close a door: strength <select id="closeMul"><option value="0.5">half the play's steps</option><option value="1" selected>the play's steps</option></select>
         <select id="closeWhere"><option value="any" selected>anywhere</option><option value="near">within 10 cells of you</option></select>
         at most <select id="closeMax"><option value="1" selected>1</option><option value="2">2</option><option value="99">any</option></select> a hand</label>
+      <label>Start with jokers <select id="startJokers"><option value="">none</option><option value="1" selected>one each: burn, bomb, swapper</option></select></label>
       <label>Plot: when a player ends a hand no closer to the goal <select id="plotAfter"><option value="0">nothing happens</option><option value="1" selected>the maze stirs (two stuck: a duel)</option></select></label>
       <label>Bots <select id="bots"><option value="1" selected>1</option><option value="2">2</option></select>
         Bot 1 <select id="style1"></select> Bot 2 <select id="style2"></select></label>
       <label>Walk speed <select id="speed"><option value="160">normal</option><option value="90" selected>fast</option><option value="0">instant</option></select></label>
       <label>Zoom <select id="zoom"><option value="54" selected>close: about 7 cells across, like maze-walk's fog</option><option value="38">medium: about 10 cells</option><option value="30">far: about 13 cells</option></select></label>
+      <label>Walls <select id="walls"><option value="double" selected>double, with a gap</option><option value="single">single</option></select></label>
       <label><input type="checkbox" id="whole"> Show the whole maze, with the golden path (designer view)</label>
     </div>
 
@@ -169,12 +186,13 @@
 
     <h2>How a hand plays</h2>
     <ul class="tight">
-      <li><b>The scoring grid comes first.</b> Every set you score on the grid, and your hand and crib counts from the show, becomes a <b>play</b>: its cards, its steps and its suit (the most common suit; a tie has none). The grid here is a recorded medium-bot turn for each player: about 14 plays and 226 steps a hand.</li>
-      <li><b>Pegging is the maze.</b> Players take turns, the seat after the dealer first, until every play is used. On your turn, pick a play: the board shows where it will take you. Then <b>walk</b> it, or spend it to <b>close a door</b> (the door takes the play's suit, and its steps as strength), or to <b>flip a switch</b>. You can close one door a hand (setting). Before that you can play one joker.</li>
-      <li><b>Walking.</b> One step a point, and every step is taken. Walks go forward: they never turn into a dead end or a pocket. Where two ways both lead on, a <b>junction</b> (a gold disc with an arrow, at real forks near the tokens and along a previewed path) decides: you go the way it points, and it turns to the other way for whoever comes next, so arriving first or second matters. One way is often a loop that circles back.</li>
-      <li><b>Doors</b> have a suit and a strength, and you need both: only a play of the door's suit wears it down, and the steps spent on it don't move you. Damage stays; a broken door is open for everyone. A play of another suit stops at the door, and the rest of it is lost. <b>Suit gates</b> pass their suit only; another suit bounces off (one step) and walks back. <b>Switches</b> are a pair of passages, one open and one shut; flipping swaps them, for everyone. Each switch flips once a hand.</li>
-      <li><b>Stars</b> sit on the loops and give a joker when a play ends on them: <i>key</i> (one wrong-suit door), <i>burn</i> (break any door), <i>bomb</i> (a wall beside you; a big shortcut leaves a door of half the cut, no suit), <i>swapper</i> (swap places with a token, not back the same hand).</li>
-      <li>The first token into the goal wins. The target is 6 to 12 hands a game, like cribbage.</li>
+      <li><b>The scoring grid comes first.</b> Every set you score on the grid, and your hand and crib counts, becomes a <b>play</b>: its cards, its steps and its suit (the most common suit; a tie has none). About 14 plays and 226 steps a hand.</li>
+      <li><b>Pegging is the maze.</b> Players take turns until every play is used. Tap a card in your fan: the board shows where it goes, and the sheet offers <b>Walk</b>, <b>Close a door</b> (it takes the play's suit and steps) or <b>Flip a switch</b>. One joker a turn, before or after the play.</li>
+      <li><b>The maze</b> is one golden path with dead ends off it, and a few variants: a way round each golden door (a door of another suit, or a longer free way) and shortcuts behind a suited door. No little loops.</li>
+      <li><b>Walking.</b> One step a point. Walks go forward, never into dead ends, and avoid a door they can't open when there's another way. At a junction you go the way its arrow points, and it turns for whoever comes next.</li>
+      <li><b>Doors</b> are cards across the path: rank is the strength left, suit is the suit they need. Only that suit wears them down, and those steps don't move you; another suit stops there. Damage stays.</li>
+      <li><b>Stuck?</b> A player who ends a hand no closer to the goal makes the maze stir for them. Two stuck players <b>duel</b>: classic pegging with their kept hands, and the winner's door breaks and they take the loser's biggest play.</li>
+      <li><b>Stars</b> give jokers: key, burn, bomb, swapper. The first token into the goal wins; the target is 6 to 12 hands.</li>
     </ul>
 
     <h2>Bot styles</h2>
@@ -188,9 +206,9 @@
 
     <h2>Open questions</h2>
     <ol class="qs">
-      <li>Closing a door: does the door need the same suit to open (as here), or the same cards?</li>
-      <li>About 14 plays each a hand is 28 to 42 turns. Does that drag, and should small plays (2 steps) merge, or walk themselves?</li>
-      <li>Should you see the other players' plays, as you see their tokens?</li>
+      <li>Do 14 plays a hand drag? Play a few hands first.</li>
+      <li>Should closed doors have a minimum strength?</li>
+      <li>Double or single walls?</li>
     </ol>
 
     <h2>Event log</h2>
@@ -213,6 +231,8 @@
   const SEATS = ["You", "Bot 1", "Bot 2"];
   const STYLES = { balanced: "Balanced", racer: "Racer", timer: "Timer", closer: "Door closer", jokers: "Jokers" };
   const JOKERS = { key: "Key", burn: "Burn", bomb: "Bomb", swapper: "Swapper" };
+  const JOKER_ART = { swapper: "joker-swap.svg", bomb: "joker-bomb.svg", burn: "joker-burn.svg" };
+  const JOKER_ICON = { key: "⚷", burn: "✸", bomb: "✹", swapper: "⇄" };
   const JOKER_HINT = { key: "Used by itself: lets one play past a wrong-suit door", burn: "Break any door", bomb: "Blow open a wall beside you", swapper: "Swap places with any token" };
   const LETTERS = "ABCDEFGH", V = 380;
   for (const id of ["style0", "style1", "style2"]) $(id).innerHTML = Object.entries(STYLES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
@@ -223,7 +243,7 @@
     return {
       length: +$("length").value, doors: +$("doors").value, doorBase: db, doorStep: ds, variants: +$("variants").value, minLoop: +$("minLoop").value,
       switches: +$("switches").value, closeMul: +$("closeMul").value, closeWhere: $("closeWhere").value, closeMax: +$("closeMax").value, plotAfter: +$("plotAfter").value, bots: +$("bots").value,
-      styles: [$("style0").value, $("style1").value, $("style2").value], speed: +$("speed").value, whole: $("whole").checked, zoom: +$("zoom").value,
+      styles: [$("style0").value, $("style1").value, $("style2").value], speed: +$("speed").value, whole: $("whole").checked, zoom: +$("zoom").value, walls: $("walls").value, startJokers: $("startJokers").value,
     };
   };
   const seedValue = (t) => /^\d+$/.test(String(t).trim()) ? BigInt.asUintN(64, BigInt(String(t).trim())) : D.fnv1a64(String(t));
@@ -259,13 +279,6 @@
     rng.shuffle(walls, "walls");
     M.route = routeFrom(M);
     const L = M.route.length - 1;
-    // Doors on the golden path, evenly spaced, stronger as you go, each with a suit.
-    const routeDoors = [];
-    for (let k = 1; k <= c.doors; k++) {
-      const at = Math.floor(M.route.length * k / (c.doors + 1));
-      Object.assign(edges.get(key(M.route[at - 1], M.route[at])), { kind: "door", strength: c.doorBase + c.doorStep * (k - 1), damage: 0, suit: SUITS[rng.below(4, "door_suit")] });
-      routeDoors.push(at);
-    }
     // Every cell hangs off the golden path somewhere: where (its attach index) and how deep.
     const attach = new Int32Array(N).fill(-1), depth = new Int32Array(N), parent = new Int32Array(N).fill(-1), q = [];
     M.route.forEach((cell, k) => { attach[cell] = k; q.push(cell); });
@@ -273,37 +286,46 @@
     const branch = (x) => { const out = []; while (parent[x] >= 0) { out.push(x); x = parent[x]; } return out; };   // cells from x up to (not incl.) the path
     // Variants: one wall opened between two side branches, so the way leaves the golden path at i and rejoins at j.
     // Each loop is at least c.minLoop cells round, and variants don't overlap, so there are no little loops.
-    // Choices come from doors and cards: round a golden door, a door of another suit (or, if it's long, no door);
-    // a shorter way, a suited door at its entrance. A longer way round with nothing to get round is left out.
     const cand = [];
     for (const [u, v] of walls) {
       if (attach[u] < 0 || attach[v] < 0 || attach[u] === attach[v]) continue;
       const [a, b] = attach[u] < attach[v] ? [u, v] : [v, u], i = attach[a], j = attach[b], len = depth[a] + depth[b] + 1, span = j - i;
-      if (len + span < c.minLoop || span < 10 || span > 90 || i < 3 || j > L - 3) continue;
-      const covers = routeDoors.find(t => t > i && t <= j), save = span - len;
-      // Round a door: about as long as the stretch it skips. A shortcut: saves 10 to 40 steps.
-      if (covers ? len < span * .8 || len > span + 30 : save < 10 || save > 40) continue;
-      const short = save > 0;
-      cand.push({ a, b, i, j, len, span, covers, short });
+      if (len + span < c.minLoop || span < 10 || span > 140 || i < 3 || j > L - 3) continue;
+      cand.push({ a, b, i, j, len, span, save: span - len });
     }
-    // Round a golden door first, then shortcuts.
-    cand.sort((x, y) => !!y.covers - !!x.covers);   // stable: otherwise in the shuffled wall order
     const takenRange = [], takenCells = new Set(); M.variants = [];
-    for (const v of cand) {
-      if (M.variants.length >= c.variants) break;
-      if (takenRange.some(([i, j]) => v.i < j + 6 && v.j > i - 6)) continue;
-      const cells = [...branch(v.a), ...branch(v.b)]; if (cells.some(x => takenCells.has(x))) continue;
+    const free = (v) => !takenRange.some(([i, j]) => v.i < j + 6 && v.j > i - 6) && ![...branch(v.a), ...branch(v.b)].some(x => takenCells.has(x));
+    const openVariant = (v, door) => {
       edges.set(key(v.a, v.b), { kind: "open", variant: true });
       // The variant's door sits on its entrance, next to the golden path, so the choice is made at the fork.
       const up = branch(v.a), entry = up.length ? key(up[up.length - 1], M.route[v.i]) : key(v.a, v.b);
-      let door = null;
-      if (v.covers) {
-        const gold = edges.get(key(M.route[v.covers - 1], M.route[v.covers]));
-        if (v.len < v.span + 12) door = { kind: "door", strength: Math.max(6, Math.round(gold.strength * .6)), damage: 0, suit: SUITS.filter(x => x !== gold.suit)[rng.below(3, "variant_suit")] };
-      } else door = { kind: "door", strength: Math.max(6, Math.round((v.span - v.len) / 2)), damage: 0, suit: SUITS[rng.below(4, "variant_suit")], shortcut: true, saves: v.span - v.len };
       if (door) Object.assign(edges.get(entry), door, { variant: true });
-      takenRange.push([v.i, v.j]); cells.forEach(x => takenCells.add(x));
-      M.variants.push({ from: v.i, to: v.j, len: v.len, span: v.span, kind: v.covers ? (door ? "round a door, another suit" : "the long way round a door") : "shortcut, suited door" });
+      takenRange.push([v.i, v.j]); [...branch(v.a), ...branch(v.b)].forEach(x => takenCells.add(x));
+    };
+    // Golden doors, stronger as you go, each with a suit. Each sits inside a way round, about as long as the
+    // stretch it skips, placed as near its even spacing as the maze allows. The way round has a door of another
+    // suit at 60% strength, or no door when it's 12 or more steps longer.
+    const routeDoors = [], slot = L / (c.doors + 1);
+    for (let k = 1; k <= c.doors; k++) {
+      const t = Math.round(slot * k), gold = { kind: "door", strength: c.doorBase + c.doorStep * (k - 1), damage: 0, suit: SUITS[rng.below(4, "door_suit")] };
+      const round = cand.filter(v => v.len >= v.span * .7 && v.len <= v.span + 40 && free(v))
+        .map(v => ({ v, at: Math.min(v.j - 1, Math.max(v.i + 2, t)) })).filter(x => Math.abs(x.at - t) <= slot * .75 && !routeDoors.includes(x.at))
+        .sort((x, y) => Math.abs(x.at - t) - Math.abs(y.at - t))[0];
+      const at = round ? round.at : t;
+      Object.assign(edges.get(key(M.route[at - 1], M.route[at])), gold);
+      routeDoors.push(at);
+      if (round) {
+        const v = round.v, door = v.len < v.span + 12 ? { kind: "door", strength: Math.max(6, Math.round(gold.strength * .6)), damage: 0, suit: SUITS.filter(x => x !== gold.suit)[rng.below(3, "variant_suit")] } : null;
+        openVariant(v, door);
+        M.variants.push({ door: at, from: v.i, to: v.j, len: v.len, span: v.span, kind: door ? "round a door, another suit" : "the long way round a door" });
+      }
+    }
+    // Then shortcuts: save 10 to 40 steps, skip no golden door, behind a suited door at the entrance.
+    for (const v of cand) {
+      if (M.variants.filter(x => !x.door).length >= c.variants) break;
+      if (v.save < 10 || v.save > 40 || v.span > 90 || routeDoors.some(t => t > v.i && t <= v.j) || !free(v)) continue;
+      openVariant(v, { kind: "door", strength: Math.max(6, Math.round(v.save / 2)), damage: 0, suit: SUITS[rng.below(4, "variant_suit")], shortcut: true, saves: v.save });
+      M.variants.push({ door: 0, from: v.i, to: v.j, len: v.len, span: v.span, kind: "shortcut, suited door" });
     }
     // Switches: an open route passage paired with a nearby wall. Every mix of settings keeps
     // every cell joined to the goal and the route at least 80% of its length.
@@ -422,12 +444,12 @@
     const c = cfg();
     G = { seedText: String(seedText), seed: seedValue(seedText), c, rolls: [], log: [], hand: 0, guard: 0, won: null, anim: null, sel: null, mode: null, swaps: [], cam: null, headless, stats: {} };
     G.M = makeMaze(G.seed, c, G.rolls); changed();
-    G.P = SEATS.slice(0, 1 + c.bots).map((name, seat) => ({ name, seat, human: seat === 0 && !headless, style: c.styles[seat], pos: G.M.start, prev: -1, plays: [], jokers: { key: 0, burn: 0, bomb: 0, swapper: 0 } }));
+    G.P = SEATS.slice(0, 1 + c.bots).map((name, seat) => ({ name, seat, human: seat === 0 && !headless, style: c.styles[seat], pos: G.M.start, prev: -1, plays: [], jokers: { key: 0, burn: c.startJokers ? 1 : 0, bomb: c.startJokers ? 1 : 0, swapper: c.startJokers ? 1 : 0 } }));
     G.gridRng = D.stream(G.seed, "grid", G.rolls); G.prizeRng = D.stream(G.seed, "prize", G.rolls); G.plotRng = D.stream(G.seed, "plot", G.rolls);
     log("game_start", { seed: G.seedText, size: G.M.W + "x" + G.M.H, route: c.length, switches: G.M.switches.length, stars: G.M.prizes.size });
     startHand();
   }
-  function log(type, data = {}) { G.stats[type] = (G.stats[type] || 0) + 1; if (!G.headless) G.log.push({ type, hand: G.hand, ...data }); }
+  function log(type, data = {}) { G.stats[type] = (G.stats[type] || 0) + 1; if (!G.headless || G.trace) G.log.push({ type, hand: G.hand, ...data }); }
   const cur = () => G.P[G.turn];
   const left = (p) => p.plays.filter(x => !x.used);
 
@@ -728,13 +750,11 @@
   const canFlip = (s) => G.M.switches[s].flipped !== G.hand;
   function doFlip(p, play, s) { if (!canFlip(s)) return false; G.M.switches[s].flipped = G.hand; play.used = true; flip(s); log("switch", { player: p.name, switch: LETTERS[s] }); return true; }
   const canSwap = (p, q) => p !== q && !G.swaps.some(([h, a, b]) => h === G.hand && ((a === p.seat && b === q.seat) || (a === q.seat && b === p.seat)));
-  const bombable = (p) => G.M.nb(p.pos).filter(n => !G.M.edges.has(G.M.key(p.pos, n)));
-  function bombResult(p, n) {
-    const M = G.M, k = M.key(p.pos, n), before = bfs(M.goal, M.edges, M.nb, M.N, passable)[p.pos];
-    M.edges.set(k, { kind: "open" }); const after = bfs(M.goal, M.edges, M.nb, M.N, passable)[p.pos]; M.edges.delete(k);
-    const cut = before - after;
-    return cut <= 6 ? { kind: "open", bombed: true } : { kind: "door", strength: Math.round(cut / 2), damage: 0, suit: "", bombed: true };
-  }
+  // A bomb opens a wall beside you only where the way round to the other side is 20 steps or less (to tune).
+  // Thicker walls don't take it: in a tree maze, side-by-side cells can be hundreds of steps apart.
+  const bombable = (p, at = p.pos) => { const M = G.M, d = bfs(at, M.edges, M.nb, M.N, passable); return M.nb(at).filter(n => !M.edges.has(M.key(at, n)) && d[n] > 0 && d[n] <= 20); };
+  function bombResult(p, n) { return { kind: "open", bombed: true }; }
+
   function useJoker(p, j, arg) {
     const M = G.M;
     if (j === "swapper") { const q = G.P[arg]; if (!canSwap(p, q)) return false; G.swaps.push([G.hand, p.seat, q.seat]); [p.pos, q.pos] = [q.pos, p.pos]; p.prev = q.prev = -1; }
@@ -909,7 +929,7 @@
       if (x < M.W - 1 && !M.edges.has(M.key(i, i + 1))) walls += `M${xa + cs} ${ya}v${cs}`;
       if (y < M.H - 1 && !M.edges.has(M.key(i, i + M.W))) walls += `M${xa} ${ya + cs}h${cs}`;
     }
-    s += doubleWalls(walls, cs) + A.outerWall(0, 0, cs * M.W, cs * M.W, cs);
+    s += (c.walls === "single" ? A.walls(walls, cs) : doubleWalls(walls, cs)) + A.outerWall(0, 0, cs * M.W, cs * M.W, cs);
     // Designer view: the golden path in gold.
     if (c.whole) s += `<polyline points="${M.route.map(i => `${cx(i)},${cy(i)}`).join(" ")}" fill="none" stroke="#FFD447" stroke-width="${Math.max(2, cs * .25)}" stroke-linejoin="round" opacity=".55"/>`;
     const keysIn = new Set(); for (const i of vis) { const [x, y] = M.xy(i); if (x < M.W - 1) keysIn.add(M.key(i, i + 1)); if (y < M.H - 1) keysIn.add(M.key(i, i + M.W)); }
@@ -1014,10 +1034,17 @@
     d += `<div class="fan${G.after || !myTurn ? " off" : ""}">${fan.map((x, k) => { const m = k - (nF - 1) / 2, ang = nF > 1 ? m * Math.min(3.2, 36 / nF) : 0;
       return `<div class="fc" role="button" tabindex="0" data-play="${x.id}" style="left:${x0F + k * gapF + 12}px; top:${Math.abs(m) * Math.abs(m) * .35 + 4}px; transform: rotate(${ang}deg); z-index:${k + 1}">` +
         `<b>${x.p}</b><span style="color:${x.s ? FACECOL[x.s] : "#8A8170"}">${x.s ? GLYPH[x.s] : "–"}</span></div>`; }).join("")}</div>`;
-    // The joker tray: one joker a turn, before your play or after it.
-    const js = Object.keys(JOKERS).filter(j => me.jokers[j]), jOk = (j) => myTurn && j !== "key" && !G.jokerDone && !G.sel;
-    d += `<div class="tray"><span class="lbl">Jokers</span>${js.map(j => `<button class="jk${G.mode === j ? " on" : ""}" data-joker="${j}" ${jOk(j) ? "" : "disabled"} title="${JOKER_HINT[j]}">${JOKERS[j]}${me.jokers[j] > 1 ? " ×" + me.jokers[j] : ""}</button>`).join("") || `<span class="muted" style="font-size:13px">Stars give jokers</span>`}` +
-      `${G.after ? `<button class="btn go" data-act="endturn" style="margin-left:auto">End turn</button>` : ""}</div>`;
+    // The power jokers tray, as on the scoring turn (ui.md › Power jokers): one slot per kind, the beta's joker
+    // card art, a violet count, cards stacked behind when you hold 2 or more, 30% when you hold none, raised when armed.
+    // The key has no card art yet: the plain frame with its glyph. One joker a turn, before or after your play.
+    const jOk = (j) => myTurn && j !== "key" && !G.jokerDone && !G.sel && me.jokers[j] > 0;
+    const slot = (j) => { const n = me.jokers[j];
+      return `<button class="pjs${G.mode === j ? " on" : ""}${n ? "" : " none"}" data-joker="${j}" ${jOk(j) ? "" : "disabled"} title="${JOKERS[j]}: ${JOKER_HINT[j]}">` +
+        (n >= 2 ? `<span class="pjb b2"></span><span class="pjb b1"></span>` : "") +
+        (JOKER_ART[j] ? `<img src="../../../design/cards/${JOKER_ART[j]}" alt="${JOKERS[j]}">` : `<span class="pjk"><img src="../../../design/cards/frame.svg" alt=""><i>${JOKER_ICON[j]}</i><em>KEY</em></span>`) +
+        (n ? `<b class="cnt">${n}</b>` : "") + `</button>`; };
+    d += `<div class="pj"><span class="pj-tag">POWER JOKERS</span><div class="pj-slots">${["swapper", "bomb", "burn", "key"].map(slot).join("")}</div>` +
+      `<div class="pj-note">${G.jokerDone ? "Joker used this turn" : G.after ? "Play a joker now, or end your turn" : "One a turn, before or after your play"}${G.after ? `<button class="btn go" data-act="endturn">End turn</button>` : ""}</div></div>`;
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
     d += sheet;
     $("dock").innerHTML = d;
@@ -1150,8 +1177,8 @@
   $("apply").addEventListener("click", () => start($("seed").value || "1"));
   $("seed").addEventListener("keydown", (e) => { if (e.key === "Enter") start($("seed").value || "1"); });
   $("newSeed").addEventListener("click", () => { const s = String(Math.floor(Math.random() * 1e9)); $("seed").value = s; start(s); });
-  for (const id of ["length", "doors", "doorBase", "variants", "minLoop", "plotAfter", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
-  for (const id of ["speed", "whole", "zoom"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
+  for (const id of ["length", "doors", "doorBase", "variants", "minLoop", "startJokers", "plotAfter", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
+  for (const id of ["speed", "whole", "zoom", "walls"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
   $("runBtn").addEventListener("click", () => {
     const n = +$("runN").value, t0 = performance.now(); $("runBtn").disabled = true; $("runOut").textContent = "Running…";
     runGames(n, (html) => { $("runOut").innerHTML = html + `<p class="muted">${((performance.now() - t0) / 1000).toFixed(1)} s</p>`; $("runBtn").disabled = false; }, (k) => { $("runOut").textContent = `Running… ${k} of ${n}`; });

@@ -308,7 +308,7 @@ All cards go back into the deck, and the deck is shuffled. The deck lasts the wh
 
 The maze is a grid of passages built from the game's seed, with one golden path from start to goal (900 steps in the mock, to tune for a game of 6 to 12 rounds), a few variants, doors and switches. Everything else is dead ends, which walks never turn into.
 
-- **Variants** leave the golden path and rejoin it later, so the choice they give is about doors and cards: a way round a golden-path door with a door of another suit (or a longer way with no door), or a shortcut with a suited door at its entrance. Variants don't overlap, and there are no little loops: every way round is at least 30 cells (to tune).
+- **Variants** leave the golden path and rejoin it later, so the choice they give is about doors and cards. Every golden-path door gets a way round where the maze allows (about 9 in 10 do in the mock), with a door of another suit, or a longer way with no door. Shortcuts have a suited door at their entrance. Variants don't overlap, and there are no little loops: every way round is at least 30 cells (to tune).
 
 - One point is one step, and you must take every step.
 - Walks go forward. A walk never turns into a dead end or a pocket the goal isn't in; it only walks one when it has no other way.
@@ -351,7 +351,7 @@ A switch is a pair of passages, one open and one shut, marked with the same lett
 
 Each token sees a few cells around it (how many: to tune). Cells anyone has seen stay revealed.
 
-### Stars
+### Stars A bomb opens a wall only where the way round to the other side is 20 steps or less (to tune). Players start with one burn, one bomb and one swapper in the mock (to tune).
 
 Stars sit on the loops. A play that ends on one wins a joker: a key (lets one play past a wrong-suit gate or door), a burn (breaks any door), a bomb (opens a wall beside you; a big shortcut leaves a door of half the steps it saves) or a swapper (swap places with another token, not back in the same round). Odds and what else stars give: to tune.
 
