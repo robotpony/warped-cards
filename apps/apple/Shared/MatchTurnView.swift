@@ -91,6 +91,7 @@ struct PhoneView: View {
         .overlay { if session.over { SummaryView(session: session) } }
         .overlay { if session.mazeScene.on { MazeView(session: session) } }
         .overlay { if session.dealing != nil { DealView(session: session) } }
+        .overlay { if session.botsFirst != nil { BotTurnsView(session: session) } }
         .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Theme.bezel, lineWidth: 10).padding(-5))
     }
@@ -400,23 +401,88 @@ struct SummaryView: View {
     }
 }
 
-/// The bots' grid turns this hand, summed up before the maze (maze.md › The game around the maze).
+/// A maze game's hand starts with the bots' grid turns, as a quick sequence of results with their
+/// hands face down (concept.md › Phases › 5a, rules.md › Turns). A line shows each `botPegMs`; a
+/// tap shows the rest. Then your grid turn starts (ui.md › Scene: Bots' turns).
+struct BotTurnsView: View {
+    let session: GameSession
+    @State private var shown = 0
+    @State private var task: Task<Void, Never>?
+
+    private struct Bot { let seat: Int; let lines: [String]; let steps: Int }
+    private var bots: [Bot] {
+        session.botResults.compactMap { e in
+            guard case .botTurn(let seat, let steps, let best, let tier, let prize, let made, let burned, _) = e else { return nil }
+            // Its plays for the maze aren't known until every grid turn is over (`handPlays`).
+            let deck = [made.isEmpty ? nil : "\(made.count) card\(made.count == 1 ? "" : "s") made", burned.isEmpty ? nil : "\(burned.count) burned"].compactMap { $0 }
+            return Bot(seat: seat, lines: ["\(steps) steps", best.map { "Best set \($0)" } ?? "No sets",
+                                           tier.flatMap { t in prize.map { "\(t.capitalized) prize: a \($0)" } } ?? "No prize"]
+                                          + (deck.isEmpty ? [] : [deck.joined(separator: " · ")]),
+                       steps: steps)
+        }
+    }
+    private var total: Int { bots.reduce(0) { $0 + $1.lines.count } }
+
+    var body: some View {
+        let bots = bots
+        VStack(alignment: .leading, spacing: 12) {
+            Text("HAND \((session.game?.results.count ?? 0) + 1)").font(Theme.font(11, .bold)).tracking(0.8).opacity(0.7)
+            Text(bots.count == 1 ? "\(session.mazeScene.name(bots[0].seat)) goes first" : "The bots go first").font(Theme.font(24, .bold))
+                .foregroundStyle(Theme.cyan).shadow(color: Theme.cyan.opacity(0.6), radius: 6)
+            ForEach(Array(bots.enumerated()), id: \.offset) { k, bot in
+                let before = bots.prefix(k).reduce(0) { $0 + $1.lines.count }
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 10) {
+                        Text("\(session.mazeScene.name(bot.seat).uppercased())'S GRID TURN").font(Theme.font(10, .bold)).tracking(0.8)
+                            .padding(.horizontal, 6).frame(height: 16).background(Capsule().fill(MazeInk.token(bot.seat))).foregroundStyle(Theme.felt)
+                        Spacer()
+                        // Its hand stays face down until after pegging.
+                        HStack(spacing: -14) { ForEach(0..<4, id: \.self) { _ in CardBack(width: 30) } }
+                    }
+                    ForEach(Array(bot.lines.enumerated()), id: \.offset) { i, line in
+                        Text(line).font(i == 0 ? Theme.font(40, .bold) : Theme.font(16, .semibold))
+                            .foregroundStyle(i == 0 ? Theme.gold : Theme.feltText)
+                            .opacity(before + i < shown ? 1 : 0)
+                    }
+                }
+            }
+            Spacer()
+            if shown >= total {
+                if let best = bots.map(\.steps).max() {
+                    Text("Your grid turn: \(best) steps to beat.").font(Theme.font(15, .medium)).opacity(0.85)
+                }
+                Text("Your grid turn").font(Theme.font(15, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.feltText)).foregroundStyle(Theme.felt)
+                    .contentShape(Rectangle()).onTapGesture { task?.cancel(); session.toGrid() }
+            }
+        }
+        .padding(.horizontal, 24).padding(.top, 56).padding(.bottom, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Theme.overlay)
+        .foregroundStyle(Theme.feltText)
+        .contentShape(Rectangle())
+        .onTapGesture { task?.cancel(); shown = total }
+        .animation(fx.motions.board.helpText.animation(), value: shown)
+        .onAppear {
+            guard session.animate else { shown = total; return }
+            let gap = session.config?.maze?.timing.botPegMs ?? 850
+            task = Task { @MainActor in
+                while shown < total {
+                    try? await Task.sleep(for: .milliseconds(Motion.ms(Double(gap))))
+                    if Task.isCancelled { return }
+                    shown += 1
+                }
+            }
+        }
+        .onDisappear { task?.cancel() }
+    }
+}
+
+/// Your plays for this hand's maze, on the summary before "To the maze".
 struct BotSummary: View {
     let session: GameSession
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(session.botResults.enumerated()), id: \.offset) { _, e in
-                if case .botTurn(let seat, let steps, let best, let tier, let prize, let made, let burned, _) = e {
-                    let plays = session.handPlays[seat] ?? []
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("\(session.mazeScene.name(seat).uppercased())'S GRID TURN").font(Theme.font(10, .bold)).tracking(0.8)
-                            .padding(.horizontal, 6).frame(height: 16).background(Capsule().fill(MazeInk.token(seat))).foregroundStyle(Theme.felt)
-                        Text("\(steps) steps in \(plays.count) play\(plays.count == 1 ? "" : "s")" + (best.map { ", best set \($0)" } ?? "")).font(Theme.font(17, .semibold))
-                        Text([tier.flatMap { t in prize.map { "\(t.capitalized) prize: a \($0)" } }, made.isEmpty ? nil : "\(made.count) card\(made.count == 1 ? "" : "s") made",
-                              burned.isEmpty ? nil : "\(burned.count) burned"].compactMap { $0 }.joined(separator: " · ")).font(Theme.font(14, .regular)).opacity(0.8)
-                    }
-                }
-            }
             if let mine = session.handPlays[0] {
                 Text("Your plays for the maze: \(mine.count), \(mine.reduce(0) { $0 + $1.steps }) steps").font(Theme.font(14, .medium)).opacity(0.85)
             }

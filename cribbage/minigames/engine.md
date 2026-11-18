@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 12, 2026-11-17, spec 18 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 12, 2026-11-17, spec 19 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 

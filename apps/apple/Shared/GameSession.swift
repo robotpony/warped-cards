@@ -229,7 +229,20 @@ final class GameSession {
     var dealer: Bool { game?.dealer ?? settings.dealer }
     /// Whether the game has more turns to play after this one.
     var moreTurns: Bool { !(game?.over ?? true) }
-    var over: Bool { dealing == nil && (turn?.state.over ?? true) }
+    var over: Bool { dealing == nil && botsFirst == nil && (turn?.state.over ?? true) }
+    /// A maze game's hand: the bots' grid turns are shown first (concept.md › Phases › 5a), and
+    /// your turn starts from this step once you've seen them (ui.md › Scene: Bots' turns).
+    private(set) var botsFirst: Step<CribMazeGame>?
+    /// After the bots' turns: your grid turn starts.
+    func toGrid() {
+        guard let step = botsFirst else { return }
+        botsFirst = nil
+        begin(step)
+    }
+    /// Starts your turn from a step, or shows the bots' turns first when they played some.
+    private func beginOrBots(_ step: Step<CribMazeGame>) {
+        if mazeGame && !botResults.isEmpty { botsFirst = step } else { begin(step) }
+    }
 
     // MARK: Deal
 
@@ -297,7 +310,7 @@ final class GameSession {
         dealing = nil
         guard let step = act(.discard(thrown: d.picked.map(CardRef.init), kept: d.held.map(CardRef.init))) else { return }
         recorder?.note("deal_hint", dealRecord)
-        begin(step)
+        beginOrBots(step)
     }
 
     // MARK: Turn
@@ -328,7 +341,7 @@ final class GameSession {
         guard config != nil, let g = run?.state.game else { return }
         game = g; gameAtTurnStart = g
         dealRecord = nil; hintTask?.cancel()
-        mazeScene.reset(); botResults = []; handPlays = [:]
+        mazeScene.reset(); botResults = []; handPlays = [:]; botsFirst = nil
         let strong = settings.hand == "strong"
         // A game around the maze always deals: the bot's grid turn plays from its own 4 kept cards.
         let options = CribMazeGame.HandOptions(deal: (settings.deal || mazeGame) && !strong, fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil,
@@ -345,7 +358,7 @@ final class GameSession {
             return
         }
         dealing = nil
-        begin(step)
+        beginOrBots(step)
     }
 
     /// Shows the turn a step started.

@@ -139,7 +139,16 @@ import SwiftUI
                 for c in Deal.classicKeep(d.dealt.player).thrown { session.togglePick(c) }
                 session.throwToCrib()
             }
+            session.toGrid()
             session.dismissWarning(); while !session.over { session.botMove(); session.dismissWarning() }
+        }
+        if args.contains("--bots") {
+            if let d = session.dealing {
+                for c in Deal.classicKeep(d.dealt.player).thrown { session.togglePick(c) }
+                session.throwToCrib()
+            }
+            Task { @MainActor in try? await Task.sleep(for: .milliseconds(200)); session.hideToast(); render(session, to: out); exit(0) }
+            return
         }
         playGrid()
         if args.contains("--summary") { session.hideToast(); render(session, to: out); exit(0) }
@@ -203,6 +212,7 @@ import SwiftUI
                 for c in Deal.classicKeep(d.dealt.player).thrown { session.togglePick(c) }
                 session.throwToCrib()
             }
+            session.toGrid()
             session.dismissWarning()
             while !session.over { session.botMove(); session.dismissWarning() }
             if session.moreTurns { session.nextTurn() } else { break }

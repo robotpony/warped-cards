@@ -2,6 +2,12 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.23.1 — 2026-11-17
+
+### Changed
+
+- Bot 1 now goes first: after the deal you see its grid turn as results (steps, best set, prize), its hand face down, and the steps you have to beat. Tap "Your grid turn" to play yours. The summary after your turn shows your plays for the maze.
+
 ## 0.23.0 — 2026-11-17
 
 ### Added

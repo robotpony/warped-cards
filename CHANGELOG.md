@@ -2,6 +2,15 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 19 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Changed
+
+- In a maze game the bots' grid turns show before yours, as results with their hands face down (ui.md › Scene: Bots' turns), as concept.md › Phases › 5a says. The summary after your grid turn keeps your plays for the maze and "To the maze", and no longer shows the bot's turn.
+- The golden records are re-recorded: headers only.
+
 ## spec 18 — 2026-11-17
 
 Rules unchanged (r28).
