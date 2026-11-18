@@ -15,7 +15,8 @@ The SVGs copy what the Mac draws today (`apps/apple/Shared/CardView.swift`, 0.15
 | `icon-bomb.svg` | Bomb icon: a black bomb with its cap, fuse, red spark and highlight |
 | `icon-reach.svg` | Reach icon: a card, a dashed extra card over it, and a red plus |
 | `icon-burn.svg` | Burn icon: a flame, red outside and gold inside |
-| `joker-swap.svg`, `joker-bomb.svg`, `joker-reach.svg`, `joker-burn.svg` | The special joker layout: frame, purple inset at 50%, "JOKER" at the top, the kind's word at the bottom, and its icon |
+| `icon-key.svg` | Key icon: a gold bow ringed in purple, a purple shaft with two teeth (2026-11-17, a mock until Bruce approves it) |
+| `joker-swap.svg`, `joker-bomb.svg`, `joker-reach.svg`, `joker-burn.svg`, `joker-key.svg` | The special joker layout: frame, purple inset at 50%, "JOKER" at the top, the kind's word at the bottom, and its icon |
 | `extra-amber.svg`, `extra-teal.svg`, `extra-title.svg`, `extra-blank.svg` | The extra card layout: frame and the kind's name in capitals, centred, in card soft |
 
 Each icon file is placed in the card box already, so it lays straight over the joker layout. The joker files hold the same icon group, so a build can use either the whole card or the parts.

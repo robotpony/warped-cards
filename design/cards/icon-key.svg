@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70">
+  <!-- Key icon: a gold bow ringed in purple, and a purple shaft with two teeth. Placed in the 50 x 70 card box; draw it over the joker layout. -->
+  <g id="icon-key">
+    <circle cx="25" cy="25" r="7.5" fill="#F2B705" stroke="#6A1B9A" stroke-width="3"/>
+    <circle cx="25" cy="25" r="2.4" fill="#FDFCF8"/>
+    <rect x="23.3" y="32" width="3.4" height="19" rx="1" fill="#6A1B9A"/>
+    <rect x="26" y="42" width="6" height="3" rx="0.8" fill="#6A1B9A"/>
+    <rect x="26" y="47" width="4.5" height="3" rx="0.8" fill="#6A1B9A"/>
+  </g>
+</svg>

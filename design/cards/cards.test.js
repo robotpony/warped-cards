@@ -17,7 +17,7 @@ const known = hexes(palette.colours);
 known.add("#FFFFFF");   // the bomb's highlight, white at 35%
 
 test("the card art is there", () => {
-  for (const f of ["frame", "back", "face-sample", "joker-swap", "joker-bomb", "joker-reach", "joker-burn",
+  for (const f of ["frame", "back", "face-sample", "joker-swap", "joker-bomb", "joker-reach", "joker-burn", "joker-key",
     "extra-amber", "extra-teal", "extra-title", "extra-blank"]) assert.ok(svgs.includes(`${f}.svg`), `${f}.svg is missing`);
 });
 

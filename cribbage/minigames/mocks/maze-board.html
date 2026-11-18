@@ -55,6 +55,17 @@
           box-shadow: 0 0 0 2px #C77DFF, 0 0 18px rgba(199,125,255,.6), 0 6px 16px rgba(0,0,0,.5); cursor: pointer; animation: rise .2s ease-out both; }
   .plot b { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #7B2FBF; margin-bottom: 2px; }
   .plot[hidden] { display: none; }
+  /* A fire hit: the walk pauses under this card, then goes on. */
+  .firepop { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: 250px; text-align: center; padding: 12px 14px 14px; border-radius: 14px;
+             background: rgba(18,12,38,.94); border: 2px solid #F2B705; box-shadow: 0 0 24px rgba(242,183,5,.45); color: #F3ECDC; animation: firein .25s ease-out; pointer-events: none; }
+  .firepop[hidden] { display: none; }
+  .firepop h3 { margin: 2px 0 2px; font-size: 26px; letter-spacing: .08em; color: #F2B705; } .firepop p { margin: 2px 0 8px; font-size: 13.5px; }
+  .firepop .fp-plays { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .firepop .fp-play { position: relative; width: 38px; height: 52px; border-radius: 5px; background: #F3ECDC; color: #2B2A26; font-weight: 800; font-size: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; animation: burnt 1.4s .35s forwards; }
+  .firepop .fp-play small { font-size: 13px; }
+  .firepop .fp-more { font-size: 12px; color: #C9B98F; margin-top: 6px; }
+  @keyframes firein { from { transform: translate(-50%, -50%) scale(.6); opacity: 0; } }
+  @keyframes burnt { 40% { background: #F2B705; } 100% { background: #3A2410; color: #7A5A30; transform: scale(.85) rotate(-4deg); opacity: .55; } }
   /* The duel: a mini-game screen over the whole phone. */
   .duel { position: absolute; inset: 0; z-index: 20; background: radial-gradient(circle at 50% 30%, #2A1440, #0A0E1F 70%); padding: 58px 16px 18px; display: flex; flex-direction: column; gap: 10px; animation: rise .25s ease-out both; }
   .duel[hidden] { display: none; }
@@ -101,11 +112,11 @@
   .pj-tag { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); height: 16px; padding: 0 10px; border-radius: 999px; background: #C77DFF; color: var(--bg);
             font-size: 10px; font-weight: 800; letter-spacing: .08em; display: flex; align-items: center; white-space: nowrap; }
   .pj-slots { display: flex; justify-content: space-evenly; }
-  .pjs { position: relative; width: 64px; padding: 0; border: 0; background: none; cursor: pointer; transition: transform .12s ease-out, box-shadow .12s; border-radius: 6px; }
-  .pjs img { display: block; width: 64px; height: auto; position: relative; z-index: 2; border-radius: 6px; }
+  .pjs { position: relative; width: 58px; padding: 0; border: 0; background: none; cursor: pointer; transition: transform .12s ease-out, box-shadow .12s; border-radius: 6px; }
+  .pjs img { display: block; width: 58px; height: auto; position: relative; z-index: 2; border-radius: 6px; }
   .pjs.none { opacity: .3; } .pjs:disabled { cursor: default; }
   .pjs.on { transform: translateY(-10px); box-shadow: 0 0 0 3px #fff, 0 8px 14px rgba(0,0,0,.5); }
-  .pjb { position: absolute; width: 64px; height: 90px; border-radius: 6px; background: #CFC6B3; border: 1px solid #A99E86; z-index: 1; }
+  .pjb { position: absolute; width: 58px; height: 81px; border-radius: 6px; background: #CFC6B3; border: 1px solid #A99E86; z-index: 1; }
   .pjb.b1 { left: 3px; top: -3px; } .pjb.b2 { left: 6px; top: -6px; background: #A99E86; }
   .cnt { position: absolute; right: -5px; bottom: -5px; z-index: 3; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #C77DFF; color: var(--bg); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
   .pjk { position: relative; display: block; } .pjk i, .pjk em { position: absolute; left: 0; right: 0; text-align: center; z-index: 3; font-style: normal; color: #6A1B9A; }
@@ -144,6 +155,7 @@
       <div class="hdr"><div class="hand" id="handLabel"></div><div class="players" id="players"></div></div>
       <div class="mazewrap"><svg class="maze" id="maze" role="img" aria-label="The maze"><g id="mazeCam"></g><g id="mazeHud"></g></svg>
         <div class="plot" id="plot" hidden></div>
+        <div class="firepop" id="firePop" hidden></div>
         <div class="tip" id="tip" hidden></div></div>
       <div class="prompt" id="prompt" aria-live="polite"></div>
       <div class="dock" id="dock"></div>
@@ -154,25 +166,25 @@
 
   <div class="side">
     <h1>Maze board mock</h1>
-    <p class="muted">v9, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). Rules: <code>rules.md</code> › 5 and Moving through the maze. Tap anything on the maze to have it explained.</p>
+    <p class="muted">v10, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). Rules: <code>rules.md</code> › 5 and Moving through the maze. Tap anything on the maze to have it explained.</p>
 
     <div class="card">
       <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button> <span class="muted" id="mazeSize"></span></label>
       <label>Route <select id="length"><option value="600">600 steps</option><option value="900" selected>900 steps</option><option value="1200">1,200 steps</option></select> <span class="muted" id="sizeNote"></span></label>
-      <label>Doors on the route <select id="doors"><option value="4">4</option><option value="6" selected>6</option><option value="9">9</option></select>
-        strength <select id="doorBase"><option value="12:6" selected>12, 18, 24 …</option><option value="20:10">20, 30, 40 …</option><option value="30:15">30, 45, 60 …</option></select></label>
-      <label>Variants: a way round every golden door, plus shortcuts <select id="variants"><option value="0">none</option><option value="3">3</option><option value="6" selected>6</option><option value="10">10</option></select>
+      <label>Doors on the route <select id="doors"><option value="6">6</option><option value="10">10</option><option value="14" selected>14</option><option value="20">20</option></select>
+        strength <select id="doorBase"><option value="6:1" selected>6, 7, 8 …</option><option value="8:2">8, 10, 12 …</option><option value="12:6">12, 18, 24 …</option><option value="20:10">20, 30, 40 …</option><option value="30:15">30, 45, 60 …</option></select></label>
+      <label>Variants: a way round every golden door, plus shortcuts <select id="variants"><option value="0">none</option><option value="3">3</option><option value="6">6</option><option value="10" selected>10</option></select>
         shortest loop <select id="minLoop"><option value="20">20 cells</option><option value="30" selected>30 cells</option><option value="50">50 cells</option></select></label>
       <label>Switches <select id="switches"><option value="0">none</option><option value="4" selected>4</option><option value="8">8</option></select></label>
       <label>Close a door: strength <select id="closeMul"><option value="0.5">half the play's steps</option><option value="1" selected>the play's steps</option></select>
         <select id="closeWhere"><option value="any" selected>anywhere</option><option value="near">within 10 cells of you</option></select>
         at most <select id="closeMax"><option value="1" selected>1</option><option value="2">2</option><option value="99">any</option></select> a hand</label>
-      <label>Start with jokers <select id="startJokers"><option value="">none</option><option value="1" selected>one each: burn, bomb, swapper</option></select></label>
+      <label>Start with jokers <select id="startJokers"><option value="">none</option><option value="grid" selected>as a game starts: 2 swappers, a bomb, a reach, a burn</option><option value="one">one each</option></select></label>
       <label>Plot: when a player ends a hand no closer to the goal <select id="plotAfter"><option value="0">nothing happens</option><option value="1" selected>the maze stirs (two stuck: a duel)</option></select></label>
       <label>Bots <select id="bots"><option value="1" selected>1</option><option value="2">2</option></select>
         Bot 1 <select id="style1"></select> Bot 2 <select id="style2"></select></label>
       <label>Walk speed <select id="speed"><option value="160">normal</option><option value="90" selected>fast</option><option value="0">instant</option></select></label>
-      <label>Zoom <select id="zoom"><option value="54" selected>close: about 7 cells across, like maze-walk's fog</option><option value="38">medium: about 10 cells</option><option value="30">far: about 13 cells</option></select></label>
+      <label>Closest zoom (the board always fits every token) <select id="zoom"><option value="54" selected>close: about 7 cells across, like maze-walk's fog</option><option value="38">medium: about 10 cells</option><option value="30">far: about 13 cells</option></select></label>
       <label>Walls <select id="walls"><option value="double" selected>double, with a gap</option><option value="single">single</option></select></label>
       <label><input type="checkbox" id="whole"> Show the whole maze, with the golden path (designer view)</label>
     </div>
@@ -192,7 +204,7 @@
       <li><b>Walking.</b> One step a point. Walks go forward, never into dead ends, and avoid a door they can't open when there's another way. At a junction you go the way its arrow points, and it turns for whoever comes next.</li>
       <li><b>Doors</b> are cards across the path: rank is the strength left, suit is the suit they need. Only that suit wears them down, and those steps don't move you; another suit stops there. Damage stays.</li>
       <li><b>Stuck?</b> A player who ends a hand no closer to the goal makes the maze stir for them. Two stuck players <b>duel</b>: classic pegging with their kept hands, and the winner's door breaks and they take the loser's biggest play.</li>
-      <li><b>Stars</b> give jokers: key, burn, bomb, swapper. The first token into the goal wins; the target is 6 to 12 hands.</li>
+      <li><b>Jokers</b> are the scoring grid's power jokers, one set for the game. On the maze: <b>swapper</b> trades places, <b>bomb</b> opens a thin wall, <b>reach</b> lets your next play pick its ways at junctions (tap the ringed ones), <b>burn</b> sets a fire that burns the next token's plays, and the <b>key</b> takes one play past a wrong-suit door. Stars give more. The first token into the goal wins; the target is 6 to 12 hands.</li>
     </ul>
 
     <h2>Bot styles</h2>
@@ -230,10 +242,13 @@
   const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N E S W, clockwise
   const SEATS = ["You", "Bot 1", "Bot 2"];
   const STYLES = { balanced: "Balanced", racer: "Racer", timer: "Timer", closer: "Door closer", jokers: "Jokers" };
-  const JOKERS = { key: "Key", burn: "Burn", bomb: "Bomb", swapper: "Swapper" };
-  const JOKER_ART = { swapper: "joker-swap.svg", bomb: "joker-bomb.svg", burn: "joker-burn.svg" };
-  const JOKER_ICON = { key: "⚷", burn: "✸", bomb: "✹", swapper: "⇄" };
-  const JOKER_HINT = { key: "Used by itself: lets one play past a wrong-suit door", burn: "Break any door", bomb: "Blow open a wall beside you", swapper: "Swap places with any token" };
+  // One inventory for the whole game (Bruce, 50): the same cards as the scoring grid's power jokers, each with a maze effect.
+  const JOKERS = { swapper: "Swapper", bomb: "Bomb", reach: "Reach", burn: "Burn", key: "Key" };
+  const JOKER_ART = { swapper: "joker-swap.svg", bomb: "joker-bomb.svg", reach: "joker-reach.svg", burn: "joker-burn.svg", key: "joker-key.svg" };
+  const JOKER_ICON = { key: "⚷", burn: "✸", bomb: "✹", swapper: "⇄", reach: "↟" };
+  const JOKER_HINT = { key: "Works by itself: lets one play past a wrong-suit door", burn: "Set a fire on a cell on another player's way: the next token through loses 1 or 2 plays, and one that stops on it loses 4 or 5",
+    bomb: "Blow open a wall beside you (only a thin one: the way round is 20 steps or less)", swapper: "Swap places with another token", reach: "Your next play picks its way at each junction, instead of following the arrows" };
+  const START_JOKERS = { "": {}, grid: { swapper: 2, bomb: 1, reach: 1, burn: 1 }, one: { swapper: 1, bomb: 1, reach: 1, burn: 1 } };
   const LETTERS = "ABCDEFGH", V = 380;
   for (const id of ["style0", "style1", "style2"]) $(id).innerHTML = Object.entries(STYLES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   $("style0").value = "balanced"; $("style1").value = "balanced"; $("style2").value = "racer";
@@ -444,8 +459,9 @@
     const c = cfg();
     G = { seedText: String(seedText), seed: seedValue(seedText), c, rolls: [], log: [], hand: 0, guard: 0, won: null, anim: null, sel: null, mode: null, swaps: [], cam: null, headless, stats: {} };
     G.M = makeMaze(G.seed, c, G.rolls); changed();
-    G.P = SEATS.slice(0, 1 + c.bots).map((name, seat) => ({ name, seat, human: seat === 0 && !headless, style: c.styles[seat], pos: G.M.start, prev: -1, plays: [], jokers: { key: 0, burn: c.startJokers ? 1 : 0, bomb: c.startJokers ? 1 : 0, swapper: c.startJokers ? 1 : 0 } }));
-    G.gridRng = D.stream(G.seed, "grid", G.rolls); G.prizeRng = D.stream(G.seed, "prize", G.rolls); G.plotRng = D.stream(G.seed, "plot", G.rolls);
+    G.P = SEATS.slice(0, 1 + c.bots).map((name, seat) => ({ name, seat, human: seat === 0 && !headless, style: c.styles[seat], pos: G.M.start, prev: -1, plays: [], reach: 0, burnDebt: 0, jokers: { swapper: 0, bomb: 0, reach: 0, burn: 0, key: 0, ...START_JOKERS[c.startJokers] } }));
+    G.fires = new Map(); G.reachPick = new Map();
+    G.gridRng = D.stream(G.seed, "grid", G.rolls); G.prizeRng = D.stream(G.seed, "prize", G.rolls); G.plotRng = D.stream(G.seed, "plot", G.rolls); G.burnRng = D.stream(G.seed, "burn", G.rolls);
     log("game_start", { seed: G.seedText, size: G.M.W + "x" + G.M.H, route: c.length, switches: G.M.switches.length, stars: G.M.prizes.size });
     startHand();
   }
@@ -463,6 +479,7 @@
       const t = pool[G.gridRng.below(pool.length, "grid_turn")];
       p.closed = 0; p.hand = t.hand ? t.hand.split(" ") : null;
       p.plays = t.plays.map((x, k) => ({ ...x, id: G.hand + "." + p.seat + "." + k, used: false })).sort((a, b) => b.p - a.p);
+      if (p.burnDebt) { const n = p.burnDebt; p.burnDebt = 0; burnPlays(p, n); }
     }
     G.swapsHand = G.hand; G.phase = "maze"; G.turn = G.dealer; G.sel = null; G.mode = null;
     log("hand_start", { dealer: G.P[G.dealer].name, plays: G.P.map(p => p.plays.length), steps: G.P.map(p => p.plays.reduce((a, x) => a + x.p, 0)) });
@@ -658,7 +675,7 @@
   // needs its suit and takes steps until it breaks. A wrong suit bounces off (one step) and
   // walks back. A key lets one wrong suit through.
   function walk(p, play) {
-    const M = G.M, out = { cells: [], won: false, ev: [], turns: [] };
+    const M = G.M, out = { cells: [], won: false, ev: [], turns: [], fires: [], choices: [] };
     let n = play.p;
     while (n > 0) { if (out.cells.length > 5000) throw new Error("walk loop " + play.p);
       const i = p.pos, ex = exitsOf(M, i), from = p.prev >= 0 ? dirTo(M, i, p.prev) : -1;
@@ -670,7 +687,12 @@
       const open = cand.filter(d => !blocked(d)); if (open.length) cand = open;
       if (p.prev < 0) { const mine = cand.filter(d => M.adj[i * 4 + d].kind === "door"); if (mine.length) cand = mine; }
       let d = cand[0];
-      if (cand.length > 1) {
+      if (cand.length > 1 && p.reach) {
+        // Reach: this play picks its way. Yours is the one you tapped, else the way nearest the goal; the arrow doesn't turn.
+        const F = field(), pick = G.reachPick.get(i);
+        d = cand.includes(pick) ? pick : cand.slice().sort((a, b) => F[stepTo(M, i, a)] - F[stepTo(M, i, b)])[0];
+        out.ev.push("chosen"); out.turns.push([i, d]); out.choices.push([i, cand]);
+      } else if (cand.length > 1) {
         for (let k = 0; k < 4; k++) { const t = (M.ptr[i] + k) % 4; if (cand.includes(t)) { d = t; break; } }
         const turnable = ex.filter(x => !M.dead[i * 4 + x]);
         for (let k = 1; k <= 4; k++) { const t = (d + k) % 4; if ((turnable.length ? turnable : ex).includes(t)) { M.ptr[i] = t; break; } }
@@ -689,6 +711,7 @@
       }
       p.prev = i; p.pos = to; n--; out.cells.push(to);
       if (to === M.goal) { out.won = true; break; }
+      if (G.fires.has(to) && !out.fires.includes(to)) out.fires.push(to);
     }
     return out;
   }
@@ -708,21 +731,51 @@
   function doWalk(p, play, then) {
     play.used = true;
     const startCell = p.pos, r = walk(p, play); changed();
+    if (p.reach) { p.reach = 0; G.reachPick = new Map(); log("reach_used", { player: p.name }); }
     r.ev.forEach(x => log(x, { player: p.name }));
     log("walk", { player: p.name, steps: play.p, suit: play.s, cards: play.c });
     const finish = () => {
       if (r.won) { G.won = p.seat; log("goal", { player: p.name }); if (!G.headless) render(); return; }
+      if (!animated) for (const f of r.fires) burnHit(p, f, f === p.pos);
       landOn(p);
       then();
     };
-    if (G.headless || !G.c.speed) return finish();
-    G.anim = { p, cells: [startCell, ...r.cells], turns: r.turns, i: 0, t0: performance.now() + 350, done: finish };
+    const animated = !G.headless && !!G.c.speed;
+    if (!animated) return finish();
+    // Each fire on the way is a stop: the hop pauses there while the fire's card shows, then goes on.
+    const cells = [startCell, ...r.cells], stops = r.fires.map(f => ({ k: cells.indexOf(f), cell: f, landed: f === p.pos }));
+    G.anim = { p, cells, turns: r.turns, i: 0, t0: performance.now() + 350, paused: 0, hold: 0, stops, done: finish };
     render();
+  }
+  // A fire: the next token through loses 1 or 2 plays; one that stops on it loses 4 or 5. Then it's out.
+  // Plays lost are picked on the "burn" stream from those left; any it can't take come off the next hand.
+  function burnHit(p, cell, landed) {
+    G.fires.delete(cell);
+    const n = landed ? 4 + G.burnRng.below(2, "burn_land") : 1 + G.burnRng.below(2, "burn_pass");
+    const lost = burnPlays(p, n);
+    log("burn_hit", { player: p.name, landed, lost: n });
+    if (G.headless) return;
+    const who = p.human ? "You" : p.name, verb = landed ? (p.human ? "stop on" : "stops on") : (p.human ? "run through" : "runs through");
+    $("firePop").innerHTML = `<svg width="34" height="46" viewBox="12 16 26 38">${FLAME}</svg><h3>FIRE!</h3><p>${who} ${verb} a fire: ${n} ${n === 1 ? "play burns" : "plays burn"}.</p>` +
+      `<div class="fp-plays">${lost.map(x => `<span class="fp-play">${x.p}<small style="color:${x.s ? FACECOL[x.s] : "inherit"}">${x.s ? GLYPH[x.s] : "–"}</small></span>`).join("")}</div>` +
+      (lost.length < n ? `<div class="fp-more">${n - lost.length} more from ${p.human ? "your" : "their"} next hand</div>` : "");
+    $("firePop").hidden = false;
+  }
+  function burnPlays(p, n) {
+    const out = [];
+    while (out.length < n) { const l = left(p); if (!l.length) break; const x = l[G.burnRng.below(l.length, "burn_play")]; x.used = true; x.burnt = true; out.push(x); }
+    p.burnDebt += n - out.length; return out;
+  }
+  // Where a fire can go: a cell on another player's way, within 60 steps of them, not under a token, not the goal.
+  function fireCells(p) {
+    const out = new Set();
+    for (const q of G.P) if (q !== p) for (const c of wayAhead(q).ahead.slice(0, 60)) if (c !== G.M.goal && !G.fires.has(c) && !G.P.some(x => x.pos === c)) out.add(c);
+    return out;
   }
   function landOn(p) {
     if (!G.M.prizes.has(p.pos)) return;
     G.M.prizes.delete(p.pos);
-    const j = G.prizeRng.pick([["key", 35], ["burn", 25], ["bomb", 20], ["swapper", 20]], "star");
+    const j = G.prizeRng.pick([["key", 30], ["swapper", 20], ["burn", 20], ["bomb", 15], ["reach", 15]], "star");
     p.jokers[j]++; log("star", { player: p.name, joker: j });
     if (!G.headless) G.flash = `${p.name} ${p.human ? "win" : "wins"} a ${JOKERS[j].toLowerCase()}`;
   }
@@ -759,7 +812,8 @@
     const M = G.M;
     if (j === "swapper") { const q = G.P[arg]; if (!canSwap(p, q)) return false; G.swaps.push([G.hand, p.seat, q.seat]); [p.pos, q.pos] = [q.pos, p.pos]; p.prev = q.prev = -1; }
     else if (j === "bomb") { if (!bombable(p).includes(arg)) return false; setEdge(M, p.pos, arg, bombResult(p, arg)); findPockets(M); }
-    else if (j === "burn") { const e = M.edges.get(arg); if (!e || e.kind !== "door") return false; e.kind = "open"; e.broken = true; }
+    else if (j === "burn") { if (!fireCells(p).has(arg)) return false; G.fires.set(arg, p.seat); }
+    else if (j === "reach") { if (p.reach) return false; p.reach = 1; G.reachPick = new Map(); }
     else return false;
     p.jokers[j]--; p.jokerUsed = G.turnNo; G.jokerDone = true; changed();
     log("joker", { player: p.name, joker: j });
@@ -792,12 +846,17 @@
       if (best && best.gain >= (style === "jokers" ? 4 : 15)) return { act: "flip", play: plays[plays.length - 1], s: best.s };
     }
     // Look ahead: the play that leaves it cheapest to the goal.
-    let best = null;
-    for (const play of plays) {
-      const S = snapshot(); const r = walk(p, play); const v = r.won ? -1e9 : F[p.pos] - (r.ev.includes("door_down") ? 10 : 0); restore(S);
+    return { act: "walk", play: bestWalk(p).play };
+  }
+  // The play that leaves p cheapest to the goal, counting a door broken as 10 steps saved and fires as plays lost.
+  function bestWalk(p) {
+    const F = field(); let best = null;
+    for (const play of left(p)) {
+      const S = snapshot(); const r = walk(p, play);
+      const v = r.won ? -1e9 : F[p.pos] - (r.ev.includes("door_down") ? 10 : 0) + r.fires.reduce((a, f) => a + (f === p.pos ? 70 : 25), 0); restore(S);
       if (!best || v < best.v || (v === best.v && play.p < best.play.p)) best = { v, play };
     }
-    return { act: "walk", play: best.play };
+    return best || { v: 1e9, play: null };
   }
   function closeSpot(p, lead) {
     const M = G.M, F = field(); let cur = lead.pos;
@@ -814,15 +873,19 @@
     const M = G.M, eager = style === "jokers";
     if (style === "racer" || style === "timer") return;
     const F = field(), me = F[p.pos];
+    // Burn: a fire where the leader's biggest play would stop, else just ahead of them.
     if (p.jokers.burn) {
-      let cur = p.pos;
-      for (let k = 0; k < 40 && cur !== M.goal; k++) {
-        const next = M.nb(cur).filter(n => passable(edgeOf(M, cur, n))).sort((a, b) => F[a] - F[b])[0];
-        if (next === undefined) break;
-        const e = edgeOf(M, cur, next);
-        if (e.kind === "door") { useJoker(p, "burn", M.key(cur, next)); return; }
-        cur = next;
+      const lead = G.P.filter(q => q !== p).sort((a, b) => F[a.pos] - F[b.pos])[0];
+      if (lead && (eager || F[lead.pos] < me + (style === "closer" ? 10 : 0))) {
+        const ok = fireCells(p), big = left(lead)[0], end = big ? preview(lead, big).end : -1;
+        const cell = ok.has(end) ? end : wayAhead(lead).ahead.slice(3, 60).find(c => ok.has(c));
+        if (cell !== undefined) { useJoker(p, "burn", cell); return; }
       }
+    }
+    // Reach: when picking the ways saves enough.
+    if (p.jokers.reach && !p.reach && left(p).length > 1) {
+      const without = bestWalk(p).v; p.reach = 1; const withR = bestWalk(p).v; p.reach = 0;
+      if (without - withR >= (eager ? 1 : 8)) { useJoker(p, "reach"); return; }
     }
     if (p.jokers.bomb) for (const n of bombable(p)) {
       const res = bombResult(p, n); setEdge(M, p.pos, n, res); const after = costField()[p.pos]; M.edges.delete(M.key(p.pos, n)); M.adj[p.pos * 4 + dirTo(M, p.pos, n)] = null; M.adj[n * 4 + dirTo(M, n, p.pos)] = null;
@@ -841,7 +904,7 @@
   }
   function botLive() { const p = cur(); if (p.human || G.won !== null || G.phase !== "maze" || G.anim) return; applyBot(p); }
   // After your play: if you hold a joker you can still use this turn, the turn waits for it or End turn.
-  const usableJokers = (p) => !G.jokerDone && ["burn", "bomb", "swapper"].some(j => p.jokers[j] > 0);
+  const usableJokers = (p) => !G.jokerDone && ["burn", "bomb", "swapper", "reach"].some(j => p.jokers[j] > 0 && !(j === "reach" && p.reach));
   function afterPlay() {
     G.sel = null; G.mode = null;
     if (G.won !== null) return;
@@ -855,7 +918,7 @@
   // One game a tick, so the page stays responsive; progress(k) after each game, done(html) at the end.
   function runGames(n, done, progress = () => {}) {
     const keep = G, hands = [], wins = [0, 0, 0], sum = {}, runC = cfg();
-    const keys = ["walk", "junction", "stopped", "plot", "duel", "door_hit", "door_down", "door_closed", "switch", "joker", "star", "key"];
+    const keys = ["walk", "junction", "stopped", "plot", "duel", "door_hit", "door_down", "door_closed", "switch", "joker", "star", "key", "burn_hit", "reach_used"];
     let s = 0, g = null;
     // One hand a tick.
     const one = () => { try { oneHand(); } catch (e) { G = keep; done(`<p>Game ${s} failed: ${e.message}</p><pre>${e.stack}</pre>`); } };
@@ -890,7 +953,15 @@
     const now = performance.now(), span = V;
     // Walk progress: a hop a step, after a short pause while the camera pulls back.
     let hopK = 0, hopF = 0;
-    if (an) { const t = Math.max(0, (now - an.t0) / c.speed); hopK = Math.min(Math.floor(t), an.cells.length - 1); hopF = hopK >= an.cells.length - 1 ? 0 : t - hopK; an.i = hopK; }
+    if (an) {
+      if (an.hold && now >= an.hold) { an.paused += now - an.holdFrom; an.hold = 0; $("firePop").hidden = true; }
+      let t = Math.max(0, (now - an.t0 - an.paused - (an.hold ? now - an.holdFrom : 0)) / c.speed);
+      const st = an.stops[0];
+      if (st && !an.hold && t >= st.k) {
+        // Reached a fire: stand on it, burn, and hold for the card (longer when stopped on it, at the end).
+        an.paused += (t - st.k) * c.speed; t = st.k; an.stops.shift();
+        burnHit(an.p, st.cell, st.landed); an.hold = now + (st.landed ? 2200 : 1800); an.holdFrom = now;
+      } hopK = Math.min(Math.floor(t), an.cells.length - 1); hopF = hopK >= an.cells.length - 1 ? 0 : t - hopK; an.i = hopK; }
     const posOf = (p) => an && an.p === p ? an.cells[an.i] : p.pos;
     const focus = an ? an.p : (G.phase === "maze" ? cur() : me);
 
@@ -898,11 +969,12 @@
     let pv = null;
     if (myTurn && G.sel && (!G.mode || G.mode === "walk")) pv = preview(me, G.sel);
 
-    // Camera target, in cells: fit the walk (or the previewed walk); otherwise close in on the player whose turn it is.
-    const fit = an ? an.cells : pv ? [me.pos, ...pv.cells] : null;
+    // Camera target, in cells: every token always in view (Bruce, 2026-11-17), plus the walk or the previewed walk;
+    // as close as that allows, never closer than the zoom setting.
+    const fit = [...G.P.map(posOf), ...(an ? an.cells : pv ? pv.cells : [])];
     let tcs = c.zoom, tx0, ty0;
     if (c.whole) { tcs = V / M.W; tx0 = ty0 = M.W / 2; }
-    else if (fit && fit.length > 1) {
+    else if (fit.length > 1 && new Set(fit).size > 1) {
       let a = 1e9, b = 1e9, d = -1, e = -1; for (const i of fit) { const [x, y] = M.xy(i); a = Math.min(a, x); b = Math.min(b, y); d = Math.max(d, x); e = Math.max(e, y); }
       tcs = Math.max(V / M.W, Math.min(c.zoom, V / (Math.max(d - a, e - b) + 3))); tx0 = (a + d + 1) / 2; ty0 = (b + e + 1) / 2;
     } else { const [x, y] = M.xy(posOf(focus)); tx0 = x + .5; ty0 = y + .5; }
@@ -949,6 +1021,11 @@
       s += taken.has(i) ? junctionMark(cx(i), cy(i), cs, taken.get(i), true) : junctionMark(cx(i), cy(i), cs, M.ptr[i], false);
     }
     for (const i of M.prizes) if (c.whole || vis.includes(i)) s += A.prize(X(i), Y(i), cs);
+    // Fires: the burn card's flame, sized to the cell.
+    for (const [i] of G.fires) if (c.whole || vis.includes(i)) s += fireMark(cx(i), cy(i), cs);
+    if (myTurn && G.mode === "burn") for (const i of fireCells(me)) if (vis.includes(i)) s += `<circle class="hit pulse" data-fire="${i}" cx="${cx(i)}" cy="${cy(i)}" r="${cs * .3}" fill="rgba(255,79,216,.25)" stroke="#FF4FD8" stroke-width="2"/>`;
+    // Reach: the junctions on your previewed path can be tapped to pick their way.
+    if (pv && me.reach) for (const [i] of pv.choices) s += `<circle class="hit pulse" data-pick="${i}" cx="${cx(i)}" cy="${cy(i)}" r="${cs * .46}" fill="rgba(0,0,0,0)" stroke="#C77DFF" stroke-width="2.5"/>`;
     if (pv) {
       const pts = [me.pos, ...pv.cells].map(i => `${cx(i)},${cy(i)}`).join(" ");
       s += `<polyline points="${pts}" fill="none" stroke="#FFD447" stroke-width="3" stroke-dasharray="1 6" stroke-linecap="round" opacity=".9"/>` +
@@ -1001,7 +1078,7 @@
     else if (G.mode === "close") prompt = "Tap a passage to close";
     else if (G.mode === "flip") prompt = "Pick a switch to flip (its letter is on the maze)";
     else if (G.mode === "bomb") prompt = "Tap a wall beside you";
-    else if (G.mode === "burn") prompt = "Tap a door to burn";
+    else if (G.mode === "burn") prompt = "Tap a cell on another player's way to set a fire";
     else if (G.sel) prompt = pv ? `${G.sel.p} steps: ${pv.won ? "reaches the goal!" : `ends ${Math.round(previewCost(pv))} from the goal`}${pv.ev.includes("door_hit") ? " · hits a door" : ""}` : "";
     else prompt = "";
     $("prompt").textContent = prompt;
@@ -1023,7 +1100,7 @@
       } else {
         const closeWhy = !x.s ? "A play with no suit can't make a door" : (me.closed || 0) >= c.closeMax ? "You've closed a door this hand" : "";
         const flipWhy = !M.switches.length ? "No switches on this maze" : M.switches.every((_, k) => !canFlip(k)) ? "Every switch was flipped this hand" : "";
-        rows = row(`data-act="walk"`, "▶", `Walk ${x.p} steps`, pv ? (pv.won ? "Reaches the goal!" : `Ends ${Math.round(previewCost(pv))} from the goal${pv.ev.includes("door_hit") ? ", hits a door" : ""}${pv.ev.includes("stopped") ? ", stopped by a door" : ""}`) : "", true, "go") +
+        rows = row(`data-act="walk"`, "▶", `Walk ${x.p} steps`, pv ? (pv.won ? "Reaches the goal!" : `Ends ${Math.round(previewCost(pv))} from the goal${pv.ev.includes("door_hit") ? ", hits a door" : ""}${pv.ev.includes("stopped") ? ", stopped by a door" : ""}${fireNote(pv, me)}`) + (me.reach ? ". Reach: tap a ringed junction to change its way" : "") : "", true, "go") +
           row(`data-act="close"`, doorIcon, "Close a door", closeWhy || `Put a ${GLYPH[x.s]}${Math.max(1, Math.round(x.p * c.closeMul))} door on an open path`, !closeWhy) +
           row(`data-act="flip"`, "⇄", "Flip a switch", flipWhy || "Swap a switch's open and shut passages", !flipWhy);
       }
@@ -1037,14 +1114,14 @@
     // The power jokers tray, as on the scoring turn (ui.md › Power jokers): one slot per kind, the beta's joker
     // card art, a violet count, cards stacked behind when you hold 2 or more, 30% when you hold none, raised when armed.
     // The key has no card art yet: the plain frame with its glyph. One joker a turn, before or after your play.
-    const jOk = (j) => myTurn && j !== "key" && !G.jokerDone && !G.sel && me.jokers[j] > 0;
+    const jOk = (j) => myTurn && j !== "key" && !G.jokerDone && !G.sel && me.jokers[j] > 0 && !(j === "reach" && me.reach);
     const slot = (j) => { const n = me.jokers[j];
-      return `<button class="pjs${G.mode === j ? " on" : ""}${n ? "" : " none"}" data-joker="${j}" ${jOk(j) ? "" : "disabled"} title="${JOKERS[j]}: ${JOKER_HINT[j]}">` +
+      return `<button class="pjs${G.mode === j || (j === "reach" && me.reach) ? " on" : ""}${n ? "" : " none"}" data-joker="${j}" ${jOk(j) ? "" : "disabled"} title="${JOKERS[j]}: ${JOKER_HINT[j]}">` +
         (n >= 2 ? `<span class="pjb b2"></span><span class="pjb b1"></span>` : "") +
         (JOKER_ART[j] ? `<img src="../../../design/cards/${JOKER_ART[j]}" alt="${JOKERS[j]}">` : `<span class="pjk"><img src="../../../design/cards/frame.svg" alt=""><i>${JOKER_ICON[j]}</i><em>KEY</em></span>`) +
         (n ? `<b class="cnt">${n}</b>` : "") + `</button>`; };
-    d += `<div class="pj"><span class="pj-tag">POWER JOKERS</span><div class="pj-slots">${["swapper", "bomb", "burn", "key"].map(slot).join("")}</div>` +
-      `<div class="pj-note">${G.jokerDone ? "Joker used this turn" : G.after ? "Play a joker now, or end your turn" : "One a turn, before or after your play"}${G.after ? `<button class="btn go" data-act="endturn">End turn</button>` : ""}</div></div>`;
+    d += `<div class="pj"><span class="pj-tag">POWER JOKERS</span><div class="pj-slots">${Object.keys(JOKERS).map(slot).join("")}</div>` +
+      `<div class="pj-note">${me.reach ? "Reach is on: your next play picks its ways · " : ""}${G.jokerDone ? "Joker used this turn" : G.after ? "Play a joker now, or end your turn" : "One a turn, before or after your play"}${G.after ? `<button class="btn go" data-act="endturn">End turn</button>` : ""}</div></div>`;
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
     d += sheet;
     $("dock").innerHTML = d;
@@ -1061,9 +1138,10 @@
   function frame(now) {
     G.raf = 0;
     const an = G.anim;
-    if (an && (now - an.t0) / G.c.speed >= an.cells.length - 1) { G.anim = null; G.view.t = now; an.done(); render(); return; }
+    if (an && !an.hold && !an.stops.length && (now - an.t0 - an.paused) / G.c.speed >= an.cells.length - 1) { G.anim = null; G.view.t = now; an.done(); render(); return; }
     render();
   }
+  const fireNote = (pv, p) => pv.fires.length ? (pv.fires.includes(pv.end) && !pv.won ? ", stops on a fire (lose 4 or 5 plays)" : ", runs through a fire (lose 1 or 2 plays)") : "";
   function previewCost(pv) { const S = snapshot(); const me = G.P[0], play = G.sel; walk(me, play); const v = costField()[me.pos]; restore(S); return v; }
   const cardText = (t, col = SUITCOL) => { const s = t.slice(-1), r = t.slice(0, -1); return `<i style="color:${col[s]}">${r}${GLYPH[s]}</i>`; };
   // A real fork: three or more ways that lead on. Corridors and dead ends are never junctions.
@@ -1110,6 +1188,14 @@
       `<circle cx="${mx}" cy="${my}" r="${r}" fill="#0A0E1F" stroke="${col}" stroke-width="1.5" ${e.on ? `stroke-dasharray="2 2"` : ""}/>` + A.text(mx, my + .5, LETTERS[e.sw], r * 1.1, col);
   }
 
+  const FLAME = `<path d="M25 18C29 26 37 30 36 40C36 47 31 52 25 52C19 52 14 47 14 40C14 35 17 32 20 29C21 25 23 21 25 18Z" fill="#E00000"/><path d="M25 31C28 36 31 39 30 44C30 48 28 50 25 50C22 50 20 48 20 44C20 39 23 36 25 31Z" fill="#F2B705"/>`;
+  function fireMark(x, y, cs) {
+    const k = cs * .72 / 34;
+    return `<circle cx="${x}" cy="${y}" r="${cs * .42}" fill="#F2B705" opacity=".18"/><g transform="translate(${x - 25 * k} ${y - 35 * k}) scale(${k})">` +
+      `<path d="M25 18C29 26 37 30 36 40C36 47 31 52 25 52C19 52 14 47 14 40C14 35 17 32 20 29C21 25 23 21 25 18Z" fill="#E00000"/>` +
+      `<path d="M25 31C28 36 31 39 30 44C30 48 28 50 25 50C22 50 20 48 20 44C20 39 23 36 25 31Z" fill="#F2B705"/></g>`;
+  }
+
   // ---------- Input ----------
   // Tapping the maze explains what's there (when no tap is being asked for).
   const WAYS = ["up", "right", "down", "left"];
@@ -1130,6 +1216,7 @@
     if (i === M.goal) out.push(`<b>The goal.</b> The first token here wins.`);
     if (i === M.start) out.push(`<b>The start.</b>`);
     if (M.prizes.has(i)) out.push(`<b>A star.</b> End a walk here to win a joker.`);
+    if (G.fires.has(i)) out.push(`<b>A fire</b>, set by ${G.P[G.fires.get(i)].name}. The next token through loses 1 or 2 plays; one that stops here loses 4 or 5. Then it's out.`);
     if (isJunction(M, i)) out.push(`<b>A junction.</b> The next token through goes ${WAYS[M.ptr[i]]}; then it turns to the next way, so the one after goes another way.`);
     if (!out.length) out.push(`An open path.`);
     return out.map(t => `<p>${t}</p>`).join("");
@@ -1151,10 +1238,17 @@
   $("maze").addEventListener("click", (ev) => {
     const me = G.P[0], t = ev.target;
     const asking = G.phase === "maze" && cur().human && !G.anim && G.won === null && ["close", "burn", "bomb"].includes(G.mode);
+    const pick = t.closest("[data-pick]");
+    if (pick && G.sel && me.reach && cur().human && !G.anim) {
+      // Turn the tapped junction to its next way, for this play.
+      const i = +pick.dataset.pick, pv = preview(me, G.sel), ch = pv.choices.find(([c]) => c === i), now = pv.turns.find(([c]) => c === i);
+      if (ch) { const ways = ch[1]; G.reachPick.set(i, ways[(ways.indexOf(now[1]) + 1) % ways.length]); render(); }
+      return;
+    }
     if (!asking) return showTip(explainAt(ev));
     const pass = t.closest("[data-pass]");
     if (pass && G.mode === "close" && G.sel) { if (doClose(me, G.sel, pass.dataset.pass)) afterPlay(); return; }
-    if (pass && G.mode === "burn") { if (useJoker(me, "burn", pass.dataset.pass)) jokerDone(); return; }
+    const fire = t.closest("[data-fire]"); if (fire && G.mode === "burn") { if (useJoker(me, "burn", +fire.dataset.fire)) jokerDone(); return; }
     const bomb = t.closest("[data-bomb]"); if (bomb && G.mode === "bomb") { if (useJoker(me, "bomb", +bomb.dataset.bomb)) jokerDone(); }
   });
   // A joker used: after the play it ends the turn; before it, the play is still to come.
@@ -1169,6 +1263,7 @@
     if (b.dataset.act === "walk") { G.turnNo = (G.turnNo || 0) + 1; return doWalk(me, G.sel, afterPlay); }
     if (b.dataset.act === "close" || b.dataset.act === "flip") { G.mode = G.mode === b.dataset.act ? null : b.dataset.act; return render(); }
     if (b.dataset.flip !== undefined) { G.turnNo = (G.turnNo || 0) + 1; doFlip(me, G.sel, +b.dataset.flip); return afterPlay(); }
+    if (b.dataset.joker === "reach") { if (useJoker(me, "reach")) jokerDone(); return; }
     if (b.dataset.joker) { G.mode = G.mode === b.dataset.joker ? null : b.dataset.joker; return render(); }
     if (b.dataset.swap) { if (useJoker(me, "swapper", +b.dataset.swap)) jokerDone(); }
     if (b.dataset.act === "endturn") return endTurn();

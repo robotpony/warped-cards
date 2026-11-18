@@ -200,12 +200,15 @@ Every score plays out part by part, like counting a hand aloud: the set's name a
 
 Special jokers are jokers that carry an action. The ones you hold are your power jokers, kept below the board; others turn up on the board. Tap one to arm it; tap it again to cancel.
 
-| Card | What it does |
-|---|---|
-| Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places |
-| Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing |
-| Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter |
-| Burn (flame) | Tap a grid card. It leaves the board and the deck for the rest of the game, scoring nothing. The deck can't be burned below 40 cards (to tune) |
+Your power jokers are one set for the whole game: the same cards work on the scoring grid and on the maze, each in its own way (2026-11-17). What you use in one phase is gone from the other.
+
+| Card | On the scoring grid | On the maze |
+|---|---|---|
+| Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places | Swap places with another token, not back in the same round |
+| Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing | Open a wall beside you, if the way round to the other side is 20 steps or less (to tune) |
+| Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter | Your next play picks its way at each junction, instead of following the arrows, and the arrows don't turn |
+| Burn (flame) | Tap a grid card. It leaves the board and the deck for the rest of the game, scoring nothing. The deck can't be burned below 40 cards (to tune) | Set a fire on a cell on another player's way, within 60 steps of them. The next token through loses 1 or 2 plays; one that stops on it loses 4 or 5. Then it's out. Plays it can't take come off the next round. The walk pauses on the fire while a card shows what burnt, then goes on |
+| Key | Not built yet. Your hand size goes up by 1: sometimes for the rest of the game, otherwise for a while like a reach (odds to tune from stats) | Works by itself: one play goes past a door of another suit |
 
 You start the game with 2 swappers, 1 bomb, 1 reach and 1 burn (to tune). You get more from prizes, jokers and the shop.
 
@@ -337,7 +340,7 @@ There are no gates (merged into doors, 2026-11-17).
 
 A door is a card laid across the path: its rank is the strength left, and its suit is the suit it needs. Only steps of its suit wear it down, and the steps spent on it don't move you. Steps of another suit stop at the door, and the rest of the walk is lost. A door with no suit is worn down by any steps.
 
-- Doors on the main route get stronger toward the goal (12, 18, 24 and so on in the mock, to tune).
+- There are about 14 doors on the golden path (to tune), about 22 in a maze with the variants', so every stretch has a door to plan for. They get stronger toward the goal (6, 7, 8 and so on in the mock, to tune).
 - A variant's door sits at its entrance, beside the golden path. Round a golden-path door, it has another suit and 60% of that door's strength; on a shortcut, a suit and half the steps the shortcut saves (to tune).
 - A door you close takes your play's suit, and its steps as strength. Opening it needs the same suit, like any door.
 - You can't close a door in the way of a player who closed one in your way this round.
@@ -351,9 +354,9 @@ A switch is a pair of passages, one open and one shut, marked with the same lett
 
 Each token sees a few cells around it (how many: to tune). Cells anyone has seen stay revealed.
 
-### Stars A bomb opens a wall only where the way round to the other side is 20 steps or less (to tune). Players start with one burn, one bomb and one swapper in the mock (to tune).
+### Jokers on the maze
 
-Stars sit on the loops. A play that ends on one wins a joker: a key (lets one play past a wrong-suit gate or door), a burn (breaks any door), a bomb (opens a wall beside you; a big shortcut leaves a door of half the steps it saves) or a swapper (swap places with another token, not back in the same round). Odds and what else stars give: to tune.
+You use one joker a turn on the maze, before or after your play (Special jokers, above, says what each does there). Stars sit along the paths, and a play that ends on one wins a joker: a key, swapper, burn, bomb or reach (odds to tune). In the mock, players start with the scoring grid's starting set: 2 swappers, a bomb, a reach and a burn.
 
 ## Prizes
 
