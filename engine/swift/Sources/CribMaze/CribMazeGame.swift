@@ -1,6 +1,8 @@
 // A whole Crib RPG game as GameKit's GameRules (engine.md › The game), so it can be run, recorded
 // and replayed one step at a time. A game is a sequence of hands; each hand is a deal (or fixed
-// cards), then a match turn. Later hands add pegging and the maze here, as their rules settle.
+// cards), then a match turn. In a game around the maze (Config.mazeGame, maze.md › The game around
+// the maze), each bot also plays a grid turn of its own, and hands go on until a token reaches the
+// goal, at most game.maxHands.
 //
 // Each hand starts its dice again from the hand's seed (MatchGame.turnSeed), so a hand plays
 // exactly as MatchGame and the simulator play it. No clock, no files, no randomness of its own.
@@ -12,25 +14,42 @@ public enum CribMazeGame: GameRules {
     public static let gameID = "crib-maze"
     public static var rulesVersion: String { MatchTurn.rulesVersion }
     /// Keep in step with `specVersion` in cribbage/minigames/spec.json (spec.test.js checks it).
-    public static let specVersion = 11
+    public static let specVersion = 12
 
     /// The config files, plus who deals first. Encoded flat, so a record's config reads like the files.
     public struct Config: Codable, Sendable, Equatable {
         public var files: CribMaze.Config
         public var firstDealer: Bool
-        public init(_ files: CribMaze.Config, firstDealer: Bool = true) { self.files = files; self.firstDealer = firstDealer }
+        /// A game around the maze (maze.md › The game around the maze): bots play grid turns of
+        /// their own, and hands go on until a token reaches the goal, at most `game.maxHands`. Off,
+        /// the game is `game.turns` hands and only the player's grid turn is played. Written to a
+        /// record's header only when on.
+        public var mazeGame: Bool
+        public init(_ files: CribMaze.Config, firstDealer: Bool = true, mazeGame: Bool = false) {
+            self.files = files; self.firstDealer = firstDealer; self.mazeGame = mazeGame
+        }
 
-        enum Keys: String, CodingKey { case firstDealer }
+        enum Keys: String, CodingKey { case firstDealer, mazeGame }
         public init(from decoder: Decoder) throws {
             files = try CribMaze.Config(from: decoder)
             try files.validate()
-            firstDealer = try decoder.container(keyedBy: Keys.self).decode(Bool.self, forKey: .firstDealer)
+            let c = try decoder.container(keyedBy: Keys.self)
+            firstDealer = try c.decode(Bool.self, forKey: .firstDealer)
+            mazeGame = try c.decodeIfPresent(Bool.self, forKey: .mazeGame) ?? false
         }
         public func encode(to encoder: Encoder) throws {
             try files.encode(to: encoder)
             var c = encoder.container(keyedBy: Keys.self)
             try c.encode(firstDealer, forKey: .firstDealer)
+            if mazeGame { try c.encode(true, forKey: .mazeGame) }
         }
+    }
+
+    /// A bot's own grid turn this hand, played off screen (maze.md › The game around the maze).
+    public struct BotTurn: Sendable {
+        public let seat: Int
+        public let turn: MatchTurn
+        public let events: [MatchEvent]
     }
 
     /// How a hand is set up: the app's settings at the time, so a record replays them.
@@ -65,12 +84,25 @@ public enum CribMazeGame: GameRules {
 
     public struct State: Sendable {
         public let config: Config
+        /// Who sits where: seat 0 is the player (a person, or a bot in the simulator), the rest bots.
+        public let players: [PlayerSeat]
         public internal(set) var game: MatchGame
+        /// This hand's bot grid turns, in seat order (a game around the maze).
+        public internal(set) var botTurns: [BotTurn] = []
+        /// Each seat's 4 kept cards this hand, in the order laid along the hand row.
+        public internal(set) var kept: [[Card]] = []
+        /// Each seat's plays this hand, once the grid turns are over (a game around the maze).
+        public internal(set) var plays: [[MazePlay]] = []
+        /// The next play's ID: plays are numbered from 1 through the game.
+        var nextPlayID = 1
         public internal(set) var stage: Stage = .ready
         /// The hand being played, or the last one played; 0 before the first.
         public internal(set) var hand = 0
         /// The match turn's events so far, for its result.
         var turnEvents: [MatchEvent] = []
+
+        /// How many seats play (1 to 3). Only a game around the maze gives the bots turns of their own.
+        public var seatCount: Int { config.mazeGame ? players.count : 1 }
 
         /// The match turn being played or just played.
         public var turn: MatchTurn? {
@@ -99,6 +131,10 @@ public enum CribMazeGame: GameRules {
         case match(MatchEvent)
         case handEnd(result: TurnResult)
         case gameEnd(hands: Int, steps: Int)
+        /// A bot's own grid turn, played off screen before the player's: its result only.
+        case botTurn(seat: Int, steps: Int, best: Int?, tier: String?, prize: String?, made: [CardRef], burned: [CardRef], tray: [String: Int])
+        /// A seat's plays for the maze, biggest first, and the 4 cards it kept, once every grid turn is over.
+        case handPlays(seat: Int, plays: [MazePlay], kept: [CardRef])
     }
 
     public struct Result: Codable, Sendable, Equatable {
@@ -109,8 +145,10 @@ public enum CribMazeGame: GameRules {
     // MARK: Rules
 
     public static func start(_ config: Config, players: [PlayerSeat], dice: inout Dice) -> (State, [Event]) {
-        let g = MatchGame(config: config.files, seed: dice.seed, firstDealer: config.firstDealer)
-        return (State(config: config, game: g), [.gameStart(hands: g.turns, shared: g.shared, firstDealer: g.firstDealer, deckSize: g.deck.count)])
+        let bots = config.mazeGame ? max(0, players.count - 1) : 0
+        let g = MatchGame(config: config.files, seed: dice.seed, firstDealer: config.firstDealer, bots: bots,
+                          maxHands: config.mazeGame ? (config.files.rules.game?.maxHands ?? 15) : nil)
+        return (State(config: config, players: players, game: g), [.gameStart(hands: g.turns, shared: g.shared, firstDealer: g.firstDealer, deckSize: g.deck.count)])
     }
 
     public static func apply(_ action: Action, by player: PlayerID?, to state: inout State, dice: inout Dice) throws -> [Event] {
@@ -126,7 +164,10 @@ public enum CribMazeGame: GameRules {
                 state.stage = .dealing(dealt, botThrown: botThrown, options: o)
                 ev.append(.deal(player: dealt.player.map(CardRef.init), bot: dealt.bot.map(CardRef.init), starter: CardRef(dealt.starter)))
             } else {
-                ev += startTurn(g.setup(fixedHand: o.fixedHand, fixedStarter: o.fixedStarter, warned: o.warned), o, &state, &dice)
+                let setup = g.setup(fixedHand: o.fixedHand, fixedStarter: o.fixedStarter, warned: o.warned)
+                state.botTurns = []
+                ev += startTurn(setup, o, &state, &dice)
+                if let t = state.turn { state.kept = [Board.hand.compactMap { t.state.cells[$0] }] }
             }
             return ev
         case (.discard(let thrown, let kept), .dealing(let dealt, let botThrown, let o)):
@@ -141,6 +182,19 @@ public enum CribMazeGame: GameRules {
             }
             let botKeep = dealt.bot.filter { c in !botThrown.contains { $0.id == c.id } }
             var ev: [Event] = [.discard(kept: keep.map(CardRef.init), thrown: cards.map(CardRef.init), botKept: botKeep.map(CardRef.init), botThrown: botThrown.map(CardRef.init))]
+            state.kept = [keep]
+            state.botTurns = []
+            if state.seatCount >= 2 {
+                // Bots play their own grid turns first, each from its own seed, then the player's
+                // turn starts again from the hand's.
+                let laid = botKeep.sorted { $0.id < $1.id }
+                state.kept.append(laid)
+                let setup = state.game.botSetup(seat: 1, dealt: dealt, thrown: cards, botThrown: botThrown, botKept: laid)
+                let b = botGridTurn(seat: 1, setup: setup, state: state, dice: &dice)
+                state.botTurns.append(b)
+                ev.append(botTurnEvent(b))
+                dice.reseed(state.game.turnSeed)
+            }
             ev += startTurn(state.game.setup(dealt: dealt, thrown: cards, botThrown: botThrown, kept: keep, warned: o.warned), o, &state, &dice)
             return ev
         case (.match(let a), .playing(var t)):
@@ -176,7 +230,75 @@ public enum CribMazeGame: GameRules {
         state.turnEvents += e
         var ev = e.map(Event.match)
         guard t.state.over else { state.stage = .playing(t); return ev }
+        if state.config.mazeGame {
+            ev += finishGrid(t, &state)
+            return ev
+        }
         let r = state.game.finish(t, events: state.turnEvents)
+        ev.append(.handEnd(result: r))
+        if state.game.over {
+            state.stage = .over(t)
+            ev.append(.gameEnd(hands: state.game.results.count, steps: state.game.steps))
+        } else {
+            state.stage = .handOver(t)
+        }
+        return ev
+    }
+}
+
+// MARK: - A game around the maze
+
+extension CribMazeGame {
+    /// A bot plays its own grid turn to the end, off screen, with `MatchBot` at its seat's level
+    /// (an unknown level plays as `medium`). The turn draws from the game's dice, started again
+    /// from the bot's seed; the bot's own choices draw from its own dice, from the same seed. A
+    /// reach or timed key ends after `bots.reachActions` of its actions.
+    static func botGridTurn(seat: Int, setup: TurnSetup, state: State, dice: inout Dice) -> BotTurn {
+        let files = state.config.files
+        let level = state.players.first { $0.seat == seat }?.level ?? "medium"
+        let bot = MatchBot(config: files, id: level, seat: seat) ?? MatchBot(config: files, id: "medium", seat: seat) ?? MatchBot(level: files.bots.match[0], seat: seat)
+        dice.reseed(setup.seed)
+        var (t, ev) = MatchTurn.start(config: files, setup: setup, dice: dice)
+        var own = Dice(seed: setup.seed)
+        var acted = 0, ends: [Int: Int] = [:]
+        let every = files.bots.reachActions ?? 5
+        while !t.state.over {
+            let a = bot.choose(t, dice: &own)
+            // Bots send only legal actions; should one not be, the turn ends.
+            let e = (try? t.apply(a)) ?? ((try? t.apply(.endTurn)) ?? [])
+            ev += e; acted += 1
+            for x in e { if let (id, _) = x.startedReach { ends[id] = acted + every } }
+            for (id, end) in ends.sorted(by: { $0.key < $1.key }) where end <= acted && !t.state.over {
+                ends[id] = nil
+                ev += (try? t.apply(.reachOver(id: id))) ?? []
+            }
+        }
+        dice = t.dice
+        return BotTurn(seat: seat, turn: t, events: ev)
+    }
+
+    static func botTurnEvent(_ b: BotTurn) -> Event {
+        var tier: String?, prize: String?
+        for e in b.events { if case .prizeWon(let ti, _, _, let special) = e { tier = ti; prize = special } }
+        var tray = b.turn.state.tray
+        if let p = prize { tray[p, default: 0] += 1 }
+        return .botTurn(seat: b.seat, steps: b.turn.state.steps, best: b.turn.state.bestPoints, tier: tier, prize: prize,
+                        made: b.turn.state.made.map(CardRef.init), burned: b.turn.state.burned.map(CardRef.init), tray: tray)
+    }
+
+    /// Every grid turn of the hand is over: deck changes apply (the player's, then each bot's), and
+    /// each seat's sets and counts become its plays for the maze.
+    static func finishGrid(_ t: MatchTurn, _ state: inout State) -> [Event] {
+        let r = state.game.finish(t, events: state.turnEvents, bots: state.botTurns.map { ($0.seat, $0.turn, $0.events) })
+        var ev: [Event] = []
+        state.plays = []
+        for seat in 0..<state.seatCount {
+            let events = seat == 0 ? state.turnEvents : (state.botTurns.first { $0.seat == seat }?.events ?? [])
+            let plays = Plays.from(events, nextID: &state.nextPlayID)
+            state.plays.append(plays)
+            ev.append(.handPlays(seat: seat, plays: plays, kept: (seat < state.kept.count ? state.kept[seat] : []).map(CardRef.init)))
+        }
+        // The maze phase comes here (maze.md › Turns); until it's built, the hand ends now.
         ev.append(.handEnd(result: r))
         if state.game.over {
             state.stage = .over(t)
@@ -240,8 +362,10 @@ extension CribMazeGame.Event: Codable {
         case discard(kept: [CardRef], thrown: [CardRef], botKept: [CardRef], botThrown: [CardRef])
         case handEnd(result: TurnResult)
         case gameEnd(hands: Int, steps: Int)
+        case botTurn(seat: Int, steps: Int, best: Int?, tier: String?, prize: String?, made: [CardRef], burned: [CardRef], tray: [String: Int])
+        case handPlays(seat: Int, plays: [MazePlay], kept: [CardRef])
     }
-    private static let ownKeys: Set<String> = ["gameStart", "handStart", "deal", "discard", "handEnd", "gameEnd"]
+    private static let ownKeys: Set<String> = ["gameStart", "handStart", "deal", "discard", "handEnd", "gameEnd", "botTurn", "handPlays"]
 
     public init(from decoder: Decoder) throws {
         guard let k = try firstKey(decoder), Self.ownKeys.contains(k) else { self = .match(try MatchEvent(from: decoder)); return }
@@ -252,6 +376,8 @@ extension CribMazeGame.Event: Codable {
         case .discard(let k, let t, let bk, let bt): self = .discard(kept: k, thrown: t, botKept: bk, botThrown: bt)
         case .handEnd(let r): self = .handEnd(result: r)
         case .gameEnd(let h, let s): self = .gameEnd(hands: h, steps: s)
+        case .botTurn(let a, let b, let c, let d, let e, let f, let g, let h): self = .botTurn(seat: a, steps: b, best: c, tier: d, prize: e, made: f, burned: g, tray: h)
+        case .handPlays(let a, let b, let c): self = .handPlays(seat: a, plays: b, kept: c)
         }
     }
 
@@ -265,6 +391,8 @@ extension CribMazeGame.Event: Codable {
         case .discard(let k, let t, let bk, let bt): own = .discard(kept: k, thrown: t, botKept: bk, botThrown: bt)
         case .handEnd(let r): own = .handEnd(result: r)
         case .gameEnd(let h, let s): own = .gameEnd(hands: h, steps: s)
+        case .botTurn(let a, let b, let c, let d, let e, let f, let g, let h): own = .botTurn(seat: a, steps: b, best: c, tier: d, prize: e, made: f, burned: g, tray: h)
+        case .handPlays(let a, let b, let c): own = .handPlays(seat: a, plays: b, kept: c)
         }
         try own.encode(to: encoder)
     }

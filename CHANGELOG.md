@@ -2,6 +2,16 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 12 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- A game around the maze (engine.md › The game around the maze; maze.md): with `mazeGame` on, hands go on until a token reaches the goal, at most `game.maxHands` (15, new in `rules.json`). Each bot plays a grid turn of its own after the discard, from the seed `<hand seed>/seat<n>`, with its own power jokers and key cards (`botTurn` event); the deck changes apply at the hand's end, the player's first. Each seat's sets and counts become its plays (`handPlays` event). The maze phase isn't built yet, so such a hand ends after the grid.
+- `bots.reachActions` (5): how long a reach lasts on a bot's own grid turn.
+- Record headers write `mazeGame: true` for such a game. The golden records are re-recorded; only their headers changed (the new config values and `specVersion`).
+
 ## spec 11 — 2026-11-17
 
 Rules r28.

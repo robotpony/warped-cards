@@ -21,7 +21,7 @@
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
     "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20], ["key", 10]] }
   },
-  "game": { "turns": 3 },
+  "game": { "turns": 3, "maxHands": 15 },
   "deck": { "shared": true, "minSize": 40 },
   "specials": {
     "known": ["swapper", "bomb", "reach", "burn", "key"],

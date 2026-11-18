@@ -90,8 +90,9 @@ public struct RulesConfig: Codable, Sendable, Equatable {
         public init(shared: Bool, minSize: Int? = nil) { self.shared = shared; self.minSize = minSize }
     }
     public var deck: Deck?
-    /// A game (r23): how many match turns it has. Missing means 1.
-    public struct Game: Codable, Sendable, Equatable { public var turns: Int }
+    /// A game (r23): how many match turns it has. Missing means 1. With the maze, a game deals
+    /// hands until a token reaches the goal, at most `maxHands` (missing means 15).
+    public struct Game: Codable, Sendable, Equatable { public var turns: Int; public var maxHands: Int? }
     public var game: Game?
 }
 
@@ -133,6 +134,9 @@ public struct BotsConfig: Codable, Sendable, Equatable {
     public var version: Int
     public var match: [MatchLevel]
     public var classic: [ClassicLevel]
+    /// A bot has no clock, so a reach or timed key it plays on its own grid turn ends after this
+    /// many of its actions (about 20 s at a person's pace). Missing means 5.
+    public var reachActions: Int?
 }
 
 public struct ConfigError: Error, CustomStringConvertible, Sendable {
@@ -207,6 +211,8 @@ public struct Config: Codable, Sendable, Equatable {
             if m.maxPick == nil { try fail("match.maxPick is needed with the key joker") }
         }
         if let g = rules.game, g.turns < 1 { try fail("game.turns must be 1 or more") }
+        if let h = rules.game?.maxHands, h < 1 { try fail("game.maxHands must be 1 or more") }
+        if let r = bots.reachActions, r < 1 { try fail("bots.reachActions must be 1 or more") }
         // A turn needs 25 cards: 2 hands of 4, a crib of 4, the starter and a 16-card grid.
         if let d = rules.deck, let min = d.minSize, min < 25 { try fail("deck.minSize must be 25 or more") }
         if !["plus", "square"].contains(rules.specials.bombShape) { try fail("specials.bombShape must be plus or square") }

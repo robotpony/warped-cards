@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 6, 2026-11-17, spec 11 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 7, 2026-11-17, spec 12 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -132,6 +132,19 @@ A game is `game.turns` match turns (3 for now). The deck lasts the game: deck bu
 
 Each finished turn keeps a result: turn, dealer, steps, best, prize tier and special, the cards made and burned, and the deck size after.
 
+### The game around the maze
+
+With the maze (the game's `mazeGame` setting, Records › Lines; [maze.md](maze.md) › The game around the maze), the game replaces `game.turns` with hands until a token reaches the goal, at most `game.maxHands`. It takes 1 to 3 players: seat 0 is the player, the rest are bots. Off, the game is as above.
+
+- **Hands.** A hand is the deal and discard, the show, every player's grid turn (bots first, then the player's), then the maze. The game ends when a token reaches the goal, or when hand `game.maxHands`'s maze ends.
+- **Bots' grid turns.** After the discard, each bot plays a whole grid turn of its own, off screen, before the player's turn starts. It plays from the deal seen from its seat: its 4 kept cards (laid in card ID order) are the hand, the starter is the same, it holds the crib when it deals, and the player's 4 are held out of the stock. Its grid deals from the deck as it stood when the hand started (its own deck, with `deck.shared` false). It starts with its own power jokers and its own key cards.
+  - The turn's dice start again from the bot's seed, FNV-1a 64 of the text `<hand seed>/seat<n>` (the hand seed in decimal). Its rolls go in the step's rolls as usual. When it ends, the game's dice start again from the hand's seed, so the player's turn plays exactly as it would without the bot.
+  - The bot plays with `MatchBot` at its seat's level (`players` › level; an unknown level plays as `medium`). Its own choices draw from stream `bot.<seat>` of its own dice, started from the same seed, which records don't hold (a replay plays the bot again). A reach or timed key it plays ends after `bots.reachActions` of its actions, as `reachOver`.
+  - A bot's turn emits only `botTurn` (its result), not its match events.
+- **Hand end.** When the player's turn ends, the deck changes apply in order: the player's (as above), then each bot's in seat order. A bot's made cards join with new IDs, one more than the highest made card the deck holds (200 if none), in the order made; a card it made and burned in the same turn doesn't join. Its burned cards leave. Its prize joins its own power jokers, and its key cards carry to its next turn.
+- **Plays.** Then each seat's plays for the maze are made from its grid turn's events, in order: each `opening` count and each `score` with 1 step or more. A play is `{id, steps, suit, cards, from}`: steps are the event's points, suit is the `score` event's suit or, for a count, the suit most common among its 5 cards (none on a tie), cards are the event's cards, and from is `hand`, `crib` or `set`. Plays are numbered from 1 through the game, seat 0's first, and listed biggest first; plays of the same size keep the order they were made. Each seat emits `handPlays` (seat, plays, kept: its 4 kept cards).
+- **3 players.** The engine holds 3 seats, but the 3-player deal (5 cards each and one to the crib, rules.md › Deal and discard) isn't built yet; until it is, only seats 0 and 1 are dealt grid turns.
+
 The deal's hint (concept.md › Discard principles) is app behaviour, not an action; the beta records it beside the steps, as a note.
 
 ### The game as steps
@@ -148,6 +161,8 @@ A whole game also runs one action at a time, so it can be recorded and replayed 
 2. `startHand` starts every dice stream again from the hand's seed (The game › Seeds) and emits `handStart` (hand, seed, dealer, deckSize, options). With the deal on and no fixed cards, it deals (The deal, drawing from these dice) and emits `deal` (player, bot, starter). Otherwise the match turn starts at once, with the fixed cards or off the top of the deck.
 3. `discard` throws the player's 2; the bot throws by its best classic keep. It emits `discard` (kept, in the hand row's order, thrown, botKept, botThrown), then starts the match turn with the hand's options. A bot playing the player's seat (the simulator, the golden records) sends kept in card ID order.
 4. When the match turn ends, the hand ends: `handEnd` (the turn's result). After the last hand, `gameEnd` (hands, steps).
+
+In a game around the maze, step 3 also plays each bot's grid turn (`botTurn`) before the player's turn starts, and step 4 makes the plays (`handPlays`) before `handEnd` (The game around the maze).
 
 A hand's options are the app's settings when it starts, so they ride on the action, not in the config. Because every hand starts its dice from its own seed, a hand plays exactly as the same turn does when the deal and the turn are run on their own.
 
@@ -366,7 +381,7 @@ A combo in `score` is `{kind, points, cards}` plus `size` or `multiplier` where 
 
 Values (reasons, purposes, kinds, tiers) stay snake_case text; names and fields are camelCase. These names follow `stats.md` › Event log by meaning, not by case.
 
-The game around the match turn adds its own events (The game as steps): `gameStart` (hands, shared, firstDealer, deckSize), `handStart` (hand, seed as decimal text, dealer, deckSize, options), `deal` (player, bot: cards; starter: card), `discard` (kept, thrown, botKept, botThrown), `handEnd` (result: turn, dealer, steps, best or none, tier or none, prize or none, made, burned, deckSize) and `gameEnd` (hands, steps). A match turn's events sit beside them in the same list, unwrapped.
+The game around the match turn adds its own events (The game as steps): `gameStart` (hands, shared, firstDealer, deckSize), `handStart` (hand, seed as decimal text, dealer, deckSize, options), `deal` (player, bot: cards; starter: card), `discard` (kept, thrown, botKept, botThrown), `handEnd` (result: turn, dealer, steps, best or none, tier or none, prize or none, made, burned, deckSize) and `gameEnd` (hands, steps). A game around the maze adds `botTurn` (seat, steps, best or none, tier or none, prize or none, made, burned, tray: the bot's power jokers after its prize) and `handPlays` (seat, plays, kept). A match turn's events sit beside them in the same list, unwrapped.
 
 ## Records
 
@@ -378,7 +393,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (11), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
+| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (12), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`, including a timed key's) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -421,7 +436,7 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 | `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19). Per key joker: `key_lasts`, then `key_seconds` for a timed one (r28) |
 | `opening` | Per opening count with a bonus: `bonus` per power joker won (r26) |
 | `prize` | `prize_special` |
-| `bot.<seat>` | A bot's own choices (see Bots) |
+| `bot.<seat>` | A bot's own choices (see Bots). A bot's own grid turn draws its match turn on the game's streams, started again from its seed (The game around the maze) |
 
 ## Clock and timer
 
@@ -599,7 +614,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
     "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20], ["key", 10]] }
   },
-  "game": { "turns": 3 },
+  "game": { "turns": 3, "maxHands": 15 },
   "deck": { "shared": true, "minSize": 40 },
   "specials": {
     "known": ["swapper", "bomb", "reach", "burn", "key"],
@@ -611,7 +626,7 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
 }
 ```
 
-`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `opening` (r24) counts the hand and crib before the grid plays, with classic show options (a hand flush needs its 4, a crib flush all 5); missing means no opening count, as in r23. `opening.bonus` (r26) gives a power joker for every `per` points a count scores past `from`; missing means none, as in r25, and when given `from` MUST be 0 or more and `per` 1 or more. `maxEdgeCards` (r24) is how many hand and crib cards one set may pick together; missing means no limit, and when given it MUST be 1 or more. `game.turns` (r23) is how many match turns a game has; missing means 1. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. `maxPick` (r28) caps the pick limit, however many reaches and keys raise it; missing means no cap, and it MUST be given when `key` is a known special. `specials.key` (r28) is the key joker: the cards it adds, how often it lasts the game against a while (`lasts`, weights for `game` and `timed`, nothing else), and a timed key's seconds as for a reach. The key isn't in `start`, so a player gets one from a prize, an opening bonus or a reveal. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
+`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `opening` (r24) counts the hand and crib before the grid plays, with classic show options (a hand flush needs its 4, a crib flush all 5); missing means no opening count, as in r23. `opening.bonus` (r26) gives a power joker for every `per` points a count scores past `from`; missing means none, as in r25, and when given `from` MUST be 0 or more and `per` 1 or more. `maxEdgeCards` (r24) is how many hand and crib cards one set may pick together; missing means no limit, and when given it MUST be 1 or more. `game.turns` (r23) is how many match turns a game has; missing means 1. `game.maxHands` is the most hands a game around the maze deals (The game around the maze); missing means 15, and when given it MUST be 1 or more. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. `maxPick` (r28) caps the pick limit, however many reaches and keys raise it; missing means no cap, and it MUST be given when `key` is a known special. `specials.key` (r28) is the key joker: the cards it adds, how often it lasts the game against a while (`lasts`, weights for `game` and `timed`, nothing else), and a timed key's seconds as for a reach. The key isn't in `start`, so a player gets one from a prize, an opening bonus or a reveal. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 
@@ -655,6 +670,7 @@ Weights are lists of pairs, not objects, so their order is fixed in every langua
     { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.3 },
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
   ],
+  "reachActions": 5,
   "classic": [
     { "id": "expert", "discard": "average", "peg": "careful" },
     { "id": "greedy", "discard": "hand",    "peg": "greedy" },
@@ -663,7 +679,7 @@ Weights are lists of pairs, not objects, so their order is fixed in every langua
 }
 ```
 
-`match` holds the match turn levels (see Bots), `classic` the classic game's (see Classic cribbage › Bots).
+`match` holds the match turn levels (see Bots), `classic` the classic game's (see Classic cribbage › Bots). `reachActions` is how many actions a reach or timed key lasts on a bot's own grid turn, since a bot has no clock (The game around the maze); missing means 5, and when given it MUST be 1 or more.
 
 `starts` is a fraction, the one place config uses a non-integer. The engine MUST round `n × starts` half away from zero, so every language agrees.
 

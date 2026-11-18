@@ -1,7 +1,7 @@
 // Match turn bots (engine.md › Bots). A bot sees the player's view and returns one
 // action. Its only randomness is its own stream, "bot.<seat>". Bots count as
 // already warned about cards left over, so start their turns with warned set.
-import CribMaze
+
 import GameKit
 
 /// A set a bot found: positions in the order it would trace them, and their points.

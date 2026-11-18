@@ -52,8 +52,8 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 
 Built from `cribbage/minigames/maze.md`, the design handoff from `mocks/maze-board.html` v12 (Bruce, 2026-11-17: playtest it in the Mac beta). Each item moves its part of maze.md into engine.md or ui.md as it lands.
 
-- [ ] `@apple` The game as hands until a token reaches the goal, capped at `game.maxHands` (15), with 1 to 3 players in the engine (maze.md › The game around the maze)
-- [ ] `@apple` Bots' grid turns off screen with `MatchBot`, their own power jokers, and a summary before your turn (maze.md › The game around the maze; concept.md › Phases › 5a)
+- [x] `@apple` The game as hands until a token reaches the goal, capped at `game.maxHands` (15), with 1 to 3 players in the engine (maze.md › The game around the maze) (engine 0.22.1; the 3-player deal is a TODO.md item)
+- [ ] `@apple` Bots' grid turns off screen with `MatchBot`, their own power jokers, and a summary before your turn (maze.md › The game around the maze; concept.md › Phases › 5a) (engine done in 0.22.1, `botTurn`; the summary waits on the scene)
 - [ ] `@apple` Classic pegging scoring in Swift for duels, checked against `fixtures/pegging.json` (engine.md › Classic cribbage › The play)
 - [ ] `@apple` `config/maze.json`, and the maze generator in the engine, with a fixture per seed (maze.md › The board)
 - [ ] `@apple` Plays from the round's sets, turns, walking, doors, switches and closing, as engine actions and events (maze.md › Plays, Turns, Walking)

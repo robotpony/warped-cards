@@ -37,7 +37,8 @@ Engine (Swift package, no UI)
   CardKit ........... cards, ranks, suits, decks, jokers
   CribbageKit ....... classic counting and pegging rules
   CribMaze .......... Crib RPG rules: match turn, the game and its deck, jokers, config loading
-  CribMazeBots ...... bots, from random to perfect
+  CribMazeBots ...... bots that play a seat from the session (MatchBot itself lives in CribMaze,
+                      since bots play their own grid turns inside a game around the maze)
 
 GameRecord (Swift package target, reusable)                  [beta app only]
   writer, reader, replayer, generic counts

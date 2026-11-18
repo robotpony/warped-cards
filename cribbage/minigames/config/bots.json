@@ -6,6 +6,7 @@
     { "id": "medium",  "search": "traced", "depth": 4, "starts": 0.3 },
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
   ],
+  "reachActions": 5,
   "classic": [
     { "id": "expert", "discard": "average", "peg": "careful" },
     { "id": "greedy", "discard": "hand",    "peg": "greedy" },

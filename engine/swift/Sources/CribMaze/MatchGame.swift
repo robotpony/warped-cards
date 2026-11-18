@@ -58,10 +58,20 @@ public struct MatchGame: Codable, Sendable, Equatable {
     public private(set) var results: [TurnResult] = []
     /// Hand size from key jokers that last the game (r28), carried from turn to turn.
     public private(set) var keyCards = 0
+    /// Each bot's own power jokers and key cards, seat 1 first, in a game around the maze, where
+    /// bots play grid turns of their own (maze.md › The game around the maze). Empty otherwise.
+    public private(set) var botTrays: [[String: Int]] = []
+    public private(set) var botKeyCards: [Int] = []
+    /// A game around the maze ends when a token reaches the goal, before its last hand.
+    public internal(set) var ended = false
 
-    public init(config: Config, seed: UInt64, firstDealer: Bool = true) {
+    /// `bots` is how many bots play grid turns of their own (a game around the maze); `maxHands`
+    /// then replaces `game.turns` as the most hands the game deals.
+    public init(config: Config, seed: UInt64, firstDealer: Bool = true, bots: Int = 0, maxHands: Int? = nil) {
         self.seed = seed
-        turns = config.rules.game?.turns ?? 1
+        turns = maxHands ?? config.rules.game?.turns ?? 1
+        botTrays = [[String: Int]](repeating: config.rules.specials.start, count: bots)
+        botKeyCards = [Int](repeating: 0, count: bots)
         shared = config.rules.deck?.shared ?? true
         self.firstDealer = firstDealer
         deck = .standard
@@ -71,7 +81,7 @@ public struct MatchGame: Codable, Sendable, Equatable {
 
     /// The turn being played or to play next, from 1.
     public var turn: Int { results.count + 1 }
-    public var over: Bool { results.count >= turns }
+    public var over: Bool { ended || results.count >= turns }
     public var steps: Int { results.reduce(0) { $0 + $1.steps } }
     /// Whether the player deals this turn.
     public var dealer: Bool { firstDealer == results.count.isMultiple(of: 2) }
@@ -79,6 +89,44 @@ public struct MatchGame: Codable, Sendable, Equatable {
     /// This turn's seed: the game's seed for turn 1, so a one-turn game plays as a standalone turn
     /// from the same seed; after that, FNV-1a 64 of "<seed>/turn<n>".
     public var turnSeed: UInt64 { turn == 1 ? seed : fnv1a64("\(seed)/turn\(turn)") }
+
+    /// A bot's own seed for its grid turn this hand: FNV-1a 64 of "<turn seed>/seat<n>", so its
+    /// turn never shifts the player's.
+    public func botSeed(seat: Int) -> UInt64 { fnv1a64("\(turnSeed)/seat\(seat)") }
+
+    /// The setup for a bot's own grid turn (2 players): the deal seen from its seat. Its 4 kept
+    /// cards are its hand, the player's are held out of the stock, and the grid deals from the deck
+    /// as it stood when the hand started (its own, when decks aren't shared).
+    public func botSetup(seat: Int, dealt: Dealt, thrown: [Card], botThrown: [Card], botKept: [Card]) -> TurnSetup {
+        let mine = Dealt(player: dealt.bot, bot: dealt.player, starter: dealt.starter)
+        var s = Deal.setup(seed: botSeed(seat: seat), dealer: !dealer, dealt: mine, thrown: botThrown, botThrown: thrown, kept: botKept,
+                           tray: botTrays[seat - 1], warned: true, deck: (botDeck ?? deck).cards)
+        s.keyCards = botKeyCards[seat - 1]
+        return s
+    }
+
+    /// Ends a hand whose bots played grid turns of their own: the player's turn first, as `finish`,
+    /// then each bot's in seat order. A bot's made cards join its deck (the shared one, or its own)
+    /// with new IDs after the highest the deck holds, in the order made (a card it made and burned
+    /// in the same turn doesn't join), its burned cards leave it,
+    /// and its prize joins its own power jokers.
+    @discardableResult
+    public mutating func finish(_ t: MatchTurn, events: [MatchEvent], bots: [(seat: Int, turn: MatchTurn, events: [MatchEvent])]) -> TurnResult {
+        let r = finish(t, events: events)
+        for b in bots {
+            var d = botDeck ?? deck
+            var next = max(200, (d.cards.filter { $0.kind == .made }.map(\.id).max() ?? 199) + 1)
+            let burnedIDs = Set(b.turn.state.burned.map(\.id))
+            let made = b.turn.state.made.filter { !burnedIDs.contains($0.id) }.map { c -> Card in defer { next += 1 }; return Card(id: next, kind: .made, rank: c.rank, suit: c.suit, percent: c.percent) }
+            d.apply(made: made, burned: b.turn.state.burned)
+            if botDeck != nil { botDeck = d } else { deck = d }
+            var tray = b.turn.state.tray
+            for e in b.events { if case .prizeWon(_, _, _, let p) = e { tray[p, default: 0] += 1 } }
+            botTrays[b.seat - 1] = tray
+            botKeyCards[b.seat - 1] = b.turn.state.keyCards
+        }
+        return r
+    }
 
     /// This turn's deal, from the game's deck (and the bot's own, when decks aren't shared).
     public func deal() -> Dealt { Deal.deal(seed: turnSeed, deck: deck.cards, botDeck: botDeck?.cards) }
