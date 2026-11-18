@@ -480,6 +480,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | The key joker is built on the scoring grid, in the Swift beta first (Bruce, 57; match rules r28): hand size +1, for the rest of the game 1 time in 4, otherwise for 10 to 45 seconds like a reach. It isn't in the starting set; it comes from prizes (weight 10), hand and crib bonuses and reveals. Keys and reaches stack, up to a hand size of 6 (`maxPick`). Bots use a key before a reach. 2,000 games, medium bot: 0.49 keys used a game, in 41% of games, 0.11 of them for the game; 739 steps a game against 734 without the key |
 | 2026-11-17 | The maze build (Bruce): all of `maze.md` before the playtest, not a slice. Games run hands until a token reaches the goal, capped at 15 hands (cheapest to the goal wins). Bots play their grid turns off screen with `MatchBot` at their level, so their plays are real sets; the screen shows a summary. The beta starts with 1 bot; the engine takes 1 to 3 players. A shop mock starts now, alongside the engine work |
 | 2026-11-17 | The shop, from `mocks/shop.html` v1 (Bruce): you pay with whole plays, so power costs movement (coins and steps off a play stay in the mock for comparison). At most 3 buys a hand; a special joker or card can raise the limit (the mock's extra-buy card, a placeholder). The reroll is a card-sized slot on the shelf. Deck edits are concrete offers made from your kept hand. Play edits stay: dye, join and save. Each player has their own stock from their own dice stream, and bots shop by the same rules. Prices are placeholders until a sim run (rules.md › 4; mock v2) |
+| 2026-11-17 | Shop answers (Bruce, 11 to 13): the extra buy stays a card on the shelf, not a power joker's effect; no change when plays overpay, the extra steps are lost; the shop will sell cards discovered in earlier games (how is still to design) |
 
 ## Open questions
 
@@ -491,7 +492,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 6. Do small closed doors (a play of 6 makes a door of 3) matter, or should a closed door have a minimum strength?
 7. About 14 plays each a round is 28 to 42 maze turns. Does that drag? Play a round first; if it does, plays of 4 steps or fewer could walk themselves.
 8. Variants: how many, and which kinds? The mock makes 4 to 8 a maze, mostly suited shortcuts; ways round a golden door are rarer (0 to 3).
-9. The shop's prices, and whether the extra buy is a shelf card or a power joker's effect (what you pay with, the limit and the stock were decided 2026-11-17).
+9. The shop's prices, and how cards discovered in earlier games come into the stock (the rest of the shop was decided 2026-11-17).
 10. Clear-board bonus: steps or a prize, and how big?
 11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.
 

@@ -280,8 +280,8 @@ Computer players' match turns aren't played out on screen: you see each result (
 
 After the scoring grid, before pegging, each player visits the shop. Prices are placeholders, to tune; the shop is mocked in [mocks/shop.html](mocks/shop.html).
 
-- **You pay with plays.** Pick whole plays whose steps cover the price. There's no change: steps over the price are lost. A play you spend is one you won't walk, or close a door with, on the maze.
-- **At most 3 buys a hand.** The extra-buy card raises the limit by 1 for this hand and isn't a buy itself (a placeholder; a special joker may do this instead).
+- **You pay with plays.** Pick whole plays whose steps cover the price. There's no change: steps over the price are lost, so pick plays that come close. A play you spend is one you won't walk, or close a door with, on the maze.
+- **At most 3 buys a hand.** The extra-buy card raises the limit by 1 for this hand and isn't a buy itself. It's a card on the shelf (price a placeholder).
 - **Your own stock.** Each player gets their own shelf each hand, drawn from their own dice stream. Computer players shop by the same rules.
 - **The reroll** takes one slot on the shelf. It deals a new stock and costs more each time you use it. It isn't a buy.
 
@@ -296,7 +296,7 @@ What's for sale:
 
 Placeholder prices, in steps: swapper and reach 12, burn 16, key 18, bomb 20; clone 10, paint and nudge 8, made card 14, burn a card 6; dye 6, join 8, save 10; extra buy 6. The first reroll costs 5, then 10, 15 and so on.
 
-Later, the stock may also offer cards you've discovered in earlier games, such as a special joker you won or saw in a reveal, so the game reveals itself over many games (not designed yet).
+The stock will also offer cards you've discovered in earlier games, such as a special joker you won or saw in a reveal, so the game reveals itself over many games (decided; how it works is not designed yet).
 
 ### 5. Pegging on the maze
 
