@@ -2,6 +2,17 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.22.0 — 2026-11-17
+
+### Added
+
+- A new power joker, the key. Tap it to raise your hand size by 1: one time in 4 that lasts the rest of the game, shown as a solid violet pip, otherwise about 20 seconds with a countdown over the key card. You win keys as prizes and hand or crib bonuses.
+
+### Changed
+
+- Hand size stops at 6, however many reaches and keys you stack.
+- The power jokers are a little smaller, to fit a fifth slot.
+
 ## 0.21.1 — 2026-11-17
 
 ### Changed

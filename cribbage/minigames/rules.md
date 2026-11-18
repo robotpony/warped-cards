@@ -1,6 +1,6 @@
 # Crib RPG: Rules
 
-Status: draft 7, 2026-11-17. Match turns follow match rules r27. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
+Status: draft 7, 2026-11-17. Match turns follow match rules r28. Values marked "to tune" are starting guesses that the simulator and playtesting will change. Anything not designed yet is marked "Not designed yet". Design reasons and open questions are in [concept.md](concept.md).
 
 ## Overview
 
@@ -65,7 +65,7 @@ In classic cribbage you'd count your hand after pegging. In Crib RPG, each playe
 
 The computer players' turns come first, summarized as a quick sequence of results (steps, best set and prize), with their hands kept face down until after pegging; you never watch them play their grids. Then you play yours, knowing what you have to beat. If you're the dealer, you go last, as in the show.
 
-These are match rules r27, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
+These are match rules r28, the version in the beta app, Noddy Yookerspiel. The web [match turn mock](mocks/match-turn.html) is frozen at r16. Each rules version is listed in [mocks/README.md](mocks/README.md#match-turn-rules-versions).
 
 ```
 Match board (one player's turn)
@@ -206,11 +206,11 @@ Your power jokers are one set for the whole game: the same cards work on the sco
 |---|---|---|
 | Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places | Swap places with another token, not back in the same round |
 | Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing | Tap a door with an end within 10 steps of you: it opens if its number (strength left) is 12 or less, otherwise it loses 12 (to tune). Or tap a cell on another player's way, within 10 steps of them, for a mine: like a fire but worse. The next token over it loses 2 or 3 plays, and one that stops on it loses 6 or 7. Then it's gone, and the walk pauses on it while a card shows what blew up |
-| Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter | Your next play picks its way at each junction, instead of following the arrows, and the arrows don't turn |
+| Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack, up to a hand size of 6. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter | Your next play picks its way at each junction, instead of following the arrows, and the arrows don't turn |
 | Burn (flame) | Tap a grid card. It leaves the board and the deck for the rest of the game, scoring nothing. The deck can't be burned below 40 cards (to tune) | Set a fire on a cell on another player's way, within 10 steps of them. The next token through loses 1 or 2 plays; one that stops on it loses 4 or 5. Then it's out. Plays it can't take come off the next round. The walk pauses on the fire while a card shows what burnt, then goes on |
-| Key | Not built yet. Your hand size goes up by 1: sometimes for the rest of the game, otherwise for a while like a reach (odds to tune from stats) | Works by itself: one play goes past a door of another suit |
+| Key | Tap it and it works at once: your hand size goes up by 1. One time in 4 that lasts the rest of the game; otherwise it lasts a while, like a reach (usually about 20 seconds), with its countdown over the key card. It stacks with reaches and other keys (odds to tune from stats) | Works by itself: one play goes past a door of another suit |
 
-You start the game with 2 swappers, 1 bomb, 1 reach and 1 burn (to tune). You get more from prizes, jokers and the shop.
+You start the game with 2 swappers, 1 bomb, 1 reach and 1 burn (to tune), and no key. You get more, keys included, from prizes, hand and crib bonuses, jokers and the shop.
 
 - Special jokers you start with, win as prizes or buy last the whole game; what you don't use carries over to your next turn.
 - Special jokers made by a joker's reveal last only for that round.

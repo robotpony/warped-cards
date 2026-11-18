@@ -2,6 +2,17 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 11 — 2026-11-17
+
+Rules r28.
+
+### Added
+
+- The key joker (engine.md › Key): a `key` action and event, `specials.key` in `rules.json` and `key` in `specials.known` and the prize weights. A key rolls `key_lasts` (stream `special`): `game` adds to the new key cards, which carry from turn to turn (The game) and show as `keyCards` in `turnStart`; `timed` rolls `key_seconds` and is a reach in effect, ended by `reachOver`. Totals gain `keys` and `keysForGame`. Bots use a key before a reach.
+- `match.maxPick` (6) caps the pick limit, reaches included.
+- ui.md › Power jokers: a fifth tray slot, 60 pt cards with more than 4 slots, the key's countdown, and solid violet pips for keys that last the game.
+- `seed55.jsonl` records keys both ways; `seed1.jsonl` and `seed12.jsonl` are re-recorded for r28.
+
 ## spec 10 — 2026-11-17
 
 Rules unchanged (r27).

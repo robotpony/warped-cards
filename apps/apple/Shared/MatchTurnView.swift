@@ -101,7 +101,7 @@ struct PhoneView: View {
         HStack(alignment: .center) {
             // Tapping the counter explains it; the rest of the bar opens the settings.
             PickCounter(count: session.mode == .trace ? session.pickCount : 0, limit: session.pickLimit, leading: true,
-                        extra: session.pickLimit - (session.config?.rules.match.maxSet ?? session.pickLimit))
+                        extra: session.pickLimit - (session.config?.rules.match.maxSet ?? session.pickLimit), kept: session.keyCards)
                 .contentShape(Rectangle())
                 .onTapGesture { if !session.blocked { session.info = .counter } }
             Spacer()
@@ -158,15 +158,16 @@ struct PhoneView: View {
         // the kinds still to come. No End turn: the timer, or a board with no sets left, ends it.
         let known = session.config?.rules.specials.known ?? ["swapper", "bomb"]
         let slots = max(4, known.count)
+        let w: CGFloat = slots > 4 ? 60 : 72
         return HStack(spacing: 0) {
             ForEach(0..<slots, id: \.self) { i in
                 Group {
                     if i < known.count {
                         let kind = known[i]
-                        TrayCard(kind: kind, count: session.shownTray(kind), w: 72,
+                        TrayCard(kind: kind, count: session.shownTray(kind), w: w,
                                  armed: InputMode.arming(kind).map { session.mode == $0 } == true && session.armedSource == nil,
-                                 countdown: kind == "reach" ? session.reachFraction : nil) {
-                            if kind == "reach" {
+                                 countdown: session.countdown(kind)) {
+                            if kind == "reach" || kind == "key" {
                                 if !session.over, (session.state?.tray[kind] ?? 0) > 0, session.mode == .trace { session.arm(kind) }
                             } else if let m = InputMode.arming(kind) { tapTray(kind, m) }
                         }
@@ -174,7 +175,7 @@ struct PhoneView: View {
                         RoundedRectangle(cornerRadius: 6)
                             .strokeBorder(Theme.violet.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
                             .background(RoundedRectangle(cornerRadius: 6).fill(Theme.felt.opacity(0.5)))
-                            .frame(width: 72, height: 72 * 1.4)
+                            .frame(width: w, height: w * 1.4)
                             .help("An empty slot for a power joker you haven't found yet")
                     }
                 }
@@ -202,7 +203,7 @@ struct TrayCard: View {
     let kind: String, count: Int
     var w: CGFloat = 58
     let armed: Bool
-    /// A reach in effect: the share of its time left, drawn over the card as a violet wedge that empties.
+    /// A reach or timed key in effect: the share of its time left, drawn over the card as a violet wedge that empties.
     var countdown: Double? = nil
     let action: () -> Void
     var body: some View {
@@ -243,7 +244,8 @@ struct TrayCard: View {
         .help(["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
                "bomb": "Bomb: clears a card and its neighbours, without scoring",
                "reach": "Reach: hand size +1 (sometimes +2) for about 20 seconds",
-               "burn": "Burn: takes a grid card out of the deck for the rest of the game"][kind] ?? kind)
+               "burn": "Burn: takes a grid card out of the deck for the rest of the game",
+               "key": "Key: hand size +1, sometimes for the rest of the game, otherwise for about 20 seconds"][kind] ?? kind)
     }
 }
 
@@ -572,15 +574,18 @@ struct SidePanel: View {
 struct PickCounter: View {
     let count: Int, limit: Int
     var leading = false
-    /// Slots a reach joker adds, drawn in violet.
+    /// Slots a reach joker or key adds, drawn in violet.
     var extra = 0
+    /// Of those, the slots keys added for the game (r28), first after the base and filled in violet.
+    var kept = 0
     var body: some View {
         VStack(alignment: leading ? .leading : .trailing, spacing: 4) {
             HStack(spacing: 4) {
                 ForEach(0..<limit, id: \.self) { i in
                     let added = i >= limit - extra
+                    let forGame = added && i < limit - extra + min(kept, extra)
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(i < count ? (count == limit ? Theme.gold : Theme.cyan) : (added ? Theme.violet.opacity(0.35) : Theme.feltText.opacity(0.14)))
+                        .fill(i < count ? (count == limit ? Theme.gold : Theme.cyan) : (forGame ? Theme.violet.opacity(0.8) : added ? Theme.violet.opacity(0.35) : Theme.feltText.opacity(0.14)))
                         .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(added ? Theme.violet : Theme.feltText.opacity(i < count ? 0 : 0.3), lineWidth: added ? 1.5 : 1))
                         .frame(width: 9, height: 13)
                 }
@@ -645,11 +650,12 @@ struct InfoCard: View {
                                   "Swapper: tap it, then trace a straight line of 2 to 4 grid cards to reverse it.",
                                   "Bomb: tap it, then tap a grid card. It clears that card and its neighbours, without scoring.",
                                   "Reach: tap it to raise your hand size, the cards a set can pick, usually by 1 for about 20 seconds. The countdown shows on the card, and the extra cards show in violet on the card counter.",
+                                  "Key: tap it to raise your hand size by 1. Sometimes that lasts the rest of the game (a solid violet pip), otherwise about 20 seconds, like a reach.",
                                   "Tap an armed joker again to put it back."])
         case .counter:
             return ("Hand size", ["Your hand size is how many cards a set can pick: 2 to \(session.pickLimit) now. The pips fill as you pick, and turn gold at the limit.",
                                       "The starter is free: it joins every set without using a pip.",
-                                      "A reach joker raises your hand size for a while: its extra pips are violet, and its countdown shows on the reach card. Later, some combos and prizes may raise it too."])
+                                      "A reach joker raises your hand size for a while: its extra pips are violet, and its countdown shows on the reach card. A key raises it by 1, sometimes for the rest of the game (a solid violet pip). Hand size goes up to \(session.config?.rules.match.maxPick ?? 6) at most."])
         }
     }
 }

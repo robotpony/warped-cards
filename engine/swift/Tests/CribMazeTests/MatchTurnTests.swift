@@ -64,7 +64,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(t.state.cells[16]?.notation == "5H" && t.state.cells[24]?.notation == "5D")
         #expect(Board.crib.allSatisfy { t.state.cells[$0] == nil })
         #expect(Board.grid.allSatisfy { t.state.cells[$0]?.isPlaying == true })   // extras resolved
-        guard case .turnStart(_, let dealer, let hand, _, _, _, _, _, _, _, let tray) = ev[0] else { Issue.record("first event"); return }
+        guard case .turnStart(_, let dealer, let hand, _, _, _, _, _, _, _, let tray, _) = ev[0] else { Issue.record("first event"); return }
         #expect(!dealer && hand.count == 4 && tray == ["swapper": 2, "bomb": 1, "reach": 1, "burn": 1])
     }
 
@@ -415,7 +415,7 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         #expect(bonus.map(\.count) == [3, 0])
         #expect(bonus[0].allSatisfy { c.rules.specials.known.contains($0) })
         // The turnStart tray, before the counts, plus the 3 won.
-        guard case .turnStart(_, _, _, _, _, _, _, _, _, _, let before) = ev[0] else { Issue.record("no turnStart"); return }
+        guard case .turnStart(_, _, _, _, _, _, _, _, _, _, let before, _) = ev[0] else { Issue.record("no turnStart"); return }
         var want = before; for k in bonus[0] { want[k, default: 0] += 1 }
         let extrasToTray = ev.contains { if case .extraDrawn(_, _, _, _, "tray", _) = $0 { true } else { false } }
         if !extrasToTray { #expect(t.state.tray == want) }
@@ -464,5 +464,66 @@ func json<T: Encodable>(_ v: T) -> String { let e = JSONEncoder(); e.outputForma
         guard case .dealing(let d, _, _) = again.stage else { Issue.record("not dealing"); return }
         let bad = [CardRef(d.player[2]), CardRef(d.player[2]), CardRef(d.player[3]), CardRef(d.player[4])]
         #expect(throws: IllegalAction.self) { try CribMazeGame.apply(.discard(thrown: d.player.prefix(2).map(CardRef.init), kept: bad), by: 0, to: &again, dice: &dice) }
+    }
+}
+
+/// r28: the key joker raises the pick limit for the game, or for a while like a reach.
+@Suite struct KeyJokerTests {
+    /// A config whose keys always roll `lasts`.
+    func config(_ lasts: String) throws -> Config {
+        var c = try loadConfig()
+        c.rules.specials.key?.lasts = Weights([(lasts, 1)])
+        return c
+    }
+
+    @Test func aTimedKeyIsAReachThatReachOverEnds() throws {
+        var t = MatchTurn.start(config: try config("timed"), setup: TurnSetup(seed: 1, tray: ["key": 1])).0
+        let base = t.pickLimit
+        let ev = try t.apply(.key(source: nil))
+        guard case .key(let id?, 1, "timed", let seconds?, let limit, "tray") = ev[0] else { Issue.record("no timed key event"); return }
+        #expect(t.config.rules.specials.key!.seconds.map { $0[0] }.contains(seconds))
+        #expect(limit == base + 1 && t.state.keyCards == 0 && t.state.tray["key"] == 0)
+        #expect(ev[0].startedReach?.id == id)
+        _ = try t.apply(.reachOver(id: id))
+        #expect(t.pickLimit == base && t.state.totals.keys == 1 && t.state.totals.keysForGame == 0)
+        #expect(throws: IllegalAction.self) { try t.apply(.key(source: nil)) }   // none left
+    }
+
+    @Test func aKeyForTheGameLastsIntoTheNextTurn() throws {
+        let c = try config("game")
+        var g = MatchGame(config: c, seed: 3)
+        var setup = g.setup(); setup.tray = ["key": 1]
+        var (t, ev) = MatchTurn.start(config: c, setup: setup)
+        let base = t.pickLimit
+        let e = try t.apply(.key(source: nil))
+        guard case .key(nil, 1, "game", nil, let limit, "tray") = e[0] else { Issue.record("no game key event"); return }
+        #expect(e[0].startedReach == nil && limit == base + 1 && t.state.reaches.isEmpty && t.state.totals.keysForGame == 1)
+        ev += e
+        ev += try t.apply(.endTurn)
+        g.finish(t, events: ev)
+        #expect(g.keyCards == 1)
+        let (next, start) = MatchTurn.start(config: c, setup: g.setup())
+        #expect(next.pickLimit == base + 1)
+        guard case .turnStart(_, _, _, _, _, _, _, _, _, _, _, 1) = start[0] else { Issue.record("turnStart has no keyCards"); return }
+    }
+
+    @Test func thePickLimitStopsAtMaxPick() throws {
+        let c = try config("game")
+        var t = MatchTurn.start(config: c, setup: TurnSetup(seed: 1, tray: ["key": 4, "reach": 2])).0
+        for _ in 0..<4 { _ = try t.apply(.key(source: nil)) }
+        _ = try t.apply(.reach(source: nil)); _ = try t.apply(.reach(source: nil))
+        #expect(t.state.keyCards == 4 && t.pickLimit == c.rules.match.maxPick!)
+    }
+
+    @Test func configChecksTheKey() throws {
+        var c = try loadConfig()
+        c.rules.specials.key?.lasts = Weights([("forever", 1)])
+        #expect(throws: ConfigError.self) { try c.validate() }
+        c = try loadConfig(); c.rules.match.maxPick = nil
+        #expect(throws: ConfigError.self) { try c.validate() }
+        c = try loadConfig(); c.rules.match.maxPick = 7
+        #expect(throws: ConfigError.self) { try c.validate() }
+        c = try loadConfig(); c.rules.specials.key = nil
+        #expect(throws: ConfigError.self) { try c.validate() }
     }
 }

@@ -236,6 +236,7 @@ Every playtest run and event log carries `rules`, the match turn rules version, 
 | r25 | 2026-11-17 | Prizes retuned for r24's lower scores: rare from a best set of 28 steps, epic from 34 (were 40 and 70). Noddy Yookerspiel only |
 | r26 | 2026-11-17 | The opening bonus: a hand or crib count wins a power joker for every 5 points past 10 (`opening.bonus`), picked like a prize, into the tray for this turn. Noddy Yookerspiel only |
 | r27 | 2026-11-17 | The opening bonus starts at 6 (was 10): 11 wins 1 power joker, 16 wins 2. Noddy Yookerspiel only |
+| r28 | 2026-11-17 | The key joker: hand size +1, for the game 1 time in 4, otherwise for a while like a reach. Hand size stops at 6 (`maxPick`). Noddy Yookerspiel only |
 | r19 | 2026-11-15 | New power joker, the reach: sets pick 1 or 2 more cards for 10 to 45 seconds. Everyone starts with 1. Noddy Yookerspiel only; the web mock stays at r16 |
 | r18 | 2026-11-15 | Flushes count like a classic hand: 4 picked cards of one suit score whatever the starter's suit. The starter never costs a set points. Crib Maze Beta only; the web mock stays at r16 |
 | r17 | 2026-11-15 | A set picks 2 to 4 cards (was 5), plus the starter. Crib Maze Beta only; the web mock stays at r16 |

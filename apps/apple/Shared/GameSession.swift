@@ -13,7 +13,7 @@ import SwiftUI
 
 enum InputMode: Equatable {
     case trace, swap, bomb, burn
-    /// The mode a power joker arms; a reach needs no target, so it has none.
+    /// The mode a power joker arms; a reach or a key needs no target, so it has none.
     static func arming(_ kind: String) -> InputMode? { ["swapper": .swap, "bomb": .bomb, "burn": .burn][kind] }
     /// Whether a tap on one grid card fires it.
     var targetsACard: Bool { self == .bomb || self == .burn }
@@ -331,7 +331,7 @@ final class GameSession {
     private func begin(_ step: Step<CribMazeGame>) {
         guard let t = run?.state.turn else { return }
         turnGen += 1; gridHidden = false; gridShown = nil; fillPattern = nil; stepsShown = nil; trayShown = nil; busy = false; startGrid()
-        playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]
+        playback.reset(); info = nil; deadTask?.cancel(); graceLeft = nil; reachTask?.cancel(); reachTask = nil; reachLeft = [:]; keyReaches = []
         let ev = step.events.compactMap(\.matchEvent)
         turn = t; events = ev; feed = []; breakdown = nil; mode = .trace; selection = []; armedSource = nil; warning = nil; toast = nil
         for e in ev { describe(e) }
@@ -452,6 +452,7 @@ final class GameSession {
         guard let step = act(.match(action), by: player), let t = run?.state.turn else { return }
         let ev = step.events.compactMap(\.matchEvent)
         events += ev
+        for e in ev { if case .key(let id?, _, _, _, _, _) = e { keyReaches.insert(id) } }
         // What pops first: the scored set, or the cards a bomb hits.
         var hit: Set<Pos> = [], bomb = false
         for e in ev {
@@ -539,9 +540,10 @@ final class GameSession {
     }
 
     private var pendingSource: Pos? { get { armedSource } set { armedSource = newValue } }
-    /// Tapping a special joker on the board arms it. A reach joker needs no target, so it's used at once.
+    /// Tapping a special joker on the board arms it. A reach or key joker needs no target, so it's used at once.
     func arm(_ kind: String, from source: Pos? = nil) {
         if kind == "reach" { selection = []; send(.reach(source: source)); return }
+        if kind == "key" { selection = []; send(.key(source: source)); return }
         guard let m = InputMode.arming(kind) else { return }
         if m == .burn, turn?.canBurn == false { show("The deck is as small as it gets: \(turn?.state.deckSize ?? 0) cards"); return }
         pendingSource = source
@@ -628,10 +630,16 @@ final class GameSession {
     /// Seconds left on each reach joker in effect, by its ID. They count down on their own clock,
     /// which waits while a move plays, like the turn's, and runs with the turn's timer off too.
     private(set) var reachLeft: [Int: (left: Int, total: Int)] = [:]
-    /// The share of time left on the reach that ends first, for the card counter; nil with none in effect.
-    var reachFraction: Double? {
-        reachLeft.values.min { $0.left < $1.left }.map { Double(max(0, $0.left)) / Double(max(1, $0.total)) }
+    /// Reaches that came from a timed key (r28), so the countdown shows on the key card instead.
+    private var keyReaches: Set<Int> = []
+    /// The share of time left on the reach or timed key that ends first, for its tray card; nil with none in effect.
+    func countdown(_ kind: String) -> Double? {
+        guard kind == "reach" || kind == "key" else { return nil }
+        return reachLeft.filter { keyReaches.contains($0.key) == (kind == "key") }.values
+            .min { $0.left < $1.left }.map { Double(max(0, $0.left)) / Double(max(1, $0.total)) }
     }
+    /// Hand size from keys that last the game, for the card counter.
+    var keyCards: Int { turn?.state.keyCards ?? 0 }
     private var reachTask: Task<Void, Never>?
 
     private func watchReaches() {
@@ -733,7 +741,11 @@ final class GameSession {
         case .reach(_, let cards, let seconds, let limit, _):
             line("Reach: hand size +\(cards) for \(seconds) s (now \(limit))")
             show("Reach: hand size +\(cards) for \(seconds) s")
-        case .reachOver(_, let limit): line("Reach over: hand size back to \(limit)")
+        case .key(_, let cards, let lasts, let seconds, let limit, _):
+            let how = lasts == "game" ? "for the rest of the game" : "for \(seconds ?? 0) s"
+            line("Key: hand size +\(cards) \(how) (now \(limit))", prize: lasts == "game")
+            show("Key: hand size +\(cards) \(how)")
+        case .reachOver(let id, let limit): line((keyReaches.contains(id) ? "Key" : "Reach") + " over: hand size back to \(limit)")
         case .noSetsLeft(_, let tray):
             show(tray.values.contains { $0 > 0 } ? "No sets score: use a power joker" : "No sets score")
         case .opening(_, _, let cards, let combos, _, _, _, _):

@@ -46,6 +46,9 @@ public struct RulesConfig: Codable, Sendable, Equatable {
         /// Match rules r24: a traced set may hold at most this many cards from the hand and crib
         /// together. Missing means no limit.
         public var maxEdgeCards: Int?
+        /// Match rules r28: the most cards a set may ever pick, however many reaches and keys add.
+        /// Missing means no cap.
+        public var maxPick: Int?
         public var clearBonus: ClearBonus
         public var edgePower: EdgePower
         public var prize: Prize
@@ -57,6 +60,15 @@ public struct RulesConfig: Codable, Sendable, Equatable {
         /// The reach joker (r19): how many extra cards a set may pick, and for how many seconds,
         /// each a weighted list of [value, weight] pairs.
         public var reach: Reach?
+        /// The key joker (r28): hand size up by `cards`, either for the rest of the game or, like a
+        /// reach, for a number of seconds. `lasts` weighs "game" against "timed".
+        public var key: Key?
+    }
+    public struct Key: Codable, Sendable, Equatable {
+        public var cards: Int
+        public var lasts: Weights
+        public var seconds: [[Int]]
+        public var secondsWeights: [(Int, Int)] { seconds.map { ($0[0], $0[1]) } }
     }
     public struct Reach: Codable, Sendable, Equatable {
         public var cards: [[Int]]
@@ -182,6 +194,17 @@ public struct Config: Codable, Sendable, Equatable {
                 for pair in list where pair.count != 2 || pair[0] < 1 || pair[1] < 1 { try fail("specials.reach.\(name): each entry is [value, weight], both 1 or more") }
             }
             if m.maxSet + (reach.cards.map { $0[0] }.max() ?? 0) > 6 { try fail("specials.reach.cards: maxSet plus the most extra cards must be 6 or less") }
+        }
+        if let mp = m.maxPick, mp < m.maxSet || mp > 6 { try fail("match.maxPick must be from maxSet to 6") }
+        if rules.specials.known.contains("key") {
+            guard let key = rules.specials.key else { try fail("specials.key is missing, but key is a known special") }
+            if key.cards < 1 { try fail("specials.key.cards must be 1 or more") }
+            try weights(key.lasts, "specials.key.lasts")
+            for (k, _) in key.lasts.entries where !["game", "timed"].contains(k) { try fail("specials.key.lasts: each entry is game or timed, not \(k)") }
+            if key.seconds.isEmpty { try fail("specials.key.seconds: no entries") }
+            for pair in key.seconds where pair.count != 2 || pair[0] < 1 || pair[1] < 1 { try fail("specials.key.seconds: each entry is [value, weight], both 1 or more") }
+            // Keys for the game stack from turn to turn, so the pick limit needs a cap.
+            if m.maxPick == nil { try fail("match.maxPick is needed with the key joker") }
         }
         if let g = rules.game, g.turns < 1 { try fail("game.turns must be 1 or more") }
         // A turn needs 25 cards: 2 hands of 4, a crib of 4, the starter and a 16-card grid.

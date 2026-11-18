@@ -15,7 +15,7 @@ extension MatchBot {
             clock += msPerAction
             let step = try run.send(a, by: player, clockMs: clock)
             try onStep(step)
-            for e in step.events { if case .match(.reach(let id, _, _, _, _)) = e { ends[id] = acted + reachActions } }
+            for e in step.events { if let (id, _) = e.matchEvent?.startedReach { ends[id] = acted + reachActions } }
         }
         while run.result == nil {
             let s = run.state

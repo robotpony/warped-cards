@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 10, from the beta app at 0.21.1, rules r27
+Status: draft 3, 2026-11-17, spec 11, from the beta app at 0.22.0, rules r28
 
 ## Summary
 
@@ -121,7 +121,7 @@ Match turn (402 pt wide; 16 pt side padding; 10 pt between rows)
   help line, 20 pt tall, one line ("7♥ 8♣  (sum 15): fifteen (+2)")
 
   POWER JOKERS (tag on the panel's top edge)
-    [swapper x2]   [bomb x1]   [reach x1]   [burn x1]
+    [swapper x2]  [bomb x1]  [reach x1]  [burn x1]  [key x0]
 
   footer bar, full phone width
     pick counter pips .................................. turn clock
@@ -135,7 +135,7 @@ Match turn (402 pt wide; 16 pt side padding; 10 pt between rows)
 | Progress track | 6 pt tall, full width, rounded. Background `text` at 15%; fill `gold` with a soft gold glow, as a share of 121 steps |
 | Board | 9 pt below the track, centred |
 | Help line | 20 pt tall, 14 pt text, shrinks to 75% before truncating. Pulled up and down 4 pt so the power jokers sit close under the board |
-| Power jokers panel | Padding 8 pt sides, 20 pt top, 14 pt bottom. Rounded 12 pt, `panel` fill, `joker.special` border at 50%, 1 pt. Slots spread evenly: one per known kind (config `specials.known`), at least 4. Each tray card is 72 pt wide |
+| Power jokers panel | Padding 8 pt sides, 20 pt top, 14 pt bottom. Rounded 12 pt, `panel` fill, `joker.special` border at 50%, 1 pt. Slots spread evenly: one per known kind (config `specials.known`), at least 4. Each tray card is 72 pt wide with 4 slots, 60 pt with more (0.22.0) |
 | "POWER JOKERS" tag | 10 pt bold, letter-spaced 0.8, 16 pt tall capsule in `joker.special`, text in `bg`, centred on the panel's top edge (8 pt above it) |
 | Footer | Fills the phone's width, 4 pt below the panel. `panel` fill with a 1 pt `rim` line on top. Padding 30 pt sides, 12 pt top, 20 pt bottom |
 | Pick counter | One pip per card a set may pick: 9 × 13 pt, corner 2, 4 pt apart. Under them "HAND SIZE n / limit", 11 pt bold, letter-spaced 0.6 |
@@ -165,7 +165,7 @@ The app reads every colour from palette.json, bundled into the app (the table co
 | Rim | `rim` (#2E3A66) | Footer top line |
 | Cyan | `cyan` (#3CF2FF) | Edge background outline, picked pips, power (edge multipliers) in the breakdown, tally border, "Tap to continue", settings tint, turn titles on the summary |
 | Gold | `gold` (#FFD447) | Steps, track, edge card rings, HAND and CRIB tags, toast, banner, combo light, full pick counter, hint ring. The multiplier coin has its own golds (`coin.gold`: face #FFD447, light #FFF3B8, rim #B8860B, edge #7A5A00) and cyans (`coin.cyan`) |
-| Violet | `joker.special` (#C77DFF) | Power jokers panel, tray counts, reach countdown, reach pips, the bot's crib tag |
+| Violet | `joker.special` (#C77DFF) | Power jokers panel, tray counts, reach and key countdowns, reach and key pips, the bot's crib tag |
 | Overlay | `bg` at 95% | Turn summary background |
 | Page | `page` (#05070F) | Around the phone |
 | Ink | `ink` (#2B2A26) | Dark text on gold and on cards |
@@ -191,7 +191,7 @@ Suit colours on card faces are the four-colour deck from cards.js, `card.suit`: 
 Cards are drawn from the SVG files in `design/cards/` (Apple 0.15.7; the files and their text slots are in its README), in a 50 × 70 unit box scaled to the card's width. A port MUST draw from the same files: the frame for every face, `joker-<kind>.svg` for special jokers (`swap` for the swapper), `extra-<kind>.svg` for extra cards and `back.svg` for backs. Text in the files marks where text goes; the app draws it at each `<text>`'s centre, size and tracking. A rect's outline starts at its top edge just after the top-left corner and runs clockwise, as SVG says, so dashes start in the same place in every build. The list below describes what the files draw.
 
 - Face: rounded 4.5 units, card face fill, 1.2 unit card rule outline. The rank at top left (centre at 9, 10.5), 16 units bold (14 for a 10, tracked −1.2), and again rotated 180° at bottom right (41, 59.5). The suit in the centre is its `design/neon/shapes.json` shape in a 28 unit box centred at (25, 36) (Type). A port MUST draw the shape. The beta, until it moves to Saira, still draws a 34 unit text glyph centred at (25, 35), about the same size and place (Gaps 18).
-- Special jokers: an inset border in joker purple at 50%, "JOKER" at the top and the kind's name at the bottom ("SWAP", "BOMB", "REACH", "BURN"), 8 units bold, and an icon: two arrows (swapper), a black bomb with a red spark (bomb), a red and gold flame (burn), a card with a dashed extra card and a red plus (reach). shapes.json's neon swap and bomb icons belong to the dropped neon cards and aren't used.
+- Special jokers: an inset border in joker purple at 50%, "JOKER" at the top and the kind's name at the bottom ("SWAP", "BOMB", "REACH", "BURN", "KEY"), 8 units bold, and an icon: two arrows (swapper), a black bomb with a red spark (bomb), a red and gold flame (burn), a card with a dashed extra card and a red plus (reach), a purple key with a gold ring (key). shapes.json's neon swap and bomb icons belong to the dropped neon cards and aren't used.
 - Extra cards (amber, teal, title, blank): the kind's name in capitals, 7 units bold, card soft colour, centred.
 - Back: crosshatch at 45°, lines 3.4 units apart, 0.7 units wide, card soft at 70%, inside a 41 × 61 unit inner outline.
 
@@ -261,7 +261,7 @@ Match turn states
 | Tracing | Tap a swapper, bomb or burn in the tray, or on the board | Armed |
 | Armed | Tap the same tray joker again | Tracing |
 | Armed | A valid target | Playing out |
-| Tracing | Tap a reach (tray or board) | Playing out (it's used at once) |
+| Tracing | Tap a reach or key (tray or board) | Playing out (it's used at once) |
 | Playing out | Cues end | Tracing, Stuck or Over |
 | Breakdown | Tap anywhere | Holding (skips to the end) |
 | Breakdown | Sequence ends | Holding |
@@ -354,7 +354,7 @@ Tapping:
 
 Limits:
 
-- The pick limit is `match.maxSet` (config, 4) plus the cards of every reach in effect. The starter is free: while it can join (config `match.starterJoins`, and the starter is a playing card), it can always be added and doesn't count against the limit.
+- The pick limit is `match.maxSet` (config, 4) plus the key cards and the cards of every reach or timed key in effect, no more than `match.maxPick` (config, 6), as the engine reports it. The starter is free: while it can join (config `match.starterJoins`, and the starter is a playing card), it can always be added and doesn't count against the limit.
 - Hand, crib and starter cards follow the same touching rule as grid cards.
 - The selection itself doesn't check the other rules (a grid card, a special joker, a set already scored). The engine checks them on submit, and the help line warns about them while tracing (see The help line).
 
@@ -373,19 +373,20 @@ Source: `BoardView.swift` (drag, hit, tap, canAdd), `GameSession.swift` (litPosi
 
 ### Power jokers
 
-The tray shows one slot per known kind, in config order (`specials.known`: swapper, bomb, reach, burn), and empty dashed slots for kinds still to come when fewer than 4 are known. Each tray card shows the joker card at 72 pt with:
+The tray shows one slot per known kind, in config order (`specials.known`: swapper, bomb, reach, burn, key), and empty dashed slots for kinds still to come when fewer than 4 are known. Each tray card shows the joker card at 72 pt (60 pt with more than 4 slots) with:
 
 - A violet count badge (12 pt bold, 20 pt min) at its bottom right.
 - Two cards stacked behind it, offset up and right by 3 and 6 pt, when you hold 2 or more.
 - 30% opacity when you hold none.
 - When armed, a 3 pt white ring, a drop shadow, and raised 10 pt (eases over 120 ms).
 - For the reach, while any reach is in effect: a dark wash over the card and a violet pie in a 62% circle that empties as the reach that ends first runs out. The pie moves smoothly between the 1-second ticks.
+- For the key, the same while a timed key is in effect, counting only timed keys (a `key` event with `lasts` `timed`). The reach card's pie counts only reaches. A key for the game shows no countdown.
 
 | Tap | When | What happens |
 |---|---|---|
 | Swapper, bomb or burn in the tray | You hold one, the turn isn't over | Arms it (clears the selection). If it is already armed from the tray, disarms it. If another joker is armed, switches to this one |
-| Reach in the tray | You hold one, in trace mode | Uses it at once. Nothing happens while another joker is armed |
-| A special joker on the board | Trace mode | Arms it from that cell (a reach is used at once) |
+| Reach or key in the tray | You hold one, in trace mode | Uses it at once. Nothing happens while another joker is armed |
+| A special joker on the board | Trace mode | Arms it from that cell (a reach or key is used at once) |
 | Burn, when the deck is at its minimum | Any | Doesn't arm. Toast "The deck is as small as it gets: N cards" |
 
 When a joker is armed, a toast says what to do: "Trace a straight line to reverse it", "Tap a grid card to blast it" or "Tap a grid card to burn it out of the deck". The help line says it too, with how to cancel (see The help line).
@@ -439,7 +440,7 @@ Source: `GameSession.swift` (pickMessage, comboName).
 ### The pick counter
 
 - One pip per card a set may pick now. Picked pips are `cyan`; when the selection reaches the limit, every picked pip and the label turn `gold`. Empty pips are `text` at 14% with a 30% outline.
-- Pips a reach adds are the last ones, drawn with a violet fill at 35% and a 1.5 pt violet outline.
+- Pips above `maxSet` are the last ones, with a 1.5 pt violet outline. Those from keys for the game come first, with a violet fill at 80%; those from reaches and timed keys follow, with a violet fill at 35% (0.22.0).
 - The count shows only in trace mode; with a joker armed it reads 0.
 - The label reads "HAND SIZE n / limit". Changes ease over 120 ms.
 
@@ -468,7 +469,7 @@ The engine has no clock. The session runs three countdowns, each ticking once a 
 | Countdown | Starts | Pauses while | Ends |
 |---|---|---|---|
 | Turn timer | When the turn is shown, at `match.timerSeconds` (config, 180; 0 with the Timer setting off) | Busy (including a breakdown waiting for a tap), the left-over warning, an info card | At 0: sends `time_up` |
-| Each reach | When the engine reports the reach, at its rolled seconds | Busy, the warning, an info card. It runs with the turn timer off too | At 0: sends `reach_over` for that reach. At most one reach ends per tick |
+| Each reach | When the engine reports a reach, or a timed key, at its rolled seconds | Busy, the warning, an info card. It runs with the turn timer off too | At 0: sends `reach_over` for that reach. At most one reach ends per tick |
 | Stuck grace | When the board has no sets left and you hold any power joker, at 25 s (hard-coded) | Busy, a joker armed, the warning, an info card | At 0: sends `end_turn` |
 
 - A tick that lands while paused is skipped, not saved up. A port SHOULD count whole seconds of unpaused time the same way, or the timer runs a little fast compared with the beta.
@@ -604,7 +605,8 @@ The session hands each action's events to the screen in the order the engine emi
 | `burn` | Red pop, then the board change. Toast "Burned 7♥ for the game". Feed line with the new deck size | 380 + 300 ms | Hard-coded |
 | `stock_out` | The stock pile becomes a dashed outline. Feed line "Stock empty: play out the board" or "Card budget used: play out the board" | Instant | Hard-coded |
 | `reach` | Toast "Reach: hand size +1 for 20 s". The pick counter grows violet pips. The reach card's countdown starts | Toast, 2,400 ms | Seconds and cards: config (rolled) |
-| `reach_over` | The pick counter shrinks back. Feed line "Reach over: hand size back to 4". No toast | Quick ease | Hard-coded |
+| `key` | Toast "Key: hand size +1 for the rest of the game" or "Key: hand size +1 for 20 s". The pick counter grows a violet pip, solid for the game. A timed key's countdown starts on the key card. A key for the game's feed line is a prize line | Toast, 2,400 ms | Lasts, seconds and cards: config (rolled) |
+| `reach_over` | The pick counter shrinks back. Feed line "Reach over: hand size back to 4" ("Key over: …" for a timed key). No toast | Quick ease | Hard-coded |
 | `no_sets_left` | Toast "No sets score: use a power joker" (or "No sets score" with none). The help line turns gold. The clock turns to Stuck and the power jokers blink, if you hold any | Toast, 2,400 ms; grace 25 s or end after 1,500 ms | Hard-coded |
 | `board_cleared` | Feed line "Board cleared! +10 steps". The summary's title says "Board cleared!" | With `turn_end` | Bonus: config `clearBonus` |
 | `prize_won` | Feed line "Prize: rare (best set 42), wins a bomb". The summary shows "Rare prize: a bomb, for your power jokers" | With `turn_end` | Tiers: config `prize` |
@@ -894,7 +896,7 @@ Numbers in the app's code that the game feel depends on and that SHOULD move to 
 | 32 | 12, 16, 24 | Card budget choices in settings | None | `rules.json` › match |
 | 33 | 4H 5C 6D JS, 5S | The Strong hand | None | A fixtures or scenarios file |
 | 34 | 1 to 999,999 | Random seed range | None | App config |
-| 35 | "about 20 seconds", "+1 (sometimes +2)" | Reach tooltip text | Rolled from `specials.reach`; text not tied to it | Generate from `rules.json` › specials.reach |
+| 35 | "about 20 seconds", "+1 (sometimes +2)" | Reach and key tooltip and info card text | Rolled from `specials.reach` and `specials.key`; text not tied to them | Generate from `rules.json` › specials |
 | 36 | 50 (percent per level) | Fallback when config is missing, in the info card and chips; the breakdown's fallback is 10 | `rules.json` `edgePower.percentPerLevel` (10) | Remove the fallbacks: config MUST load |
 | 37 | 2 (left-over cost), swapper and bomb (known kinds), 4 (min slots) | Fallbacks and the slot count | `rules.json` | Remove the fallbacks; slot count to layout |
 | 38 | 8 lines, 14 cards | Feed lines in settings; mini cards in the deck panel | None | Layout file |

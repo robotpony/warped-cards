@@ -50,10 +50,13 @@ public struct TurnTotals: Codable, Sendable, Equatable {
     public var openingSteps = 0
     /// The opening bonus (r26): power jokers won by the hand and crib counts.
     public var openingJokers = 0
+    /// Key jokers (r28): keys used this turn, and how many of them last the game.
+    public var keys = 0, keysForGame = 0
 }
 
 public enum MatchEvent: Codable, Sendable, Equatable {
-    case turnStart(rulesVersion: String, dealer: Bool, hand: [CardRef], crib: [CardRef], starter: CardRef, grid: [CardRef?], stockSize: Int, timer: Int, cardBudget: Int, jokers: [String], tray: [String: Int])
+    /// `keyCards` (r28) is the hand size keys added earlier in the game, left out when there are none.
+    case turnStart(rulesVersion: String, dealer: Bool, hand: [CardRef], crib: [CardRef], starter: CardRef, grid: [CardRef?], stockSize: Int, timer: Int, cardBudget: Int, jokers: [String], tray: [String: Int], keyCards: Int?)
     /// The opening count (r24): the hand, or the dealer's crib, counted with the starter as a classic
     /// show. `what` is "hand" or "crib". Cards and positions are the 4 cards then the starter.
     /// `bonus` (r26) is the power jokers the count won for the tray, in the order drawn.
@@ -69,6 +72,9 @@ public enum MatchEvent: Codable, Sendable, Equatable {
     /// A reach joker raises the pick limit by `cards` until the app sends `reachOver` after `seconds`.
     case reach(id: Int, cards: Int, seconds: Int, pickLimit: Int, source: String)
     case reachOver(id: Int, pickLimit: Int)
+    /// A key joker (r28) raises the pick limit by `cards`. `lasts` is "game" (for the rest of the
+    /// game; no id or seconds) or "timed" (a reach in effect with this id, ended by `reachOver`).
+    case key(id: Int?, cards: Int, lasts: String, seconds: Int?, pickLimit: Int, source: String)
     /// A burn joker (r23) takes a grid card out of the deck for the rest of the game.
     case burn(target: String, card: CardRef, deckSize: Int, source: String)
     case stockOut(reason: String, cardsLeftOnGrid: Int)
@@ -86,6 +92,8 @@ public enum MatchAction: Codable, Sendable, Equatable {
     case reach(source: Pos?)
     /// The engine has no clock: the app (or the simulator) ends a reach when its time is up.
     case reachOver(id: Int)
+    /// Uses a key joker (r28); a timed one ends with `reachOver`, as a reach does.
+    case key(source: Pos?)
     /// Burns the grid card at `target` out of the deck for the game.
     case burn(target: Pos, source: Pos?)
     case endTurn
@@ -116,6 +124,9 @@ public struct MatchState: Codable, Sendable, Equatable {
     /// Reach jokers in effect: each adds cards to the pick limit until its reachOver.
     public var reaches: [ActiveReach] = []
     public var nextReachID = 1
+    /// Key jokers (r28) that last the game: the cards they add to the pick limit, this turn's and
+    /// those carried in from earlier turns.
+    public var keyCards = 0
     /// Deck edits (r23): cards made this turn, which join the game's deck when it ends, cards
     /// burned out of it, and the deck's size now (the game's deck, plus made, less burned).
     public var made: [Card] = []
@@ -149,6 +160,8 @@ public struct TurnSetup: Codable, Sendable {
     /// The dealt cards themselves, for a deal from a game's deck, where made cards share notation
     /// and the other player's cards may come from their own deck. They win over the notation fields.
     public var dealt: DealtCards?
+    /// Hand size from key jokers used earlier in the game (r28). Without it, none.
+    public var keyCards: Int?
     public init(seed: UInt64, dealer: Bool = true, tray: [String: Int]? = nil, warned: Bool = false, fixedHand: [String]? = nil, fixedStarter: String? = nil) {
         self.seed = seed; self.dealer = dealer; self.tray = tray; self.warned = warned; self.fixedHand = fixedHand; self.fixedStarter = fixedStarter
     }
@@ -182,7 +195,7 @@ public struct SetValue: Sendable {
 // MARK: - The match turn
 
 public struct MatchTurn: Sendable {
-    public static let rulesVersion = "match-r27"
+    public static let rulesVersion = "match-r28"
     public let config: Config
     public private(set) var state: MatchState
     public var dice: Dice
@@ -233,6 +246,7 @@ public struct MatchTurn: Sendable {
                             power: [Int](repeating: config.rules.match.edgePower.start, count: 25),
                             tray: setup.tray ?? config.rules.specials.start, warned: setup.warned)
         st.deckSize = gameDeck.count
+        st.keyCards = setup.keyCards ?? 0
         // Made cards keep their IDs for the game, so new ones follow the highest already made.
         st.nextMadeID = max(200, (gameDeck.filter { $0.kind == .made }.map(\.id).max() ?? 199) + 1)
         var t = MatchTurn(config: config, state: st, dice: dice)
@@ -241,7 +255,8 @@ public struct MatchTurn: Sendable {
         for p in Board.grid { t.state.cells[p] = t.draw() }
         ev.append(.turnStart(rulesVersion: Self.rulesVersion, dealer: setup.dealer, hand: hand.map(CardRef.init), crib: setup.dealer ? crib.map(CardRef.init) : [],
                              starter: CardRef(starter), grid: Board.grid.map { t.state.cells[$0].map(CardRef.init) }, stockSize: t.state.stock.count,
-                             timer: config.rules.match.timerSeconds, cardBudget: config.rules.match.cardBudget, jokers: extraKinds, tray: t.state.tray))
+                             timer: config.rules.match.timerSeconds, cardBudget: config.rules.match.cardBudget, jokers: extraKinds, tray: t.state.tray,
+                             keyCards: t.state.keyCards > 0 ? t.state.keyCards : nil))
         if let o = config.rules.match.opening {
             ev.append(t.countOpening("hand", Array(Board.hand), o.hand))
             if setup.dealer { ev.append(t.countOpening("crib", Array(Board.crib), o.crib)) }
@@ -426,9 +441,12 @@ public struct MatchTurn: Sendable {
     /// Whether the starter counts with every set (r16).
     public var starterJoins: Bool { (r.starterJoins ?? false) && state.cells[Board.starter]?.isPlaying == true }
 
-    /// How many cards a set may pick now: `maxSet`, plus the cards from reach jokers in effect.
-    /// Later some combos and prizes may raise it too.
-    public var pickLimit: Int { r.maxSet + state.reaches.reduce(0) { $0 + $1.cards } }
+    /// How many cards a set may pick now: `maxSet`, plus the cards from reach jokers in effect and
+    /// from keys for the game (r28), no more than `maxPick`.
+    public var pickLimit: Int {
+        let n = r.maxSet + state.keyCards + state.reaches.reduce(0) { $0 + $1.cards }
+        return r.maxPick.map { min($0, n) } ?? n
+    }
 
     /// The cards a trace picks, which `maxSet` limits: with r16 the starter is free, traced or not.
     public func picked(_ ps: [Pos]) -> [Pos] { starterJoins ? ps.filter { $0 != Board.starter } : ps }
@@ -508,6 +526,7 @@ public struct MatchTurn: Sendable {
         case .bomb(let target, let source): return try bomb(target, source)
         case .reach(let source): return try reach(source)
         case .reachOver(let id): return try reachOver(id)
+        case .key(let source): return try key(source)
         case .burn(let target, let source): return try burn(target, source)
         case .endTurn: return end("player")
         case .timeUp:
@@ -653,6 +672,29 @@ public struct MatchTurn: Sendable {
         return [.reachOver(id: id, pickLimit: pickLimit)] + afterAction()
     }
 
+    /// A key joker (r28): roll whether it lasts the game or a while, and for a while, how long.
+    /// A timed key is a reach in effect, sharing reach IDs, so `reachOver` ends it.
+    mutating func key(_ source: Pos?) throws -> [MatchEvent] {
+        guard let cfg = config.rules.specials.key else { throw IllegalAction("this config has no key joker") }
+        try useSpecial("key", from: source)
+        let lasts = dice.pick(cfg.lasts.entries, stream: "special", purpose: "key_lasts")
+        state.totals.keys += 1
+        var id: Int?, seconds: Int?
+        if lasts == "game" {
+            state.keyCards += cfg.cards; state.totals.keysForGame += 1
+        } else {
+            let s = dice.pick(cfg.secondsWeights, stream: "special", purpose: "key_seconds")
+            let n = state.nextReachID; state.nextReachID += 1
+            state.reaches.append(ActiveReach(id: n, cards: cfg.cards, seconds: s))
+            id = n; seconds = s
+        }
+        var ev: [MatchEvent] = [.key(id: id, cards: cfg.cards, lasts: lasts, seconds: seconds, pickLimit: pickLimit, source: source.map(Board.name) ?? "tray")]
+        if let s = source { ev.append(clearAndRefill([s])) }
+        ev += resolveExtras()
+        ev += afterAction()
+        return ev
+    }
+
     /// Whether the deck can lose another card to a burn joker: it stays at `deck.minSize` or more.
     public var canBurn: Bool { state.deckSize > (config.rules.deck?.minSize ?? 25) }
 
@@ -689,6 +731,18 @@ public struct MatchTurn: Sendable {
         }
         ev.append(.turnEnd(reason: reason, totals: state.totals))
         return ev
+    }
+}
+
+extension MatchEvent {
+    /// A reach this event put in effect, from a reach joker or a timed key (r28): its ID and
+    /// seconds. The session ends it with `reachOver` when the seconds are up.
+    public var startedReach: (id: Int, seconds: Int)? {
+        switch self {
+        case .reach(let id, _, let seconds, _, _): (id, seconds)
+        case .key(let id?, _, _, let seconds?, _, _): (id, seconds)
+        default: nil
+        }
     }
 }
 

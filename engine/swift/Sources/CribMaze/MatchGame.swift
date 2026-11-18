@@ -56,6 +56,8 @@ public struct MatchGame: Codable, Sendable, Equatable {
     /// The player's power jokers, carried from turn to turn.
     public private(set) var tray: [String: Int]
     public private(set) var results: [TurnResult] = []
+    /// Hand size from key jokers that last the game (r28), carried from turn to turn.
+    public private(set) var keyCards = 0
 
     public init(config: Config, seed: UInt64, firstDealer: Bool = true) {
         self.seed = seed
@@ -83,7 +85,9 @@ public struct MatchGame: Codable, Sendable, Equatable {
 
     /// The setup for this turn after a deal.
     public func setup(dealt: Dealt, thrown: [Card], botThrown: [Card], kept: [Card]? = nil, warned: Bool = false) -> TurnSetup {
-        Deal.setup(seed: turnSeed, dealer: dealer, dealt: dealt, thrown: thrown, botThrown: botThrown, kept: kept, tray: tray, warned: warned, deck: deck.cards)
+        var s = Deal.setup(seed: turnSeed, dealer: dealer, dealt: dealt, thrown: thrown, botThrown: botThrown, kept: kept, tray: tray, warned: warned, deck: deck.cards)
+        s.keyCards = keyCards
+        return s
     }
 
     /// The setup for this turn with no deal: the hand comes off the top of the game's deck, or is
@@ -91,6 +95,7 @@ public struct MatchGame: Codable, Sendable, Equatable {
     public func setup(fixedHand: [String]? = nil, fixedStarter: String? = nil, warned: Bool = false) -> TurnSetup {
         var s = TurnSetup(seed: turnSeed, dealer: dealer, tray: tray, warned: warned, fixedHand: fixedHand, fixedStarter: fixedStarter)
         s.deck = deck.cards
+        s.keyCards = keyCards
         return s
     }
 
@@ -102,6 +107,7 @@ public struct MatchGame: Codable, Sendable, Equatable {
         precondition(t.state.over && !over)
         deck.apply(made: t.state.made, burned: t.state.burned)
         tray = t.state.tray
+        keyCards = t.state.keyCards
         var tier: String?, prize: String?
         for e in events { if case .prizeWon(let ti, _, _, let special) = e { tier = ti; prize = special } }
         if let p = prize { tray[p, default: 0] += 1 }

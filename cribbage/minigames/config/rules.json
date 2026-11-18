@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rulesVersion": "match-r27",
+  "rulesVersion": "match-r28",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4,
@@ -16,18 +16,24 @@
       "bonus": { "from": 6, "per": 5 }
     },
     "maxEdgeCards": 1,
+    "maxPick": 6,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
-    "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20]] }
+    "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20], ["key", 10]] }
   },
   "game": { "turns": 3 },
   "deck": { "shared": true, "minSize": 40 },
   "specials": {
-    "known": ["swapper", "bomb", "reach", "burn"],
+    "known": ["swapper", "bomb", "reach", "burn", "key"],
     "start": { "swapper": 2, "bomb": 1, "reach": 1, "burn": 1 },
     "bombShape": "plus",
     "reach": {
       "cards": [[1, 85], [2, 15]],
+      "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]]
+    },
+    "key": {
+      "cards": 1,
+      "lasts": [["game", 25], ["timed", 75]],
       "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]]
     }
   }

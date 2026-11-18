@@ -42,7 +42,7 @@ func botGame(_ config: Config, seed: UInt64, writer: RecordWriter<CribMazeGame>?
                     t.dice = d
                     let e = try t.apply(a)
                     ev += e; acted += 1
-                    for x in e { if case .reach(let id, _, _, _, _) = x { ends[id] = acted + 5 } }
+                    for x in e { if let (id, _) = x.startedReach { ends[id] = acted + 5 } }
                     for (id, end) in ends.sorted(by: { $0.key < $1.key }) where end <= acted && !t.state.over { ends[id] = nil; ev += try t.apply(.reachOver(id: id)) }
                 }
                 g.finish(t, events: ev)

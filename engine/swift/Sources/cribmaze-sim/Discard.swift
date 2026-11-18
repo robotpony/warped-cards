@@ -81,7 +81,7 @@ func gridValue(_ keep: [Card], starters: [Card], samples: Int, seed: UInt64, con
             turn.dice = d
             guard let ev = try? turn.apply(a) else { break }
             acted += 1
-            for e in ev { if case .reach(let id, _, let s, _, _) = e { ends[id] = acted + max(1, s / 4) } }
+            for e in ev { if let (id, s) = e.startedReach { ends[id] = acted + max(1, s / 4) } }
             for (id, end) in ends where end <= acted && !turn.state.over { ends[id] = nil; _ = try? turn.apply(.reachOver(id: id)) }
         }
         total += turn.state.steps

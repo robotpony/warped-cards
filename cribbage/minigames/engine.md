@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 6, 2026-11-17, spec 10 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r27, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 6, 2026-11-17, spec 11 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -73,6 +73,8 @@ Each position has board coordinates: grid `g(r,c)` is (r, c), crib `c(i)` is (i,
 | best | The turn's best score so far (points and card IDs) |
 | warned | Whether this player has seen the left-over warning (see Left-over warning) |
 | stockOut, dead, over | Flags: nothing left to draw; no set can score; turn ended |
+| reaches | Reaches in effect, from reach jokers and timed keys: each an id, cards and seconds |
+| keyCards | Cards added to the pick limit by keys that last the game (r28), this turn's and earlier turns' |
 | made, extraLog | Cards made this turn, and each extra card's outcome |
 
 ## Setting up a match turn
@@ -81,7 +83,7 @@ There are two ways in. A full game sets up each match turn from the round (to be
 
 ### Standalone turn
 
-Inputs: the seed, config, whether the player is the dealer, the player's tray, optionally the game's deck (r23), and optionally fixed cards (a hand and starter) for tests and scenarios.
+Inputs: the seed, config, whether the player is the dealer, the player's tray, the key cards carried in from earlier turns (r28, 0 without), optionally the game's deck (r23), and optionally fixed cards (a hand and starter) for tests and scenarios.
 
 1. Take the game's deck in ID order, or the standard 52 without one. Shuffle it (stream `deal`, purpose `shuffle`).
 2. If fixed cards are given, take them out of the deck in the order given. A fixed card the deck doesn't hold (burned, or from the other player's own deck) is used as given. Otherwise deal the hand (the top 4) and then the starter (the next card).
@@ -126,6 +128,7 @@ A game is `game.turns` match turns (3 for now). The deck lasts the game: deck bu
 - **Seeds.** Turn 1 uses the game's seed, so a one-turn game plays as a standalone turn from the same seed. Turn n after that uses FNV-1a 64 of the text `<seed>/turn<n>`.
 - **Dealer.** The player deals turn 1 when the game says so; the deal then alternates.
 - **Power jokers.** The tray starts from `specials.start`. A turn starts with the tray the last one ended with, plus the special joker its prize won.
+- **Keys for the game** (r28). Key cards start at 0. A turn starts with the key cards the last one ended with.
 
 Each finished turn keeps a result: turn, dealer, steps, best, prize tier and special, the cards made and burned, and the deck size after.
 
@@ -159,6 +162,7 @@ Each action names the player and carries the clock time (`clockMs`) from the ses
 | `bomb` | target grid position; source: `tray` or the board position of a bomb | Turn not over; the player has the bomb; the target holds a card |
 | `reach` | source: `tray` or the board position of a reach joker | Turn not over; the player has the reach joker (r19) |
 | `reachOver` | id of a reach in effect | Turn not over; that reach is in effect. Sent by the session when the reach's seconds are up |
+| `key` | source: `tray` or the board position of a key joker | Turn not over; the player has the key joker (r28) |
 | `burn` | target grid position; source: `tray` or the board position of a burn joker | Turn not over; the player has the burn joker; the target holds a playing card; the deck is above `deck.minSize` (r23) |
 | `endTurn` | none | Turn not over |
 | `timeUp` | none | Turn not over and the timer is on; sent by the session |
@@ -197,7 +201,7 @@ With `starterJoins` and `handFlush`, two more rules apply:
 
 #### Pick limit
 
-The pick limit is how many cards a set may pick: `maxSet`, plus the cards of each reach joker in effect (see Reach). Later, some combos and prizes may raise it too. The engine MUST keep the reaches in turn state so the app can show the limit. `maxSet` plus the most cards a reach can add MUST be 6 or less (checked on load).
+The pick limit is how many cards a set may pick: `maxSet`, plus the key cards (Key), plus the cards of each reach in effect (Reach), and never more than `maxPick` (r28; missing means no cap). Later, some combos and prizes may raise it too. The engine MUST keep the reaches and key cards in turn state so the app can show the limit. `maxSet` plus the most cards a reach can add MUST be 6 or less, and `maxPick` MUST be from `maxSet` to 6 (checked on load).
 
 | Combos | Left over | Warned before? | Result |
 |---|---|---|---|
@@ -249,6 +253,16 @@ The engine has no clock. The session counts each reach's seconds, pausing as the
 3. Emit `burn` with the target, its card, the new deck size and the source. Clear the target (and a board source's cell), refill, resolve extra cards, run the after-action checks. A burn scores nothing.
 
 The deck size is the game deck's count, plus cards made this turn, less cards burned. A burn MUST NOT take it below `deck.minSize` (25 without one: a turn needs 2 hands, a crib, the starter and a full grid). When the turn ends, burned cards leave the game's deck (see The game).
+
+### Key (r28)
+
+1. Use up the key joker, as for a swap.
+2. Roll how long it lasts from `specials.key.lasts`: `game` or `timed` (stream `special`, purpose `key_lasts`).
+3. For `game`: add `specials.key.cards` to the key cards. They last the rest of the game (The game).
+4. For `timed`: roll its seconds from `specials.key.seconds` (stream `special`, purpose `key_seconds`) and add it to the reaches in effect with `specials.key.cards` cards and the next reach ID, exactly as a reach. It ends with `reachOver`, like any reach.
+5. Emit `key`: for `game` with no id or seconds, for `timed` with both. A key joker used from the board clears and refills its cell, as for a swap. Then check the board (Checks).
+
+A key MAY be used when the pick limit is already at `maxPick`: it is used up and adds key cards, but the limit doesn't move.
 
 ### End turn and time up
 
@@ -326,7 +340,7 @@ Every event is written `{"<name>": {<fields>}}` (see Records › Encoding). The 
 
 | Event | Fields |
 |---|---|
-| `turnStart` | rulesVersion, dealer (true or false), hand (cards), crib (cards; empty for a non-dealer), starter (card), grid (16 cards in position order, `null` for an empty cell), stockSize, timer (seconds), cardBudget, jokers (kinds, in the order dealt), tray (count by kind) |
+| `turnStart` | rulesVersion, dealer (true or false), hand (cards), crib (cards; empty for a non-dealer), starter (card), grid (16 cards in position order, `null` for an empty cell), stockSize, timer (seconds), cardBudget, jokers (kinds, in the order dealt), tray (count by kind), keyCards (r28, or none when 0) |
 | `opening` | what (`hand` or `crib`), positions (the 4, then `s`), cards (the same order), combos (as in `score`; card indexes into cards), comboPoints, madePercent, points (r24), bonus: the power jokers won for the tray, in the order drawn, or an empty list (r26) |
 | `traceRejected` | positions, reason (`size`, `special`, `no_grid_card`, `edge_cards`, `not_touching`, `already_scored`) |
 | `leftoverWarning` | positions, leftOver (count) |
@@ -339,6 +353,7 @@ Every event is written `{"<name>": {<fields>}}` (see Records › Encoding). The 
 | `stockOut` | reason (`stock_empty`, `budget_used`), cardsLeftOnGrid |
 | `reach` | id, cards, seconds, pickLimit, source |
 | `reachOver` | id, pickLimit |
+| `key` | id (or none), cards, lasts (`game` or `timed`), seconds (or none), pickLimit, source (r28) |
 | `burn` | target, card, deckSize, source |
 | `noSetsLeft` | stockLeft, tray |
 | `boardCleared` | kind, amount |
@@ -347,7 +362,7 @@ Every event is written `{"<name>": {<fields>}}` (see Records › Encoding). The 
 
 A combo in `score` is `{kind, points, cards}` plus `size` or `multiplier` where the kind has one; `kind` is `fifteen`, `pair`, `run`, `flush` or `nobs`, and `cards` are indexes into the set's counted cards (Counting a set).
 
-`turnEnd` › totals, all whole numbers (counts or steps) unless noted: steps, stepsFromEdgePower, best (or none), scores, singles, multis, rejected, warnings, swaps, bombs, reaches, drawn, burns, made, penaltyTotal, leftOverTotal, stepsBySuit (steps by suit letter), stepsWithEdge, stepsWithoutEdge, extraSteps, clearBonus, reachCards, reachSeconds, reachScores, reachSteps, reachBest (or none), bigScores, bigSteps, madeScores, stepsFromMade, openingSteps, openingJokers (r26).
+`turnEnd` › totals, all whole numbers (counts or steps) unless noted: steps, stepsFromEdgePower, best (or none), scores, singles, multis, rejected, warnings, swaps, bombs, reaches, drawn, burns, made, penaltyTotal, leftOverTotal, stepsBySuit (steps by suit letter), stepsWithEdge, stepsWithoutEdge, extraSteps, clearBonus, reachCards, reachSeconds, reachScores, reachSteps, reachBest (or none), bigScores, bigSteps, madeScores, stepsFromMade, openingSteps, openingJokers (r26), keys, keysForGame (r28). A timed key counts in reachScores, reachSteps and reachBest, as a reach does, but not in reaches, reachCards or reachSeconds.
 
 Values (reasons, purposes, kinds, tiers) stay snake_case text; names and fields are camelCase. These names follow `stats.md` › Event log by meaning, not by case.
 
@@ -363,8 +378,8 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r27`), specVersion (10), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
-| `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`) |
+| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (11), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only |
+| `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`, including a timed key's) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
 
@@ -403,7 +418,7 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 | `deal` | Match turn: `shuffle` (the 52), `joker_count`, `joker_kind` per joker, `shuffle` (the stock). Classic: `shuffle` and `cut_for_deal` per cut at the start, then `shuffle` and `cut` each hand |
 | `reveal` | Per extra card: `outcome:<kind>`, then `made_card` (and `made_multiplier`, r20) or `special_kind` if the outcome needs one |
 | `board` | `stock_insert` |
-| `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19) |
+| `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19). Per key joker: `key_lasts`, then `key_seconds` for a timed one (r28) |
 | `opening` | Per opening count with a bonus: `bonus` per power joker won (r26) |
 | `prize` | `prize_special` |
 | `bot.<seat>` | A bot's own choices (see Bots) |
@@ -421,7 +436,7 @@ A bot sees the player's view (no hidden cards: the stock order is hidden) and re
 Each bot turn repeats until the turn is over:
 
 1. Find the best set (below). If one scores above 0, trace it.
-2. Otherwise, if no reach is in effect and it has a reach joker (on the board first, then the tray), use it (r19).
+2. Otherwise, if no reach is in effect and the pick limit is below `maxPick`: if it has a key joker (on the board first, then the tray), use it (r28); else if it has a reach joker (on the board first, then the tray), use it (r19).
 3. Otherwise, if it has a swapper (on the board first, then the tray), find the best swap: try every pair of touching grid cells that both hold a card, leaving out a board swapper's own cell (each cell, then its neighbours to the right, below, below-right and below-left), swap them in a copy, and find the best set. Take the swap that opens the highest score; on a tie, the first pair tried. If one opens a score above 0, swap.
 4. Otherwise, if it has a bomb (on the board first, then the tray) and the grid isn't empty, bomb the cell whose blast clears the most cards (the first in position order on a tie).
 5. Otherwise, end the turn.
@@ -436,7 +451,7 @@ Finding the best set, by level (`bots.json`):
 The traced search MUST run in this order, so every port draws the same rolls and breaks ties the same way:
 
 - A walk is depth first. At each step it tries the next cards in the shuffled order, not position order, and checks each path as it reaches it.
-- With a reach in effect, a walk may go one card deeper for each extra card it adds, up to the pick limit; `all` searches every set up to the pick limit.
+- With the pick limit above `maxSet` (a reach in effect, or key cards), a walk may go one card deeper for each card above `maxSet`, up to the pick limit; `all` searches every set up to the pick limit.
 - Each search shuffles afresh. In step 2, every candidate swap, in pair order, gets its own traced search on its copy of the board, with its own `starts` shuffle. A swap search therefore draws one shuffle per pair tried.
 - Search `all` draws nothing from `bot.<seat>`.
 
@@ -561,14 +576,14 @@ Play, by `peg`:
 
 ## Config
 
-All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r27, as tuned on 2026-11-15, with the opening count added on 2026-11-16, and prizes retuned and the opening bonus added and lowered on 2026-11-17 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
+All files live in [`cribbage/minigames/config/`](config/) and carry a `version`. Values below are rules r28, as tuned on 2026-11-15, with the opening count added on 2026-11-16, prizes retuned and the opening bonus added and lowered on 2026-11-17, and the key joker added on 2026-11-17 (concept.md › Decisions). The engine MUST check config on load: weights are positive integers, ranges hold (`min` ≤ `max`), every kind a table names exists, and `epicAt` ≥ `rareAt`.
 
 ### rules.json
 
 ```json
 {
   "version": 1,
-  "rulesVersion": "match-r27",
+  "rulesVersion": "match-r28",
   "scoring": { "fifteen": 2, "pair": 2, "runPerCard": 1, "flushPerCard": 1, "nobs": 1 },
   "match": {
     "maxSet": 4, "flushMin": 4, "timerSeconds": 180, "cardBudget": 0,
@@ -579,22 +594,24 @@ All files live in [`cribbage/minigames/config/`](config/) and carry a `version`.
       "bonus": { "from": 6, "per": 5 }
     },
     "maxEdgeCards": 1,
+    "maxPick": 6,
     "clearBonus": { "kind": "steps", "amount": 10 },
     "edgePower": { "start": 0, "step": 1, "percentPerLevel": 10, "combine": "add", "capPercent": 0 },
-    "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20]] }
+    "prize": { "rareAt": 28, "epicAt": 34, "special": [["swapper", 45], ["bomb", 30], ["reach", 25], ["burn", 20], ["key", 10]] }
   },
   "game": { "turns": 3 },
   "deck": { "shared": true, "minSize": 40 },
   "specials": {
-    "known": ["swapper", "bomb", "reach", "burn"],
+    "known": ["swapper", "bomb", "reach", "burn", "key"],
     "start": { "swapper": 2, "bomb": 1, "reach": 1, "burn": 1 },
     "bombShape": "plus",
-    "reach": { "cards": [[1, 85], [2, 15]], "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]] }
+    "reach": { "cards": [[1, 85], [2, 15]], "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]] },
+    "key": { "cards": 1, "lasts": [["game", 25], ["timed", 75]], "seconds": [[10, 15], [20, 60], [30, 20], [45, 5]] }
   }
 }
 ```
 
-`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `opening` (r24) counts the hand and crib before the grid plays, with classic show options (a hand flush needs its 4, a crib flush all 5); missing means no opening count, as in r23. `opening.bonus` (r26) gives a power joker for every `per` points a count scores past `from`; missing means none, as in r25, and when given `from` MUST be 0 or more and `per` 1 or more. `maxEdgeCards` (r24) is how many hand and crib cards one set may pick together; missing means no limit, and when given it MUST be 1 or more. `game.turns` (r23) is how many match turns a game has; missing means 1. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
+`starterJoins` (r16) makes the starter count with every set; missing means false, as in r15. `handFlush` (r18) adds hand flushes and the optional starter; missing means false, as in r17. `opening` (r24) counts the hand and crib before the grid plays, with classic show options (a hand flush needs its 4, a crib flush all 5); missing means no opening count, as in r23. `opening.bonus` (r26) gives a power joker for every `per` points a count scores past `from`; missing means none, as in r25, and when given `from` MUST be 0 or more and `per` 1 or more. `maxEdgeCards` (r24) is how many hand and crib cards one set may pick together; missing means no limit, and when given it MUST be 1 or more. `game.turns` (r23) is how many match turns a game has; missing means 1. `deck.shared` picks one shared deck or one each; `deck.minSize` is the smallest a burn can leave the deck, and MUST be 25 or more. `maxPick` (r28) caps the pick limit, however many reaches and keys raise it; missing means no cap, and it MUST be given when `key` is a known special. `specials.key` (r28) is the key joker: the cards it adds, how often it lasts the game against a while (`lasts`, weights for `game` and `timed`, nothing else), and a timed key's seconds as for a reach. The key isn't in `start`, so a player gets one from a prize, an opening bonus or a reveal. A `cardBudget` of 0 means the whole stock. `timerSeconds` of 0 means no timer. Multipliers are whole percents (150 is ×1.5), so every language computes the same steps.
 
 ### jokers.json
 

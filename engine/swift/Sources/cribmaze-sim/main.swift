@@ -98,7 +98,7 @@ for i in 0..<o.turns {
             let ev = try turn.apply(action)
             events += ev
             acted += 1
-            for e in ev { if case .reach(let id, _, let seconds, _, _) = e { reachEnds[id] = acted + max(1, Int((Double(seconds) * 1000 / traceMs).rounded(.up))) } }
+            for e in ev { if let (id, seconds) = e.startedReach { reachEnds[id] = acted + max(1, Int((Double(seconds) * 1000 / traceMs).rounded(.up))) } }
             for (id, end) in reachEnds where end <= acted && !turn.state.over {
                 reachEnds[id] = nil
                 events += try turn.apply(.reachOver(id: id))

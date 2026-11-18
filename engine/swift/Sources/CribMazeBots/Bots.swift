@@ -30,11 +30,11 @@ public struct MatchBot: Sendable {
     public func choose(_ turn: MatchTurn, dice: inout Dice) -> MatchAction {
         let s = turn.state
         // 0. With `reachEarly`, a reach joker first.
-        if reachEarly, s.reaches.isEmpty, let source = specialSource("reach", s) { return .reach(source: source.pos) }
+        if reachEarly, let a = raise(turn) { return a }
         // 1. The best set, if it scores.
         if let b = bestSet(turn, dice: &dice) { return .trace(positions: b.positions) }
         // 2. A reach joker, which may open a bigger set, before changing the board.
-        if s.reaches.isEmpty, let source = specialSource("reach", s) { return .reach(source: source.pos) }
+        if let a = raise(turn) { return a }
         // 3. A swapper, on the board first, then the tray.
         if let source = specialSource("swapper", s), let line = bestSwap(turn, excluding: source.pos, dice: &dice) {
             return .swap(line: line, source: source.pos)
@@ -50,6 +50,16 @@ public struct MatchBot: Sendable {
         }
         // 5. Nothing to do.
         return .endTurn
+    }
+
+    /// A key joker (r28), then a reach, to raise the pick limit: only with no reach in effect and
+    /// the limit under `maxPick`, so neither is wasted.
+    func raise(_ turn: MatchTurn) -> MatchAction? {
+        let s = turn.state
+        guard s.reaches.isEmpty, turn.pickLimit < (turn.config.rules.match.maxPick ?? Int.max) else { return nil }
+        if let source = specialSource("key", s) { return .key(source: source.pos) }
+        if let source = specialSource("reach", s) { return .reach(source: source.pos) }
+        return nil
     }
 
     /// Where a special joker would be used from: the board (first in position order) or the tray.
