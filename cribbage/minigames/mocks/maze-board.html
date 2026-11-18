@@ -55,6 +55,22 @@
           box-shadow: 0 0 0 2px #C77DFF, 0 0 18px rgba(199,125,255,.6), 0 6px 16px rgba(0,0,0,.5); cursor: pointer; animation: rise .2s ease-out both; }
   .plot b { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #7B2FBF; margin-bottom: 2px; }
   .plot[hidden] { display: none; }
+  /* The duel: a mini-game screen over the whole phone. */
+  .duel { position: absolute; inset: 0; z-index: 20; background: radial-gradient(circle at 50% 30%, #2A1440, #0A0E1F 70%); padding: 58px 16px 18px; display: flex; flex-direction: column; gap: 10px; animation: rise .25s ease-out both; }
+  .duel[hidden] { display: none; }
+  .duel-t { font-size: 46px; font-weight: 800; letter-spacing: .06em; text-align: center; color: #FF4FD8; text-shadow: 0 0 18px rgba(255,79,216,.8), 0 0 2px #fff; line-height: 1; }
+  .duel-s { text-align: center; color: var(--muted); font-size: 13px; }
+  .duel-p { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; } .duel-p b { font-size: 26px; color: var(--gold); }
+  .duel-h { display: flex; justify-content: center; gap: 8px; min-height: 76px; }
+  .dc { width: 50px; height: 72px; border-radius: 6px; background: #FDFCF8; border: 1px solid #D6D0C4; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+  .dc b { font-size: 20px; } .dc.back { background: repeating-linear-gradient(45deg, #3A2A66 0 6px, #2A1F4D 6px 12px); border-color: #C77DFF; }
+  .dc.can { cursor: pointer; box-shadow: 0 0 0 3px var(--gold), 0 0 12px rgba(255,212,71,.6); } [data-peg]:not(.can) { opacity: .45; }
+  .duel-board { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--rim); border-radius: 12px; }
+  .duel-count { font-size: 40px; font-weight: 800; color: var(--cyan); line-height: 1; }
+  .duel-seq { display: flex; } .duel-seq .dc { width: 38px; height: 54px; font-size: 14px; margin-left: -10px; } .duel-seq .dc b { font-size: 15px; } .duel-seq .dc.them { transform: translateY(-6px); }
+  .duel-said { min-height: 20px; font-weight: 700; color: var(--gold); text-align: center; }
+  .duel-r { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+  .duel-r .big { font-size: 30px; font-weight: 800; color: var(--gold); } .duel-r p { margin: 0; }
   .tip[hidden] { display: none; } .tip b { color: var(--gold); } .tip p { margin: 0; } .tip p + p { margin-top: 4px; }
   .pl { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--rim); border-radius: 9px; padding: 3px 6px; font-size: 12px; line-height: 1.25; }
   .pl.now { border-color: var(--gold); box-shadow: 0 0 8px rgba(255,212,71,.35); }
@@ -74,7 +90,7 @@
   .play.sel { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 16px rgba(255,212,71,.7); transition: transform .12s; }
   .play.off { cursor: default; }
   /* The fan: small cards, steps over suit. */
-  .fan { position: relative; height: 96px; flex: none; }
+  .fan { position: relative; height: 96px; flex: none; isolation: isolate; z-index: 0; }
   .fc { position: absolute; width: 52px; height: 74px; border-radius: 6px; background: #F3ECDC; border: 1.5px solid #D6D0C4; box-shadow: -2px 2px 6px rgba(0,0,0,.45);
         display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 5px 0 0 5px; line-height: 1; color: #2B2A26; cursor: pointer; transform-origin: 50% 120%; transition: margin-top .12s; }
   .fc b { font-size: 18px; font-weight: 800; } .fc span { font-size: 16px; margin-top: 2px; padding-left: 1px; }
@@ -116,6 +132,7 @@
         <div class="tip" id="tip" hidden></div></div>
       <div class="prompt" id="prompt" aria-live="polite"></div>
       <div class="dock" id="dock"></div>
+      <div class="duel" id="duel" hidden></div>
     </div>
     <div class="won" id="won" hidden><div class="big" id="wonTitle"></div><div id="wonText"></div><button class="btn" id="again">Play this seed again</button></div>
   </div>
@@ -391,8 +408,7 @@
 
   // Each player's grid turn: a recorded medium-bot turn, dealer or not, picked by the "grid" stream.
   function startHand() {
-    if (G.hand) plotCheck();
-    G.hand++;
+    G.hand++; G.blocked = new Set();
     const n = G.P.length;
     G.dealer = (G.hand - 1) % n;
     for (const p of G.P) {
@@ -404,6 +420,8 @@
     G.swapsHand = G.hand; G.phase = "maze"; G.turn = G.dealer; G.sel = null; G.mode = null;
     log("hand_start", { dealer: G.P[G.dealer].name, plays: G.P.map(p => p.plays.length), steps: G.P.map(p => p.plays.reduce((a, x) => a + x.p, 0)) });
     if (!G.headless) { const me = G.P[0]; G.flash = `Hand ${G.hand}: your grid made ${me.plays.length} plays, ${me.plays.reduce((a, x) => a + x.p, 0)} steps`; }
+    if (G.hand > 1) plotCheck();
+    if (G.duel) return render();   // the duel screen calls nextTurn when it closes
     nextTurn();
   }
   // The next seat with a play left takes a turn; when nobody has one, the hand is done.
@@ -467,15 +485,115 @@
     log("plot", { player: p.name, event: ev });
     if (!G.headless) G.plot = { title: "The maze stirs", text: text[0].toUpperCase() + text.slice(1) };
   }
-  // A duel: the two stuck players play a short classic pegging game (not designed yet). Stand-in: a coin
-  // from the plot stream picks the winner, and the door in the winner's way breaks (or another opening).
-  function duel(p, q) {
-    const w = G.plotRng.pick([[p, 50], [q, 50]], "duel"), way = wayAhead(w), opts = openings(w, way);
-    const text = way.door ? opening(w, way, "break") : opts.length ? opening(w, way, G.plotRng.pick(opts, "plot")) : "the maze stays as it is.";
-    changed(); G.stats.plot = (G.stats.plot || 0) + 1; G.stats.duel = (G.stats.duel || 0) + 1;
-    log("duel", { players: [p.name, q.name], winner: w.name });
-    if (!G.headless) G.plot = { title: "Duel", text: `${p.human ? "You" : p.name} and ${q.human ? "you" : q.name} are stuck in each other's way, so you peg it out: a short game of classic pegging (not designed yet; a coin stands in). ${w.human ? "You win" : w.name + " wins"}, and ${text}` };
+  // A duel: the two stuck players play classic two-player pegging (4 cards each from a fresh deck, from the
+  // "duel" stream): back and forth to 31, fifteens, pairs, runs, go and last card, as in cribbage. The higher
+  // score wins. A tie plays again once, then a coin from the stream decides. The winner's door breaks (or
+  // another opening), and the winner takes the loser's biggest play.
+  const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+  const rankOf = (c) => RANKS.indexOf(c.slice(0, -1)) + 1, valOf = (c) => Math.min(10, rankOf(c));
+  function pegPoints(seq, count) {
+    let pts = 0; const why = [];
+    if (count === 15) { pts += 2; why.push("fifteen"); }
+    if (count === 31) { pts += 2; why.push("thirty-one"); }
+    let n = 1; while (n < seq.length && rankOf(seq[seq.length - 1 - n]) === rankOf(seq[seq.length - 1])) n++;
+    if (n >= 2) { const v = [0, 0, 2, 6, 12][n]; pts += v; why.push(["", "", "a pair", "pair royal", "double pair royal"][n]); }
+    for (let len = seq.length; len >= 3; len--) {
+      const r = seq.slice(-len).map(rankOf), set = new Set(r);
+      if (set.size === len && Math.max(...r) - Math.min(...r) === len - 1) { pts += len; why.push(`a run of ${len}`); break; }
+    }
+    return [pts, why];
   }
+  function newPeg(p, q) {
+    const deck = []; for (const r of RANKS) for (const su of "SHDC") deck.push(r + su);
+    G.duelRng.shuffle(deck, "duel_deal");
+    return { who: [p, q], hands: [deck.slice(0, 4), deck.slice(4, 8)], seq: [], played: [], count: 0, turn: 0, go: [false, false], score: [0, 0], last: -1, said: "", over: false };
+  }
+  const canPeg = (D, k) => D.hands[k].some(c => D.count + valOf(c) <= 31);
+  // Bots (and every seat in bot runs) take the most points now, then avoid leaving 5 or 21, then play high.
+  function pegPick(D, k) {
+    const ok = D.hands[k].filter(c => D.count + valOf(c) <= 31);
+    const score = (c) => { const n = D.count + valOf(c); return pegPoints([...D.seq, c], n)[0] * 10 - (n === 5 || n === 21 ? 5 : 0) + valOf(c) * .1; };
+    return ok.sort((a, b) => score(b) - score(a))[0];
+  }
+  // One action: the player to move plays a card, or says go. Returns false when the duel's hand is over.
+  function pegStep(D, card) {
+    const k = D.turn, o = 1 - k, name = (j) => D.who[j].human ? "You" : D.who[j].name;
+    if (!D.hands[0].length && !D.hands[1].length) {
+      if (D.count > 0 && D.count < 31 && D.last >= 0) { D.score[D.last]++; D.said = `${name(D.last)}: last card, 1`; }
+      D.over = true; return false;
+    }
+    if (!canPeg(D, k)) {
+      if (!canPeg(D, o)) {
+        if (D.last >= 0 && D.count < 31) { D.score[D.last]++; D.said = `${name(D.last)}: go, 1`; }
+        D.count = 0; D.seq = []; D.turn = 1 - D.last; return true;
+      }
+      D.said = `${name(k)}: go`; D.turn = o; return true;
+    }
+    const c = card || pegPick(D, k);
+    D.hands[k] = D.hands[k].filter(x => x !== c); D.count += valOf(c); D.seq.push(c); D.played.push([k, c]); D.last = k;
+    const [pts, why] = pegPoints(D.seq, D.count); D.score[k] += pts;
+    D.said = `${name(k)}: ${c.replace(/[SHDC]$/, m => GLYPH[m])}, ${D.count}${pts ? ` (${why.join(" and ")}, ${pts})` : ""}`;
+    if (D.count === 31) { D.count = 0; D.seq = []; D.turn = o; return true; }
+    D.turn = canPeg(D, o) || !canPeg(D, k) ? o : k;
+    if (!canPeg(D, o) && canPeg(D, k)) D.turn = k;
+    return true;
+  }
+  function duel(p, q) {
+    G.duelRng = G.duelRng || WarpedDice.stream(G.seed, "duel", G.rolls);
+    const D = { p, q, games: [], peg: newPeg(p, q), round: 1 };
+    G.stats.plot = (G.stats.plot || 0) + 1; G.stats.duel = (G.stats.duel || 0) + 1;
+    if (G.headless) { while (!D.result) { while (pegStep(D.peg)); duelScore(D); } return; }
+    G.duel = D; G.flash = null;
+    later(duelTick, 900);
+  }
+  // A duel game is done: a tie plays again once, then a coin. Then the consequences.
+  function duelScore(D) {
+    const [a, b] = D.peg.score; D.games.push([a, b]);
+    if (a === b && D.round === 1) { D.round = 2; D.peg = newPeg(D.p, D.q); D.note = `Tied ${a} to ${b}: play again`; return; }
+    let w = a > b ? D.p : b > a ? D.q : null, coin = false;
+    if (!w) { w = G.duelRng.pick([[D.p, 50], [D.q, 50]], "duel_coin"); coin = true; }
+    const l = w === D.p ? D.q : D.p, way = wayAhead(w), opts = openings(w, way);
+    const opened = way.door ? opening(w, way, "break") : opts.length ? opening(w, way, G.duelRng.pick(opts, "duel_open")) : "the maze stays as it is.";
+    const take = left(l).sort((x, y) => y.p - x.p)[0];
+    if (take) { l.plays = l.plays.filter(x => x !== take); w.plays.push({ ...take, id: take.id + ".won" }); w.plays.sort((x, y) => y.p - x.p); }
+    changed();
+    D.result = { w, l, coin, opened, take };
+    log("duel", { players: [D.p.name, D.q.name], scores: D.games, winner: w.name, coin, took: take && take.p });
+  }
+  function duelTick() {
+    const D = G.duel; if (!D || D.result) return render();
+    const P = D.peg;
+    if (P.over) { duelScore(D); render(); if (!D.result) later(duelTick, 1400); return; }
+    if (P.who[P.turn].human && canPeg(P, P.turn) && (P.hands[0].length || P.hands[1].length)) return render();   // waits for your card
+    pegStep(P); render(); later(duelTick, P.over ? 700 : 850);
+  }
+  function duelPlay(card) {
+    const D = G.duel; if (!D || D.result) return;
+    const P = D.peg; if (!P.who[P.turn].human || P.count + valOf(card) > 31) return;
+    pegStep(P, card); render(); later(duelTick, 700);
+  }
+  function duelClose() { G.duel = null; render(); nextTurn(); }
+  function duelHTML() {
+    const D = G.duel; if (!D) return "";
+    const P = D.peg, nm = (p) => p.human ? "You" : p.name, card = (c, cls = "", attr = "") => `<span class="dc ${cls}" ${attr} style="color:${FACECOL[c.slice(-1)]}"><b>${c.slice(0, -1)}</b>${GLYPH[c.slice(-1)]}</span>`;
+    const back = `<span class="dc back"></span>`;
+    let h = `<div class="duel-t">DUEL!</div><div class="duel-s">${nm(D.p)} and ${nm(D.q)} are stuck in each other's way. Classic pegging: back and forth to 31, highest score wins.${D.round > 1 ? " Second game, after a tie." : ""}</div>`;
+    if (D.result) {
+      const r = D.result, g = D.games;
+      h += `<div class="duel-r"><div class="big">${r.w.human ? "You win" : r.w.name + " wins"}</div>` +
+        `<p>${g.map(([a, b]) => `${nm(D.p)} ${a}, ${nm(D.q)} ${b}`).join("; then ")}${r.coin ? "; still tied, so a coin decided" : ""}.</p>` +
+        `<p>The way opens: ${r.opened}</p>` +
+        (r.take ? `<p>${r.w.human ? "You take" : r.w.name + " takes"} ${r.l.human ? "your" : r.l.name + "'s"} biggest play: <b>${r.take.p} ${r.take.s ? GLYPH[r.take.s] : "no suit"}</b> (${r.take.c.split(" ").map(t => t.replace(/[SHDC]$/, m => GLYPH[m])).join(" ")}).</p>` : "") +
+        `<button class="btn go" id="duelDone">Back to the maze</button></div>`;
+      return h;
+    }
+    const k0 = D.p.human ? 0 : D.q.human ? 1 : 0, k1 = 1 - k0, mine = P.who[k0].human && P.turn === k0;
+    h += `<div class="duel-p"><span>${nm(P.who[k1])}</span><b>${P.score[k1]}</b></div><div class="duel-h">${P.who[k1].human ? P.hands[k1].map(c => card(c)).join("") : P.hands[k1].map(() => back).join("")}</div>`;
+    h += `<div class="duel-board"><div class="duel-count">${P.count}</div><div class="duel-seq">${P.played.slice(-8).map(([k, c]) => card(c, k === k0 ? "me" : "them")).join("")}</div><div class="duel-said">${P.said || (D.note || "")}</div></div>`;
+    h += `<div class="duel-h">${P.hands[k0].map(c => card(c, mine && P.count + valOf(c) <= 31 ? "can" : "", mine ? `data-peg="${c}"` : "")).join("")}</div><div class="duel-p"><span>${nm(P.who[k0])}${mine ? " · your card" : ""}</span><b>${P.score[k0]}</b></div>`;
+    return h;
+  }
+
 
   // ---------- Walking a play (the same for everyone, so it can be previewed) ----------
   // Every step is taken. At a junction (3 or 4 ways) you go where its arrow points, or the next
@@ -558,10 +676,14 @@
     if ((p.closed || 0) >= G.c.closeMax) return false;
     const [a, b] = k.split(":").map(Number);
     if ([a, b].some(x => x === M.goal || G.P.some(q => q.pos === x))) return false;
+    if (G.P.some(q => q !== p && G.blocked.has(q.seat + ">" + p.seat) && wayKeys(q).has(k))) return false;
     return G.c.closeWhere === "any" || Math.min(manhattan(M, p.pos, a), manhattan(M, p.pos, b)) <= 10;
   }
+  // The passages on a player's way to the goal (downhill on the cost field).
+  function wayKeys(q) { const w = wayAhead(q), out = new Set(); let prev = q.pos; for (const c of w.ahead) { out.add(G.M.key(prev, c)); prev = c; } return out; }
   function doClose(p, play, k) {
     if (!play.s || !canClose(p, k)) return false;
+    for (const q of G.P) if (q !== p && wayKeys(q).has(k)) G.blocked.add(p.seat + ">" + q.seat);
     play.used = true; p.closed = (p.closed || 0) + 1;
     Object.assign(G.M.edges.get(k), { kind: "door", strength: Math.max(2, Math.round(play.p * G.c.closeMul)), damage: 0, suit: play.s, closedBy: p.seat });
     changed(); log("door_closed", { player: p.name, at: k, suit: play.s, strength: play.p });
@@ -862,6 +984,7 @@
     if (myTurn && G.mode === "swapper") d += `<div class="row acts">${G.P.slice(1).map(q => `<button class="btn" ${canSwap(me, q) ? "" : "disabled"} data-swap="${q.seat}">Swap with ${q.name}</button>`).join("")}</div>`;
     d += sheet;
     $("dock").innerHTML = d;
+    $("duel").hidden = !G.duel; if (G.duel) $("duel").innerHTML = duelHTML();
     if (G.plot) { $("plot").innerHTML = `<b>${G.plot.title}</b>${G.plot.text}`; $("plot").hidden = false; } else $("plot").hidden = true;
 
     $("won").hidden = G.won === null;
@@ -950,6 +1073,10 @@
   function showTip(html) { const t = $("tip"); if (!html) { t.hidden = true; return; } t.innerHTML = html; t.hidden = false; }
   $("tip").addEventListener("click", () => showTip(null));
   $("plot").addEventListener("click", () => { G.plot = null; render(); });
+  $("duel").addEventListener("click", (ev) => {
+    if (ev.target.closest("#duelDone")) return duelClose();
+    const c = ev.target.closest("[data-peg]"); if (c) duelPlay(c.dataset.peg);
+  });
   $("players").addEventListener("click", (ev) => {
     const el = ev.target.closest("[data-who]"); if (!el) return;
     const p = G.P[+el.dataset.who], l = left(p), F = field();
@@ -995,7 +1122,7 @@
   function start(seedText) { newGame(seedText); try { location.replace("#seed=" + encodeURIComponent(seedText)); } catch (e) {} }
   window.__mazeBoard = () => G;
   window.__mazeRun = runGames;
-  window.__mazeDebug = { newGame, startHand, applyBot, nextTurn, cur, field, get G() { return G; }, set G(v) { G = v; } };
+  window.__mazeDebug = { newGame, startHand, applyBot, nextTurn, cur, field, duel, pegStep, newPeg, pegPoints, get G() { return G; }, set G(v) { G = v; } };
 
   const fromHash = decodeURIComponent((location.hash.match(/seed=([^&]+)/) || [])[1] || "");
   $("seed").value = fromHash || "20261117";

@@ -295,7 +295,7 @@ You see every player's plays left and their total steps, but not their cards.
 
 A player who ends a round no closer to the goal than they began it is stuck. At the next deal, the maze stirs for them: the door in their way fades (any suit wears it down, at half its strength), a star falls a few steps ahead, or a wall beside them opens. One stir a round, for the player furthest behind.
 
-When two players are stuck, or one is stuck behind a door the other closed, they duel instead: a short game of classic pegging between the two. The winner's way opens: the door in their way breaks. The pegging duel is not designed yet (the mock tosses a coin), and neither is what the loser risks.
+When two players are stuck, or one is stuck behind a door the other closed, they duel instead. A DUEL! screen takes over and the two play classic two-player pegging, back and forth to 31, as in cribbage (fifteens, pairs, runs, go, 31 and last card; see Scorekeep's How to play page), with 4 cards each from a fresh deck. The higher score wins. A tie plays again once; tied again, a coin decides. Then the screen shows what it means: the door in the winner's way breaks, and the winner takes the loser's biggest play, its cards and steps.
 
 
 Which play to use, and when, is the game: a big play can carry you through a door of its suit, and the order you arrive at a junction decides which way you go.
@@ -338,6 +338,7 @@ A door is a card laid across the path: its rank is the strength left, and its su
 - Doors on the main route get stronger toward the goal (12, 18, 24 and so on in the mock, to tune).
 - Shortcut doors guard passages that cut the route short. They have no suit, and their strength is half the steps the shortcut saves (to tune), so a shortcut is a trade of steps.
 - A door you close takes your play's suit, and its steps as strength. Opening it needs the same suit, like any door.
+- You can't close a door in the way of a player who closed one in your way this round.
 - Damage stays on a door between turns, whoever did it. Once a door is down, it's open for every player.
 
 ### Switches

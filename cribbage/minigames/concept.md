@@ -462,6 +462,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Gates merge into doors (Bruce, answer 42): one piece, the card door. Shortcuts get doors with no suit, strength half the steps saved; suited shortcut doors trapped tokens in dead-end shortcuts (40-game runs: 5 to 28 rounds, against 4 to 12 with no shortcut doors). Walks avoid doors they can't open when there's another way, and a token stopped at a door may turn back |
 | 2026-11-17 | Plays shown as a fan of small cards, steps and suit in the corner, until one is chosen; the joker tray sits at the bottom. One joker a turn, before or after the play; after your play, the turn waits for a joker or End turn (Bruce) |
 | 2026-11-17 | Deadlocks are a plot opportunity (Bruce). A player who ends a round no closer to the goal is stuck; at the next deal the maze stirs for them (their door fades, a star falls ahead, or a wall opens), once a round. Two stuck players, or one stuck behind a door the other closed, duel: a short classic pegging game, its winner's door breaks (Bruce: pegging duel not designed yet; the mock tosses a coin). 40 games, balanced against balanced: 5 to 25 rounds, median 8, 34 in 6 to 12, about 4 plot events and 2 duels a game. Two door-closer bots still drag (median 16): they close a fresh door every round |
+| 2026-11-17 | Duels (Bruce, 43 to 45): a DUEL! mini-game screen walks through the pegging, then the consequences. Classic two-player pegging, back and forth, highest score wins; a tie replays once, then a coin. The winner's door breaks and the winner takes the loser's biggest play. No closing a door in the way of someone who closed one in yours this round. Mock deals 4 cards each from a fresh deck ("duel" stream). 40 games: balanced vs balanced 4 to 18 rounds, 32 in 6 to 12, 1.1 duels a game; door closer vs door closer 7 to 26, median 11, 28 in 6 to 12 (was 8 to 40, median 16) |
 | 2026-11-17 | Doors look like playing cards (Bruce): rank (the strength left) and suit in two corners and large in the middle, all turned with the card as it lies across the path. Walls are double: two thin neon lines with a few points of floor between them, so the cards sit in among them |
 
 ## Open questions
@@ -477,7 +478,7 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 9. The shop: what you pay with now that pips are gone (steps, prizes or something new), what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps or a prize, and how big?
 11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.
-12. The duel: how short is the pegging game, what does the loser risk, and does a bot duel the same way?
+12. The duel's cards: 4 from a fresh deck (the mock), or the players' own hands from the deal?
 
 ## Plan
 
