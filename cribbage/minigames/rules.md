@@ -278,7 +278,25 @@ Computer players' match turns aren't played out on screen: you see each result (
 
 ### 4. The shop
 
-After the scoring grid, before pegging, you can shop. What you pay with isn't designed yet (pips, the old currency, were removed in match rules r15). The shop sells jokers, and any card you've discovered in any game you've played, such as a special joker you've won or seen in a reveal. The game reveals itself over hundreds of games. What's for sale and the prices: not designed yet.
+After the scoring grid, before pegging, each player visits the shop. Prices are placeholders, to tune; the shop is mocked in [mocks/shop.html](mocks/shop.html).
+
+- **You pay with plays.** Pick whole plays whose steps cover the price. There's no change: steps over the price are lost. A play you spend is one you won't walk, or close a door with, on the maze.
+- **At most 3 buys a hand.** The extra-buy card raises the limit by 1 for this hand and isn't a buy itself (a placeholder; a special joker may do this instead).
+- **Your own stock.** Each player gets their own shelf each hand, drawn from their own dice stream. Computer players shop by the same rules.
+- **The reroll** takes one slot on the shelf. It deals a new stock and costs more each time you use it. It isn't a buy.
+
+What's for sale:
+
+| Kind | Items | Lasts |
+|---|---|---|
+| Power jokers | Swapper, reach, burn, bomb, key (see Special jokers) | The game, in your tray |
+| Deck edits | Clone, paint or nudge a card you kept, add a made card, or burn a card out of the deck. Each is a set offer, such as "Clone 5♥" | The game, in the shared deck |
+| Play edits | Dye: give a play a suit. Join: two plays become one. Save: keep a play for the next hand | This hand (save: until the next) |
+| Extra buy | One more buy this hand | This hand |
+
+Placeholder prices, in steps: swapper and reach 12, burn 16, key 18, bomb 20; clone 10, paint and nudge 8, made card 14, burn a card 6; dye 6, join 8, save 10; extra buy 6. The first reroll costs 5, then 10, 15 and so on.
+
+Later, the stock may also offer cards you've discovered in earlier games, such as a special joker you won or saw in a reveal, so the game reveals itself over many games (not designed yet).
 
 ### 5. Pegging on the maze
 

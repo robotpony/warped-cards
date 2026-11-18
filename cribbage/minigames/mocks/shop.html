@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700;800&display=swap">
+<style>
+  /* Neon palette (design/neon/palette.json). The side panel is the page; the phone is the game. */
+  :root {
+    --bg: #0A0E1F; --panel: #121A33; --text: #DDE6FF; --muted: #8A97C2; --rim: #2E3A66; --page: #05070F;
+    --cyan: #3CF2FF; --magenta: #FF4FD8; --gold: #FFD447; --door: #FF8A3D; --violet: #C77DFF; --green: #3DDC84; --red: #FF4D6D;
+    --paper: #F3ECDC; --ink: #2B2A26;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 15px/1.45 "Saira Semi Condensed", system-ui, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 17px; margin: 18px 0 6px; }
+  p { margin: 0 0 10px; } .muted { color: var(--muted); }
+  code { font-size: 13px; color: var(--cyan); }
+  .side { flex: 1 1 380px; min-width: 0; max-width: 660px; }
+  .card { background: var(--panel); border: 1px solid var(--rim); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .card label { display: flex; gap: 8px; align-items: center; margin: 5px 0; flex-wrap: wrap; }
+  .card select, .card input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--rim); border-radius: 6px; padding: 2px 6px; }
+  .card input[type=text] { width: 9em; }
+  .btn { font: inherit; font-weight: 600; border: 1px solid var(--rim); background: var(--panel); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.go { border-color: var(--gold); color: var(--gold); }
+  .models { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
+  .models .btn.on { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 8px rgba(60,242,255,.35); }
+  ul.tight { margin: 4px 0; padding-left: 18px; } ul.tight li { margin: 3px 0; }
+  ol.qs li { margin: 5px 0; }
+  table.res { border-collapse: collapse; font-size: 13px; width: 100%; margin-top: 6px; }
+  table.res th, table.res td { border-bottom: 1px solid var(--rim); padding: 3px 6px; text-align: right; }
+  table.res th:first-child, table.res td:first-child { text-align: left; }
+  #log { font: 12px/1.4 ui-monospace, Menlo, monospace; max-height: 200px; overflow: auto; white-space: pre-wrap; background: var(--bg); padding: 8px; border-radius: 6px; }
+
+  /* Phone: 393 x 852 pt, 1 CSS px = 1 pt. */
+  .phone { width: 413px; height: 872px; border-radius: 52px; border: 10px solid #111; background: var(--bg);
+           position: relative; overflow: hidden; flex: none; user-select: none; -webkit-user-select: none; }
+  .phone::before { content: ""; position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 30; }
+  .screen { position: absolute; inset: 0; padding: 54px 10px 14px; display: flex; flex-direction: column; gap: 7px; }
+
+  /* Header: hand number, the wallet, the phase. */
+  .hdr { display: flex; gap: 8px; align-items: stretch; padding: 0 2px; }
+  .hand { flex: none; display: flex; flex-direction: column; justify-content: center; line-height: 1; padding-right: 4px; }
+  .hand span { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .hand b { font-size: 26px; font-weight: 800; }
+  .wallet { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--rim); border-radius: 10px; padding: 4px 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .wallet .big { font-size: 24px; font-weight: 800; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+  .wallet .sub { font-size: 11.5px; line-height: 1.2; color: var(--muted); }
+  .wallet .sub b { color: var(--text); }
+  .wallet .was { text-decoration: line-through; color: var(--muted); font-size: 13px; margin-left: 2px; }
+  .coin { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFE98A, #E8A800); color: #5A3E00; font-size: 12px; font-weight: 800; align-items: center; justify-content: center; box-shadow: 0 0 0 1.5px #8A6300 inset, 0 0 8px rgba(255,212,71,.5); flex: none; }
+  .coin.sm { width: 16px; height: 16px; font-size: 10px; }
+  .phase { align-self: center; font-weight: 800; letter-spacing: .08em; font-size: 11px; color: var(--bg); background: var(--magenta); border-radius: 999px; padding: 2px 9px; box-shadow: 0 0 10px rgba(255,79,216,.6); }
+  .prompt { min-height: 18px; font-size: 13px; text-align: center; color: var(--gold); font-weight: 600; line-height: 1.25; }
+  .lbl { font-size: 11px; font-weight: 700; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .lbl .mini { font: inherit; font-size: 11px; letter-spacing: .05em; border: 1px solid var(--rim); background: transparent; color: var(--cyan); border-radius: 999px; padding: 1px 9px; cursor: pointer; text-transform: uppercase; }
+  .lbl .mini:disabled { opacity: .4; cursor: default; }
+
+  /* The shelf: three across, scrolls when there are more. */
+  .shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; overflow-y: auto; min-height: 0; padding: 2px; flex: 1 1 auto; align-content: start; }
+  .item { position: relative; font: inherit; color: var(--text); text-align: center; background: linear-gradient(#18224A, #10173A); border: 1.5px solid var(--rim); border-radius: 12px; padding: 7px 5px 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 168px; }
+  .item:hover:not(:disabled) { border-color: var(--cyan); box-shadow: 0 0 10px rgba(60,242,255,.3); }
+  .item .tag { font-size: 9px; font-weight: 800; letter-spacing: .1em; border-radius: 999px; padding: 0 7px; }
+  .item .tag.power { background: var(--violet); color: var(--bg); } .item .tag.deck { background: var(--cyan); color: var(--bg); } .item .tag.play { background: var(--door); color: var(--bg); }
+  .item .art { position: relative; width: 58px; height: 81px; }
+  .item .art img, .item .art svg { width: 58px; height: 81px; display: block; }
+  .item .art .badge { position: absolute; right: -9px; top: -6px; min-width: 24px; height: 24px; border-radius: 999px; background: var(--cyan); color: var(--bg); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 0 8px rgba(60,242,255,.6); }
+  .item .art .to { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); white-space: nowrap; background: var(--bg); border: 1px solid var(--cyan); color: var(--text); border-radius: 999px; font-size: 11px; font-weight: 800; padding: 0 6px; }
+  .item .nm { font-weight: 800; font-size: 14px; line-height: 1.1; margin-top: 4px; }
+  .item .price { margin-top: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: 15px; color: var(--gold); }
+  .item .price small { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .item.cant .price { color: var(--red); }
+  .item.sold { cursor: default; opacity: .35; } .item.sold::after { content: "SOLD"; position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%) rotate(-14deg); font-size: 22px; font-weight: 800; letter-spacing: .1em; color: var(--magenta); border: 2px solid var(--magenta); border-radius: 6px; padding: 0 8px; background: rgba(10,14,31,.8); }
+  .item.reroll { border-style: dashed; border-color: var(--cyan); background: rgba(60,242,255,.06); }
+  .item.reroll .play-art { background: transparent; border: 2px solid var(--cyan); color: var(--cyan); font-size: 34px; }
+  .item .tag.extra, .item .tag.reroll { background: var(--gold); color: var(--bg); }
+  .item.k-extra .play-art { border-color: var(--gold); border-style: solid; }
+  .item.full:not(.sold):not(.reroll):not(.k-extra) { opacity: .45; }
+  .pips { display: inline-flex; gap: 4px; align-items: center; text-transform: none; letter-spacing: 0; }
+  .pips i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--gold); }
+  .pips i.on { background: var(--gold); box-shadow: 0 0 6px rgba(255,212,71,.6); } .pips i.x { border-color: var(--cyan); } .pips i.x.on { background: var(--cyan); }
+  .play-art { width: 58px; height: 81px; border-radius: 6px; background: var(--paper); border: 2px dashed #E8B84A; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; line-height: 1; }
+  .play-art small { font-size: 9px; letter-spacing: .1em; margin-top: 6px; }
+
+  /* Deck strip and plays fan. */
+  .deck { display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: var(--muted); padding: 0 4px; }
+  .deck b { color: var(--text); } .deck .mk { color: var(--cyan); } .deck .bn { color: var(--door); }
+  .dock { background: var(--panel); border-top: 1px solid var(--rim); margin: 0 -10px -14px; padding: 7px 10px 12px; display: flex; flex-direction: column; gap: 6px; position: relative; flex: none; }
+  .fan { position: relative; height: 84px; flex: none; isolation: isolate; z-index: 0; }
+  .fc { position: absolute; width: 44px; height: 64px; border-radius: 6px; background: var(--paper); border: 1.5px solid #D6D0C4; box-shadow: -2px 2px 6px rgba(0,0,0,.45);
+        display: flex; flex-direction: column; align-items: flex-start; padding: 4px 0 0 5px; line-height: 1; color: var(--ink); transform-origin: 50% 120%; }
+  .fc b { font-size: 16px; font-weight: 800; } .fc span { font-size: 14px; margin-top: 2px; }
+  .fc.cut { background: #E7DCC0; } .fc.cut::after { content: "✂"; position: absolute; right: 3px; bottom: 2px; font-size: 11px; color: #9A7B2E; }
+  .fc.saved { box-shadow: 0 0 0 2px var(--cyan), -2px 2px 6px rgba(0,0,0,.45); }
+  .fc.dim { opacity: .3; }
+  /* Power jokers tray: as the scoring turn's (ui.md › Power jokers). */
+  .pj { position: relative; padding: 16px 8px 6px; border-radius: 12px; background: var(--bg); border: 1px solid rgba(199,125,255,.5); }
+  .pj-tag { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); height: 16px; padding: 0 10px; border-radius: 999px; background: var(--violet); color: var(--bg); font-size: 10px; font-weight: 800; letter-spacing: .08em; display: flex; align-items: center; white-space: nowrap; }
+  .pj-slots { display: flex; justify-content: space-evenly; }
+  .pjs { position: relative; width: 46px; }
+  .pjs img { display: block; width: 46px; height: auto; position: relative; z-index: 2; border-radius: 5px; }
+  .pjs.none { opacity: .3; }
+  .pjs.new img { box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(255,212,71,.7); }
+  .pjb { position: absolute; width: 46px; height: 64px; border-radius: 5px; background: #CFC6B3; border: 1px solid #A99E86; z-index: 1; }
+  .pjb.b1 { left: 3px; top: -3px; } .pjb.b2 { left: 6px; top: -6px; background: #A99E86; }
+  .cnt { position: absolute; right: -5px; bottom: -5px; z-index: 3; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--violet); color: var(--bg); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .bar { display: flex; gap: 8px; align-items: center; }
+  .bar .undo { font: inherit; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1.5px solid var(--rim); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  .bar .undo:disabled { opacity: .35; cursor: default; }
+  .bar .leave { flex: 1; font: inherit; font-weight: 800; font-size: 16px; letter-spacing: .04em; color: var(--bg); background: var(--gold); border: 0; border-radius: 999px; padding: 9px 14px; cursor: pointer; box-shadow: 0 0 14px rgba(255,212,71,.45); }
+
+  /* The buy sheet: rises over the lower half. */
+  .veil { position: absolute; inset: 0; background: rgba(5,7,15,.55); z-index: 10; }
+  .veil[hidden], .sheet[hidden], .sum[hidden], .pop[hidden] { display: none; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 78%; z-index: 11; background: var(--panel); border-top: 1.5px solid var(--cyan); border-radius: 18px 18px 0 0; padding: 12px 12px 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; animation: rise .16s ease-out both; box-shadow: 0 -8px 30px rgba(0,0,0,.6); }
+  .sh-top { display: flex; gap: 12px; align-items: flex-start; }
+  .sh-top .art { flex: none; position: relative; } .sh-top .art img, .sh-top .art svg { width: 64px; height: 90px; display: block; }
+  .sh-top .art .play-art { width: 64px; height: 90px; }
+  .sh-top h3 { margin: 0; font-size: 19px; line-height: 1.1; } .sh-top p { margin: 3px 0 0; font-size: 13px; line-height: 1.3; }
+  .sh-top .meta { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .step { font-size: 11px; font-weight: 700; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .play { position: relative; font: inherit; border: 2px dashed #E8B84A; border-radius: 10px; background: var(--paper); color: var(--ink); padding: 3px 8px 2px; cursor: pointer; text-align: left; line-height: 1.15; }
+  .play b { font-size: 17px; font-weight: 800; } .play .su { font-size: 14px; font-weight: 600; }
+  .play small { display: block; font-size: 10.5px; } .play small i { font-style: normal; font-weight: 700; }
+  .play .now { position: absolute; top: -9px; right: -6px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 0 6px; }
+  .play .now.keep { background: var(--green); color: var(--bg); }
+  .play.sel { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 12px rgba(255,212,71,.6); }
+  .play.tgt { outline: 3px solid var(--cyan); outline-offset: 1px; box-shadow: 0 0 12px rgba(60,242,255,.6); }
+  .play:disabled { opacity: .35; cursor: default; }
+  .suits { display: flex; gap: 8px; } .suits button { font: inherit; font-size: 22px; width: 44px; height: 40px; border-radius: 9px; background: var(--paper); border: 2px solid transparent; cursor: pointer; }
+  .suits button.on { border-color: var(--cyan); box-shadow: 0 0 10px rgba(60,242,255,.6); }
+  .paynote { font-size: 13px; line-height: 1.3; } .paynote b { color: var(--gold); } .paynote .bad { color: var(--red); } .paynote .ok { color: var(--green); }
+  .sh-bar { display: flex; gap: 8px; margin-top: 2px; }
+  .sh-bar .buy { flex: 1; font: inherit; font-weight: 800; font-size: 16px; color: var(--bg); background: var(--gold); border: 0; border-radius: 999px; padding: 9px; cursor: pointer; }
+  .sh-bar .buy:disabled { background: #3A4470; color: #8C97BD; cursor: default; }
+  .sh-bar .cancel { font: inherit; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1.5px solid var(--rim); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+
+  /* Wallet breakdown pop. */
+  .pop { position: absolute; left: 14px; right: 14px; top: 108px; z-index: 12; background: rgba(10,14,31,.97); border: 1.5px solid var(--gold); border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 20px rgba(0,0,0,.6); cursor: pointer; animation: rise .14s ease-out both; }
+  .pop b { color: var(--gold); } .pop table { width: 100%; border-collapse: collapse; } .pop td { padding: 1px 0; } .pop td:last-child { text-align: right; font-weight: 700; }
+
+  /* Leaving: the summary, then the maze. */
+  .sum { position: absolute; inset: 0; z-index: 20; background: radial-gradient(circle at 50% 28%, #1C2A5A, #0A0E1F 70%); padding: 62px 18px 20px; display: flex; flex-direction: column; gap: 10px; animation: rise .22s ease-out both; }
+  .sum h2 { margin: 0; font-size: 34px; letter-spacing: .06em; text-align: center; color: var(--cyan); text-shadow: 0 0 16px rgba(60,242,255,.7); }
+  .sum .who { background: rgba(18,26,51,.85); border: 1px solid var(--rim); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; line-height: 1.4; }
+  .sum .who b.n { display: block; font-size: 15px; margin-bottom: 2px; }
+  .sum .who .row { display: flex; justify-content: space-between; gap: 8px; }
+  .sum .who .row span:last-child { font-weight: 700; text-align: right; }
+  .sum .bought { color: var(--gold); }
+  .sum .go { margin-top: auto; font: inherit; font-weight: 800; font-size: 17px; color: var(--bg); background: var(--gold); border: 0; border-radius: 999px; padding: 11px; cursor: pointer; }
+  .sum .back { font: inherit; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1.5px solid var(--rim); border-radius: 999px; padding: 7px; cursor: pointer; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  @media (prefers-reduced-motion: reduce) { .sheet, .sum, .pop { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="phone" aria-label="The shop on a phone">
+    <div class="screen" id="screen"></div>
+    <div class="veil" id="veil" hidden></div>
+    <div class="sheet" id="sheet" hidden></div>
+    <div class="pop" id="pop" hidden></div>
+    <div class="sum" id="sum" hidden></div>
+  </div>
+
+  <div class="side">
+    <h1>Shop mock</h1>
+    <p class="muted">v2, 2026-11-17. Phase 6: after the scoring grid, before pegging on the maze (<code>concept.md</code> › Phases; rules: <code>rules.md</code> › 4 The shop). v2 builds Bruce's answers on v1: you pay with whole plays, at most 3 buys a hand, the reroll is a slot on the shelf, and an extra-buy card can raise the limit. Your plays are a real grid turn the medium bot played (<code>maze-sets.js</code>, match-r27), so the steps you'd spend are the steps you'd walk. Change the currency below and shop the same hand again.</p>
+
+    <div class="card">
+      <b>What you pay with</b> <span class="muted">(A is the design; B and C stay for comparison)</span>
+      <div class="models" id="models"></div>
+      <div id="modelNote" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button> <span class="muted" id="turnNote"></span></label>
+      <label>Hand <select id="handNo"><option>1</option><option>2</option><option selected>3</option><option>5</option><option>8</option></select> <span class="muted">(power jokers you hold grow with it)</span></label>
+      <label>Prices <select id="scale"><option value="0.5">half</option><option value="1" selected>as listed</option><option value="1.5">1.5 times</option><option value="2">double</option></select></label>
+      <label>Shelf <select id="stockSize"><option value="6" selected>6 slots: 2 power jokers, 1 deck edit, 1 play edit, the extra buy, the reroll</option><option value="9">9 slots: 3 power jokers, 2 deck edits, 2 play edits, the extra buy, the reroll</option></select></label>
+      <label>Reroll slot <select id="reroll"><option value="on" selected>yes, and it costs more each time</option><option value="off">no (a power joker takes the slot)</option></select></label>
+      <label>Buys a hand <select id="limit"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="99">no limit</option></select>
+        extra-buy card <select id="extraBuy"><option value="on" selected>on the shelf</option><option value="off">off</option></select></label>
+      <label>Coins: one for each set of <select id="coinSet"><option value="15">15</option><option value="20" selected>20</option><option value="25">25</option></select> steps or more, plus the prize tier (common 1, rare 2, epic 3)</label>
+      <label>Bots shop <select id="botShop"><option value="on" selected>by the same rules, from their own stock</option><option value="off">no</option></select></label>
+    </div>
+
+    <div class="card">
+      <b>Each currency over the 180 recorded hands</b> <span class="muted">(medium bot, match-r27; prices as set above)</span>
+      <div id="stats"></div>
+    </div>
+
+    <h2>How the shop plays</h2>
+    <ul class="tight">
+      <li><b>When:</b> after every player's scoring grid, before pegging. You arrive holding your plays (every set you scored, plus the hand and crib counts) and your power jokers.</li>
+      <li><b>What's for sale:</b> a fresh stock each hand for each player, from their own dice stream (<code>shop</code>, <code>shop bot1</code>). Bots shop by the same rules. Power jokers go in your tray for the rest of the game. Deck edits change the shared deck for the game: whoever is dealt the card gets it. Play edits change your plays for this hand only.</li>
+      <li><b>Tap an item</b> to see what it does and what it costs, choose a target if it needs one, and choose how to pay. Undo takes back the last buy while you're still in the shop.</li>
+      <li><b>At most 3 buys a hand</b>, shown as pips over the shelf. The extra-buy card (a placeholder) raises the limit by 1 for this hand and isn't a buy itself. The reroll isn't a buy either.</li>
+      <li><b>Leaving</b> shows what everyone bought and what you take to the maze.</li>
+    </ul>
+
+    <h2>Stock, from what already exists</h2>
+    <table class="res" id="priceList"></table>
+
+    <h2>Decided on v1 (Bruce, 2026-11-17)</h2>
+    <ul class="tight">
+      <li>Pay with whole plays (A). B and C stay behind the toggle for comparison.</li>
+      <li>At most 3 buys a hand; a special joker or card can raise it (here, the extra-buy card).</li>
+      <li>The reroll is a card-sized slot on the shelf.</li>
+      <li>Deck edits are concrete offers from your kept hand. Play edits: dye, join and save all stay.</li>
+      <li>Each player has their own stock from their own dice stream; bots shop by the same rules.</li>
+    </ul>
+    <h2>Still open</h2>
+    <ol class="qs">
+      <li>Prices: is a power joker worth about one mid-sized play (12 to 20 steps)? Needs a sim run once the engine shops.</li>
+      <li>Should the extra buy be a shelf card, as here, or a power joker's effect?</li>
+      <li>No change when you overpay: keep it harsh, or give the change back as a small play with no suit?</li>
+    </ol>
+
+    <h2>Event log</h2>
+    <div id="log"></div>
+  </div>
+</main>
+
+<script src="dice.js"></script>
+<script src="maze-sets.js"></script>
+<script src="../../../design/cards/cards.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const D = window.WarpedDice, CARDS = window.WarpedCards, TURNS = window.WarpedMazeSets.turns;
+  const SUITS = ["S", "H", "D", "C"], GLYPH = { S: "♠︎", H: "♥︎", D: "♦︎", C: "♣︎" };
+  const FACECOL = { S: "#000000", H: "#E00000", D: "#0070E0", C: "#00843D" };
+  const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+  const ART = "../../../design/cards/";
+
+  // ---------- Currency models ----------
+  // plays: pay with whole plays whose steps cover the price; no change. You walk fewer plays.
+  // coins: a separate coin the grid pays out (prize tier plus big sets). Plays are untouched.
+  // steps: the price comes off your plays' steps; each play keeps its suit and what's left.
+  const MODELS = {
+    plays: { name: "A · Spend plays (the design)", note: "Pay with whole plays whose steps cover the price. There's no change: overpay and the extra is lost. Every play you spend is a maze turn you won't take, and a door you can't close." },
+    coins: { name: "B · Coins from the grid", note: "The grid pays coins: your prize tier (common 1, rare 2, epic 3) and one for each big set. Coins carry from hand to hand. Your plays and steps are untouched, so the shop never slows you on the maze." },
+    steps: { name: "C · Steps off your plays", note: "The price comes off the plays you pick, in the order you pick them. A play keeps its cards and suit and walks what's left; a play cut to 0 is gone. You keep your turns but lose reach: a 21♥ cut to 9 no longer breaks a heart 12." },
+  };
+
+  // ---------- The stock: drawn from what already exists (rules.md › Special jokers; joker-inventory.js) ----------
+  // steps: price in steps (A and C); coins: price in coins (B). Both to tune; the stats card shows them against a hand.
+  const POWER = {
+    swapper: { name: "Swapper", art: "joker-swap.svg", steps: 12, coins: 2, status: "built",
+      grid: "Trace a line of 2 to 4 grid cards: it reverses.", maze: "Swap places with another token." },
+    reach: { name: "Reach", art: "joker-reach.svg", steps: 12, coins: 2, status: "built",
+      grid: "Hand size +1 for about 20 seconds.", maze: "Your next play picks its way at each junction." },
+    burn: { name: "Burn", art: "joker-burn.svg", steps: 16, coins: 3, status: "built",
+      grid: "Burn a grid card out of the deck for the game.", maze: "Set a fire on another player's way: they lose plays." },
+    bomb: { name: "Bomb", art: "joker-bomb.svg", steps: 20, coins: 4, status: "built",
+      grid: "Clear a plus of 5 grid cards, scoring nothing.", maze: "Blast a door within 10 steps, or lay a mine." },
+    key: { name: "Key", art: "joker-key.svg", steps: 18, coins: 3, status: "built",
+      grid: "Hand size +1; 1 time in 4 for the rest of the game.", maze: "One play goes past a door of another suit." },
+  };
+  const POWER_W = [["swapper", 30], ["reach", 25], ["burn", 20], ["bomb", 15], ["key", 10]];
+  const DECK = {
+    clone: { name: "Clone", glyph: "❏", steps: 10, coins: 2, status: "idea", does: (e) => `Adds a second ${e.card} to the deck for the game, marked made (★). Anyone can be dealt it.` },
+    paint: { name: "Paint", glyph: "◐", steps: 8, coins: 1, status: "idea", does: (e) => `${e.card} becomes ${e.to} in the deck for the game. Build toward flushes and suited plays for doors.` },
+    nudge: { name: "Nudge", glyph: "±", steps: 8, coins: 1, status: "idea", does: (e) => `${e.card} becomes ${e.to} in the deck for the game.` },
+    made: { name: "Made card", glyph: "★", steps: 14, coins: 3, status: "built", does: (e) => `A new ${e.card} joins the deck for the game, with a made card's ×1.1 multiplier.` },
+    cut: { name: "Burn a card", glyph: "✕", steps: 6, coins: 1, status: "built", does: (e) => `Takes ${e.card} out of the deck for the game. A thinner deck deals your cards more often (floor: 40 cards).` },
+  };
+  const DECK_W = [["clone", 25], ["paint", 20], ["nudge", 20], ["made", 15], ["cut", 20]];
+  const PLAY = {
+    dye: { name: "Dye", glyph: "◐", steps: 6, coins: 1, status: "new idea", target: 1, suit: true, does: "Give one play the suit you choose, for this hand. A tie with no suit can then close or open a door." },
+    join: { name: "Join", glyph: "⊕", steps: 8, coins: 2, status: "new idea", target: 2, does: "Two plays become one, its steps added. It takes the bigger play's suit. One big walk breaks a door two small ones can't." },
+    save: { name: "Save", glyph: "⤓", steps: 10, coins: 2, status: "new idea", target: 1, does: "Keep one play back for the next hand, instead of walking it now." },
+  };
+  const PLAY_W = [["dye", 40], ["join", 35], ["save", 25]];
+  // Slots on the shelf: power jokers, deck edits, play edits; then the extra buy and the reroll take a slot each.
+  const MIX = { 6: [2, 1, 1], 9: [3, 2, 2] };
+  // A placeholder: raises this hand's buy limit by 1, and isn't a buy itself (Bruce: a special joker or card can raise the limit).
+  const EXTRA = { cat: "extra", kind: "bag", name: "Extra buy", glyph: "+1", steps: 6, coins: 1, status: "placeholder",
+    does: "One more buy this hand. It doesn't count as a buy itself." };
+
+  const cfg = () => ({ model: G0.model, scale: +$("scale").value, stock: +$("stockSize").value, reroll: $("reroll").value === "on", limit: +$("limit").value, extraBuy: $("extraBuy").value === "on",
+    coinSet: +$("coinSet").value, botShop: $("botShop").value === "on", handNo: +$("handNo").value });
+  const seedValue = (t) => /^\d+$/.test(String(t).trim()) ? BigInt.asUintN(64, BigInt(String(t).trim())) : D.fnv1a64(String(t));
+  const G0 = { model: "plays" };
+  let G = null;
+
+  // ---------- Cards and plays ----------
+  const parse = (t) => ({ r: t.slice(0, -1), s: t.slice(-1) });
+  const NEON = { S: "#E8ECFF", H: "#FF4D6D", D: "#4DA3FF", C: "#3DDC84" }; // suits on the dark screen
+  const cardTxt = (t, col = FACECOL) => { const { r, s } = parse(t); return `<i style="color:${col[s]};font-style:normal">${r}${GLYPH[s]}</i>`; };
+  const cardName = (t) => { const { r, s } = parse(t); return `${r}${GLYPH[s]}`; };
+  const cardSvg = (t) => { const { r, s } = parse(t); return CARDS.front({ rank: r, suit: s, form: "standard" }); };
+  const isCount = (x) => /^(hand|crib)/.test(x.k);
+  const tierOf = (best) => best >= 34 ? "epic" : best >= 28 ? "rare" : "common";
+  const TIER_COINS = { common: 1, rare: 2, epic: 3 };
+  function coinsFor(plays, c) {
+    const sets = plays.filter(x => !isCount(x)), best = Math.max(0, ...sets.map(x => x.p)), tier = tierOf(best);
+    const big = sets.filter(x => x.p >= c.coinSet).length;
+    return { tier, tierCoins: TIER_COINS[tier], big, best, total: TIER_COINS[tier] + big };
+  }
+  const playsOf = (turn) => turn.plays.map((x, i) => ({ id: i, c: x.c, p: x.p, p0: x.p, s: x.s, k: x.k }));
+  const unit = (c) => c.model === "coins" ? " coin(s)" : " steps";
+  const sumSteps = (ps) => ps.reduce((a, x) => a + x.p, 0);
+  const priceOf = (it, c) => c.model === "coins" ? it.coins : Math.max(1, Math.round(it.steps * c.scale));
+  const priceTxt = (n, c) => c.model === "coins" ? `<span class="coin sm">¢</span>${n}` : `${n}<small>steps</small>`;
+
+  // ---------- A shop visit ----------
+  function newGame() {
+    const c = cfg(), seed = seedValue($("seed").value);
+    const pick = D.stream(seed, "shop turn");
+    const ti = pick.below(TURNS.length, "turn"), bi = (ti + 1 + pick.below(TURNS.length - 1, "bot turn")) % TURNS.length;
+    const turn = TURNS[ti], bturn = TURNS[bi];
+    const jokers = { swapper: 0, bomb: 0, reach: 0, burn: 0, key: 0 };
+    // Held jokers: the starting set less what earlier hands used, plus prizes. A plausible spread for hand n.
+    const jr = D.stream(seed, "shop held");
+    jokers.swapper = 1 + jr.below(2, "swapper"); jokers.bomb = jr.below(2, "bomb"); jokers.reach = jr.below(2, "reach");
+    jokers.burn = c.handNo > 1 ? jr.below(2, "burn") : 1; if (c.handNo >= 3) jokers.key = jr.below(2, "key");
+    if (c.handNo >= 5) { jokers.bomb++; jokers.reach++; }
+    const me = mkPlayer("You", turn, jokers, c, seed, "shop", jr);
+    const bot = mkPlayer("Bot 1", bturn, { swapper: 1, bomb: 1, reach: 0, burn: 1, key: 0 }, c, seed, "shop bot1", jr);
+    G = { seed, c, me, bot, undo: [], sheet: null, ti, bi, log: [] };
+    $("turnNote").textContent = `your grid turn #${ti + 1} of 180, the bot's #${bi + 1}`;
+    log(`Seed ${$("seed").value}: hand ${c.handNo}, ${MODELS[c.model].name}. You bring ${me.plays.length} plays, ${sumSteps(me.plays)} steps.`);
+    renderStats(); render();
+  }
+  function mkPlayer(name, turn, jokers, c, seed, streamName, jr) {
+    const plays = playsOf(turn), co = coinsFor(plays, c);
+    const carry = c.handNo > 1 ? jr.below(3, "carry " + name) : 0;
+    const p = { name, dealer: turn.dealer, hand: turn.hand ? turn.hand.split(" ") : [], plays, plays0: plays.map(x => ({ ...x })), jokers, jokers0: { ...jokers },
+      coin: co, coins: co.total + carry, carry, coins0: co.total + carry, deck: { made: [], cut: [] }, bought: [], rerolls: 0, buys: 0, limit: c.limit,
+      rng: D.stream(seed, streamName), lost: 0 };
+    p.stock = rollStock(p, c);
+    return p;
+  }
+  // The stock: power jokers, deck edits and play edits in a fixed mix, each drawn by weight from the player's shop stream.
+  function rollStock(p, c) {
+    let [nP, nD, nL] = MIX[c.stock]; if (!c.reroll) nP++; if (!c.extraBuy) nP++;
+    const r = p.rng, out = [], hand = p.hand.length ? p.hand : ["5H", "6C", "9D", "JS"];
+    for (let i = 0; i < nP; i++) { const k = r.pick(POWER_W, "power"); out.push({ cat: "power", kind: k, ...POWER[k] }); }
+    for (let i = 0; i < nD; i++) {
+      const k = r.pick(DECK_W, "deck"), e = { cat: "deck", kind: k, ...DECK[k] };
+      const hc = hand[r.below(hand.length, "card")], { r: rk, s } = parse(hc);
+      if (k === "clone") e.card = hc;
+      else if (k === "paint") { const others = SUITS.filter(x => x !== s); const counts = {}; hand.forEach(t => counts[parse(t).s] = (counts[parse(t).s] || 0) + 1);
+        const best = others.slice().sort((a, b) => (counts[b] || 0) - (counts[a] || 0))[0]; e.card = hc; e.to = rk + best; }
+      else if (k === "nudge") { const i0 = RANKS.indexOf(rk), up = i0 === 0 ? 1 : i0 === 12 ? -1 : (i0 < 4 ? 1 : i0 > 4 ? -1 : (r.below(2, "way") ? 1 : -1)); e.card = hc; e.to = RANKS[i0 + up] + s; }
+      else if (k === "made") e.card = (r.below(2, "made") ? "5" : rk) + SUITS[r.below(4, "suit")];
+      else { let t; do { t = RANKS[r.below(13, "rank")] + SUITS[r.below(4, "suit")]; } while (hand.includes(t)); e.card = t; }
+      out.push(e);
+    }
+    for (let i = 0; i < nL; i++) { const k = r.pick(PLAY_W, "play"); out.push({ cat: "play", kind: k, ...PLAY[k] }); }
+    if (c.extraBuy) out.push({ ...EXTRA });
+    out.forEach((x, i) => { x.uid = i; x.sold = false; });
+    return out;
+  }
+  const rerollCost = (p, c) => c.model === "coins" ? 1 + p.rerolls : Math.round((5 + 5 * p.rerolls) * c.scale);
+
+  // ---------- Paying ----------
+  // The default choice of plays, so a buy is one tap when you don't care.
+  // A: the smallest single play that covers the price; else the biggest plays until covered.
+  // C: off your biggest play (keeps your count of turns).
+  function defaultPay(p, price, model, exclude = []) {
+    const ps = p.plays.filter(x => !exclude.includes(x.id) && x.p > 0);
+    if (model === "plays") {
+      const one = ps.filter(x => x.p >= price).sort((a, b) => a.p - b.p || a.id - b.id)[0];
+      if (one) return [one.id];
+      const out = []; let t = 0;
+      for (const x of ps.slice().sort((a, b) => b.p - a.p || a.id - b.id)) { if (t >= price) break; out.push(x.id); t += x.p; }
+      return t >= price ? out : [];
+    }
+    if (model === "steps") {
+      const out = []; let t = 0;
+      for (const x of ps.slice().sort((a, b) => b.p - a.p || a.id - b.id)) { if (t >= price) break; out.push(x.id); t += x.p; }
+      return t >= price ? out : [];
+    }
+    return [];
+  }
+  // What each chosen play gives up, in the order chosen. A takes the whole play; C takes only what's still owed.
+  function payPlan(p, price, model, ids) {
+    let owe = price; const plan = [];
+    for (const id of ids) { const x = p.plays.find(y => y.id === id); if (!x) continue;
+      const take = model === "plays" ? x.p : Math.min(owe, x.p); plan.push({ id, take, left: x.p - take }); owe -= Math.min(owe, x.p); }
+    return { plan, owe: Math.max(0, owe), paid: plan.reduce((a, q) => a + q.take, 0) };
+  }
+  const buysLeft = (p) => p.limit - p.buys;
+  const canAfford = (p, price, c) => c.model === "coins" ? p.coins >= price : sumSteps(p.plays) >= price;
+
+  function buy(p, it, pay, target, suit, c) {
+    const price = priceOf(it, c);
+    if (it.cat !== "extra" && buysLeft(p) <= 0) return false;
+    if (c.model === "coins") p.coins -= price;
+    else {
+      const pl = payPlan(p, price, c.model, pay);
+      if (pl.owe > 0) return false;
+      p.lost += c.model === "plays" ? pl.paid - price : 0;
+      for (const q of pl.plan) { const x = p.plays.find(y => y.id === q.id); x.p = q.left; x.cut = true; }
+      p.plays = p.plays.filter(x => x.p > 0);
+    }
+    it.sold = true;
+    let what = it.name;
+    if (it.cat === "extra") p.limit++; else p.buys++;
+    if (it.cat === "power") p.jokers[it.kind]++;
+    else if (it.cat === "deck") {
+      if (it.kind === "clone" || it.kind === "made") p.deck.made.push(it.card);
+      else if (it.kind === "cut") p.deck.cut.push(it.card);
+      else { p.deck.cut.push(it.card); p.deck.made.push(it.to); }
+      what = `${it.name} ${cardName(it.card)}${it.to ? " → " + cardName(it.to) : ""}`;
+    } else {
+      const xs = (target || []).map(id => p.plays.find(y => y.id === id)).filter(Boolean);
+      if (it.kind === "dye" && xs[0]) { xs[0].s = suit; xs[0].dyed = true; what = `Dye ${xs[0].p} to ${GLYPH[suit]}`; }
+      if (it.kind === "join" && xs.length === 2) { const [a, b] = xs, big = a.p >= b.p ? a : b;
+        a.c = a.c + " " + b.c; a.s = big.s; a.p = a.p + b.p; a.joined = true; p.plays = p.plays.filter(y => y !== b); what = `Join into ${a.p}`; }
+      if (it.kind === "save" && xs[0]) { xs[0].saved = true; what = `Save a ${xs[0].p}`; }
+    }
+    p.bought.push({ what, price, model: c.model });
+    return true;
+  }
+
+  // Bots shop by the same rules: power jokers first (bomb, key, burn, swapper, reach), within a budget.
+  // A and C: up to 15% of the hand's steps, paying the default way. B: every coin.
+  function botShop(p, c) {
+    const order = ["bomb", "key", "burn", "swapper", "reach"];
+    let budget = c.model === "coins" ? p.coins : Math.floor(sumSteps(p.plays0) * 0.15), spent = 0;
+    const items = p.stock.filter(x => x.cat === "power").sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
+    const bag = p.stock.find(x => x.cat === "extra");
+    if (bag && items.length > buysLeft(p)) items.unshift(bag);
+    for (const it of items) {
+      const price = priceOf(it, c);
+      if (it.cat !== "extra" && buysLeft(p) <= 0) break;
+      if (spent + price > budget || !canAfford(p, price, c)) continue;
+      const pay = defaultPay(p, price, c.model);
+      if (c.model !== "coins" && !pay.length) continue;
+      const before = sumSteps(p.plays);
+      if (buy(p, it, pay, null, null, c)) spent += c.model === "coins" ? price : before - sumSteps(p.plays);
+    }
+  }
+
+  // ---------- Render ----------
+  const snap = () => JSON.stringify({ me: { ...G.me, rng: undefined }, stock: G.me.stock });
+  function render() {
+    const c = G.c, me = G.me, steps = sumSteps(me.plays), steps0 = sumSteps(me.plays0);
+    let wallet;
+    if (c.model === "coins") wallet = `<span class="coin">¢</span><span class="big">${me.coins}</span><span class="sub">coins<br><b>${me.plays.length}</b> plays · <b>${steps}</b> steps, untouched</span>`;
+    else wallet = `<span class="big">${steps}</span>${steps !== steps0 ? `<span class="was">${steps0}</span>` : ""}<span class="sub">steps to walk<br><b>${me.plays.length}</b> plays${me.plays.length !== me.plays0.length ? ` (was ${me.plays0.length})` : ""}${me.lost ? ` · <span style="color:var(--red)">${me.lost} lost</span>` : ""}</span>`;
+    const prompt = c.model === "coins" ? "Spend your grid coins. Your plays go to the maze whole."
+      : c.model === "plays" ? "Spend plays on power. A play you spend is a turn you won't walk."
+      : "Prices come off your plays' steps. Every play keeps its turn.";
+    const stock = me.stock.map(it => {
+      const price = priceOf(it, c), can = canAfford(me, price, c), full = it.cat !== "extra" && buysLeft(me) <= 0;
+      return `<button class="item k-${it.cat}${it.sold ? " sold" : ""}${full ? " full" : ""}${!it.sold && !can ? " cant" : ""}" data-item="${it.uid}" ${it.sold ? "disabled" : ""}>
+        <span class="tag ${it.cat}">${it.cat === "power" ? "POWER JOKER" : it.cat === "deck" ? "DECK EDIT" : it.cat === "extra" ? "BUYS +1" : "PLAY EDIT"}</span>
+        <span class="art">${artOf(it)}</span>
+        <span class="nm">${it.name}</span>
+        <span class="price">${priceTxt(price, c)}</span></button>`;
+    }).join("") + (c.reroll ? (() => { const rc = rerollCost(me, c), ok = canAfford(me, rc, c);
+      return `<button class="item reroll${ok ? "" : " cant"}" id="rerollBtn" ${ok ? "" : "disabled"}><span class="tag reroll">NEW STOCK</span>
+        <span class="art"><span class="play-art">↻</span></span><span class="nm">Reroll</span><span class="price">${priceTxt(rc, c)}</span></button>`; })() : "");
+    const pips = Array.from({ length: Math.min(me.limit, 12) }, (_, i) => `<i class="${i < me.buys ? "on" : ""}${i >= c.limit ? " x" : ""}"></i>`).join("");
+    const deck = 52 + me.deck.made.length - me.deck.cut.length;
+    const nF = me.plays.length, cw = 44, fw = 393 - 20 - 20, gapF = nF > 1 ? Math.min(cw + 3, (fw - cw) / (nF - 1)) : 0, x0F = (fw - (cw + gapF * (nF - 1))) / 2;
+    const tgt = G.sheet ? new Set([...(G.sheet.pay || []), ...(G.sheet.target || [])]) : new Set();
+    const fan = me.plays.map((x, k) => { const m = k - (nF - 1) / 2, ang = nF > 1 ? m * Math.min(3, 34 / nF) : 0;
+      return `<div class="fc${x.p < x.p0 ? " cut" : ""}${x.saved ? " saved" : ""}${tgt.size && !tgt.has(x.id) ? " dim" : ""}" style="left:${x0F + k * gapF + 10}px; top:${m * m * .3 + 4}px; transform: rotate(${ang}deg); z-index:${k + 1}" title="${x.k}">` +
+        `<b>${x.p}</b><span style="color:${x.s ? FACECOL[x.s] : "#8A8170"}">${x.s ? GLYPH[x.s] : "–"}</span></div>`; }).join("");
+    const slot = (j) => { const n = me.jokers[j], fresh = n > me.jokers0[j];
+      return `<span class="pjs${n ? "" : " none"}${fresh ? " new" : ""}" title="${POWER[j].name}">${n >= 2 ? `<span class="pjb b2"></span><span class="pjb b1"></span>` : ""}<img src="${ART}${POWER[j].art}" alt="${POWER[j].name}">${n ? `<b class="cnt">${n}</b>` : ""}</span>`; };
+    $("screen").innerHTML = `
+      <div class="hdr"><div class="hand"><span>Hand</span><b>${c.handNo}</b></div>
+        <div class="wallet" id="walletBtn" title="Where this came from">${wallet}</div><span class="phase">SHOP</span></div>
+      <div class="prompt">${prompt}</div>
+      <div class="lbl"><span>Today's stock</span><span class="pips">${me.limit >= 99 ? "no buy limit" : `Buys ${pips} ${Math.max(0, buysLeft(me))} left`}</span></div>
+      <div class="shelf">${stock}</div>
+      <div class="deck"><span>Deck <b>${deck}</b></span>${me.deck.made.length ? `<span class="mk">★ ${me.deck.made.map(cardName).join(" ")}</span>` : ""}${me.deck.cut.length ? `<span class="bn">✕ ${me.deck.cut.map(cardName).join(" ")}</span>` : ""}<span style="margin-left:auto">You kept ${me.hand.map(t => cardTxt(t, NEON)).join(" ")}</span></div>
+      <div class="dock">
+        <div class="lbl"><span>Your plays, for the maze</span><span>${nF} · ${steps} steps</span></div>
+        <div class="fan">${fan}</div>
+        <div class="pj"><span class="pj-tag">POWER JOKERS</span><div class="pj-slots">${Object.keys(POWER).map(slot).join("")}</div></div>
+        <div class="bar"><button class="undo" id="undoBtn" ${G.undo.length ? "" : "disabled"}>↶ Undo</button><button class="leave" id="leaveBtn">To the maze ▶</button></div>
+      </div>`;
+    renderSheet();
+  }
+  function artOf(it, big) {
+    if (it.cat === "power") return `<img src="${ART}${it.art}" alt="${it.name}">`;
+    if (it.cat === "extra") return `<span class="play-art" style="color:#8A6300">${it.glyph}<small>BUY</small></span>`;
+    if (it.cat === "deck") {
+      const show = it.kind === "paint" || it.kind === "nudge" ? it.to : it.card;
+      return cardSvg(show) + `<span class="badge">${it.glyph}</span>` + (it.to ? `<span class="to">${cardName(it.card)} → ${cardName(it.to)}</span>` : it.kind === "cut" ? `<span class="to" style="border-color:var(--door)">out</span>` : "");
+    }
+    return `<span class="play-art">${it.glyph}<small>${it.name.toUpperCase()}</small></span>`;
+  }
+  const tile = (x, cls, note) => `<button class="play ${cls || ""}" data-pid="${x.id}"><b>${x.p}</b> <span class="su" style="color:${x.s ? FACECOL[x.s] : "inherit"}">${x.s ? GLYPH[x.s] : "no suit"}</span>${note || ""}<small>${x.c.split(" ").map(cardTxt).join(" ")}</small></button>`;
+
+  function renderSheet() {
+    const S = G.sheet, c = G.c, me = G.me;
+    $("veil").hidden = !S; $("sheet").hidden = !S;
+    if (!S) return;
+    const it = me.stock.find(x => x.uid === S.uid), price = priceOf(it, c);
+    const desc = it.cat === "power" ? `<p><b>Grid:</b> ${it.grid}</p><p><b>Maze:</b> ${it.maze}</p>` : `<p>${typeof it.does === "function" ? it.does({ card: cardName(it.card), to: it.to && cardName(it.to) }) : it.does}</p>`;
+    const lasts = it.cat === "power" ? "Kept in your tray for the game" : it.cat === "deck" ? "Changes the shared deck for the game" : it.cat === "extra" ? "This hand only; not a buy" : "This hand only";
+    let h = `<div class="sh-top"><span class="art">${artOf(it)}</span><div><h3>${it.name}</h3>${desc}<div class="meta">${lasts} · ${it.status} · ${c.model === "coins" ? price + " coins" : price + " steps"}</div></div></div>`;
+    // A play edit picks its target first.
+    let targetOk = true;
+    if (it.cat === "play") {
+      const need = it.target; targetOk = S.target.length === need && (!it.suit || S.suit);
+      h += `<div class="step">1 · ${it.kind === "join" ? "Pick 2 plays to join" : it.kind === "dye" ? "Pick a play to dye" : "Pick a play to save"}</div>
+        <div class="tiles">${me.plays.map(x => tile(x, S.target.includes(x.id) ? "tgt" : "", "")).join("").replace(/data-pid/g, "data-tgt")}</div>`;
+      if (it.suit) h += `<div class="suits">${SUITS.map(s => `<button data-suit="${s}" class="${S.suit === s ? "on" : ""}" style="color:${FACECOL[s]}">${GLYPH[s]}</button>`).join("")}</div>`;
+    }
+    let payOk = true;
+    const n = it.cat === "play" ? "2 · " : "";
+    if (c.model === "coins") {
+      payOk = me.coins >= price;
+      h += `<div class="step">${n}Pay</div><div class="paynote">${price} of your ${me.coins} coins. ${payOk ? `<span class="ok">You'll have ${me.coins - price} left.</span>` : `<span class="bad">Not enough coins.</span>`} Your plays aren't touched.</div>`;
+    } else {
+      const avail = me.plays.filter(x => !S.target.includes(x.id)); // a play you edit can't also pay
+      const pl = payPlan(me, price, c.model, S.pay), byId = Object.fromEntries(pl.plan.map(q => [q.id, q]));
+      payOk = pl.owe === 0 && S.pay.length > 0;
+      h += `<div class="step">${n}Pay ${price} steps: ${c.model === "plays" ? "tap whole plays" : "tap plays to take it from, in order"}</div>
+        <div class="tiles">${avail.map(x => { const q = byId[x.id];
+          const note = q ? (c.model === "plays" ? `<span class="now">spent</span>` : q.left ? `<span class="now">${x.p} → ${q.left}</span>` : `<span class="now">gone</span>`) : "";
+          return tile(x, q ? "sel" : "", note); }).join("")}</div>`;
+      const over = c.model === "plays" ? pl.paid - price : 0;
+      h += `<div class="paynote">${!S.pay.length ? `Tap the plays to pay with.` : pl.owe > 0 ? `<span class="bad">${pl.owe} more steps to cover.</span>` : c.model === "plays"
+        ? `You give up <b>${pl.plan.length} play${pl.plan.length === 1 ? "" : "s"}</b>, ${pl.paid} steps${over ? `: <span class="bad">${over} lost</span> (no change)` : `, exact`}. You walk ${me.plays.length - pl.plan.length} plays.`
+        : `Takes ${price} steps${pl.plan.filter(q => !q.left).length ? `; ${pl.plan.filter(q => !q.left).length} play${pl.plan.filter(q => !q.left).length === 1 ? "" : "s"} used up` : "; you keep every play"}.`}</div>`;
+    }
+    const full = it.cat !== "extra" && buysLeft(me) <= 0;
+    if (full) h += `<div class="paynote"><span class="bad">You've used all ${me.limit} buys this hand.</span>${me.stock.some(x => x.cat === "extra" && !x.sold) ? " The extra-buy card raises the limit by 1." : ""}</div>`;
+    h += `<div class="sh-bar"><button class="cancel" data-sh="cancel">Cancel</button><button class="buy" data-sh="buy" ${payOk && targetOk && !full ? "" : "disabled"}>Buy ${it.name}</button></div>`;
+    $("sheet").innerHTML = h;
+  }
+
+  function openSheet(uid) {
+    const it = G.me.stock.find(x => x.uid === uid); if (!it || it.sold) return;
+    const S = { uid, target: [], suit: null, pay: [] };
+    if (it.cat !== "play") S.pay = defaultPay(G.me, priceOf(it, G.c), G.c.model);
+    G.sheet = S; render();
+  }
+  function showPop() {
+    const me = G.me, c = G.c, co = me.coin;
+    let h;
+    if (c.model === "coins") h = `<b>Coins from your grid turn</b><table><tr><td>Prize tier: ${co.tier} (best set ${co.best})</td><td>${co.tierCoins}</td></tr><tr><td>Sets of ${c.coinSet} steps or more</td><td>${co.big}</td></tr><tr><td>Carried from last hand</td><td>${me.carry}</td></tr><tr><td>Spent here</td><td>−${me.coins0 - me.coins}</td></tr><tr><td><b>Left</b></td><td>${me.coins}</td></tr></table>`;
+    else h = `<b>Your plays from the grid</b><table><tr><td>Hand and crib counts</td><td>${me.plays0.filter(isCount).length} plays</td></tr><tr><td>Sets you scored</td><td>${me.plays0.filter(x => !isCount(x)).length} plays</td></tr><tr><td>Steps you brought</td><td>${sumSteps(me.plays0)}</td></tr><tr><td>Spent here</td><td>−${sumSteps(me.plays0) - sumSteps(me.plays)}</td></tr>${me.lost ? `<tr><td>of which lost as no change</td><td>${me.lost}</td></tr>` : ""}<tr><td><b>Left to walk</b></td><td>${sumSteps(me.plays)} in ${me.plays.length} plays</td></tr></table>`;
+    $("pop").innerHTML = h + `<div class="muted" style="margin-top:4px">Tap to close</div>`; $("pop").hidden = false;
+  }
+  function leave() {
+    const c = G.c, me = G.me, bot = G.bot;
+    if (c.botShop && !bot.done) { botShop(bot, c); bot.done = true; bot.bought.forEach(b => log(`Bot 1 bought ${b.what} for ${b.price}${unit(c)}.`)); }
+    const who = (p) => {
+      const spent = c.model === "coins" ? `${p.coins0 - p.coins} coin${p.coins0 - p.coins === 1 ? "" : "s"} (${p.coins} left)` : `${sumSteps(p.plays0) - sumSteps(p.plays)} steps${p.lost ? `, ${p.lost} as no change` : ""}`;
+      return `<div class="who"><b class="n">${p.name}${p.dealer ? " · dealer" : ""}</b>
+        <div class="row"><span>Bought</span><span class="bought">${p.bought.length ? p.bought.map(b => b.what).join(", ") : "nothing"}</span></div>
+        <div class="row"><span>Spent</span><span>${p.bought.length ? spent : "nothing"}</span></div>
+        <div class="row"><span>To the maze</span><span>${p.plays.length} plays, ${sumSteps(p.plays)} steps${c.model !== "coins" ? ` (brought ${p.plays0.length}, ${sumSteps(p.plays0)})` : ""}</span></div>
+        <div class="row"><span>Power jokers</span><span>${Object.entries(p.jokers).filter(([, n]) => n).map(([k, n]) => `${POWER[k].name} ${n}`).join(", ") || "none"}</span></div></div>`;
+    };
+    const ratio = (p) => sumSteps(p.plays) / Math.max(1, sumSteps(p.plays0));
+    $("sum").innerHTML = `<h2>TO THE MAZE</h2>${who(me)}${c.botShop ? who(bot) : ""}
+      <div class="who muted">With a 900-step route and about 226 steps a hand, ${c.model === "coins" ? "the shop doesn't cost anyone steps." : `you go ${Math.round((1 - ratio(me)) * 100)}% slower this hand${c.botShop ? `, the bot ${Math.round((1 - ratio(bot)) * 100)}%` : ""}. About ${Math.round((sumSteps(me.plays0) - sumSteps(me.plays)) / 226 * 100) / 100} hands of walking spent.`}</div>
+      <button class="go" id="againBtn">Next seed ▶</button><button class="back" id="backBtn">Back to the shop</button>`;
+    $("sum").hidden = false;
+    log(`You leave with ${me.plays.length} plays, ${sumSteps(me.plays)} steps; bought: ${me.bought.map(b => b.what).join(", ") || "nothing"}.`);
+  }
+
+  // ---------- Events ----------
+  $("screen").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-item],#rerollBtn,#undoBtn,#leaveBtn,#walletBtn"); if (!t) return;
+    const me = G.me, c = G.c;
+    if (t.dataset.item !== undefined) return openSheet(+t.dataset.item);
+    if (t.id === "walletBtn") return showPop();
+    if (t.id === "undoBtn") { const u = G.undo.pop(); if (!u) return; const o = JSON.parse(u); Object.assign(me, o.me, { rng: me.rng }); me.stock = o.stock; log("Undo."); return render(); }
+    if (t.id === "leaveBtn") return leave();
+    if (t.id === "rerollBtn") {
+      const cost = rerollCost(me, c); if (!canAfford(me, cost, c)) return;
+      G.undo.push(snap());
+      if (c.model === "coins") me.coins -= cost;
+      else { const pay = defaultPay(me, cost, c.model); const pl = payPlan(me, cost, c.model, pay); if (pl.owe) return;
+        me.lost += c.model === "plays" ? pl.paid - cost : 0;
+        pl.plan.forEach(q => { const x = me.plays.find(y => y.id === q.id); x.p = q.left; }); me.plays = me.plays.filter(x => x.p > 0); }
+      me.rerolls++; me.stock = rollStock(me, c); log(`Reroll for ${cost}${unit(c)}.`); render();
+    }
+  });
+  $("veil").addEventListener("click", () => { G.sheet = null; render(); });
+  $("pop").addEventListener("click", () => { $("pop").hidden = true; });
+  $("sheet").addEventListener("click", (e) => {
+    const S = G.sheet, me = G.me, c = G.c, it = me.stock.find(x => x.uid === S.uid);
+    const t = e.target.closest("[data-sh],[data-pid],[data-tgt],[data-suit]"); if (!t) return;
+    if (t.dataset.sh === "cancel") { G.sheet = null; return render(); }
+    if (t.dataset.sh === "buy") {
+      G.undo.push(snap());
+      if (buy(me, it, S.pay, S.target, S.suit, c)) { log(`You bought ${me.bought[me.bought.length - 1].what} for ${priceOf(it, c)}${unit(c)}.`); G.sheet = null; }
+      else G.undo.pop();
+      return render();
+    }
+    if (t.dataset.suit) { S.suit = t.dataset.suit; return render(); }
+    if (t.dataset.tgt !== undefined) {
+      const id = +t.dataset.tgt, i = S.target.indexOf(id);
+      if (i >= 0) S.target.splice(i, 1); else { S.target.push(id); if (S.target.length > it.target) S.target.shift(); }
+      // A play you edit can't also pay for the edit.
+      S.pay = S.pay.filter(p => !S.target.includes(p));
+      if (S.target.length === it.target && !S.pay.length && c.model !== "coins") S.pay = defaultPay(me, priceOf(it, c), c.model, S.target);
+      return render();
+    }
+    if (t.dataset.pid !== undefined) { const id = +t.dataset.pid, i = S.pay.indexOf(id); if (i >= 0) S.pay.splice(i, 1); else S.pay.push(id); return render(); }
+  });
+  $("sum").addEventListener("click", (e) => {
+    if (e.target.id === "againBtn") { $("sum").hidden = true; $("seed").value = String(1 + Math.floor(Math.random() * 99999)); newGame(); }
+    if (e.target.id === "backBtn") { $("sum").hidden = true; }
+  });
+  $("apply").onclick = newGame;
+  $("newSeed").onclick = () => { $("seed").value = String(1 + Math.floor(Math.random() * 99999)); newGame(); };
+  for (const id of ["handNo", "scale", "stockSize", "reroll", "limit", "extraBuy", "coinSet", "botShop"]) $(id).onchange = newGame;
+  $("models").innerHTML = Object.entries(MODELS).map(([k, m]) => `<button class="btn" data-model="${k}">${m.name}</button>`).join("");
+  $("models").addEventListener("click", (e) => { const b = e.target.closest("[data-model]"); if (!b) return; G0.model = b.dataset.model; showModel(); newGame(); });
+  function showModel() { [...$("models").children].forEach(b => b.classList.toggle("on", b.dataset.model === G0.model)); $("modelNote").textContent = MODELS[G0.model].note; }
+
+  function log(s) { G.log.push(s); $("log").textContent = G.log.join("\n"); $("log").scrollTop = 1e9; }
+
+  // ---------- Stats over the 180 recorded hands ----------
+  function renderStats() {
+    const c = G.c, n = TURNS.length;
+    let steps = 0, plays = 0, coins = 0, playsOver = { 12: 0, 20: 0 }, cov = { swapper: 0, bomb: 0 };
+    const tiers = { common: 0, rare: 0, epic: 0 };
+    for (const t of TURNS) {
+      const ps = playsOf(t), s = sumSteps(ps), co = coinsFor(ps, c);
+      steps += s; plays += ps.length; coins += co.total; tiers[co.tier]++;
+      playsOver[12] += ps.filter(x => x.p >= Math.round(12 * c.scale)).length; playsOver[20] += ps.filter(x => x.p >= Math.round(20 * c.scale)).length;
+    }
+    const mS = steps / n, mP = plays / n, mC = coins / n;
+    const pct = (v) => `${Math.round(v / mS * 1000) / 10}%`;
+    $("stats").innerHTML = `<table class="res"><tr><th>A hand brings</th><th>Mean</th></tr>
+      <tr><td>Steps (A and C spend these)</td><td>${mS.toFixed(0)}</td></tr>
+      <tr><td>Plays</td><td>${mP.toFixed(1)}</td></tr>
+      <tr><td>Plays big enough to pay for a swapper alone (A)</td><td>${(playsOver[12] / n).toFixed(1)}</td></tr>
+      <tr><td>Plays big enough to pay for a bomb alone (A)</td><td>${(playsOver[20] / n).toFixed(1)}</td></tr>
+      <tr><td>Coins (B), sets of ${c.coinSet}+ and the tier</td><td>${mC.toFixed(1)}</td></tr>
+      <tr><td>Prize tiers</td><td>${Math.round(tiers.common / n * 100)} / ${Math.round(tiers.rare / n * 100)} / ${Math.round(tiers.epic / n * 100)}%</td></tr></table>
+      <table class="res"><tr><th>Item</th><th>Steps (A, C)</th><th>Of a hand</th><th>Coins (B)</th><th>Of a hand</th></tr>
+      ${Object.values(POWER).map(x => `<tr><td>${x.name}</td><td>${Math.round(x.steps * c.scale)}</td><td>${pct(x.steps * c.scale)}</td><td>${x.coins}</td><td>${Math.round(x.coins / mC * 100)}%</td></tr>`).join("")}</table>
+      <p class="muted" style="margin-top:6px">A 900-step route over a median of 7 to 8 hands is about 120 steps of progress a hand; doors take the rest. So a 20-step bomb is about a sixth of a hand's progress under A or C.</p>`;
+    const row = (k, x, cat) => `<tr><td>${x.name}</td><td>${cat}</td><td>${x.status}</td><td>${x.steps}</td><td>${x.coins}</td></tr>`;
+    $("priceList").innerHTML = `<tr><th>Item</th><th>Kind</th><th>Status</th><th>Steps</th><th>Coins</th></tr>` +
+      Object.entries(POWER).map(([k, x]) => row(k, x, "power joker")).join("") + Object.entries(DECK).map(([k, x]) => row(k, x, "deck edit")).join("") + Object.entries(PLAY).map(([k, x]) => row(k, x, "play edit")).join("") + row("bag", EXTRA, "raises the buy limit");
+  }
+
+  $("seed").value = "7";
+  showModel(); newGame();
+})();
+</script>
+</body>
+</html>
