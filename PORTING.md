@@ -1,6 +1,6 @@
 # Porting
 
-Status: draft 2, 2026-11-17. Spec 12, rules r28, Apple build 0.22.1.
+Status: draft 2, 2026-11-17. Spec 12, rules r28, Apple build 0.22.2.
 
 ## Summary
 
@@ -143,7 +143,7 @@ For every session working on the Swift build, not just porters:
 |---|---|---|---|
 | Dice | Yes | Yes | Yes (JS and Swift) |
 | Counting, classic show | Yes | Yes | Yes (JS and Swift) |
-| Classic pegging and game | Yes | No | Pegging in JS only |
+| Classic pegging and game | Yes | The play (for duels, Apple 0.22.2); not the game | Pegging in JS and Swift |
 | Match turn, r23 | Yes | Yes | Through records |
 | The game: deal, discard, hands | Yes | Yes | Through records |
 | Bots, match and classic keep | Yes | Yes | Through records |

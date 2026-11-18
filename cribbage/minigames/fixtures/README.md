@@ -15,14 +15,14 @@ Shared test cases for every build of the engine: the JS mocks, the Swift engine,
 
 Rung 6 before 7: scripted replay checks the rules without the dice, so a dice bug and a rules bug show up apart. Rung 7 also checks the bots, since the records are bot games.
 
-`pegging.json` covers classic pegging, which the Swift engine doesn't play yet.
+`pegging.json` covers classic pegging. The Swift engine plays it (`CribbageKit` › `PegPlay`) for the maze's duels; the rest of a classic game isn't built in Swift yet.
 
 ## Who checks what today
 
 | Build | Rungs | How |
 |---|---|---|
 | JS mocks | 1 to 4 | `node --test cribbage/minigames/` |
-| Swift | 1, 2, 3, 5 to 8 | `swift test` in `engine/swift/` (`CribMazeTests` › golden records) |
+| Swift | 1 to 8 | `swift test` in `engine/swift/` (`CribbageKitTests` › pegging, `CribMazeTests` › golden records) |
 
 ## Making fixtures
 

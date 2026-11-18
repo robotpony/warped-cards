@@ -533,6 +533,8 @@ Then the count starts again when:
 
 After a start again, the seat after the last one to play leads, skipping seats with no cards. Ace is low here too, so Q-K-A is no run. When every card is down, the play ends and the cards go back to their owners for the show.
 
+The Swift build plays this (`CribbageKit` › `PegPlay`) for the maze's duels, and checks it against `pegging.json`; the rest of a classic game isn't built in Swift yet.
+
 ### The show
 
 Count in order, starting with the seat after the dealer and going round to the dealer, then the dealer's crib:
