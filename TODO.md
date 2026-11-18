@@ -4,7 +4,7 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 
 ## Crib RPG
 
-- [ ] `@apple` Build the maze in the Mac beta for playtesting, from `cribbage/minigames/maze.md` (PLAN.md › Phase 6a) (Bruce, 2026-11-17)
+- [x] `@apple` Build the maze in the Mac beta for playtesting, from `cribbage/minigames/maze.md` (PLAN.md › Phase 6a) (Bruce, 2026-11-17). Done in 0.23.0
 - [ ] `@apple` The 3-player deal for a game around the maze (5 cards each, one to the crib; rules.md › Deal and discard), so a second bot plays its own grid turn (engine.md › The game around the maze › 3 players) (`@apple-engine`, 2026-11-17)
 - [ ] `@linux` `MatchBot` moved from `CribMazeBots` to `CribMaze` (engine 0.22.1): import `CribMaze` wherever it's used. Spec 12 adds a game around the maze, off unless `mazeGame` is set, and spec 14 its maze phase: `CribMazeGame.Action` and `Event` gain a `.maze` case and `Stage` a `.maze` stage, so an exhaustive switch over them needs one (CHANGELOG.md › spec 12 to 14) (from `@apple`, 2026-11-17)
 - [ ] `@linux` Spec 15 to 17 finish the maze in the engine: power jokers, hazards and stars, stuck and duels (`duelCard`), and maze bots (`bots.json` › maze; engine.md › The maze › Maze bots). `MazeBot` now takes a style, and `MatchBot.play` takes `mazeStyles` (CHANGELOG.md › spec 15 to 17) (from `@apple`, 2026-11-17)
