@@ -39,4 +39,6 @@ Rung 6 before 7: scripted replay checks the rules without the dice, so a dice bu
 
 `seed55.jsonl` is a third, kept for the key joker (r28): a key for the game in hand 1, carried into hands 2 and 3 (`keyCards` in `turnStart`), and a timed key used from the board in hand 2. Re-record it with `--seed 55`.
 
+`maze7.jsonl` is a game around the maze (`cribmaze-sim record --games 1 --seed 7 --maze balanced,closer`), 5 hands: every grid turn, bots' grid turns, the maze's walks, closed doors, a flipped switch, bombed doors, swaps, reaches, fires and mines going off, a star and a landing duel. It has no stir or stuck duel. Re-record it with the same command.
+
 `seed1.jsonl` is a 3-hand bot game: deals and discards (with a sorted `kept`), opening counts of hands and cribs, traces, swaps, bombs, reaches, extra cards and made cards, stock out, no sets left and cleared boards. It never has a burn, a `reachOver`, `timeUp` or `endTurn`, a rejected trace (Swift's OpeningTests check `edge_cards`), a left-over warning or penalty (bots are always warned and never trace a bad set), or own decks. Add a record when a rules version adds something the records don't reach (scripted actions in a test are fine), so every port is checked on it.

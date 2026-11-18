@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 11, 2026-11-17, spec 16 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 12, 2026-11-17, spec 17 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -289,6 +289,30 @@ Classic two-player pegging (Classic cribbage › The play) with `duel.peg`'s poi
 - **Close a door** with a play that has a suit. The passage MUST be open (a broken door counts), with no token on either cell and neither cell the goal, and the seat MUST have closed fewer than `close.perRound` doors this hand. It MUST NOT be on the way of a seat that closed a door on this seat's way this hand. It becomes a door of the play's suit, strength max(`close.min`, round(steps × `close.mulPercent` / 100)), damage 0, closed by the seat. Every other seat whose way the passage was on is marked as closed on by this seat, for the hand.
 - **Flip a switch** with any play. Each switch flips at most once a hand, whoever flips it. Both its passages swap on and off, and the pockets are worked out again.
 
+### Maze bots
+
+A maze bot is not part of the game's rules: the session asks it for each bot seat's next action and sends that, so a record replays without it. Its style comes from `bots.json` › `maze` (missing means `balanced`). It draws no dice, and decides from the maze as it stands. In order, for the seat to act:
+
+1. In a duel, its card, as Duels, 3.
+2. If it has played this turn, `mazeEndTurn`.
+3. With `jokers` on and no joker used this turn, a joker if one qualifies (below).
+4. Its play.
+
+The **leader** is the other seat cheapest to the goal on the cost field (the first in seat order on a tie). `me` is the bot's cost, `l` the leader's.
+
+**Its play.** A style with `walk: biggest` walks its biggest play. Otherwise:
+
+1. **Close**, if the style closes and its rule holds: `leaderFar` when l < me − `closeLead` and l < `closeNear`; `levelOrAhead` when l ≤ me + `closeLead`. It needs `closeMinPlays` or more suited plays of `closeMinSteps` steps or more (biggest first), and uses the first of them (`closePlay: biggest`) or the one at index n div 2 (`middle`). The spot: from the leader's cell, step to the passable neighbour with the lowest cost (direction order on a tie), stopping at the goal or when that isn't lower than here, for up to `closeLook` steps; the first passage, from step `closeFrom` on (0 is the first), that the bot may close.
+2. **Flip**, if the style has `flipGain` and holds 2 or more plays: for each switch it may flip, work out the cost field after the flip. The gain, doubled to stay whole, is 2 × (me − its cost after) + (the leader's cost after − l): its own saving plus half the leader's loss. The highest (the first on a tie) flips, with its smallest play, if it's 2 × `flipGain` or more.
+3. **Walk** its best play: preview each play on the field before the walk, and value it at its end cell's cost, less `judge.doorBreak` if it breaks a door, plus `firePass`, `fireLand`, `minePass` or `mineLand` for each hazard it sets off (landed when it's the end cell). A walk that wins beats every other. Lowest wins; on a tie, the smaller play, then the first.
+
+**Its joker,** the first that qualifies, in order. A hazard's spot is the end cell of the leader's biggest play if that's a hazard cell, else the first hazard cell among cells 2 to 10 of the leader's way.
+
+1. **Burn**, if there is a spot and the style is `eager` or l < me + `burnBehind`.
+2. **Reach**, with none on and 2 or more plays, if its best walk's value with a reach is `reachSaves` or more below its value without.
+3. **Bomb** the first door on its own way, if a bomb reaches it and either its strength left is `jokers.bombPower` or less or the bot holds no play of the door's suit. Else a mine on the spot, if there is one and the style is `eager` or l < me − `mineLead`.
+4. **Swapper** with the leader among the seats it may still swap with this hand, if l + `swapLead` < me.
+
 ### Actions
 
 Each maze action is sent by the seat whose turn it is. Passages are their two cells, lower first; directions are 0 up, 1 right, 2 down, 3 left.
@@ -556,7 +580,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (16), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
+| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (17), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`, including a timed key's) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -841,6 +865,19 @@ Weights are lists of pairs, not objects, so their order is fixed in every langua
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
   ],
   "reachActions": 5,
+  "maze": {
+    "styles": [
+      { "id": "balanced", "walk": "best", "close": "leaderFar", "closeLead": 30, "closeNear": 200, "closePlay": "middle", "flipGain": 15,
+        "jokers": true, "burnBehind": 0, "reachSaves": 8, "mineLead": 20, "swapLead": 60 },
+      { "id": "racer", "walk": "biggest", "close": "never", "jokers": false },
+      { "id": "timer", "walk": "best", "close": "never", "jokers": false },
+      { "id": "closer", "walk": "best", "close": "levelOrAhead", "closeLead": 10, "closePlay": "biggest",
+        "jokers": true, "burnBehind": 10, "reachSaves": 8, "mineLead": 20, "swapLead": 60 },
+      { "id": "jokers", "walk": "best", "close": "never", "flipGain": 4, "jokers": true, "eager": true, "reachSaves": 1, "swapLead": 10 }
+    ],
+    "closeMinSteps": 6, "closeMinPlays": 2, "closeFrom": 2, "closeLook": 14,
+    "judge": { "doorBreak": 10, "firePass": 25, "fireLand": 70, "minePass": 40, "mineLand": 100 }
+  },
   "classic": [
     { "id": "expert", "discard": "average", "peg": "careful" },
     { "id": "greedy", "discard": "hand",    "peg": "greedy" },
@@ -849,7 +886,9 @@ Weights are lists of pairs, not objects, so their order is fixed in every langua
 }
 ```
 
-`match` holds the match turn levels (see Bots), `classic` the classic game's (see Classic cribbage › Bots). `reachActions` is how many actions a reach or timed key lasts on a bot's own grid turn, since a bot has no clock (The game around the maze); missing means 5, and when given it MUST be 1 or more.
+`match` holds the match turn levels (see Bots), `classic` the classic game's (see Classic cribbage › Bots), `maze` the maze bots' styles and shared numbers (The maze › Maze bots). `reachActions` is how many actions a reach or timed key lasts on a bot's own grid turn, since a bot has no clock (The game around the maze); missing means 5, and when given it MUST be 1 or more.
+
+A maze style's `walk` MUST be `best` or `biggest`, its `close` `never`, `leaderFar` (needing `closeLead`, `closeNear`, `closePlay`) or `levelOrAhead` (needing `closeLead`, `closePlay`). A style with `jokers` on needs `reachSaves` and `swapLead`, and `burnBehind` and `mineLead` unless `eager`. `flipGain` missing never flips.
 
 `starts` is a fraction, the one place config uses a non-integer. The engine MUST round `n × starts` half away from zero, so every language agrees.
 

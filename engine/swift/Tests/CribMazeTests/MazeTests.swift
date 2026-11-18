@@ -270,3 +270,40 @@ func play(_ id: Int, _ steps: Int, _ suit: String?) -> MazePlay { MazePlay(id: i
         #expect(found)
     }
 }
+
+@Suite struct MazeBotTests {
+    let config = try! loadConfig()
+
+    func twoSeats(_ plays: [[MazePlay]], jokers: [[String: Int]] = []) -> Maze {
+        let mc = config.maze!
+        var m = Maze(config: mc, board: Maze.build(mc, seed: 1), seats: [.bot(0, level: "medium"), .bot(1, level: "medium")], dice: Dice(seed: 1))
+        _ = m.startHand(1, dealer: 1, plays: plays, kept: [], jokers: jokers, gridSteps: [])
+        return m
+    }
+
+    @Test func everyStyleLoads() {
+        for id in ["balanced", "racer", "timer", "closer", "jokers"] { #expect(MazeBot(config: config, style: id) != nil) }
+        #expect(MazeBot(config: config, style: "nobody") == nil)
+    }
+
+    @Test func aRacerWalksItsBiggestAndATimerItsBest() {
+        let m = twoSeats([[play(1, 30, nil), play(2, 9, nil), play(3, 4, nil)], [play(4, 5, nil)]])
+        #expect(MazeBot(config: config, style: "racer")!.choose(m) == .mazeWalk(play: 1, ways: nil))
+        let b = MazeBot(config: config, style: "timer")!   // balanced may flip a switch first
+        guard case .mazeWalk(let id, nil) = b.choose(m) else { Issue.record("walk"); return }
+        let f = m.costField()
+        let ends = [1, 2, 3].map { f[m.preview(seat: 0, play: $0)!.walk.end] }
+        #expect(f[m.preview(seat: 0, play: id)!.walk.end] == ends.min())
+    }
+
+    @Test func aBotUsesAJokerFirstThenPlays() throws {
+        // Seat 1 far ahead: a balanced seat 0 swaps with it before walking.
+        var m = twoSeats([[play(1, 6, nil), play(2, 5, nil)], [play(3, 5, nil)]], jokers: [["swapper": 1], [:]])
+        let f = m.costField()
+        m.tokens[1].pos = (0..<f.count).filter { f[$0] > 0 && f[$0] < f[m.tokens[0].pos] - 100 }.min { f[$0] < f[$1] }!
+        let b = MazeBot(config: config, style: "balanced")!
+        #expect(b.choose(m) == .mazeJoker(kind: "swapper", target: 1, cell: nil, passage: nil))
+        _ = try m.apply(b.choose(m), by: 0)
+        guard case .mazeWalk = b.choose(m) else { Issue.record("then its play"); return }
+    }
+}

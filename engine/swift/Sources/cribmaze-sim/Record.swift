@@ -1,8 +1,9 @@
-// `cribmaze-sim record --games 3 [--seed 1] [--level medium] [--out <folder or file.jsonl>] [--config <folder>]`
+// `cribmaze-sim record --games 3 [--seed 1] [--level medium] [--maze balanced,balanced] [--out <folder or file.jsonl>] [--config <folder>]`
 //
 // Plays whole games with a bot in the player's seat (as `game` does: classic keep at each deal,
 // warned, reaches end after 5 actions) and writes each as a GameRecord. The game clock moves on
-// timing.json's human `trace` per action. Default out: ./records.
+// timing.json's human `trace` per action. Default out: ./records. --maze plays a game around the
+// maze instead, every seat a bot, with these maze styles (bots.json › maze).
 //
 // `cribmaze-sim replay <file or folder>... [--scripted] [--counts]`
 //
@@ -16,7 +17,7 @@ import GameKit
 import GameRecord
 
 func runRecord(_ args: [String]) {
-    var games = 1, level = "medium", seed: UInt64 = 1, out = "records", folder = "../../cribbage/minigames/config"
+    var games = 1, level = "medium", seed: UInt64 = 1, out = "records", folder = "../../cribbage/minigames/config", maze: [String]?
     var i = 0
     func value() -> String { i += 1; guard i < args.count else { usage("\(args[i - 1]) needs a value") }; return args[i] }
     while i < args.count {
@@ -25,6 +26,7 @@ func runRecord(_ args: [String]) {
         case "--level": level = value()
         case "--seed": guard let n = UInt64(value()) else { usage("--seed needs a number") }; seed = n
         case "--out": out = value()
+        case "--maze": maze = value().split(separator: ",").map(String.init)
         case "--config": folder = value()
         default: usage("unknown option \(args[i])")
         }
@@ -40,11 +42,12 @@ func runRecord(_ args: [String]) {
         let url = outURL.pathExtension == "jsonl" && games == 1 ? outURL : RecordWriter<CribMazeGame>.path(in: outURL, started: Date())
         do {
             let w = try RecordWriter<CribMazeGame>(url: url, clock: { Date() })
-            var (run, opening) = GameRun<CribMazeGame>.start(.init(config), seed: s, players: [.bot(0, level: level), .bot(1, level: "classic")])
+            let seats: [PlayerSeat] = maze.map { $0.indices.map { PlayerSeat.bot($0, level: level) } } ?? [.bot(0, level: level), .bot(1, level: "classic")]
+            var (run, opening) = GameRun<CribMazeGame>.start(.init(config, mazeGame: maze != nil), seed: s, players: seats)
             w.gameStarted(GameHeader(run, stamp: AppStamp(app: "cribmaze-sim", platform: platform()), started: w.stamp(Date())))
             w.record(opening)
             var botDice = Dice(seed: s)
-            try bot.play(&run, options: .init(deal: true, warned: true), dice: &botDice, msPerAction: ms) { w.record($0) }
+            try bot.play(&run, options: .init(deal: true, warned: true), dice: &botDice, msPerAction: ms, mazeStyles: maze ?? []) { w.record($0) }
             if let r = run.result { w.gameEnded(r) }
             if let e = w.error { usage("writing \(url.path): \(e)") }
             print("seed \(s) · \(run.result?.hands.count ?? 0) hands · \(run.result?.steps ?? 0) steps scored · \(url.path)")

@@ -134,9 +134,38 @@ public struct BotsConfig: Codable, Sendable, Equatable {
     public var version: Int
     public var match: [MatchLevel]
     public var classic: [ClassicLevel]
+    /// The maze bots' styles and how they judge a walk (engine.md › Maze bots). Missing means none.
+    public var maze: MazeBots?
     /// A bot has no clock, so a reach or timed key it plays on its own grid turn ends after this
     /// many of its actions (about 20 s at a person's pace). Missing means 5.
     public var reachActions: Int?
+}
+
+/// bots.json › maze: the maze bots (engine.md › Maze bots).
+public struct MazeBots: Codable, Sendable, Equatable {
+    public struct Style: Codable, Sendable, Equatable {
+        public var id: String
+        /// `best`: the walk that leaves it cheapest to the goal; `biggest`: its biggest play.
+        public var walk: String
+        /// `never`; `leaderFar`: the leader more than closeLead ahead and under closeNear from the
+        /// goal; `levelOrAhead`: the leader no more than closeLead behind it, or ahead.
+        public var close: String
+        public var closeLead: Int?, closeNear: Int?
+        /// `middle` or `biggest`, of its suited plays of `closeMinSteps` or more.
+        public var closePlay: String?
+        /// Flips a switch whose gain is this or more; missing never flips.
+        public var flipGain: Int?
+        public var jokers: Bool
+        /// Burns when the leader is ahead, or within burnBehind behind it; eager burns and mines always.
+        public var burnBehind: Int?
+        public var eager: Bool?
+        public var reachSaves: Int?, mineLead: Int?, swapLead: Int?
+    }
+    public struct Judge: Codable, Sendable, Equatable { public var doorBreak: Int, firePass: Int, fireLand: Int, minePass: Int, mineLand: Int }
+    public var styles: [Style]
+    public var closeMinSteps: Int, closeMinPlays: Int, closeFrom: Int, closeLook: Int
+    public var judge: Judge
+    public func style(_ id: String) -> Style? { styles.first { $0.id == id } }
 }
 
 public struct ConfigError: Error, CustomStringConvertible, Sendable {
@@ -222,6 +251,13 @@ public struct Config: Codable, Sendable, Equatable {
         if !["plus", "square"].contains(rules.specials.bombShape) { try fail("specials.bombShape must be plus or square") }
         if !["add", "each"].contains(m.edgePower.combine) { try fail("edgePower.combine must be add or each") }
         try maze?.validate(known: rules.specials.known)
+        for st in bots.maze?.styles ?? [] {
+            if !["best", "biggest"].contains(st.walk) { try fail("bots.maze.\(st.id).walk must be best or biggest") }
+            if !["never", "leaderFar", "levelOrAhead"].contains(st.close) { try fail("bots.maze.\(st.id).close must be never, leaderFar or levelOrAhead") }
+            if st.close != "never" && (st.closeLead == nil || st.closePlay == nil) { try fail("bots.maze.\(st.id): closing needs closeLead and closePlay") }
+            if st.close == "leaderFar" && st.closeNear == nil { try fail("bots.maze.\(st.id): leaderFar needs closeNear") }
+            if st.jokers && (st.reachSaves == nil || st.swapLead == nil || (st.eager != true && (st.burnBehind == nil || st.mineLead == nil))) { try fail("bots.maze.\(st.id): jokers need burnBehind, reachSaves, mineLead and swapLead (or eager)") }
+        }
         for l in bots.match where l.search == "traced" && (l.depth == nil || l.starts == nil) { try fail("bots.match.\(l.id): traced needs depth and starts") }
     }
 }

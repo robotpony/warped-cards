@@ -246,6 +246,8 @@ A duel is classic two-player pegging, played with each player's 4 kept cards fro
 
 ## Bots
 
+Built in the engine (Apple 0.22.7): the styles are in `config/bots.json` › maze, and the rules in `engine.md` › The maze › Maze bots. Where this doc was silent: a door closer closes when the leader is no more than 10 behind it (`closeLead`), as the mock does.
+
 Every bot style shares the same rules; they only choose differently. The mock's styles, for the beta to start from (they belong in `config/bots.json`):
 
 | Style | Plays | Doors and switches | Jokers |
@@ -393,6 +395,24 @@ Bot-only games, seeds 1 to n, final settings (v12, 2026-11-17):
   - about 46 wrong-suit stops
 - **Racer.** A racer loses almost every game to a balanced bot (2 to 5 of 40). Choosing well matters.
 
+## Stats from the engine
+
+`cribmaze-sim maze-game` (Apple 0.22.7, spec 17, rules r28), bot-only games around the maze, seeds 1 to n: MatchBot medium on every grid turn, so each hand's plays come from that hand's real grid turn (the deck growing, power jokers carried and won as prizes), not the mock's fixed pool of first-turn plays. Maze styles from `bots.json` › maze.
+
+| Matchup | Games | Hands a game | In 6 to 12 | Wins by seat |
+|---|---|---|---|---|
+| Balanced vs balanced | 300 | 4 to 9, median 6 | 172 of 300 | 150, 150 |
+| Balanced vs racer | 40 | 4 to 7, median 5 | 19 | 35, 5 |
+| Balanced vs timer | 40 | 4 to 7, median 6 | 21 | 33, 7 |
+| Door closer vs door closer | 40 | 5 to 10, median 7 | 37 | 24, 16 |
+| Balanced vs jokers | 40 | 4 to 7, median 6 | 23 | 19, 21 |
+
+Every game ended at the goal; none reached the 15-hand cap.
+
+- **Per game,** balanced vs balanced: 0.96 duels (0.94 landing, 0.02 stuck), 6.4 fires and 3.4 mines going off, 2.5 doors bombed, 4.3 reaches, 3.9 swaps, 3.1 switches flipped, 1.7 doors closed, 2.3 stars taken, 0.7 stirs, 33 stops at a wrong-suit door.
+- **Why games are shorter than the mock's.** A seat's grid turn makes about 211 steps in hand 1, close to the mock's 233, but about 265 in hand 2, 305 in hand 3 and 390 by hand 4, as made cards grow the deck and power jokers carry. So the goal comes 2 hands sooner. Power jokers won as grid prizes (about 5.7 a game for the bots alone) roughly double the mock's hazards, bombs and reaches; the mock had only the starting set and stars.
+- **Three players** wait for the 3-player deal (`TODO.md`): the third seat gets no plays yet, so the engine's three-player numbers mean nothing.
+
 ## Not in this build
 
 - Fog (`rules.md` › Fog).
@@ -408,3 +428,5 @@ Bot-only games, seeds 1 to n, final settings (v12, 2026-11-17):
 2. Is about 46 wrong-suit stops a game too many, with about 22 doors a maze? Playtest first.
 3. Do 14 plays a round drag at 28 to 42 turns? Playtest first.
 4. Does a landing duel need a cost, so players don't chase them?
+5. Games around the maze run a median 6 hands in the engine, against the mock's 8, because grid turns score more as the game goes on (Stats from the engine). Keep it, lengthen the golden path (`board.length`), or scale plays down in later hands? Playtest first.
+6. With grid prizes feeding the maze, a balanced game sets off about 10 hazards. Too many? Fewer power jokers as prizes, or fewer hazard uses?

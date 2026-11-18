@@ -290,10 +290,11 @@ public struct Maze: Sendable {
 
     /// A play's walk, on a copy of the maze (maze.md › Walking › preview): what it would do, and the
     /// cost to the goal from where it would end, on the field after it.
-    public func preview(seat: Int, play id: Int, ways: [MazeWay] = []) -> (walk: Walk, cost: Int)? {
+    /// `reach` overrides whether a reach is on, for a bot weighing one.
+    public func preview(seat: Int, play id: Int, ways: [MazeWay] = [], reach: Bool? = nil, field: [Int]? = nil) -> (walk: Walk, cost: Int)? {
         guard let p = tokens[seat].plays.first(where: { $0.id == id }) else { return nil }
         var copy = self
-        let w = copy.walk(seat, steps: p.steps, suit: p.suit, reach: copy.reachOn(seat), ways: ways, field: costField(), hazardAt: copy.hazardAt)
+        let w = copy.walk(seat, steps: p.steps, suit: p.suit, reach: reach ?? copy.reachOn(seat), ways: ways, field: field ?? costField(), hazardAt: copy.hazardAt)
         return (w, copy.costField()[w.end])
     }
 
@@ -310,6 +311,9 @@ public struct Maze: Sendable {
     }
 
     public func canFlip(_ s: Int) -> Bool { s < board.switches.count && board.switches[s].flipped != hand }
+
+    /// The cost field after flipping a switch, on a copy (for bots weighing a flip).
+    public func costField(flipping s: Int) -> [Int] { var c = self; c.flip(s); return c.costField() }
 
     mutating func flip(_ s: Int) {
         for k in [board.switches[s].a, board.switches[s].b] { board.passages[k]!.on.toggle() }

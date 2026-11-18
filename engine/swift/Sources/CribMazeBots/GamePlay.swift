@@ -9,7 +9,7 @@ extension MatchBot {
     /// Plays `run` to the end of the game. Every step, the opening one aside, goes to `onStep`.
     /// The game clock moves on `msPerAction` per action. The bot draws from `dice`, its own.
     public func play(_ run: inout GameRun<CribMazeGame>, options: CribMazeGame.HandOptions, dice: inout Dice, msPerAction: Int,
-                     reachActions: Int = 5, onStep: (Step<CribMazeGame>) throws -> Void) throws {
+                     reachActions: Int = 5, mazeStyles: [String] = [], onStep: (Step<CribMazeGame>) throws -> Void) throws {
         var clock = 0, acted = 0, ends: [Int: Int] = [:]
         func send(_ a: CribMazeGame.Action, by player: PlayerID?) throws {
             clock += msPerAction
@@ -38,7 +38,10 @@ extension MatchBot {
                 }
             case .maze:
                 guard let m = s.maze, let seat = m.duel.map({ $0.seats[$0.peg.turn] }) ?? m.turn else { return }
-                try send(.maze(MazeBot().choose(m)), by: seat)
+                // Each seat's maze style (bots.json › maze), balanced when not given.
+                let id = seat < mazeStyles.count ? mazeStyles[seat] : "balanced"
+                guard let bot = MazeBot(config: s.config.files, style: id) else { throw IllegalAction("no maze bot style \(id)") }
+                try send(.maze(bot.choose(m)), by: seat)
             case .over: return
             }
         }

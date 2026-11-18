@@ -2,6 +2,16 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 17 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- Maze bots (engine.md › The maze › Maze bots): five styles in `bots.json` › maze (balanced, racer, timer, closer, jokers) with how they close, flip, walk and use jokers, and the walk judge's numbers. Not rules: a session sends their choices as actions.
+- `fixtures/records/maze7.jsonl`, a golden game around the maze, and `cribmaze-sim maze-game` and `record --maze`.
+- The golden records are re-recorded: headers only.
+
 ## spec 16 — 2026-11-17
 
 Rules unchanged (r28).

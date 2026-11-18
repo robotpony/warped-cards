@@ -4,6 +4,8 @@
 //   cribmaze-sim game --games 500 [--level medium] [--own] [--burn none|dead]   (Game.swift)
 //   cribmaze-sim record --games 3 [--seed 1] [--out <folder>]                    (Record.swift)
 //   cribmaze-sim replay <file or folder>... [--scripted] [--counts]             (Record.swift)
+//   cribmaze-sim maze --seed 1 [--to 20]                                         (Maze.swift)
+//   cribmaze-sim maze-game --games 300 [--styles balanced,racer] [--hands 15]    (MazeGame.swift)
 //
 // Turn i plays from seed + i, bot seat 0, starting tray from config, warned set
 // (bots count as already warned). Config defaults to ../../cribbage/minigames/config.
@@ -29,6 +31,8 @@ func usage(_ why: String? = nil) -> Never {
     print("       cribmaze-sim game --games <n> [--level <id>] [--seed <n>] [--own] [--burn none|weak] [--fresh-tray] [--fresh-deck] [--config <folder>]")
     print("       cribmaze-sim record --games <n> [--seed <n>] [--level <id>] [--out <folder or file.jsonl>] [--config <folder>]")
     print("       cribmaze-sim replay <file or folder>... [--scripted] [--counts]")
+    print("       cribmaze-sim maze [--seed <n>] [--to <n>]")
+    print("       cribmaze-sim maze-game --games <n> [--seed <n>] [--styles <style,style[,style]>] [--hands <n>] [--config <folder>]")
     exit(why == nil ? 0 : 2)
 }
 
@@ -71,6 +75,7 @@ struct Tally {
 }
 
 if CommandLine.arguments.dropFirst().first == "discard" { runDiscard(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
+if CommandLine.arguments.dropFirst().first == "maze-game" { runMazeGame(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "maze" { runMaze(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "game" { runGame(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "record" { runRecord(Array(CommandLine.arguments.dropFirst(2))); exit(0) }

@@ -7,6 +7,19 @@
     { "id": "weak",    "search": "traced", "depth": 3, "starts": 0.25 }
   ],
   "reachActions": 5,
+  "maze": {
+    "styles": [
+      { "id": "balanced", "walk": "best", "close": "leaderFar", "closeLead": 30, "closeNear": 200, "closePlay": "middle", "flipGain": 15,
+        "jokers": true, "burnBehind": 0, "reachSaves": 8, "mineLead": 20, "swapLead": 60 },
+      { "id": "racer", "walk": "biggest", "close": "never", "jokers": false },
+      { "id": "timer", "walk": "best", "close": "never", "jokers": false },
+      { "id": "closer", "walk": "best", "close": "levelOrAhead", "closeLead": 10, "closePlay": "biggest",
+        "jokers": true, "burnBehind": 10, "reachSaves": 8, "mineLead": 20, "swapLead": 60 },
+      { "id": "jokers", "walk": "best", "close": "never", "flipGain": 4, "jokers": true, "eager": true, "reachSaves": 1, "swapLead": 10 }
+    ],
+    "closeMinSteps": 6, "closeMinPlays": 2, "closeFrom": 2, "closeLook": 14,
+    "judge": { "doorBreak": 10, "firePass": 25, "fireLand": 70, "minePass": 40, "mineLand": 100 }
+  },
   "classic": [
     { "id": "expert", "discard": "average", "peg": "careful" },
     { "id": "greedy", "discard": "hand",    "peg": "greedy" },
