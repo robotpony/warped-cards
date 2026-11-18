@@ -4,6 +4,22 @@ Status: design handoff, 2026-11-17, from the browser mock `mocks/maze-board.html
 
 When the build lands, the engine parts move into `engine.md` and the screens into `ui.md`, in the same commits as the code (`PORTING.md` › Keeping the spec true). Then this doc keeps only what isn't built yet.
 
+Scope (Bruce, 2026-11-17): the beta builds all of this doc before the playtest, not a slice of it. It starts with 1 bot, but the engine MUST take 1 to 3 players (1 human, 1 or 2 bots) wherever this doc allows it, so a second bot needs only the 3-player deal.
+
+A **round** in this doc is a **hand** in `engine.md` › The game as steps: the deal, the show, every player's grid turn, then the maze.
+
+## The game around the maze
+
+These replace `engine.md` › The game's fixed `game.turns` (Bruce, 2026-11-17).
+
+- **Hands until the goal.** A game deals hands until a token reaches the goal. The maze is built once, when the game starts, and lasts the game.
+- **Round cap.** `game.maxHands` (15, in `rules.json`). If no token has reached the goal when hand 15's maze phase ends, the player cheapest to the goal on the cost field wins. A tie goes to the tied player with more steps scored over the game, then to the first of them in turn order from the player after the last dealer.
+- **Bots' grid turns.** Each bot plays a whole grid turn of its own, off screen, with `MatchBot` at its level (`engine.md` › Bots), from its own 4 kept cards and the starter, as the simulator already does. Its sets, hand count and crib count become its plays, and its prize joins its own power jokers. The screen shows only a summary of each bot's result, before your turn (`concept.md` › Phases › 5a).
+  - A bot's turn starts its dice again from FNV-1a 64 of the text `<hand seed>/seat<n>`, so it never shifts the player's turn.
+  - Each player has their own power jokers, from `specials.start`, carried from hand to hand.
+  - With `deck.shared` true, every grid turn of a hand deals from the deck as it stood when the hand started. Cards made and burned are applied at the hand's end: the player's first, then each bot's in seat order.
+- **Hand order.** Deal and discard, the show, the grid turns (bots first, then yours), then the maze. The next hand starts when every play is used, or when a token reaches the goal ends the game.
+
 ## What a player does
 
 Each round, after the scoring grid, players peg on a shared maze. Every set a player scored on the grid, and their hand and crib counts, becomes a **play**: a card-like tile with its steps (the points) and its suit. Players take turns spending plays until every play is used. The first token into the goal wins the game.
@@ -23,7 +39,9 @@ The mock games run 6 to 12 rounds with a 900-step golden path (Stats, below).
 ### Size and seed
 
 - The maze is a square grid, side `W = ceil(sqrt(length × 2.2))`, where `length` is the golden path's steps (900, so 45 × 45).
-- Everything comes from the game's seed on the `maze` dice stream (`PORTING.md` › Same game, every build).
+- Everything comes from the game's seed on the `maze` dice stream (`PORTING.md` › Same game, every build). The `maze` stream starts once, from the game seed, when the game starts, and is never started again: hands restart the other streams (`engine.md` › The game as steps), not this one. Later draws on it (junction arrows after a flip) carry on from where generation left off.
+- **Directions.** Every list of directions, and "clockwise", is up, right, down, left (N, E, S, W), with y growing downward. A cell's neighbours are listed in that order, skipping the edge of the grid; a pick "among" them draws an index into that list.
+- **Ties.** Where this doc says nearest, cheapest or best and two are equal, the one earlier in the list it was picked from wins (candidates in clockwise order from the arrow, plays biggest first, walls in walls-list order).
 - The start is the bottom-left cell. The goal is a cell exactly `length` steps from the start along the maze.
 
 ### Generation, in order
@@ -93,7 +111,7 @@ Mock results across 20 seeds:
 ## Plays
 
 - **Where they come from.** A play is one set scored on the grid this round, or the hand or crib count. Its steps are its points, and its cards are kept for the sheet and the duel.
-- **Suit.** A play's suit is the one that appears most among its cards, hand, crib and starter included. A tie for most means no suit.
+- **Suit.** A play's suit is the one that appears most among the cards it scored with: a grid set's cards (the starter too, when the set used it), or the hand or crib's 4 cards and the starter. A tie for most means no suit.
 - **The kept hand.** Each player's 4 kept cards for the round are stored too. The duel uses them.
 - **Hand order.** Plays are shown biggest first.
 - **Mock data.** The mock used 180 real medium-bot grid turns (`mocks/maze-sets.js`), about 14 plays and 226 steps a round. The build uses the round's real sets.
@@ -184,12 +202,12 @@ One set of power jokers for the whole game, shared with the scoring grid (`rules
 
 ### Getting jokers
 
-- **Stars.** A walk that ends on a star wins a joker (stream `prize`, purpose `star`). The weights are key 30, swapper 20, burn 20, bomb 15, reach 15.
+- **Stars.** A walk that ends on a star wins a joker (stream `maze.star`, purpose `star`). The weights are key 30, swapper 20, burn 20, bomb 15, reach 15.
 - **At the start.** The mock starts each player with the grid's starting set: 2 swappers, a bomb, a reach and a burn. In the build, the maze uses whatever the player holds after the grid turn.
 
 ### Hazards: fire and mine
 
-The first token to pass over a hazard sets it off, whoever placed it. The plays lost are picked at random from those left (stream `burn`, purposes `burn_pass` or `burn_land`, then `burn_play` for each play).
+The first token to pass over a hazard sets it off, whoever placed it. The plays lost are picked at random from those left (stream `maze.burn`, purposes `burn_pass` or `burn_land`, then `burn_play` for each play).
 
 | Hazard | Running over it | Stopping on it |
 |---|---|---|
@@ -206,7 +224,7 @@ At the start of each round after the first, a player is stuck if their cost to t
 
 - **Two or more players stuck:** the two furthest from the goal duel.
 - **One player stuck, behind a door another player closed:** they duel the closer.
-- **One player stuck, any other way:** the maze stirs for them. Pick from these (stream `plot`, purpose `plot`):
+- **One player stuck, any other way:** the maze stirs for them. Pick from these (stream `maze.plot`, purpose `plot`):
 
 | Opening | Weight | When it can happen | Effect |
 |---|---|---|---|
@@ -220,7 +238,7 @@ A card tells everyone what happened ("The maze stirs: the ♥ door ahead of Bot 
 
 A duel is classic two-player pegging, played with each player's 4 kept cards from this round.
 
-- **The cards.** A player with no kept hand on record, or whose hand shares a card with the other's, gets 4 dealt from the rest of the deck (stream `duel`, purpose `duel_deal`).
+- **The cards.** A player with no kept hand on record, or whose hand shares a card with the other's, gets 4 dealt from the rest of the deck (stream `maze.duel`, purpose `duel_deal`).
 - **Scoring.** Back and forth to 31, as in cribbage pegging:
   - fifteen 2, thirty-one 2
   - a pair 2, a pair royal 6, a double pair royal 12
@@ -266,7 +284,7 @@ Every bot style shares the same rules; they only choose differently. The mock's 
 
 | Style | Plays | Doors and switches | Jokers |
 |---|---|---|---|
-| Balanced | The play whose walk leaves it cheapest to the goal, all ways considered | Closes a door before the leader when the leader is more than 30 ahead and under 200 from the goal, using a middling suited play. Flips a switch when its gain is 15 or more | Yes |
+| Balanced | The play whose walk leaves it cheapest to the goal, all ways considered | Closes a door before the leader when the leader is more than 30 ahead and under 200 from the goal, using a middling suited play (of its suited plays of 6 steps or more, biggest first, the one at index n ÷ 2 rounded down; it needs 2 or more). Flips a switch when its gain is 15 or more | Yes |
 | Racer | Its biggest play first | Never | Never |
 | Timer | As balanced | Never | Never |
 | Door closer | As balanced | Closes a door before anyone level with it or ahead, using its biggest suited play | Yes |
@@ -389,11 +407,13 @@ The maze runs in the engine, one action at a time, so it can be recorded and rep
 
 | Stream | Purposes |
 |---|---|
-| `maze` | carve, goal, walls, door_suit, variant_suit, switch_edge, switch_wall, junction, prize_cells |
-| `prize` | star |
-| `plot` | plot |
-| `duel` | duel_deal, duel_coin, duel_open |
-| `burn` | burn_pass, burn_land, burn_play |
+| `maze` | carve, goal, walls, door_suit, variant_suit, switch_edge, switch_wall, junction, prize_cells. Started once from the game seed (Size and seed) |
+| `maze.star` | star |
+| `maze.plot` | plot |
+| `maze.duel` | duel_deal, duel_coin, duel_open |
+| `maze.burn` | burn_pass, burn_land, burn_play |
+
+The maze's streams have their own names, so the grid's `prize` stream and its draws never shift when a star is won (as with `opening`, `concept.md` › Decisions, r26). Every `maze.*` stream starts again each hand from the hand's seed, like the grid's.
 
 **Fixtures:**
 
