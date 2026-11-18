@@ -207,7 +207,7 @@ Your power jokers are one set for the whole game: the same cards work on the sco
 | Swapper (⇄) | Trace a straight line of 2 to 4 grid cards. The line reverses; 2 cards trade places | Swap places with another token, not back in the same round |
 | Bomb | Tap a grid card. It and its 4 neighbours (a plus shape) clear and refill, scoring nothing | Open a wall beside you, if the way round to the other side is 20 steps or less (to tune) |
 | Reach | Tap it and it works at once: your hand size (the cards a set can pick) goes up for a while. Usually +1 for about 20 seconds; sometimes +2, or 10 to 45 seconds (to tune). Reaches stack. A countdown shows over the reach card, and the extra cards show in violet on the hand size counter | Your next play picks its way at each junction, instead of following the arrows, and the arrows don't turn |
-| Burn (flame) | Tap a grid card. It leaves the board and the deck for the rest of the game, scoring nothing. The deck can't be burned below 40 cards (to tune) | Set a fire on a cell on another player's way, within 60 steps of them. The next token through loses 1 or 2 plays; one that stops on it loses 4 or 5. Then it's out. Plays it can't take come off the next round. The walk pauses on the fire while a card shows what burnt, then goes on |
+| Burn (flame) | Tap a grid card. It leaves the board and the deck for the rest of the game, scoring nothing. The deck can't be burned below 40 cards (to tune) | Set a fire on a cell on another player's way, within 10 steps of them. The next token through loses 1 or 2 plays; one that stops on it loses 4 or 5. Then it's out. Plays it can't take come off the next round. The walk pauses on the fire while a card shows what burnt, then goes on |
 | Key | Not built yet. Your hand size goes up by 1: sometimes for the rest of the game, otherwise for a while like a reach (odds to tune from stats) | Works by itself: one play goes past a door of another suit |
 
 You start the game with 2 swappers, 1 bomb, 1 reach and 1 burn (to tune). You get more from prizes, jokers and the shop.
@@ -356,7 +356,9 @@ Each token sees a few cells around it (how many: to tune). Cells anyone has seen
 
 ### Jokers on the maze
 
-You use one joker a turn on the maze, before or after your play (Special jokers, above, says what each does there). Stars sit along the paths, and a play that ends on one wins a joker: a key, swapper, burn, bomb or reach (odds to tune). In the mock, players start with the scoring grid's starting set: 2 swappers, a bomb, a reach and a burn.
+You use one joker a turn on the maze, before or after your play (Special jokers, above, says what each does there).
+
+**Landing on another player.** A walk that ends on another player's cell, using all its steps there, starts a duel (Stuck, above): classic pegging with your kept hands, and the winner takes the loser's biggest play. It doesn't count at the start, at a door (a walk stopped by a door, or spending its steps on one), or for a pair that has already duelled this round. The turn goes on after the duel. Stars sit along the paths, and a play that ends on one wins a joker: a key, swapper, burn, bomb or reach (odds to tune). In the mock, players start with the scoring grid's starting set: 2 swappers, a bomb, a reach and a burn.
 
 ## Prizes
 

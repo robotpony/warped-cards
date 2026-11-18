@@ -166,7 +166,7 @@
 
   <div class="side">
     <h1>Maze board mock</h1>
-    <p class="muted">v10, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). Rules: <code>rules.md</code> › 5 and Moving through the maze. Tap anything on the maze to have it explained.</p>
+    <p class="muted">v11, 2026-11-17. Pegging is the maze: you walk the sets you made on the scoring grid, choosing which to play, in turns. The grid turns are real: 180 turns the medium bot played (<code>maze-sets.js</code>, from <code>cribmaze-sim record</code>, match-r27). Rules: <code>rules.md</code> › 5 and Moving through the maze. Tap anything on the maze to have it explained.</p>
 
     <div class="card">
       <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button> <span class="muted" id="mazeSize"></span></label>
@@ -203,7 +203,7 @@
       <li><b>The maze</b> is one golden path with dead ends off it, and a few variants: a way round each golden door (a door of another suit, or a longer free way) and shortcuts behind a suited door. No little loops.</li>
       <li><b>Walking.</b> One step a point. Walks go forward, never into dead ends, and avoid a door they can't open when there's another way. At a junction you go the way its arrow points, and it turns for whoever comes next.</li>
       <li><b>Doors</b> are cards across the path: rank is the strength left, suit is the suit they need. Only that suit wears them down, and those steps don't move you; another suit stops there. Damage stays.</li>
-      <li><b>Stuck?</b> A player who ends a hand no closer to the goal makes the maze stir for them. Two stuck players <b>duel</b>: classic pegging with their kept hands, and the winner's door breaks and they take the loser's biggest play.</li>
+      <li><b>Stuck?</b> A player who ends a hand no closer to the goal makes the maze stir for them. Two stuck players <b>duel</b>: classic pegging with their kept hands, and the winner's door breaks and they take the loser's biggest play. Ending a walk on another player's cell starts a duel too.</li>
       <li><b>Jokers</b> are the scoring grid's power jokers, one set for the game. On the maze: <b>swapper</b> trades places, <b>bomb</b> opens a thin wall, <b>reach</b> lets your next play pick its ways at junctions (tap the ringed ones), <b>burn</b> sets a fire that burns the next token's plays, and the <b>key</b> takes one play past a wrong-suit door. Stars give more. The first token into the goal wins; the target is 6 to 12 hands.</li>
     </ul>
 
@@ -246,7 +246,7 @@
   const JOKERS = { swapper: "Swapper", bomb: "Bomb", reach: "Reach", burn: "Burn", key: "Key" };
   const JOKER_ART = { swapper: "joker-swap.svg", bomb: "joker-bomb.svg", reach: "joker-reach.svg", burn: "joker-burn.svg", key: "joker-key.svg" };
   const JOKER_ICON = { key: "⚷", burn: "✸", bomb: "✹", swapper: "⇄", reach: "↟" };
-  const JOKER_HINT = { key: "Works by itself: lets one play past a wrong-suit door", burn: "Set a fire on a cell on another player's way: the next token through loses 1 or 2 plays, and one that stops on it loses 4 or 5",
+  const JOKER_HINT = { key: "Works by itself: lets one play past a wrong-suit door", burn: "Set a fire on a cell on another player's way, within 10 steps of them: the next token through loses 1 or 2 plays, and one that stops on it loses 4 or 5",
     bomb: "Blow open a wall beside you (only a thin one: the way round is 20 steps or less)", swapper: "Swap places with another token", reach: "Your next play picks its way at each junction, instead of following the arrows" };
   const START_JOKERS = { "": {}, grid: { swapper: 2, bomb: 1, reach: 1, burn: 1 }, one: { swapper: 1, bomb: 1, reach: 1, burn: 1 } };
   const LETTERS = "ABCDEFGH", V = 380;
@@ -460,7 +460,7 @@
     G = { seedText: String(seedText), seed: seedValue(seedText), c, rolls: [], log: [], hand: 0, guard: 0, won: null, anim: null, sel: null, mode: null, swaps: [], cam: null, headless, stats: {} };
     G.M = makeMaze(G.seed, c, G.rolls); changed();
     G.P = SEATS.slice(0, 1 + c.bots).map((name, seat) => ({ name, seat, human: seat === 0 && !headless, style: c.styles[seat], pos: G.M.start, prev: -1, plays: [], reach: 0, burnDebt: 0, jokers: { swapper: 0, bomb: 0, reach: 0, burn: 0, key: 0, ...START_JOKERS[c.startJokers] } }));
-    G.fires = new Map(); G.reachPick = new Map();
+    G.fires = new Map(); G.reachPick = new Map(); G.met = new Set();
     G.gridRng = D.stream(G.seed, "grid", G.rolls); G.prizeRng = D.stream(G.seed, "prize", G.rolls); G.plotRng = D.stream(G.seed, "plot", G.rolls); G.burnRng = D.stream(G.seed, "burn", G.rolls);
     log("game_start", { seed: G.seedText, size: G.M.W + "x" + G.M.H, route: c.length, switches: G.M.switches.length, stars: G.M.prizes.size });
     startHand();
@@ -607,18 +607,22 @@
     if (!canPeg(D, o) && canPeg(D, k)) D.turn = k;
     return true;
   }
-  function duel(p, q) {
+  // A duel: two players stuck in each other's way (kind "stuck", at a round's start), or a walk that ends on another
+  // player's cell (kind "meet", Bruce 2026-11-17). The winner takes the loser's biggest play; a stuck duel also opens the way.
+  // Returns true when it waits for you on the duel screen; then() runs when you close it.
+  function duel(p, q, kind = "stuck", then = null) {
     G.duelRng = G.duelRng || WarpedDice.stream(G.seed, "duel", G.rolls);
-    const D = { p, q, games: [], peg: newPeg(p, q), round: 1 };
+    const D = { p, q, kind, then, games: [], peg: newPeg(p, q), round: 1 };
     G.stats.plot = (G.stats.plot || 0) + 1; G.stats.duel = (G.stats.duel || 0) + 1;
     // Bot runs, and duels between two bots, play out at once; a bot duel shows only its result.
     if (G.headless || (!p.human && !q.human)) {
       while (!D.result) { while (pegStep(D.peg)); duelScore(D); }
-      if (!G.headless) { const r = D.result; G.plot = { title: "Duel", text: `${p.name} and ${q.name} pegged it out: ${D.games.map(([a, b]) => `${a} to ${b}`).join(", then ")}${r.coin ? ", then a coin" : ""}. ${r.w.name} wins; ${r.opened} ${r.take ? `${r.w.name} takes ${r.l.name}'s ${r.take.p}-step play.` : ""}` }; }
-      return;
+      if (!G.headless) { const r = D.result; G.plot = { title: "Duel", text: `${p.name} ${kind === "meet" ? `landed on ${q.name}'s cell, and they` : `and ${q.name}`} pegged it out: ${D.games.map(([a, b]) => `${a} to ${b}`).join(", then ")}${r.coin ? ", then a coin" : ""}. ${r.w.name} wins${r.opened ? "; " + r.opened : "."} ${r.take ? `${r.w.name} takes ${r.l.name}'s ${r.take.p}-step play.` : ""}` }; }
+      return false;
     }
     G.duel = D; G.flash = null;
     later(duelTick, 900);
+    return true;
   }
   // A duel game is done: a tie plays again once, then a coin. Then the consequences.
   function duelScore(D) {
@@ -626,13 +630,14 @@
     if (a === b && D.round === 1) { D.round = 2; D.peg = newPeg(D.p, D.q, 1); D.note = `Tied ${a} to ${b}: play again, the other player leads`; return; }
     let w = a > b ? D.p : b > a ? D.q : null, coin = false;
     if (!w) { w = G.duelRng.pick([[D.p, 50], [D.q, 50]], "duel_coin"); coin = true; }
-    const l = w === D.p ? D.q : D.p, way = wayAhead(w), opts = openings(w, way);
-    const opened = way.door ? opening(w, way, "break") : opts.length ? opening(w, way, G.duelRng.pick(opts, "duel_open")) : "the maze stays as it is.";
+    const l = w === D.p ? D.q : D.p;
+    let opened = "";
+    if (D.kind === "stuck") { const way = wayAhead(w), opts = openings(w, way); opened = way.door ? opening(w, way, "break") : opts.length ? opening(w, way, G.duelRng.pick(opts, "duel_open")) : "the maze stays as it is."; }
     const take = left(l).sort((x, y) => y.p - x.p)[0];
     if (take) { l.plays = l.plays.filter(x => x !== take); w.plays.push({ ...take, id: take.id + ".won" }); w.plays.sort((x, y) => y.p - x.p); }
     changed();
     D.result = { w, l, coin, opened, take };
-    log("duel", { players: [D.p.name, D.q.name], scores: D.games, winner: w.name, coin, took: take && take.p });
+    log("duel", { kind: D.kind, players: [D.p.name, D.q.name], scores: D.games, winner: w.name, coin, took: take && take.p });
   }
   function duelTick() {
     const D = G.duel; if (!D || D.result) return render();
@@ -646,17 +651,17 @@
     const P = D.peg; if (!P.who[P.turn].human || P.count + valOf(card) > 31) return;
     pegStep(P, card); render(); later(duelTick, 700);
   }
-  function duelClose() { G.duel = null; render(); nextTurn(); }
+  function duelClose() { const then = G.duel.then; G.duel = null; render(); if (then) then(); else nextTurn(); }
   function duelHTML() {
     const D = G.duel; if (!D) return "";
     const P = D.peg, nm = (p) => p.human ? "You" : p.name, card = (c, cls = "", attr = "") => `<span class="dc ${cls}" ${attr} style="color:${FACECOL[c.slice(-1)]}"><b>${c.slice(0, -1)}</b>${GLYPH[c.slice(-1)]}</span>`;
     const back = `<span class="dc back"></span>`;
-    let h = `<div class="duel-t">DUEL!</div><div class="duel-s">${nm(D.p)} and ${nm(D.q)} are stuck in each other's way. Classic pegging: back and forth to 31, highest score wins.${D.round > 1 ? " Second game, after a tie." : ""}</div>`;
+    let h = `<div class="duel-t">DUEL!</div><div class="duel-s">${D.kind === "meet" ? `${nm(D.p)} landed on ${D.q.human ? "your" : D.q.name + "'s"} cell.` : `${nm(D.p)} and ${nm(D.q)} are stuck in each other's way.`} Classic pegging: back and forth to 31, highest score wins.${D.round > 1 ? " Second game, after a tie." : ""}</div>`;
     if (D.result) {
       const r = D.result, g = D.games;
       h += `<div class="duel-r"><div class="big">${r.w.human ? "You win" : r.w.name + " wins"}</div>` +
         `<p>${g.map(([a, b]) => `${nm(D.p)} ${a}, ${nm(D.q)} ${b}`).join("; then ")}${r.coin ? "; still tied, so a coin decided" : ""}.</p>` +
-        `<p>The way opens: ${r.opened}</p>` +
+        (r.opened ? `<p>The way opens: ${r.opened}</p>` : "") +
         (r.take ? `<p>${r.w.human ? "You take" : r.w.name + " takes"} ${r.l.human ? "your" : r.l.name + "'s"} biggest play: <b>${r.take.p} ${r.take.s ? GLYPH[r.take.s] : "no suit"}</b> (${r.take.c.split(" ").map(t => t.replace(/[SHDC]$/, m => GLYPH[m])).join(" ")}).</p>` : "") +
         `<button class="btn go" id="duelDone">Back to the maze</button></div>`;
       return h;
@@ -738,6 +743,12 @@
       if (r.won) { G.won = p.seat; log("goal", { player: p.name }); if (!G.headless) render(); return; }
       if (!animated) for (const f of r.fires) burnHit(p, f, f === p.pos);
       landOn(p);
+      // Landing on another player's cell starts a duel; the turn goes on after it. Landing means the walk used all its
+      // steps there: a stop at a door, or steps spent on one, isn't a landing. Not at the start, and a pair duels once a round.
+      const ev = r.ev, landed = !ev.includes("stopped") && ev[ev.length - 1] !== "door_hit";
+      const met = landed && p.pos !== G.M.start && G.P.find(q => q !== p && q.pos === p.pos && !G.met.has(G.hand + ":" + Math.min(p.seat, q.seat) + Math.max(p.seat, q.seat)));
+      if (met) G.met.add(G.hand + ":" + Math.min(p.seat, met.seat) + Math.max(p.seat, met.seat));
+      if (met && duel(p, met, "meet", then)) return render();
       then();
     };
     const animated = !G.headless && !!G.c.speed;
@@ -766,10 +777,10 @@
     while (out.length < n) { const l = left(p); if (!l.length) break; const x = l[G.burnRng.below(l.length, "burn_play")]; x.used = true; x.burnt = true; out.push(x); }
     p.burnDebt += n - out.length; return out;
   }
-  // Where a fire can go: a cell on another player's way, within 60 steps of them, not under a token, not the goal.
+  // Where a fire can go: a cell on another player's way, within 10 steps of them (Bruce, 56), not under a token, not the goal.
   function fireCells(p) {
     const out = new Set();
-    for (const q of G.P) if (q !== p) for (const c of wayAhead(q).ahead.slice(0, 60)) if (c !== G.M.goal && !G.fires.has(c) && !G.P.some(x => x.pos === c)) out.add(c);
+    for (const q of G.P) if (q !== p) for (const c of wayAhead(q).ahead.slice(0, 10)) if (c !== G.M.goal && !G.fires.has(c) && !G.P.some(x => x.pos === c)) out.add(c);
     return out;
   }
   function landOn(p) {
@@ -878,7 +889,7 @@
       const lead = G.P.filter(q => q !== p).sort((a, b) => F[a.pos] - F[b.pos])[0];
       if (lead && (eager || F[lead.pos] < me + (style === "closer" ? 10 : 0))) {
         const ok = fireCells(p), big = left(lead)[0], end = big ? preview(lead, big).end : -1;
-        const cell = ok.has(end) ? end : wayAhead(lead).ahead.slice(3, 60).find(c => ok.has(c));
+        const cell = ok.has(end) ? end : wayAhead(lead).ahead.slice(1, 10).find(c => ok.has(c));
         if (cell !== undefined) { useJoker(p, "burn", cell); return; }
       }
     }
@@ -1281,7 +1292,7 @@
   function start(seedText) { newGame(seedText); try { location.replace("#seed=" + encodeURIComponent(seedText)); } catch (e) {} }
   window.__mazeBoard = () => G;
   window.__mazeRun = runGames;
-  window.__mazeDebug = { newGame, startHand, applyBot, nextTurn, cur, field, duel, pegStep, newPeg, pegPoints, get G() { return G; }, set G(v) { G = v; } };
+  window.__mazeDebug = { newGame, startHand, applyBot, nextTurn, cur, field, duel, preview, pegStep, newPeg, pegPoints, get G() { return G; }, set G(v) { G = v; } };
 
   const fromHash = decodeURIComponent((location.hash.match(/seed=([^&]+)/) || [])[1] || "");
   $("seed").value = fromHash || "20261117";
