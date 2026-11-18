@@ -4,6 +4,7 @@ Small next tasks. Bigger work is in [PLAN.md](PLAN.md).
 
 ## Crib RPG
 
+- [ ] `@apple` Build the maze in the Mac beta for playtesting, from `cribbage/minigames/maze.md` (PLAN.md › Phase 6a) (Bruce, 2026-11-17)
 - [ ] `@apple` Use the app icon from `design/icon/` in both Apple targets: Icon Composer layers, or the `export/apple` PNGs with the light one flattened (design/icon/README.md) (Bruce, 2026-11-16)
 - [x] `@linux` The game is Crib RPG now (was Crib Maze): rename it where players or docs see it in `apps/linux/` (`project.godot`'s name, README), and use the icons' new names, `design/icon/export/linux/crib-rpg*.png` and `crib-rpg.svg` (were `crib-maze`). Keep code names and the record ID `crib-maze` (concept.md › Working title) (from `@apple`, 2026-11-16)
 - [x] `@linux` Use the app icon from `design/icon/export/linux` for the Godot app and its `.desktop` entry (design/icon/README.md) (Bruce, 2026-11-16)

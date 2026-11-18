@@ -48,6 +48,18 @@ Next: GameRecord on the engine track, the maze on the design track, the first pl
 - [ ] Transitions between mini games, and bonus effects (`concept.md` › Transitions and effects)
 - [ ] Maze generator, traps and fog (`concept.md` › The maze)
 
+## Phase 6a · The maze in the beta (playtest)
+
+Built from `cribbage/minigames/maze.md`, the design handoff from `mocks/maze-board.html` v12 (Bruce, 2026-11-17: playtest it in the Mac beta). Each item moves its part of maze.md into engine.md or ui.md as it lands.
+
+- [ ] `@apple` `config/maze.json`, and the maze generator in the engine, with a fixture per seed (maze.md › The board)
+- [ ] `@apple` Plays from the round's sets, turns, walking, doors, switches and closing, as engine actions and events (maze.md › Plays, Turns, Walking)
+- [ ] `@apple` Power jokers on the maze, fire and mine hazards, stars (maze.md › Power jokers on the maze)
+- [ ] `@apple` Stuck: the stir and duels, stuck and landing, with classic pegging (maze.md › Stuck, Duels)
+- [ ] `@apple` Maze bots and `cribmaze-sim` whole games; check rounds a game and seat balance against maze.md › Stats
+- [ ] `@apple` The beta's maze scene: board, camera, hops, fan, play sheet, tray, duel screen, hazard pause, tap to explain (maze.md › The screen)
+- [ ] `@apple` A round in the beta: deal, scoring grid, then the maze, until a token reaches the goal; then playtest (`playtests/plan.md`)
+
 ## Phase 6b · Game flow and deck building
 
 - [ ] Title, menu and start, and the cut for first dealer (`concept.md` › A round)
