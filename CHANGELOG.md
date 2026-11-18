@@ -2,6 +2,16 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 14 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- The maze phase (engine.md › The maze › Plays and turns, The cost field, Walking, Closing and flipping): after a hand's grid turns, seats take turns from the one after the dealer, each spending one play as a walk, a closed door or a flipped switch, until every play is used. The first token into the goal wins; otherwise the cap after `game.maxHands`. Power jokers carry from the maze into the next grid turn.
+- Actions `mazeWalk`, `mazeClose`, `mazeFlip`, `mazeEndTurn`; events `mazeBuilt`, `mazeTurn`, `walk`, `doorClosed`, `switchFlipped`, `mazeHandEnd`, `mazeEnd` (engine.md › The maze › Actions, Events). The board's draws aren't in a record's rolls; a replay builds it from the seed.
+- The golden records are re-recorded: headers only.
+
 ## spec 13 — 2026-11-17
 
 Rules unchanged (r28).

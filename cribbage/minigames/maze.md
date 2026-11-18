@@ -90,6 +90,8 @@ Results across seeds 1 to 20 at v12, Swift and mock alike:
 
 ## Walking
 
+Built in the engine (Apple 0.22.4), with turns, the cost field, closing and flipping: `engine.md` › The maze holds the algorithms as built, and its actions and events. Two things the build does differently from the mock: with 2 players the seat after the dealer moves first (the mock moved the dealer first), and a token at the start isn't treated as stopped at a door.
+
 A walk spends every step. One step is one cell. At each cell, work out where to go next:
 
 1. **Candidates.** The exits you can pass: open passages, doors, and switches that are on.

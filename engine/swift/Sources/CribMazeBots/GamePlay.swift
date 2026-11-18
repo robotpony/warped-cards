@@ -36,6 +36,9 @@ extension MatchBot {
                     ends[id] = nil
                     try send(.match(.reachOver(id: id)), by: nil)
                 }
+            case .maze:
+                guard let m = s.maze, let seat = m.turn else { return }
+                try send(.maze(MazeBot().choose(m)), by: seat)
             case .over: return
             }
         }

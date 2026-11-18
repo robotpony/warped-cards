@@ -94,6 +94,12 @@ test("every game action and event is in the spec, with its fields", () => {
   checkCases(enumCases(event, 'private enum Own'), 'game event', '## Events');
 });
 
+test("every maze action and event is in the spec, with its fields", () => {
+  const maze = read('engine/swift/Sources/CribMaze/Maze.swift');
+  checkCases(enumCases(maze, 'public enum MazeAction'), 'maze action', '### Actions');
+  checkCases(enumCases(maze, 'public enum MazeEvent'), 'maze event', '### Events');
+});
+
 // Every object key path in a JSON value: "match.edgePower.capPercent".
 function keyPaths(value, prefix = '') {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return [];

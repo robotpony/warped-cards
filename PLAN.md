@@ -56,7 +56,7 @@ Built from `cribbage/minigames/maze.md`, the design handoff from `mocks/maze-boa
 - [ ] `@apple` Bots' grid turns off screen with `MatchBot`, their own power jokers, and a summary before your turn (maze.md › The game around the maze; concept.md › Phases › 5a) (engine done in 0.22.1, `botTurn`; the summary waits on the scene)
 - [x] `@apple` Classic pegging scoring in Swift for duels, checked against `fixtures/pegging.json` (engine.md › Classic cribbage › The play)
 - [x] `@apple` `config/maze.json`, and the maze generator in the engine, with a fixture per seed (maze.md › The board)
-- [ ] `@apple` Plays from the round's sets, turns, walking, doors, switches and closing, as engine actions and events (maze.md › Plays, Turns, Walking)
+- [x] `@apple` Plays from the round's sets, turns, walking, doors, switches and closing, as engine actions and events (maze.md › Plays, Turns, Walking)
 - [ ] `@apple` Power jokers on the maze, fire and mine hazards, stars (maze.md › Power jokers on the maze)
 - [ ] `@apple` Stuck: the stir and duels, stuck and landing, with classic pegging (maze.md › Stuck, Duels)
 - [ ] `@apple` Maze bots and `cribmaze-sim` whole games; check rounds a game and seat balance against maze.md › Stats

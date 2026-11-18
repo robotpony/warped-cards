@@ -128,6 +128,12 @@ public struct MatchGame: Codable, Sendable, Equatable {
         return r
     }
 
+    /// The power jokers after a hand's maze, which carry into the next grid turn: seat 0's, then each bot's.
+    public mutating func setJokers(_ trays: [[String: Int]]) {
+        if let t = trays.first { tray = t }
+        for (i, t) in trays.dropFirst().enumerated() where i < botTrays.count { botTrays[i] = t }
+    }
+
     /// This turn's deal, from the game's deck (and the bot's own, when decks aren't shared).
     public func deal() -> Dealt { Deal.deal(seed: turnSeed, deck: deck.cards, botDeck: botDeck?.cards) }
 

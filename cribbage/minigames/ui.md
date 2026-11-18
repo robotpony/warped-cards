@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 13, from the beta app at 0.22.0, rules r28
+Status: draft 3, 2026-11-17, spec 14, from the beta app at 0.22.0, rules r28
 
 ## Summary
 
