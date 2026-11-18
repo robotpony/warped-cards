@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 7, 2026-11-17, spec 12 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 8, 2026-11-17, spec 13 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -165,6 +165,41 @@ A whole game also runs one action at a time, so it can be recorded and replayed 
 In a game around the maze, step 3 also plays each bot's grid turn (`botTurn`) before the player's turn starts, and step 4 makes the plays (`handPlays`) before `handEnd` (The game around the maze).
 
 A hand's options are the app's settings when it starts, so they ride on the action, not in the config. Because every hand starts its dice from its own seed, a hand plays exactly as the same turn does when the deal and the turn are run on their own.
+
+## The maze
+
+The maze is where plays are spent ([maze.md](maze.md) is the design and holds the parts not built yet). Its numbers are in `maze.json` (Config). This section is built up as the maze is: the board first.
+
+### The board
+
+A square grid of cells, numbered `y × W + x` from the top left, with y growing downward. Between two side-by-side cells is a passage: a wall, open, a door or a switch. The board is built once a game, when the game starts, from the game's seed on the `maze` stream only (Dice), so the same seed makes the same maze in every build.
+
+- **Directions.** Every list of directions, and "clockwise", is up, right, down, left. A cell's neighbours are listed in that order, skipping the edge of the grid; a pick "among" them draws an index into that list.
+- **Ties.** Where a search below takes the nearest or best, the first in the list it searches wins.
+- **Rounding.** All of it is integers. "round(a / b)" is half up: (2a + b) div 2b, for a, b ≥ 0.
+
+From `board` in `maze.json`, with `length` the golden path's steps:
+
+1. **Size.** The side W is the smallest whole number with W × W × 100 ≥ `length` × `sizePercent` (220 gives 45 for 900). The start is the bottom-left cell, (W − 1) × W.
+2. **Tree.** Carve a recursive backtracker from the start: while the stack isn't empty, take its top cell's unvisited neighbours; with none, pop it; otherwise pick one (purpose `carve`), open the passage, mark it visited and push it.
+3. **Goal.** Take every cell exactly `length` steps from the start (breadth first), in cell order, and pick one (purpose `goal`). If there is none, start again from step 2 on the same stream; on every `widenEvery`-th try (counting the first), W grows by 1 first.
+4. **Walls list.** Every wall between two cells, cell by cell, each cell's wall to its right and then below it, shuffled (purpose `walls`).
+5. **Golden path.** The tree's one way from the start to the goal: from the start, step each time to the first neighbour, in direction order, that's open and one step nearer the goal. Its cells are `route[0]` (the start) to `route[length]` (the goal); a cell's path index is its place in it.
+6. **Branches.** Breadth first from the path's cells in path order, each neighbour through an open passage: every other cell gets its attach index (the path index it hangs from), its depth from the path and its parent. A cell's branch is the cells from it up its parents, not counting the path cell.
+7. **Variant candidates,** in walls-list order. A wall between cells u and v with different attach indexes: let a be the one with the lower attach index i, b the other with j. Its `len` is depth(a) + depth(b) + 1, its `span` is j − i and its `save` is span − len. Keep it when len + span ≥ `minLoop`, `variantSpan[0]` ≤ span ≤ `variantSpan[1]`, i ≥ `pathMargin` and j ≤ `length` − `pathMargin`.
+8. **Free.** A candidate is free when, for every variant already taken from i' to j', not (i < j' + `variantGap` and j > i' − `variantGap`), and no cell of its two branches is in a taken variant's branches. Taking a variant opens its wall (marked as a variant passage), puts its door if it has one on its entrance, and marks its range and its branch cells taken. Its **entrance** is the passage from the last cell of a's branch to `route[i]`, or the opened wall itself when a is on the path.
+9. **Golden doors,** for k = 1 to `doors`, in order:
+   1. The even spot is t = round(k × `length` / (`doors` + 1)). Its strength is `doorBase` + `doorStep` × (k − 1); its suit is a draw below 4 (purpose `door_suit`) into S, H, D, C.
+   2. The way round: of the free candidates with len × 100 ≥ span × `roundMinPercent` and len ≤ span + `roundMaxExtra`, in candidate order, each has at = min(j − 1, max(i + 2, t)). Keep those with |at − t| × (`doors` + 1) × 100 ≤ `roundNearPercent` × `length` and no golden door yet at `at`, and take the first with the smallest |at − t|.
+   3. The door goes on the passage from `route[at − 1]` to `route[at]`, with at = t when there's no way round.
+   4. With a way round, take it. If len < span + `freeRoundExtra`, its entrance gets a door of another suit: draw below 3 (purpose `variant_suit`) into the other three suits in S, H, D, C order, with strength max(`doorMinStrength`, round(golden strength × `roundDoorPercent` / 100)). The variant is `round_door`; without a door it's `round_free`.
+10. **Shortcuts,** in candidate order, while fewer than `shortcuts` are taken: a free candidate with `shortcutSave[0]` ≤ save ≤ `shortcutSave[1]`, span ≤ `shortcutSpanMax`, and no golden door's index d with i < d ≤ j. Take it, with a door on its entrance: suit a draw below 4 (purpose `variant_suit`), strength max(`doorMinStrength`, round(save / 2)), marked as a shortcut with its save. The variant is `shortcut`.
+11. **Switches,** up to `switches`. The golden passages from `route[k − 1]` to `route[k]` for k from (`length` + 1) × `switchFromPercent` div 100 up to, not including, (`length` + 1) × `switchToPercent` div 100, shuffled (purpose `switch_edge`). For each, while fewer switches are made: skip it unless it's open (not a door or a switch) and neither cell is used. Its near walls are the walls-list walls still walls, with neither cell used, the start or the goal, and the first cell within `switchNear` (x and y steps added) of the passage's first cell; the first `switchWallsTried` of them, shuffled (purpose `switch_wall`). Try each in order: the passage becomes switch s, on; the wall becomes switch s, off. Keep it, and mark all four cells used, if for every mix of every switch's setting every cell can reach the goal, and the start's shortest way to the goal through passages that aren't variant passages is at least `length` × `switchKeepPercent` / 100 steps. Otherwise undo it and try the next wall.
+12. **Pockets.** Depth first from the goal over passable passages (open, doors, switches that are on), trying directions in order: each bridge (a passage whose far side can't reach back round) marks its exit from the goal's side as a pocket; every other passage on the search tree marks both its cells on a loop. Done again after any flip or opened wall.
+13. **Junction arrows.** For each cell in order with 2 or more exits that aren't pockets, pick one of them (purpose `junction`). A cell without one points up; nothing draws on `maze` after the board is built, so a cell that gains a fork later starts pointing up.
+14. **Stars.** The cells on a loop, off the golden path and not the start, in cell order, shuffled (purpose `prize_cells`); the first round(`length` / `starsPerSteps`) get a star (23 for 900).
+
+`fixtures/mazes.json` holds 5 seeds' mazes from the mock's generator, which the Swift build matches: size, start, goal, golden path, doors, variants, switches, stars and arrows.
 
 ## Actions
 
@@ -393,7 +428,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (12), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
+| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (13), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`, including a timed key's) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -436,6 +471,7 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 | `special` | Per reach joker: `reach_cards`, then `reach_seconds` (r19). Per key joker: `key_lasts`, then `key_seconds` for a timed one (r28) |
 | `opening` | Per opening count with a bonus: `bonus` per power joker won (r26) |
 | `prize` | `prize_special` |
+| `maze` | The maze's board, once a game when the game starts: `carve`, `goal`, `walls`, `door_suit`, `variant_suit`, `switch_edge`, `switch_wall`, `junction`, `prize_cells` (The maze › The board). Never started again, and nothing draws on it after the board is built |
 | `bot.<seat>` | A bot's own choices (see Bots). A bot's own grid turn draws its match turn on the game's streams, started again from its seed (The game around the maze) |
 
 ## Clock and timer
@@ -701,6 +737,39 @@ Durations in milliseconds per action, for the simulator's modelled clock. These 
 }
 ```
 
+### maze.json
+
+The maze's numbers (The maze). Percents are whole numbers. `close.where` is `any` for now.
+
+```json
+{
+  "version": 1,
+  "board": {
+    "length": 900, "sizePercent": 220, "widenEvery": 25,
+    "doors": 14, "doorBase": 6, "doorStep": 1,
+    "minLoop": 30, "variantSpan": [10, 140], "pathMargin": 3,
+    "roundMinPercent": 70, "roundMaxExtra": 40, "roundNearPercent": 75,
+    "roundDoorPercent": 60, "freeRoundExtra": 12, "doorMinStrength": 6,
+    "shortcuts": 10, "shortcutSave": [10, 40], "shortcutSpanMax": 90, "variantGap": 6,
+    "switches": 4, "switchFromPercent": 10, "switchToPercent": 90, "switchNear": 3, "switchWallsTried": 12, "switchKeepPercent": 80,
+    "starsPerSteps": 40
+  },
+  "turn": { "jokersPerTurn": 1 },
+  "close": { "mulPercent": 100, "min": 2, "perRound": 1, "where": "any" },
+  "cost": { "suitedDoorExtra": 8 },
+  "jokers": { "targetRange": 10, "bombPower": 12, "starOdds": [["key", 30], ["swapper", 20], ["burn", 20], ["bomb", 15], ["reach", 15]] },
+  "hazards": { "fire": { "pass": [1, 2], "land": [4, 5] }, "mine": { "pass": [2, 3], "land": [6, 7] } },
+  "plot": { "on": true, "openings": [["fade", 50], ["star", 25], ["shift", 25]], "shiftMaxRound": 20, "starAhead": 6, "starMinWay": 5 },
+  "duel": {
+    "landing": true, "oncePerPairPerRound": true,
+    "peg": { "maxCount": 31, "fifteen": 2, "thirtyOne": 2, "pair": 2, "runPerCard": 1, "go": 1, "lastCard": 1 }
+  },
+  "timing": { "stepMs": 90, "walkDelayMs": 350, "hazardHoldMs": 1800, "hazardLandHoldMs": 2200, "botPegMs": 850 }
+}
+```
+
+The load checks: `board.length` 20 or more, `sizePercent` 100 or more, `widenEvery` 1 or more, ranges as [min, max], at most 8 switches (A to H), `starsPerSteps` 1 or more, `close.min` 1 or more, every `starOdds` kind a known special with a positive weight, `plot.openings` only `fade`, `star` and `shift`. `duel.peg` has `classic.json` › peg's shape, without heels. `timing` is for the app. maze.json is optional: without it, there's no maze.
+
 ### classic.json
 
 The classic game's numbers. Its scoring is its own copy, so tuning Crib RPG's `rules.json` never changes the baseline.
@@ -848,6 +917,7 @@ Shared test cases live in [`cribbage/minigames/fixtures/`](fixtures/) as JSON. T
 |---|---|
 | `counting.json` | A list of cards, options, and the expected combos (kind, size or multiplier, points, card indexes), total and left-over cards |
 | `classic-hands.json` | Classic hands and cribs with known counts: 29, 28, 24, 0, his nobs (in a hand and a crib), a jack starter (no nobs), the hand and crib flush rules |
+| `mazes.json` | One maze per seed (The maze › The board): size, start, goal, golden path, doors, variants, switches, stars and junction arrows, written by `make-mazes.js` from the mock's generator |
 | `pegging.json` | Whole plays for 2 and 3 players: the hands, the cards in the order played, and every score (fifteens, pairs, a pair royal, runs played out of order, gos, 31s, the last card) |
 | `dice.json` | For a few seeds and stream names: the first raw outputs, draws below n, weighted picks and a shuffle of 52, so every port matches the generator exactly |
 | `records/*.jsonl` | Whole recorded games (Records), made by `cribmaze-sim record`. Replaying each from its seed MUST give the same rolls and events, and writing it again MUST give the same bytes, ignoring `at` |

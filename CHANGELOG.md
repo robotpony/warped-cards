@@ -2,6 +2,16 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 13 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- The maze's board (engine.md › The maze › The board): built once a game from the `maze` stream, exactly as the mock builds it, every rounding in integers. `config/maze.json` holds every maze number (engine.md › Config › maze.json); record headers carry it as `maze`.
+- `fixtures/mazes.json`, rung 9: one maze per seed for 5 seeds, written by `make-mazes.js` from the mock's generator.
+- The golden records are re-recorded: only their headers changed (`specVersion`, and `maze` in the config).
+
 ## spec 12 — 2026-11-17
 
 Rules unchanged (r28).

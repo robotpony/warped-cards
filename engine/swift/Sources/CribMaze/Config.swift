@@ -150,9 +150,11 @@ public struct Config: Codable, Sendable, Equatable {
     public var jokers: JokersConfig
     public var bots: BotsConfig
     public var hints: HintsConfig?
+    /// maze.json: the maze's numbers (engine.md › The maze). Optional: without it, no maze.
+    public var maze: MazeConfig?
 
-    public init(rules: RulesConfig, jokers: JokersConfig, bots: BotsConfig, hints: HintsConfig? = nil) throws {
-        self.rules = rules; self.jokers = jokers; self.bots = bots; self.hints = hints
+    public init(rules: RulesConfig, jokers: JokersConfig, bots: BotsConfig, hints: HintsConfig? = nil, maze: MazeConfig? = nil) throws {
+        self.rules = rules; self.jokers = jokers; self.bots = bots; self.hints = hints; self.maze = maze
         try validate()
     }
 
@@ -165,7 +167,9 @@ public struct Config: Codable, Sendable, Equatable {
         }
         // hints.json is optional: without it, no discard principle is shown.
         let hints: HintsConfig? = FileManager.default.fileExists(atPath: folder.appendingPathComponent("hints.json").path) ? try read("hints.json") : nil
-        return try Config(rules: read("rules.json"), jokers: read("jokers.json"), bots: read("bots.json"), hints: hints)
+        // maze.json is optional too: without it, a game has no maze.
+        let maze: MazeConfig? = FileManager.default.fileExists(atPath: folder.appendingPathComponent("maze.json").path) ? try read("maze.json") : nil
+        return try Config(rules: read("rules.json"), jokers: read("jokers.json"), bots: read("bots.json"), hints: hints, maze: maze)
     }
 
     /// The checks on load (engine.md › Config). A bad file fails loudly.
@@ -217,6 +221,7 @@ public struct Config: Codable, Sendable, Equatable {
         if let d = rules.deck, let min = d.minSize, min < 25 { try fail("deck.minSize must be 25 or more") }
         if !["plus", "square"].contains(rules.specials.bombShape) { try fail("specials.bombShape must be plus or square") }
         if !["add", "each"].contains(m.edgePower.combine) { try fail("edgePower.combine must be add or each") }
+        try maze?.validate(known: rules.specials.known)
         for l in bots.match where l.search == "traced" && (l.depth == nil || l.starts == nil) { try fail("bots.match.\(l.id): traced needs depth and starts") }
     }
 }

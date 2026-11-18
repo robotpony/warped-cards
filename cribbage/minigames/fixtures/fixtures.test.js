@@ -101,3 +101,9 @@ test("config files pass the load checks", () => {
   for (const d of classic.deal) assert.equal(d.toCrib + d.players * d.discard, 4, "crib holds 4");
   assert.ok(bots.match.length && bots.classic.length);
 });
+
+test("mazes.json is the mock generator's mazes", () => {
+  const { mockGenerator, maze } = require("./make-mazes.js");
+  const board = read("..", "config", "maze.json").board, gen = mockGenerator();
+  for (const c of read("mazes.json").cases) assert.deepEqual(maze(gen, Number(c.seed), board), c, `seed ${c.seed}`);
+});

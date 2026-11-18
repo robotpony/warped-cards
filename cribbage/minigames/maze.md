@@ -39,63 +39,23 @@ The mock games run 6 to 12 rounds with a 900-step golden path (Stats, below).
 ### Size and seed
 
 - The maze is a square grid, side `W = ceil(sqrt(length × 2.2))`, where `length` is the golden path's steps (900, so 45 × 45).
-- Everything comes from the game's seed on the `maze` dice stream (`PORTING.md` › Same game, every build). The `maze` stream starts once, from the game seed, when the game starts, and is never started again: hands restart the other streams (`engine.md` › The game as steps), not this one. Later draws on it (junction arrows after a flip) carry on from where generation left off.
+- Everything comes from the game's seed on the `maze` dice stream (`PORTING.md` › Same game, every build). The `maze` stream starts once, from the game seed, when the game starts, and is never started again: hands restart the other streams (`engine.md` › The game as steps), not this one. Nothing draws on it after the board is built (engine.md › The maze › The board).
 - **Directions.** Every list of directions, and "clockwise", is up, right, down, left (N, E, S, W), with y growing downward. A cell's neighbours are listed in that order, skipping the edge of the grid; a pick "among" them draws an index into that list.
 - **Ties.** Where this doc says nearest, cheapest or best and two are equal, the one earlier in the list it was picked from wins (candidates in clockwise order from the arrow, plays biggest first, walls in walls-list order).
 - The start is the bottom-left cell. The goal is a cell exactly `length` steps from the start along the maze.
 
 ### Generation, in order
 
-1. **Tree.** Carve a recursive-backtracker maze from the start: from the cell on top of the stack, pick an unvisited neighbour (purpose `carve`), open the passage, push it. A tree has exactly one way between any two cells.
-2. **Goal.** Collect every cell at exactly `length` steps from the start, and pick one (purpose `goal`). If there is none, carve again with the same stream; every 25 tries, widen the grid by 1.
-3. **Golden path.** The goal's one way back to the start. Every other cell hangs off it as a dead end.
-4. **Walls list.** Every closed wall between two cells, shuffled (purpose `walls`). Variants pick from it in this order.
-5. **Branches.** For each cell off the golden path: the path index it hangs from (its attach index), and its depth from the path.
-6. **Variant candidates.** A wall between two cells that hang from different path indices `i < j` makes a loop when opened. It leaves the path at `i` and rejoins at `j`.
-   - `len` is the two cells' depths plus 1, the variant's own steps.
-   - `span` is `j − i`, the golden steps it skips. `save` is `span − len`.
-   - Keep a candidate only if:
-     - `len + span ≥ minLoop` (30)
-     - `10 ≤ span ≤ 140`
-     - `i ≥ 3` and `j ≤ length − 3`
-7. **Golden doors.** There are `doors` of them (14), placed in order k = 1 to 14.
-   - The even spot is `t = round(k × length / (doors + 1))`.
-   - Strength is `doorBase + doorStep × (k − 1)`, which is 6, 7, 8 … 19. The suit is picked by purpose `door_suit`.
-   - **Way round.** Look for a free candidate where:
-     - `0.7 × span ≤ len ≤ span + 40`
-     - the door can sit at `at = clamp(t, i + 2, j − 1)`
-     - `at` is within `0.75 × length / (doors + 1)` of `t`
-     - no other golden door is already at `at`
-     - Take the candidate whose `at` is nearest `t`. The door goes on the golden passage into `route[at]`.
-   - **Without a way round,** the door goes at `t`.
-   - **With one,** open the variant's wall:
-     - If the way round is under 12 steps longer than the stretch it skips, its entrance gets a door of another suit (purpose `variant_suit`) with strength `max(6, round(0.6 × golden strength))`.
-     - Otherwise it's a longer, free way with no door.
-8. **Shortcuts,** up to `variants` (10). Take candidates in walls-list order where:
-   - `10 ≤ save ≤ 40` and `span ≤ 90`
-   - no golden door lies between `i` and `j`
-   - the candidate is free
-   - Open the wall, and put a door at the entrance with a suit (purpose `variant_suit`) and strength `max(6, round(save / 2))`.
-9. **Free** means the candidate's path range doesn't come within 6 indices of a variant already taken, and it shares no cells with one.
-10. **Variant doors** sit on the passage where the variant's branch meets the golden path, so the choice is made at the fork.
-11. **Switches** (4). A switch pairs an open golden passage with a closed wall near it, and flipping it swaps which of the two is open.
-    - Golden passages come from the middle 80% of the path, shuffled (purpose `switch_edge`).
-    - The wall must be within 3 cells, away from the start, the goal and other switches, and is picked by purpose `switch_wall`.
-    - A pair is kept only if every mix of switch settings leaves every cell joined to the goal, and the golden path at least 80% of `length`.
-12. **Pockets.** These are passages into parts of the maze the goal isn't in: dead ends and spurs.
-    - Mark them as the bridges of the open maze, found depth first from the goal.
-    - Every cell on a loop is marked "on a loop".
-    - Redo this after any switch flip or opened wall.
-13. **Junction arrows.** Every cell with 2 or more exits that aren't pockets gets an arrow pointing one of them (purpose `junction`).
-14. **Stars.** There are `round(length / 40)` of them (22), on cells that are on a loop but off the golden path and not the start. They come from a shuffle with purpose `prize_cells`.
+Built in the engine (Apple 0.22.3): the algorithm, with its integer rounding and every number from `config/maze.json`, is now in `engine.md` › The maze › The board, and `fixtures/mazes.json` checks 5 seeds. The Swift build makes exactly the mock's mazes (all 20 seeds checked, junction arrows and stars included).
 
-Rounding is half up throughout. A whole maze takes the `maze` stream only, so the same seed gives the same maze in every build. A fixture MUST check a seed's maze: size, start, goal, golden path, doors, variants, switches and stars.
+One thing the build settled from the mock: nothing draws on the `maze` stream after the board is built. A cell that gains a fork after a flip or an opened wall starts with its arrow pointing up.
 
-Mock results across 20 seeds:
+Results across seeds 1 to 20 at v12, Swift and mock alike:
 
-- About 22 doors a maze, between 21 and 27.
-- 105 of 120 golden doors got a way round.
-- About 30 junctions are crossed in a game.
+- 24.3 doors a maze, between 21 and 27.
+- 135 of 280 golden doors got a way round; 4.25 shortcuts a maze; 4 switches every time.
+- 23 stars (900 / 40 is 22.5, rounded half up).
+- About 30 junctions are crossed in a game (mock; the build's number comes with the simulator).
 
 ### What a cell and a passage can be
 
@@ -357,26 +317,7 @@ The beta's maze scene. Sizes are for the 393 pt phone frame the beta shows.
 
 ## Config
 
-These numbers MUST live in config, not code (`CLAUDE.md` › Conventions). Proposed `config/maze.json`, values as in the mock:
-
-```
-{
-  "board":    { "length": 900, "sizeFactor": 2.2, "doors": 14, "doorBase": 6, "doorStep": 1,
-                "minLoop": 30, "variantSpan": [10, 140], "shortcuts": 10, "shortcutSave": [10, 40],
-                "shortcutSpanMax": 90, "roundDoorShare": 0.6, "freeRoundExtra": 12, "variantGap": 6,
-                "doorMinStrength": 6, "switches": 4, "starsPerSteps": 40 },
-  "turn":     { "jokersPerTurn": 1 },
-  "close":    { "mul": 1, "min": 2, "perRound": 1, "where": "any" },
-  "cost":     { "suitedDoorExtra": 8 },
-  "jokers":   { "targetRange": 10, "bombPower": 12, "starOdds": [["key",30],["swapper",20],["burn",20],["bomb",15],["reach",15]] },
-  "hazards":  { "fire": { "pass": [1,2], "land": [4,5] }, "mine": { "pass": [2,3], "land": [6,7] } },
-  "plot":     { "on": true, "openings": [["fade",50],["star",25],["shift",25]], "shiftMaxRound": 20, "starAhead": 6 },
-  "duel":     { "landing": true, "oncePerPairPerRound": true },
-  "timing":   { "stepMs": 90, "walkDelayMs": 350, "hazardHoldMs": 1800, "hazardLandHoldMs": 2200, "botPegMs": 850 }
-}
-```
-
-`timing` MAY move to `fx.json` or `timing.json` if that suits the beta better.
+These numbers live in `config/maze.json` (built, Apple 0.22.3), shaped and checked as `engine.md` › Config › maze.json says. Against the proposal here, the build makes every fraction a whole percent (`sizePercent` 220 for 2.2, `close.mulPercent` 100, `roundDoorPercent` 60) and names the generator's other numbers (`widenEvery`, `pathMargin`, `roundMinPercent`, `roundMaxExtra`, `roundNearPercent`, the switch numbers, `plot.starMinWay`). The duel's pegging points are `duel.peg`. The bot styles go in `config/bots.json`.
 
 ## Engine and records
 

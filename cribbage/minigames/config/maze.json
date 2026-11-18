@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "board": {
+    "length": 900, "sizePercent": 220, "widenEvery": 25,
+    "doors": 14, "doorBase": 6, "doorStep": 1,
+    "minLoop": 30, "variantSpan": [10, 140], "pathMargin": 3,
+    "roundMinPercent": 70, "roundMaxExtra": 40, "roundNearPercent": 75,
+    "roundDoorPercent": 60, "freeRoundExtra": 12, "doorMinStrength": 6,
+    "shortcuts": 10, "shortcutSave": [10, 40], "shortcutSpanMax": 90, "variantGap": 6,
+    "switches": 4, "switchFromPercent": 10, "switchToPercent": 90, "switchNear": 3, "switchWallsTried": 12, "switchKeepPercent": 80,
+    "starsPerSteps": 40
+  },
+  "turn": { "jokersPerTurn": 1 },
+  "close": { "mulPercent": 100, "min": 2, "perRound": 1, "where": "any" },
+  "cost": { "suitedDoorExtra": 8 },
+  "jokers": { "targetRange": 10, "bombPower": 12, "starOdds": [["key", 30], ["swapper", 20], ["burn", 20], ["bomb", 15], ["reach", 15]] },
+  "hazards": { "fire": { "pass": [1, 2], "land": [4, 5] }, "mine": { "pass": [2, 3], "land": [6, 7] } },
+  "plot": { "on": true, "openings": [["fade", 50], ["star", 25], ["shift", 25]], "shiftMaxRound": 20, "starAhead": 6, "starMinWay": 5 },
+  "duel": {
+    "landing": true, "oncePerPairPerRound": true,
+    "peg": { "maxCount": 31, "fifteen": 2, "thirtyOne": 2, "pair": 2, "runPerCard": 1, "go": 1, "lastCard": 1 }
+  },
+  "timing": { "stepMs": 90, "walkDelayMs": 350, "hazardHoldMs": 1800, "hazardLandHoldMs": 2200, "botPegMs": 850 }
+}

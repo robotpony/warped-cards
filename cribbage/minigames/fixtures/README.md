@@ -12,6 +12,7 @@ Shared test cases for every build of the engine: the JS mocks, the Swift engine,
 | 6 | `records/*.jsonl`, scripted | Records, Actions, Events | Fed the recorded rolls, the engine gives the same events at every step |
 | 7 | `records/*.jsonl`, verify | Dice, Bots, every rules section | From the seed alone, the engine draws the same rolls and gives the same events at every step |
 | 8 | `records/*.jsonl`, written | Records › Encoding | Writing each game again gives the same bytes, ignoring `at` |
+| 9 | `mazes.json` | The maze › The board | Every seed builds the same maze: size, start, goal, golden path, doors, variants, switches, stars and junction arrows |
 
 Rung 6 before 7: scripted replay checks the rules without the dice, so a dice bug and a rules bug show up apart. Rung 7 also checks the bots, since the records are bot games.
 
@@ -21,12 +22,13 @@ Rung 6 before 7: scripted replay checks the rules without the dice, so a dice bu
 
 | Build | Rungs | How |
 |---|---|---|
-| JS mocks | 1 to 4 | `node --test cribbage/minigames/` |
-| Swift | 1 to 8 | `swift test` in `engine/swift/` (`CribbageKitTests` › pegging, `CribMazeTests` › golden records) |
+| JS mocks | 1 to 4, 9 | `node --test cribbage/minigames/` |
+| Swift | 1 to 9 | `swift test` in `engine/swift/` (`CribbageKitTests` › pegging, `CribMazeTests` › golden records) |
 
 ## Making fixtures
 
 - `make-dice.js` writes `dice.json` from `mocks/dice.js`. Rerun it only when Dice changes, and say so in the commit.
+- `make-mazes.js` writes `mazes.json` from the mock's generator (`mocks/maze-board.html`) and `config/maze.json`'s board. Rerun it only when the generator or the board numbers change, and say so in the commit.
 - `make-counting.js` fills in card indexes from the mock counter and stops if it disagrees with a hand-worked total.
 - `swift run cribmaze-sim record --games 1 --seed 1 --out ../../cribbage/minigames/fixtures/records/seed1.jsonl` (from `engine/swift/`) re-records the golden game. Re-record only when a rules change breaks it on purpose, and say so in the commit. A re-recorded game is a new reference for every port.
 - `spec.test.js` isn't a fixture: it checks that `engine.md` names every action and event the Swift engine writes, with its fields, and shows every config file's shape. When it fails, fix the spec (or the code) in the same change.

@@ -71,6 +71,7 @@ struct Tally {
 }
 
 if CommandLine.arguments.dropFirst().first == "discard" { runDiscard(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
+if CommandLine.arguments.dropFirst().first == "maze" { runMaze(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "game" { runGame(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "record" { runRecord(Array(CommandLine.arguments.dropFirst(2))); exit(0) }
 if CommandLine.arguments.dropFirst().first == "replay" { runReplay(Array(CommandLine.arguments.dropFirst(2))) }
