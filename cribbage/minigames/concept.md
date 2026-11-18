@@ -463,6 +463,8 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 | 2026-11-17 | Plays shown as a fan of small cards, steps and suit in the corner, until one is chosen; the joker tray sits at the bottom. One joker a turn, before or after the play; after your play, the turn waits for a joker or End turn (Bruce) |
 | 2026-11-17 | Deadlocks are a plot opportunity (Bruce). A player who ends a round no closer to the goal is stuck; at the next deal the maze stirs for them (their door fades, a star falls ahead, or a wall opens), once a round. Two stuck players, or one stuck behind a door the other closed, duel: a short classic pegging game, its winner's door breaks (Bruce: pegging duel not designed yet; the mock tosses a coin). 40 games, balanced against balanced: 5 to 25 rounds, median 8, 34 in 6 to 12, about 4 plot events and 2 duels a game. Two door-closer bots still drag (median 16): they close a fresh door every round |
 | 2026-11-17 | Duels (Bruce, 43 to 45): a DUEL! mini-game screen walks through the pegging, then the consequences. Classic two-player pegging, back and forth, highest score wins; a tie replays once, then a coin. The winner's door breaks and the winner takes the loser's biggest play. No closing a door in the way of someone who closed one in yours this round. Mock deals 4 cards each from a fresh deck ("duel" stream). 40 games: balanced vs balanced 4 to 18 rounds, 32 in 6 to 12, 1.1 duels a game; door closer vs door closer 7 to 26, median 11, 28 in 6 to 12 (was 8 to 40, median 16) |
+| 2026-11-17 | The duel uses each player's own 4-card hand (Bruce, 46); a duel between two bots shows only its result (47). `maze-sets.js` turns now carry the kept hand, matched from the same recordings (156 of 180 exact, 22 with no hand count to match get a fresh deal) |
+| 2026-11-17 | Maze generation (Bruce): one golden path, several variants where doors and cards give a choice, no short loops. The tree maze's one path is the golden path; each variant opens one wall between two side branches (a loop of 30 cells or more, variants not overlapping): round a golden door with a door of another suit, or a longer free way; or a shortcut that saves 10 to 40 steps behind a suited door. Replaces the 6% random loops (many tiny) and shortcut doors. Junctions fell from about 600 a game to about 30. With no steps wasted on loops, 600 steps gave 3 to 8 rounds (median 6); 900 steps, 40 games: balanced vs balanced 3 to 16, median 7, 33 in 6 to 12; vs racer 36 in range; door closers 6 to 20, median 11, 27 in range |
 | 2026-11-17 | Doors look like playing cards (Bruce): rank (the strength left) and suit in two corners and large in the middle, all turned with the card as it lies across the path. Walls are double: two thin neon lines with a few points of floor between them, so the cards sit in among them |
 
 ## Open questions
@@ -474,11 +476,10 @@ Before the choice, we leaned toward Fifteen Two or Pegway for an app name, with 
 5. Edge power has no cap since r21. Does a cap come back as a mechanic the player can see and change with jokers, and how big do scores get over 5 to 13 hands?
 6. Do small closed doors (a play of 6 makes a door of 3) matter, or should a closed door have a minimum strength?
 7. About 14 plays each a round is 28 to 42 maze turns. Does that drag? Play a round first; if it does, plays of 4 steps or fewer could walk themselves.
-8. Junctions: are the forks near the start too dense? The mock shows 147 on a 37×37 maze, drawn only near the tokens and the previewed path.
+8. Variants: how many, and which kinds? The mock makes 4 to 8 a maze, mostly suited shortcuts; ways round a golden door are rarer (0 to 3).
 9. The shop: what you pay with now that pips are gone (steps, prizes or something new), what's for sale, prices, and whether bots shop the same way.
 10. Clear-board bonus: steps or a prize, and how big?
 11. Jokers and extra cards: what items and the title and blank card prizes are, how many jokers a round can have (n), each special joker type's rules, and what happens when one is dealt into a hand or the crib, cut as the starter or played in pegging.
-12. The duel's cards: 4 from a fresh deck (the mock), or the players' own hands from the deal?
 
 ## Plan
 

@@ -295,7 +295,7 @@ You see every player's plays left and their total steps, but not their cards.
 
 A player who ends a round no closer to the goal than they began it is stuck. At the next deal, the maze stirs for them: the door in their way fades (any suit wears it down, at half its strength), a star falls a few steps ahead, or a wall beside them opens. One stir a round, for the player furthest behind.
 
-When two players are stuck, or one is stuck behind a door the other closed, they duel instead. A DUEL! screen takes over and the two play classic two-player pegging, back and forth to 31, as in cribbage (fifteens, pairs, runs, go, 31 and last card; see Scorekeep's How to play page), with 4 cards each from a fresh deck. The higher score wins. A tie plays again once; tied again, a coin decides. Then the screen shows what it means: the door in the winner's way breaks, and the winner takes the loser's biggest play, its cards and steps.
+When two players are stuck, or one is stuck behind a door the other closed, they duel instead. A DUEL! screen takes over and the two play classic two-player pegging, back and forth to 31, as in cribbage (fifteens, pairs, runs, go, 31 and last card; see Scorekeep's How to play page), each with the 4 cards they kept this round (a player whose hand clashes, or isn't known, gets 4 from the rest of the deck). The higher score wins. A tie plays again once, with the other player leading; tied again, a coin decides. A duel between two computer players isn't shown: you see its result. Then the screen shows what it means: the door in the winner's way breaks, and the winner takes the loser's biggest play, its cards and steps.
 
 
 Which play to use, and when, is the game: a big play can carry you through a door of its suit, and the order you arrive at a junction decides which way you go.
@@ -306,7 +306,9 @@ All cards go back into the deck, and the deck is shuffled. The deck lasts the wh
 
 ## Moving through the maze
 
-The maze is a grid of passages built from the game's seed, with a main route from start to goal (600 steps in the mock, to tune for a game of 6 to 12 rounds), loops that circle back, doors and switches.
+The maze is a grid of passages built from the game's seed, with one golden path from start to goal (900 steps in the mock, to tune for a game of 6 to 12 rounds), a few variants, doors and switches. Everything else is dead ends, which walks never turn into.
+
+- **Variants** leave the golden path and rejoin it later, so the choice they give is about doors and cards: a way round a golden-path door with a door of another suit (or a longer way with no door), or a shortcut with a suited door at its entrance. Variants don't overlap, and there are no little loops: every way round is at least 30 cells (to tune).
 
 - One point is one step, and you must take every step.
 - Walks go forward. A walk never turns into a dead end or a pocket the goal isn't in; it only walks one when it has no other way.
@@ -336,7 +338,7 @@ There are no gates (merged into doors, 2026-11-17).
 A door is a card laid across the path: its rank is the strength left, and its suit is the suit it needs. Only steps of its suit wear it down, and the steps spent on it don't move you. Steps of another suit stop at the door, and the rest of the walk is lost. A door with no suit is worn down by any steps.
 
 - Doors on the main route get stronger toward the goal (12, 18, 24 and so on in the mock, to tune).
-- Shortcut doors guard passages that cut the route short. They have no suit, and their strength is half the steps the shortcut saves (to tune), so a shortcut is a trade of steps.
+- A variant's door sits at its entrance, beside the golden path. Round a golden-path door, it has another suit and 60% of that door's strength; on a shortcut, a suit and half the steps the shortcut saves (to tune).
 - A door you close takes your play's suit, and its steps as strength. Opening it needs the same suit, like any door.
 - You can't close a door in the way of a player who closed one in your way this round.
 - Damage stays on a door between turns, whoever did it. Once a door is down, it's open for every player.

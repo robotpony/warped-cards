@@ -143,10 +143,11 @@
 
     <div class="card">
       <label>Seed <input type="text" id="seed" spellcheck="false"> <button class="btn" id="apply">Use</button> <button class="btn" id="newSeed">New seed</button> <span class="muted" id="mazeSize"></span></label>
-      <label>Route <select id="length"><option value="600" selected>600 steps</option><option value="900">900 steps</option><option value="1200">1,200 steps</option></select> <span class="muted" id="sizeNote"></span></label>
+      <label>Route <select id="length"><option value="600">600 steps</option><option value="900" selected>900 steps</option><option value="1200">1,200 steps</option></select> <span class="muted" id="sizeNote"></span></label>
       <label>Doors on the route <select id="doors"><option value="4">4</option><option value="6" selected>6</option><option value="9">9</option></select>
         strength <select id="doorBase"><option value="12:6" selected>12, 18, 24 …</option><option value="20:10">20, 30, 40 …</option><option value="30:15">30, 45, 60 …</option></select></label>
-      <label>Shortcut doors (strength: half the steps saved) <select id="shortSuit"><option value="">any suit</option><option value="1">suited</option></select> <select id="gates"><option value="0">none</option><option value="3">3</option><option value="6" selected>6</option><option value="12">12</option></select></label>
+      <label>Variants (ways round part of the golden path) <select id="variants"><option value="0">none</option><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option></select>
+        shortest loop <select id="minLoop"><option value="20">20 cells</option><option value="30" selected>30 cells</option><option value="50">50 cells</option></select></label>
       <label>Switches <select id="switches"><option value="0">none</option><option value="4" selected>4</option><option value="8">8</option></select></label>
       <label>Close a door: strength <select id="closeMul"><option value="0.5">half the play's steps</option><option value="1" selected>the play's steps</option></select>
         <select id="closeWhere"><option value="any" selected>anywhere</option><option value="near">within 10 cells of you</option></select>
@@ -156,7 +157,7 @@
         Bot 1 <select id="style1"></select> Bot 2 <select id="style2"></select></label>
       <label>Walk speed <select id="speed"><option value="160">normal</option><option value="90" selected>fast</option><option value="0">instant</option></select></label>
       <label>Zoom <select id="zoom"><option value="54" selected>close: about 7 cells across, like maze-walk's fog</option><option value="38">medium: about 10 cells</option><option value="30">far: about 13 cells</option></select></label>
-      <label><input type="checkbox" id="whole"> Show the whole maze (designer view)</label>
+      <label><input type="checkbox" id="whole"> Show the whole maze, with the golden path (designer view)</label>
     </div>
 
     <div class="card">
@@ -220,7 +221,7 @@
   const cfg = () => {
     const [db, ds] = $("doorBase").value.split(":").map(Number);
     return {
-      length: +$("length").value, doors: +$("doors").value, doorBase: db, doorStep: ds, gates: +$("gates").value, shortSuit: !!$("shortSuit").value,
+      length: +$("length").value, doors: +$("doors").value, doorBase: db, doorStep: ds, variants: +$("variants").value, minLoop: +$("minLoop").value,
       switches: +$("switches").value, closeMul: +$("closeMul").value, closeWhere: $("closeWhere").value, closeMax: +$("closeMax").value, plotAfter: +$("plotAfter").value, bots: +$("bots").value,
       styles: [$("style0").value, $("style1").value, $("style2").value], speed: +$("speed").value, whole: $("whole").checked, zoom: +$("zoom").value,
     };
@@ -252,33 +253,57 @@
       if (exact.length) goal = exact[rng.below(exact.length, "goal")];
     }
     const M = { W, H: W, N, start, goal, edges, nb, key, xy, id, prizes: new Set(), switches: [], ptr: new Int8Array(N) };
-    // Loops that don't shorten the route: ways that circle back.
+    // The golden path: the tree has exactly one way from start to goal, c.length steps.
     const walls = [];
     for (let i = 0; i < N; i++) for (const n of nb(i)) if (i < n && !edges.has(key(i, n))) walls.push([i, n]);
     rng.shuffle(walls, "walls");
-    let loops = Math.round(N * 0.06);
-    const shortcuts = [];
-    for (const [a, b] of walls) {
-      if (!loops && shortcuts.length >= 60) break;
-      edges.set(key(a, b), { kind: "open" });
-      const d = bfs(start, edges, nb, N)[goal];
-      if (d >= c.length && loops) { loops--; continue; }
-      edges.delete(key(a, b));
-      if (d < c.length && c.length - d >= 10 && c.length - d <= c.length / 5) shortcuts.push([a, b, c.length - d]);
-    }
-    let g = 0;
-    for (const [a, b, saves] of shortcuts) {
-      if (g >= c.gates) break;
-      // A shortcut door: a card door like the route's, as strong as half the steps it saves.
-      edges.set(key(a, b), { kind: "door", shortcut: true, saves, strength: Math.max(6, Math.round(saves / 2)), damage: 0, suit: c.shortSuit ? SUITS[g % 4] : null });
-      if (bfs(start, edges, nb, N, e => !e.shortcut)[goal] !== c.length) { edges.delete(key(a, b)); continue; }
-      g++;
-    }
     M.route = routeFrom(M);
-    // Doors on the route, evenly spaced, stronger as you go, each with a suit.
+    const L = M.route.length - 1;
+    // Doors on the golden path, evenly spaced, stronger as you go, each with a suit.
+    const routeDoors = [];
     for (let k = 1; k <= c.doors; k++) {
       const at = Math.floor(M.route.length * k / (c.doors + 1));
       Object.assign(edges.get(key(M.route[at - 1], M.route[at])), { kind: "door", strength: c.doorBase + c.doorStep * (k - 1), damage: 0, suit: SUITS[rng.below(4, "door_suit")] });
+      routeDoors.push(at);
+    }
+    // Every cell hangs off the golden path somewhere: where (its attach index) and how deep.
+    const attach = new Int32Array(N).fill(-1), depth = new Int32Array(N), parent = new Int32Array(N).fill(-1), q = [];
+    M.route.forEach((cell, k) => { attach[cell] = k; q.push(cell); });
+    for (let h = 0; h < q.length; h++) for (const n of nb(q[h])) if (attach[n] < 0 && edges.has(key(q[h], n))) { attach[n] = attach[q[h]]; depth[n] = depth[q[h]] + 1; parent[n] = q[h]; q.push(n); }
+    const branch = (x) => { const out = []; while (parent[x] >= 0) { out.push(x); x = parent[x]; } return out; };   // cells from x up to (not incl.) the path
+    // Variants: one wall opened between two side branches, so the way leaves the golden path at i and rejoins at j.
+    // Each loop is at least c.minLoop cells round, and variants don't overlap, so there are no little loops.
+    // Choices come from doors and cards: round a golden door, a door of another suit (or, if it's long, no door);
+    // a shorter way, a suited door at its entrance. A longer way round with nothing to get round is left out.
+    const cand = [];
+    for (const [u, v] of walls) {
+      if (attach[u] < 0 || attach[v] < 0 || attach[u] === attach[v]) continue;
+      const [a, b] = attach[u] < attach[v] ? [u, v] : [v, u], i = attach[a], j = attach[b], len = depth[a] + depth[b] + 1, span = j - i;
+      if (len + span < c.minLoop || span < 10 || span > 90 || i < 3 || j > L - 3) continue;
+      const covers = routeDoors.find(t => t > i && t <= j), save = span - len;
+      // Round a door: about as long as the stretch it skips. A shortcut: saves 10 to 40 steps.
+      if (covers ? len < span * .8 || len > span + 30 : save < 10 || save > 40) continue;
+      const short = save > 0;
+      cand.push({ a, b, i, j, len, span, covers, short });
+    }
+    // Round a golden door first, then shortcuts.
+    cand.sort((x, y) => !!y.covers - !!x.covers);   // stable: otherwise in the shuffled wall order
+    const takenRange = [], takenCells = new Set(); M.variants = [];
+    for (const v of cand) {
+      if (M.variants.length >= c.variants) break;
+      if (takenRange.some(([i, j]) => v.i < j + 6 && v.j > i - 6)) continue;
+      const cells = [...branch(v.a), ...branch(v.b)]; if (cells.some(x => takenCells.has(x))) continue;
+      edges.set(key(v.a, v.b), { kind: "open", variant: true });
+      // The variant's door sits on its entrance, next to the golden path, so the choice is made at the fork.
+      const up = branch(v.a), entry = up.length ? key(up[up.length - 1], M.route[v.i]) : key(v.a, v.b);
+      let door = null;
+      if (v.covers) {
+        const gold = edges.get(key(M.route[v.covers - 1], M.route[v.covers]));
+        if (v.len < v.span + 12) door = { kind: "door", strength: Math.max(6, Math.round(gold.strength * .6)), damage: 0, suit: SUITS.filter(x => x !== gold.suit)[rng.below(3, "variant_suit")] };
+      } else door = { kind: "door", strength: Math.max(6, Math.round((v.span - v.len) / 2)), damage: 0, suit: SUITS[rng.below(4, "variant_suit")], shortcut: true, saves: v.span - v.len };
+      if (door) Object.assign(edges.get(entry), door, { variant: true });
+      takenRange.push([v.i, v.j]); cells.forEach(x => takenCells.add(x));
+      M.variants.push({ from: v.i, to: v.j, len: v.len, span: v.span, kind: v.covers ? (door ? "round a door, another suit" : "the long way round a door") : "shortcut, suited door" });
     }
     // Switches: an open route passage paired with a nearby wall. Every mix of settings keeps
     // every cell joined to the goal and the route at least 80% of its length.
@@ -287,7 +312,7 @@
       for (let m = 0; m < 1 << k; m++) {
         const pass = (e) => e.kind !== "switch" || (e.on !== !!(m >> e.sw & 1));
         if (bfs(goal, edges, nb, N, pass).some(d => d < 0)) return false;
-        if (bfs(start, edges, nb, N, e => !e.shortcut && pass(e))[goal] < c.length * .8) return false;
+        if (bfs(start, edges, nb, N, e => !e.variant && pass(e))[goal] < c.length * .8) return false;
       }
       return true;
     };
@@ -414,7 +439,7 @@
     for (const p of G.P) {
       const pool = TURNS.filter(t => t.dealer === (p.seat === G.dealer));
       const t = pool[G.gridRng.below(pool.length, "grid_turn")];
-      p.closed = 0;
+      p.closed = 0; p.hand = t.hand ? t.hand.split(" ") : null;
       p.plays = t.plays.map((x, k) => ({ ...x, id: G.hand + "." + p.seat + "." + k, used: false })).sort((a, b) => b.p - a.p);
     }
     G.swapsHand = G.hand; G.phase = "maze"; G.turn = G.dealer; G.sel = null; G.mode = null;
@@ -503,10 +528,15 @@
     }
     return [pts, why];
   }
-  function newPeg(p, q) {
-    const deck = []; for (const r of RANKS) for (const su of "SHDC") deck.push(r + su);
+  // Each player pegs with the 4 cards they kept this hand. A player with no recorded hand, or one that
+  // shares a card with the other's, gets 4 cards dealt from the rest of the deck. lead: who plays first.
+  function newPeg(p, q, lead = 0) {
+    const hands = [p.hand ? [...p.hand] : null, q.hand ? [...q.hand] : null];
+    if (hands[0] && hands[1] && hands[1].some(c => hands[0].includes(c))) hands[1] = null;
+    const deck = []; for (const r of RANKS) for (const su of "SHDC") { const c = r + su; if (!hands.some(h => h && h.includes(c))) deck.push(c); }
     G.duelRng.shuffle(deck, "duel_deal");
-    return { who: [p, q], hands: [deck.slice(0, 4), deck.slice(4, 8)], seq: [], played: [], count: 0, turn: 0, go: [false, false], score: [0, 0], last: -1, said: "", over: false };
+    for (let k = 0; k < 2; k++) if (!hands[k]) hands[k] = deck.splice(0, 4);
+    return { who: [p, q], hands, seq: [], played: [], count: 0, turn: lead, go: [false, false], score: [0, 0], last: -1, said: "", over: false };
   }
   const canPeg = (D, k) => D.hands[k].some(c => D.count + valOf(c) <= 31);
   // Bots (and every seat in bot runs) take the most points now, then avoid leaving 5 or 21, then play high.
@@ -542,14 +572,19 @@
     G.duelRng = G.duelRng || WarpedDice.stream(G.seed, "duel", G.rolls);
     const D = { p, q, games: [], peg: newPeg(p, q), round: 1 };
     G.stats.plot = (G.stats.plot || 0) + 1; G.stats.duel = (G.stats.duel || 0) + 1;
-    if (G.headless) { while (!D.result) { while (pegStep(D.peg)); duelScore(D); } return; }
+    // Bot runs, and duels between two bots, play out at once; a bot duel shows only its result.
+    if (G.headless || (!p.human && !q.human)) {
+      while (!D.result) { while (pegStep(D.peg)); duelScore(D); }
+      if (!G.headless) { const r = D.result; G.plot = { title: "Duel", text: `${p.name} and ${q.name} pegged it out: ${D.games.map(([a, b]) => `${a} to ${b}`).join(", then ")}${r.coin ? ", then a coin" : ""}. ${r.w.name} wins; ${r.opened} ${r.take ? `${r.w.name} takes ${r.l.name}'s ${r.take.p}-step play.` : ""}` }; }
+      return;
+    }
     G.duel = D; G.flash = null;
     later(duelTick, 900);
   }
   // A duel game is done: a tie plays again once, then a coin. Then the consequences.
   function duelScore(D) {
     const [a, b] = D.peg.score; D.games.push([a, b]);
-    if (a === b && D.round === 1) { D.round = 2; D.peg = newPeg(D.p, D.q); D.note = `Tied ${a} to ${b}: play again`; return; }
+    if (a === b && D.round === 1) { D.round = 2; D.peg = newPeg(D.p, D.q, 1); D.note = `Tied ${a} to ${b}: play again, the other player leads`; return; }
     let w = a > b ? D.p : b > a ? D.q : null, coin = false;
     if (!w) { w = G.duelRng.pick([[D.p, 50], [D.q, 50]], "duel_coin"); coin = true; }
     const l = w === D.p ? D.q : D.p, way = wayAhead(w), opts = openings(w, way);
@@ -875,6 +910,8 @@
       if (y < M.H - 1 && !M.edges.has(M.key(i, i + M.W))) walls += `M${xa} ${ya + cs}h${cs}`;
     }
     s += doubleWalls(walls, cs) + A.outerWall(0, 0, cs * M.W, cs * M.W, cs);
+    // Designer view: the golden path in gold.
+    if (c.whole) s += `<polyline points="${M.route.map(i => `${cx(i)},${cy(i)}`).join(" ")}" fill="none" stroke="#FFD447" stroke-width="${Math.max(2, cs * .25)}" stroke-linejoin="round" opacity=".55"/>`;
     const keysIn = new Set(); for (const i of vis) { const [x, y] = M.xy(i); if (x < M.W - 1) keysIn.add(M.key(i, i + 1)); if (y < M.H - 1) keysIn.add(M.key(i, i + M.W)); }
     for (const k of keysIn) {
       const e = M.edges.get(k); if (!e || (e.kind === "open" && !e.broken)) continue;
@@ -1113,7 +1150,7 @@
   $("apply").addEventListener("click", () => start($("seed").value || "1"));
   $("seed").addEventListener("keydown", (e) => { if (e.key === "Enter") start($("seed").value || "1"); });
   $("newSeed").addEventListener("click", () => { const s = String(Math.floor(Math.random() * 1e9)); $("seed").value = s; start(s); });
-  for (const id of ["length", "doors", "doorBase", "gates", "shortSuit", "plotAfter", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
+  for (const id of ["length", "doors", "doorBase", "variants", "minLoop", "plotAfter", "switches", "closeMul", "closeWhere", "closeMax", "bots", "style1", "style2"]) $(id).addEventListener("change", () => start(G.seedText));
   for (const id of ["speed", "whole", "zoom"]) $(id).addEventListener("change", () => { G.c = cfg(); render(); });
   $("runBtn").addEventListener("click", () => {
     const n = +$("runN").value, t0 = performance.now(); $("runBtn").disabled = true; $("runOut").textContent = "Running…";
