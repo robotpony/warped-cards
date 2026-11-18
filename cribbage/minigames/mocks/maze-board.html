@@ -71,10 +71,16 @@
   .duel[hidden] { display: none; }
   .duel-t { font-size: 46px; font-weight: 800; letter-spacing: .06em; text-align: center; color: #FF4FD8; text-shadow: 0 0 18px rgba(255,79,216,.8), 0 0 2px #fff; line-height: 1; }
   .duel-s { text-align: center; color: var(--muted); font-size: 13px; }
-  .duel-p { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; } .duel-p b { font-size: 26px; color: var(--gold); }
+  .duel-sb { display: flex; gap: 10px; }
+  .duel-sb .sb { flex: 1; border-radius: 14px; padding: 8px 10px 4px; background: rgba(10,14,31,.7); border: 1.5px solid var(--rim); text-align: center; transition: border-color .2s, box-shadow .2s; }
+  .duel-sb .sb.on { border-color: var(--gold); box-shadow: 0 0 14px rgba(255,212,71,.35); }
+  .duel-sb .sb.won { border-color: #FF4FD8; box-shadow: 0 0 18px rgba(255,79,216,.5); }
+  .duel-sb .sb-n { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; font-size: 14px; }
+  .duel-sb b { display: block; font-size: 72px; line-height: 1; font-weight: 800; color: var(--gold); text-shadow: 0 0 16px rgba(255,212,71,.4); font-variant-numeric: tabular-nums; }
+  .duel-you { min-height: 18px; text-align: center; font-weight: 700; font-size: 13px; color: var(--gold); }
   .duel-h { display: flex; justify-content: center; gap: 8px; min-height: 76px; }
   .dc { width: 50px; height: 72px; border-radius: 6px; background: #FDFCF8; border: 1px solid #D6D0C4; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
-  .dc b { font-size: 20px; } .dc.back { background: repeating-linear-gradient(45deg, #3A2A66 0 6px, #2A1F4D 6px 12px); border-color: #C77DFF; }
+  .dc b { font-size: 20px; } .dc.back { padding: 0; border: 0; background: none; object-fit: contain; }
   .dc.can { cursor: pointer; box-shadow: 0 0 0 3px var(--gold), 0 0 12px rgba(255,212,71,.6); } [data-peg]:not(.can) { opacity: .45; }
   .duel-board { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--rim); border-radius: 12px; }
   .duel-count { font-size: 40px; font-weight: 800; color: var(--cyan); line-height: 1; }
@@ -655,8 +661,12 @@
   function duelHTML() {
     const D = G.duel; if (!D) return "";
     const P = D.peg, nm = (p) => p.human ? "You" : p.name, card = (c, cls = "", attr = "") => `<span class="dc ${cls}" ${attr} style="color:${FACECOL[c.slice(-1)]}"><b>${c.slice(0, -1)}</b>${GLYPH[c.slice(-1)]}</span>`;
-    const back = `<span class="dc back"></span>`;
-    let h = `<div class="duel-t">DUEL!</div><div class="duel-s">${D.kind === "meet" ? `${nm(D.p)} landed on ${D.q.human ? "your" : D.q.name + "'s"} cell.` : `${nm(D.p)} and ${nm(D.q)} are stuck in each other's way.`} Classic pegging: back and forth to 31, highest score wins.${D.round > 1 ? " Second game, after a tie." : ""}</div>`;
+    const back = `<img class="dc back" src="../../../design/cards/back.svg" alt="">`;
+    // The scoreboard: both players side by side at the top, scores large; the player to play is lit.
+    const k0 = D.p.human ? 0 : D.q.human ? 1 : 0, k1 = 1 - k0;
+    const board = () => `<div class="duel-sb">${[k0, k1].map(k => { const w = P.who[k], on = !D.result && P.turn === k && !P.over;
+      return `<div class="sb${on ? " on" : ""}${D.result && D.result.w === w ? " won" : ""}"><span class="sb-n"><svg width="16" height="16" viewBox="0 0 20 20">${tokenIcon(w.seat)}</svg>${nm(w)}</span><b>${P.score[k]}</b></div>`; }).join("")}</div>`;
+    let h = `<div class="duel-t">DUEL!</div><div class="duel-s">${D.kind === "meet" ? `${nm(D.p)} landed on ${D.q.human ? "your" : D.q.name + "'s"} cell.` : `${nm(D.p)} and ${nm(D.q)} are stuck in each other's way.`} Classic pegging: back and forth to 31, highest score wins.${D.round > 1 ? " Second game, after a tie." : ""}</div>` + board();
     if (D.result) {
       const r = D.result, g = D.games;
       h += `<div class="duel-r"><div class="big">${r.w.human ? "You win" : r.w.name + " wins"}</div>` +
@@ -666,10 +676,10 @@
         `<button class="btn go" id="duelDone">Back to the maze</button></div>`;
       return h;
     }
-    const k0 = D.p.human ? 0 : D.q.human ? 1 : 0, k1 = 1 - k0, mine = P.who[k0].human && P.turn === k0;
-    h += `<div class="duel-p"><span>${nm(P.who[k1])}</span><b>${P.score[k1]}</b></div><div class="duel-h">${P.who[k1].human ? P.hands[k1].map(c => card(c)).join("") : P.hands[k1].map(() => back).join("")}</div>`;
+    const mine = P.who[k0].human && P.turn === k0;
+    h += `<div class="duel-h">${P.who[k1].human ? P.hands[k1].map(c => card(c)).join("") : P.hands[k1].map(() => back).join("")}</div>`;
     h += `<div class="duel-board"><div class="duel-count">${P.count}</div><div class="duel-seq">${P.played.slice(-8).map(([k, c]) => card(c, k === k0 ? "me" : "them")).join("")}</div><div class="duel-said">${P.said || (D.note || "")}</div></div>`;
-    h += `<div class="duel-h">${P.hands[k0].map(c => card(c, mine && P.count + valOf(c) <= 31 ? "can" : "", mine ? `data-peg="${c}"` : "")).join("")}</div><div class="duel-p"><span>${nm(P.who[k0])}${mine ? " · your card" : ""}</span><b>${P.score[k0]}</b></div>`;
+    h += `<div class="duel-h">${P.hands[k0].map(c => card(c, mine && P.count + valOf(c) <= 31 ? "can" : "", mine ? `data-peg="${c}"` : "")).join("")}</div><div class="duel-you">${mine ? "Your card: tap one" : ""}</div>`;
     return h;
   }
 
