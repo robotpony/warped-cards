@@ -492,7 +492,8 @@
       p.plays = t.plays.map((x, k) => ({ ...x, id: G.hand + "." + p.seat + "." + k, used: false })).sort((a, b) => b.p - a.p);
       if (p.burnDebt) { const n = p.burnDebt; p.burnDebt = 0; burnPlays(p, n); }
     }
-    G.swapsHand = G.hand; G.phase = "maze"; G.turn = G.dealer; G.sel = null; G.mode = null;
+    G.swapsHand = G.hand; G.phase = "maze"; G.turn = (G.dealer + 1) % n; G.sel = null;   // the player after the dealer moves first, as in pegging (rules.md › 5)
+    G.mode = null;
     log("hand_start", { dealer: G.P[G.dealer].name, plays: G.P.map(p => p.plays.length), steps: G.P.map(p => p.plays.reduce((a, x) => a + x.p, 0)) });
     if (!G.headless) { const me = G.P[0]; G.flash = `Hand ${G.hand}: your grid made ${me.plays.length} plays, ${me.plays.reduce((a, x) => a + x.p, 0)} steps`; }
     if (G.hand > 1) plotCheck();
@@ -623,7 +624,9 @@
   // Returns true when it waits for you on the duel screen; then() runs when you close it.
   function duel(p, q, kind = "stuck", then = null) {
     G.duelRng = G.duelRng || WarpedDice.stream(G.seed, "duel", G.rolls);
-    const D = { p, q, kind, then, games: [], peg: newPeg(p, q), round: 1 };
+    // The player first after the dealer leads, as in pegging; a replay after a tie switches the lead.
+    const after = (x) => (x.seat - G.dealer - 1 + G.P.length) % G.P.length, lead = after(q) < after(p) ? 1 : 0;
+    const D = { p, q, kind, then, lead, games: [], peg: newPeg(p, q, lead), round: 1 };
     G.stats.plot = (G.stats.plot || 0) + 1; G.stats.duel = (G.stats.duel || 0) + 1;
     // Bot runs, and duels between two bots, play out at once; a bot duel shows only its result.
     if (G.headless || (!p.human && !q.human)) {
@@ -638,7 +641,7 @@
   // A duel game is done: a tie plays again once, then a coin. Then the consequences.
   function duelScore(D) {
     const [a, b] = D.peg.score; D.games.push([a, b]);
-    if (a === b && D.round === 1) { D.round = 2; D.peg = newPeg(D.p, D.q, 1); D.note = `Tied ${a} to ${b}: play again, the other player leads`; return; }
+    if (a === b && D.round === 1) { D.round = 2; D.peg = newPeg(D.p, D.q, 1 - D.lead); D.note = `Tied ${a} to ${b}: play again, the other player leads`; return; }
     let w = a > b ? D.p : b > a ? D.q : null, coin = false;
     if (!w) { w = G.duelRng.pick([[D.p, 50], [D.q, 50]], "duel_coin"); coin = true; }
     const l = w === D.p ? D.q : D.p;
