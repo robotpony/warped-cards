@@ -2,6 +2,18 @@
 
 Crib RPG for Mac (called Crib Maze before 0.17.0) and its beta, Noddy Yookerspiel: changes a player would notice, newest first. Versions are `major.minor.patch`, pre-1.0 (PORTING.md › Versions). Spec changes are in the top-level [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.23.0 — 2026-11-17
+
+### Added
+
+- The maze. A game is now hands against Bot 1: deal, your grid turn, then a summary of Bot 1's grid turn and "To the maze". Your sets become plays you walk, close doors with or flip switches with, until a token reaches the goal.
+- On the maze: a header with each player's place and how far they have to go, a camera that follows the tokens, a fan of your plays, and a play sheet that previews each walk in gold.
+- Power jokers work on the maze: swap places, bomb a door or lay a mine, set a fire, or reach to pick your way at each junction. Targets light up when one is armed.
+- Fires and mines stop a walk to show the plays they burn. The maze stirring, plays owed and Bot 1's duels show as cards.
+- Duels: when you're stuck or land on Bot 1, you peg a short classic hand against it, full screen.
+- Tap anything on the maze, or a player at the top, to have it explained.
+- Settings › Game: the maze game (on by default, from the next new game) and Bot 1's maze style.
+
 ## 0.22.0 — 2026-11-17
 
 ### Added

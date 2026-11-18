@@ -1,6 +1,6 @@
 # Crib RPG: UI Spec
 
-Status: draft 3, 2026-11-17, spec 17, from the beta app at 0.22.0, rules r28
+Status: draft 4, 2026-11-17, spec 18, from the beta app at 0.23.0, rules r28
 
 ## Summary
 
@@ -8,7 +8,7 @@ This spec describes how the Crib RPG beta app (Noddy Yookerspiel, `apps/apple`) 
 
 The engine is specced in [engine.md](engine.md). This spec starts where that one stops: the app sends the engine actions and gets back events, and everything here is how those events reach the player. Player-facing names come from [rules.md](rules.md). The HTML match turn mock is frozen at r16; from r17 on, the beta app is the only source of truth for UI behaviour, and this spec records it.
 
-The app has three scenes, all inside one phone-shaped window: the deal, the match turn and the turn summary. The match turn carries most of the game feel, mainly in tracing a set and in the score breakdown that follows each score. There is no sound and no haptics yet, and no joker reveal.
+The app has four scenes, all inside one phone-shaped window: the deal, the match turn, the turn summary and, in a maze game, the maze. The match turn carries most of the game feel, mainly in tracing a set and in the score breakdown that follows each score. There is no sound and no haptics yet, and no joker reveal.
 
 Where the app's behaviour seems unintended, or disagrees with rules.md or engine.md, it is described as built and listed under Gaps. Nothing here changes the code.
 
@@ -62,9 +62,12 @@ App flow (one game is 3 turns, config game.turns)
 
 Each scene draws over the one before it: the deal and the summary are full-screen covers over the match turn. Switching scenes is immediate; there is no transition between them.
 
-The game is 1 player against 1 bot. In this build the bot only deals and throws to the crib; it doesn't play a match turn on screen or off (see Gaps).
+The game is 1 player against 1 bot. Two kinds of game, set in Settings › Game (from spec 18):
 
-Source: `CribMazeApp.swift`, `MatchTurnView.swift` (PhoneView, SummaryView, DealView), `GameSession.swift` (newGame, startTurn, nextTurn).
+- **A maze game** (the default): the game around the maze in [maze.md](maze.md). Every hand is a deal, a grid turn, the summary (with the bot's grid turn) and the maze, until a token reaches the goal or the hand cap (`maze.json` › game) ends it. The bot plays its grid turns off screen, at the medium level. Scene: Maze has the flow.
+- **A grid game**: 3 grid turns and no maze, as before spec 18. The bot only deals and throws to the crib (see Gaps).
+
+Source: `CribMazeApp.swift`, `MatchTurnView.swift` (PhoneView, SummaryView, DealView), `MazeView.swift`, `GameSession.swift` (newGame, startTurn, nextTurn).
 
 ## Layout
 
@@ -712,7 +715,108 @@ The deck panel shows on the summary and, compact, on the deal.
 - With no changes, the summary says "A standard 52. Cards jokers make stay in it for the game, and burned cards stay out." The compact panel says nothing more.
 - Otherwise up to 14 mini cards (34 pt wide): made cards first, a thin divider, then burned cards at 45% under a red ✕. Made cards show their multiplier on a violet chip under them. Cards from this turn get a 2 pt `gold` ring. Any more are counted: "+3".
 
-Source: `MatchTurnView.swift` (SummaryView, DeckPanel).
+In a maze game the summary changes (from spec 18):
+
+- The tag reads "HAND n", not "TURN n OF 3".
+- The deck panel is the compact one.
+- Below it, a "BOT 1'S GRID TURN" tag in the bot's token colour, then "212 steps in 13 plays, best set 24", and a line with its prize and the cards it made and burned. Then "Your plays for the maze: 14, 237 steps". The bot played its grid turn at the start of the hand; this is where the player first sees it.
+- The button is "To the maze", which opens Scene: Maze. There is no Next turn: the next hand is dealt from the maze, when every play is used.
+
+Source: `MatchTurnView.swift` (SummaryView, DeckPanel, BotSummary).
+
+## Scene: Maze
+
+The maze is a full-screen cover over the match turn, from the summary's "To the maze" to the hand's end (from spec 18). What it draws, the play sheet's words and the tray follow [maze.md](maze.md) › The screen and the mock `mocks/maze-board.html` (v12). This section records what the beta adds to that: the flow, the cues, the input and the choices made where the mock was silent.
+
+```
+Maze
+
+  [HAND 3]  ( ● 1st 42% )  ( ■ 2nd 57% )   tap a pill: that player explained
+  +--------------------------------------+
+  |  neon maze, 380 pt square            |  tip card, hazard card over it
+  +--------------------------------------+
+  status line                              whose turn, or what just happened
+  YOUR PLAYS · 11 LEFT · 212 STEPS
+  (36)(24)(24)(22)(20)(16) ...             the fan
+  .------------ POWER JOKERS -----------.
+  | [swap] [bomb] [reach] [burn] [key]  |  a note, End turn when it waits
+  '-------------------------------------'
+  [ play sheet, over the fan and tray, while a play is picked ]
+```
+
+### Flow
+
+1. "To the maze" shows the maze as it stood before the grid turn ended, then plays that step's maze events in order: plays owed from last hand's hazards, the stir, a stuck duel.
+2. Turns follow the engine's `mazeTurn` events. A bot's turn waits `maze.json` › timing.botPegMs (850 ms), then the bot (`bots.json` › maze, the style set in Settings) sends its action. If the engine refuses it, the bot walks its first play instead, so the game can't stall.
+3. On the player's turn the fan and the tray are live. A play goes through the play sheet. After the play, the turn waits only while a joker is still usable (engine.md › The maze › Turns): the tray says "Play a joker now, or end your turn" with an End turn button.
+4. When every play is used, a "Hand n is over" card says the power jokers carry on, with a "Deal hand n+1" button. It starts the next hand (Deal, then Match turn).
+5. When a token reaches the goal, or the last hand ends, the end card shows.
+
+Events are queued and played one at a time. While a cue plays, the scene is busy: the fan, the tray and the board don't take picks, but tap to explain still works.
+
+### Cues
+
+| Event | What the player sees |
+|---|---|
+| `walked` | The camera pulls out to fit the token and its path; after `walkDelayMs` (350 ms) the token hops along the path, `stepMs` (90 ms) a cell. A door's damage shows when the token reaches it, not before. The status line: "You walk" or "Bot 1 walks" |
+| `hazardHit` | The walk pauses on the cell. A card over the maze: "FIRE!" (flame colour) or "MINE!" (red), who ran over or into it, and the plays lost as tiles that redden and fade (`fx.json` › maze.hazardBurn). It holds `hazardHoldMs` (1,800 ms) for a pass and `hazardLandHoldMs` (2,200 ms) for a landing, then the walk goes on. The hazard is gone from the board after |
+| `doorClosed`, `switchFlipped`, `doorBombed`, `hazardSet`, `swapped`, `reachOn` | The board changes at once; the status line says what happened ("Bot 1 bombs a door: 8 left", "Bot 1 sets a fire on your way") for `eventHoldMs` (1,400 ms) |
+| `star` | A toast: "You land on a star: +1 bomb" |
+| `playsOwed`, `stir` | An event card over the maze until tapped: "Plays owed", "The maze stirs" (what faded, moved or lit up, in words) |
+| `duelStart` with the player | The duel screen (below) |
+| `duelStart` between two bots | Nothing until the end, then an event card: "Duel: Bot 1 and Bot 2", who won, by how much, and what it took |
+| `mazeHandEnd` | The "Hand n is over" card |
+| `mazeEnd` | The end card |
+
+### Camera
+
+The board view is a window onto the maze. Its target fits every token, plus the walking token's path or the previewed path, with `fx.json` › maze.camera.fitMargin (3) cells round them, and comes no closer than `cellsAcross` (7) cells across the view. It eases toward the target with a time constant of `easeMs` (160 ms), and keeps easing for `settleMs` (1,200 ms) after anything changes, then stops redrawing. A port MAY use any smooth follow.
+
+When the goal is off view, a gold pointer sits at the view's edge on the line to it.
+
+### Input
+
+- **The fan.** A tap picks a play and opens the play sheet; the same tap again, or Cancel, puts it back. While it's open the board shows the walk preview: the gold path, its chevrons, and rings on its junctions when a reach is on.
+- **The play sheet.** Walk N steps, Close a door, Flip a switch, as in maze.md. Close and Flip are greyed with the engine's reason when they can't be used. Choosing Close lights every passage that can be closed with a thin pink bar; a tap on the maze picks the nearest passage within `targetRange` (half a cell) of the tap. Choosing Flip lists the switches by letter.
+- **Reach.** With a reach on, each junction on the preview has a ring. A tap on a ring turns that junction to its next way; the preview follows. Walk sends the chosen ways.
+- **The tray.** Swapper: buttons per player appear under the tray ("Swap with Bot 1"). Bomb: doors it can open get a pink bar and cells it can mine are ringed; a tap picks. Burn: the cells it can set fire to are ringed. Reach goes at once. The key isn't tapped; it works by itself. A second tap on an armed joker disarms it. One a turn, and not while the play sheet is open (before the play) or after a joker was used.
+- **Tap to explain.** With nothing armed or picked, a tap on the maze explains the nearest door, switch, junction, star, hazard, token, start or goal as a tip card over the board; a tap on a header pill explains that player. Any tap dismisses the tip. A tray card's hover text gives its maze use.
+
+### The duel screen
+
+A duel with the player covers the maze:
+
+```
+  DUEL!                                    magenta, glowing
+  why (stuck, or landing) and what's at stake
+  [ You  0 ]   [ Bot 1  0 ]                the one to play ringed in gold
+  bot's cards, face down
+  Count 14
+  the run, as small cards
+  your cards (legal ones ringed gold)
+  "Your card: tap one"
+```
+
+- Cards fall at the bot's pace: botPegMs after a bot's card, half that after the player's. A "go" or a point for the go holds half and a whole botPegMs.
+- A tie replays with the other player leading; the scores and the run start again.
+- The result: who won and the score, "Tied twice: a coin decides" if so, the play taken (as a tile, with + or −), and "The way opens: …" for a stuck duel. "Back to the maze" closes it.
+
+### The end card
+
+Over the maze: "GAME OVER", then "You reach the goal!" (gold) or "Bot 1 reaches the goal" (cyan); at the hand cap, who is closest. Then "Hand n. Seed s." and Same seed and New game buttons.
+
+### Choices made where maze.md and the mock were silent
+
+Decided by `@apple-ui` for the playtest build, 2026-11-17:
+
+1. The bot's grid turn is shown on the summary, after the player's grid turn, not before it. The bot plays first in the engine, but showing its numbers before the player's turn added a screen with nothing to do.
+2. A maze game always deals, whatever the Deal setting, because the bot's grid turn starts from the deal. The Strong hand fixes the player's hand and so turns the bot's grid turns off.
+3. Door damage shows as the token reaches each door, not when the walk starts.
+4. Close a door lights every closable passage, lighter than a bomb's few targets, since nearly every open passage qualifies.
+5. Bot duels with no person are summed up in one card at the end, not played card by card.
+6. The bot level on grid turns is medium in a maze game, whatever the level setting.
+
+Source: `MazeScene.swift` (the queue, cues and words), `MazeView.swift` (layout, the play sheet, cards, the duel), `MazeBoardView.swift` (camera, drawing, taps), `GameSession.swift`.
 
 ## Overlays
 
@@ -735,7 +839,7 @@ A tap on the header or footer opens the settings in a panel anchored above the f
 
 | Tab | Contents |
 |---|---|
-| Game | Toggles: you deal the first turn; the timer (with its seconds from config); the deal; hints. Hand: Random or Strong (4♥ 5♣ 6♦ J♠, starter 5♠). A seed field (shows this turn's seed; type one and press Return, or blank for random) and "New game". The last score's lines, edge power, left over and steps. "This turn": the newest 8 feed lines, or "Drag across 2 to N touching cards." |
+| Game | Toggles: you deal the first turn; the timer (with its seconds from config); the deal; hints; maze game (next new game), with the bot's maze style from `bots.json` › maze. Hand: Random or Strong (4♥ 5♣ 6♦ J♠, starter 5♠). A seed field (shows this turn's seed; type one and press Return, or blank for random) and "New game". The last score's lines, edge power, left over and steps. "This turn": the newest 8 feed lines, or "Drag across 2 to N touching cards." |
 | Advanced | Card budget: Whole stock, 12, 16, 24 (next turn). Shared deck (next game), with an explanation. In the beta, "Show the game record" (reveals the record file). A short how to play |
 | Animation | "Play each score's breakdown (tap to skip)". Speed: Slow (1.2 s), Medium (0.9 s), Quick (0.6 s), Practised (0.4 s). In the beta, Diagnostics: slow motion (5× slower), frames per second, hitches during moves, the worst frame, and a reset |
 
@@ -789,7 +893,7 @@ These exist only in the beta (Noddy Yookerspiel). The release app (Crib RPG) has
 
 - Records: every game is written as a GameRecord file under the app's data folder, `Records/<YYYY-MM-DD>/<time>-crib-maze.jsonl` (ARCHITECTURE.md › GameRecord). Writing starts at the player's first choice, so a game opened and left leaves no file. The deal's hint is kept as a `deal_hint` note.
 - Diagnostics: slow motion and the frame meter (see Settings panel). A hitch is a frame that took over 1.5 times the display's frame time while something was moving.
-- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--intro` (the grid intro card over the empty board), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|fill|trace|breakdown|bomb` (with `--fill <pattern>` for the fill cue) films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
+- Command-line modes: `--snapshot <png>` renders the play screen (or the deal, or a breakdown's last frame) to an image and quits, with options to pick a seed, a turn, traces, a selection, an armed joker and more. `--demo [--slow]` has the medium bot play turn after turn with full animation and no waiting for taps, for profiling. `--saira` uses Saira Semi Condensed, as Crib RPG does (Type); it works with the other modes. Snapshots also take `--info <topic>`, `--pop <cells> [--bomb]`, `--stage N` (a breakdown stopped at its Nth wait), `--opening hand|crib` (the opening count over the empty board, at its hold or its `--stage`), `--intro` (the grid intro card over the empty board), `--strong` (the strong preset hand, 4♥ 5♣ 6♦ J♠ with the 5♠, whose 17 wins an opening bonus), `--settings` and `--toast` (toasts are hidden otherwise). `--maze` plays a maze game: `--hand H` and `--acts K` play on with bots in both seats, `--until duel|hazard|card|end` stops at that cue, `--summary` shoots the hand's summary, `--select I --mode close|flip|bomb|burn` a picked play or armed joker, `--tip CELL` a tip card, and `--frames N --every MS` shoots N frames of the game playing on in real time. `apps/apple/scripts/reference.sh` uses them to shoot the reference set in `docs/images/reference/`, which other builds match. `--film <file.mp4> --cue deal|opening|fill|trace|breakdown|bomb` (with `--fill <pattern>` for the fill cue) films a cue at 5x slow motion from an offscreen window (only the opening cue plays the opening count; the others start from the dealt board); `reference.sh --motion` films all five into `docs/images/reference/motion/`.
 
 Source: `Beta/Recording.swift`, `Beta/Snapshot.swift`, `Motion.swift`.
 
@@ -853,6 +957,15 @@ Slow motion multiplies every motion and wait, except the clock's (`motions.clock
 | `waits.deal.*` | The gap between dealt cards; the throw to the starter; the starter to the turn |
 | `waits.clock.*` | Seconds the clock counts down from; the warning's last percent; the urgency levels (percent of time left), each level's half-breath (ms) and swell (scale) |
 | `waits.slowMotion` | The beta's slow-motion factor |
+| `maze.camera` | The maze camera: closest zoom in cells across, the margin round what it fits, its ease and how long it keeps easing (Scene: Maze › Camera) |
+| `maze.hop` | A hopping token's lift and its shadow's size, in cells |
+| `maze.walls`, `maze.door` | Wall line and gap, and door card size and turn, as parts of a cell with minimums in pt (maze.md › The screen) |
+| `maze.chevronMinCell` | Junction chevrons are left off when a cell is drawn smaller than this, in pt |
+| `maze.targetRange` | How far from a passage, in cells, a tap still picks it |
+| `maze.fan` | The fan's card width and turn per card |
+| `maze.eventHoldMs`, `maze.hazardBurn` | How long an event's status line holds; the lost plays' burn on a hazard card |
+
+The walk's own pace is `maze.json` › timing (stepMs, walkDelayMs, hazardHoldMs, hazardLandHoldMs, botPegMs), shared with the simulator.
 
 A float's keyframes are joined by a Catmull-Rom spline: a cubic curve through each key, whose slope at a key is set by the keys either side, starting and ending at rest. A port MAY ease in and out between keys instead.
 
@@ -938,7 +1051,7 @@ Each place the app relies on something Apple-specific, and what any platform MUS
 Behaviour found while writing this spec that seems unintended, is unclear, or disagrees with rules.md, engine.md or ARCHITECTURE.md. Nothing was run; these come from reading the code.
 
 1. No joker reveal. rules.md › Jokers and extra cards says an extra card on the board pauses play and the timer and plays a reveal; engine.md › Clock and timer says the timer pauses for it. The app shows only a toast and a feed line, and the timer keeps running.
-2. The bot never plays a match turn. rules.md says the computer players' turns come first, as a quick sequence of results. The app's bot only deals and throws (engine.md › The game says bots don't play grid turns yet, so rules.md is ahead of both).
+2. In a grid game the bot never plays a match turn. rules.md says the computer players' turns come first, as a quick sequence of results. In a maze game (spec 18) the bot plays its grid turns off screen and the summary shows them after the player's (Scene: Maze, choice 1).
 3. The left-over warning shows once per hand. engine.md › Left-over warning says once per player, ever, passed in from a saved profile. The app never passes `warned` into a hand, so it starts false every turn.
 4. Fixed in 0.15.2: action times didn't pause. `clockMs` is now game time since the game started, stopped while the turn timer is; engine.md says so.
 5. The breakdown holds for a tap with no time limit, and the turn timer and reach timers stay paused while it holds. A player can stop the clock as long as they like. rules.md says "a tap skips to the end" and doesn't mention the hold, so skipping takes two taps.
@@ -966,10 +1079,10 @@ Behaviour found while writing this spec that seems unintended, is unclear, or di
 
 ## Source
 
-The beta app at 0.21.1 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r27` (`cribbage/minigames/config/rules.json`):
+The beta app at 0.23.0 (`MARKETING_VERSION` in `apps/apple/project.yml`), rules `match-r28` (`cribbage/minigames/config/rules.json`):
 
-- `apps/apple/Shared/`: `MatchTurnView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
+- `apps/apple/Shared/`: `MatchTurnView.swift`, `MazeView.swift`, `MazeScene.swift`, `MazeBoardView.swift`, `GameSession.swift`, `Breakdown.swift`, `BoardView.swift`, `CardView.swift`, `CardArt.swift`, `SVGPath.swift`, `FX.swift`, `Motion.swift`, `Theme.swift`, `Hints.swift`, `CribMazeApp.swift`, `GameRecorder.swift`
 - `apps/apple/Beta/`: `Edition.swift`, `Recording.swift`, `Snapshot.swift`; `apps/apple/Release/` for the release stand-ins
-- `cribbage/minigames/config/`: `rules.json`, `timing.json`, `hints.json`, `fx.json`
+- `cribbage/minigames/config/`: `rules.json`, `timing.json`, `hints.json`, `fx.json`, `maze.json`, `bots.json`
 - `design/neon/palette.json`, `design/neon/shapes.json`, `design/cards/*.svg`, `design/fonts/saira-semi-condensed/`
 - Read alongside: [engine.md](engine.md), [rules.md](rules.md), [mocks/README.md](mocks/README.md), `ARCHITECTURE.md`

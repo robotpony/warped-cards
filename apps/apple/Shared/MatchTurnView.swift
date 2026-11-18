@@ -89,6 +89,7 @@ struct PhoneView: View {
         .overlay { if let left = session.warning { WarningCard(left: left, cost: session.config?.rules.match.leftOverCost ?? 2) { session.dismissWarning() } } }
         .overlay { if let topic = session.info { InfoCard(topic: topic, session: session) { session.info = nil } } }
         .overlay { if session.over { SummaryView(session: session) } }
+        .overlay { if session.mazeScene.on { MazeView(session: session) } }
         .overlay { if session.dealing != nil { DealView(session: session) } }
         .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous).stroke(Theme.bezel, lineWidth: 10).padding(-5))
@@ -205,6 +206,8 @@ struct TrayCard: View {
     let armed: Bool
     /// A reach or timed key in effect: the share of its time left, drawn over the card as a violet wedge that empties.
     var countdown: Double? = nil
+    /// The tooltip, when the grid's doesn't fit (the maze's tray).
+    var tip: String? = nil
     let action: () -> Void
     var body: some View {
         let card = Card(id: 0, kind: .special(kind), rank: 0, suit: nil)
@@ -241,7 +244,7 @@ struct TrayCard: View {
         .animation(fx.motions.board.select.animation(), value: armed)
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
-        .help(["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
+        .help(tip ?? ["swapper": "Swapper: reverses a straight line of 2 to 4 grid cards",
                "bomb": "Bomb: clears a card and its neighbours, without scoring",
                "reach": "Reach: hand size +1 (sometimes +2) for about 20 seconds",
                "burn": "Burn: takes a grid card out of the deck for the rest of the game",
@@ -336,7 +339,7 @@ struct SummaryView: View {
         let t = session.state?.totals
         let g = session.game
         VStack(alignment: .leading, spacing: 10) {
-            if let g { Text(g.over ? "GAME OVER" : "TURN \(g.results.count) OF \(g.turns)").font(Theme.font(11, .bold)).tracking(0.8).opacity(0.7) }
+            if let g { Text(session.mazeGame ? "HAND \(g.results.count)" : g.over ? "GAME OVER" : "TURN \(g.results.count) OF \(g.turns)").font(Theme.font(11, .bold)).tracking(0.8).opacity(0.7) }
             Text(endTitle).font(Theme.font(24, .bold)).foregroundStyle(Theme.cyan).shadow(color: Theme.cyan.opacity(0.6), radius: 6)
             Text("\(session.state?.steps ?? 0) steps").font(Theme.font(48, .bold)).foregroundStyle(Theme.gold)
                 .shadow(color: Theme.gold.opacity(0.6), radius: 10)
@@ -352,10 +355,13 @@ struct SummaryView: View {
                 }.font(Theme.font(15, .regular))
             }
             if let prize { Text(prize).font(Theme.font(17, .semibold)).foregroundStyle(Theme.gold).padding(.top, 4) }
-            if let g { DeckPanel(deck: g.deck, shared: g.shared, changes: lastChanges).padding(.top, 6) }
+            if let g { DeckPanel(deck: g.deck, shared: g.shared, changes: lastChanges, compact: session.mazeGame).padding(.top, 6) }
+            if session.mazeGame { BotSummary(session: session).padding(.top, 4) }
             Spacer()
             HStack(spacing: 8) {
-                if session.moreTurns {
+                if session.mazeWaiting {
+                    pbtn("To the maze", ghost: false) { session.toMaze() }
+                } else if session.moreTurns {
                     pbtn("Next turn", ghost: false) { session.nextTurn() }
                 } else {
                     pbtn("Same seed", ghost: true) { session.newGame(seed: session.seed) }
@@ -391,6 +397,30 @@ struct SummaryView: View {
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(ghost ? Theme.feltText.opacity(0.4) : .clear, lineWidth: 1))
             .foregroundStyle(ghost ? Theme.feltText : Theme.felt)
             .contentShape(Rectangle()).onTapGesture(perform: action)
+    }
+}
+
+/// The bots' grid turns this hand, summed up before the maze (maze.md › The game around the maze).
+struct BotSummary: View {
+    let session: GameSession
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(session.botResults.enumerated()), id: \.offset) { _, e in
+                if case .botTurn(let seat, let steps, let best, let tier, let prize, let made, let burned, _) = e {
+                    let plays = session.handPlays[seat] ?? []
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("\(session.mazeScene.name(seat).uppercased())'S GRID TURN").font(Theme.font(10, .bold)).tracking(0.8)
+                            .padding(.horizontal, 6).frame(height: 16).background(Capsule().fill(MazeInk.token(seat))).foregroundStyle(Theme.felt)
+                        Text("\(steps) steps in \(plays.count) play\(plays.count == 1 ? "" : "s")" + (best.map { ", best set \($0)" } ?? "")).font(Theme.font(17, .semibold))
+                        Text([tier.flatMap { t in prize.map { "\(t.capitalized) prize: a \($0)" } }, made.isEmpty ? nil : "\(made.count) card\(made.count == 1 ? "" : "s") made",
+                              burned.isEmpty ? nil : "\(burned.count) burned"].compactMap { $0 }.joined(separator: " · ")).font(Theme.font(14, .regular)).opacity(0.8)
+                    }
+                }
+            }
+            if let mine = session.handPlays[0] {
+                Text("Your plays for the maze: \(mine.count), \(mine.reduce(0) { $0 + $1.steps }) steps").font(Theme.font(14, .medium)).opacity(0.85)
+            }
+        }
     }
 }
 
@@ -488,6 +518,11 @@ struct SidePanel: View {
                 Toggle("\(session.config?.rules.match.timerSeconds ?? 180) s timer", isOn: $session.settings.timer)
                 Toggle("Deal: pick your crib cards first", isOn: $session.settings.deal)
                 Toggle("Hints when you're stuck", isOn: $session.settings.hints)
+                // maze.md: whole games around the maze, against one bot. Takes effect at the next new game.
+                Toggle("Maze game (next new game)", isOn: $session.settings.mazeGame)
+                Picker("Bot's maze style", selection: $session.settings.mazeStyle) {
+                    ForEach((session.config?.bots.maze?.styles ?? []).map(\.id), id: \.self) { Text($0.capitalized).tag($0) }
+                }.disabled(!session.settings.mazeGame)
                 Picker("Hand", selection: $session.settings.hand) { Text("Random").tag("random"); Text("Strong (4♥ 5♣ 6♦ J♠, 5♠)").tag("strong") }
                 HStack {
                     // The field shows this turn's seed; type another to replay it, or leave it blank for a random deal.

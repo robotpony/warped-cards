@@ -94,5 +94,16 @@
       { "name": "wave",    "order": "diagonal", "gap": 70, "from": "grow" },
       { "name": "scatter", "order": "random",   "gap": 30, "from": "spin" }
     ]
+  },
+  "maze": {
+    "camera": { "cellsAcross": 7, "fitMargin": 3, "easeMs": 160, "settleMs": 1200 },
+    "hop": { "lift": 0.38, "shadow": 0.24 },
+    "walls": { "line": 0.04, "lineMin": 1.6, "gap": 0.11, "gapMin": 3 },
+    "door": { "size": 0.82, "sizeMin": 24, "turn": 18 },
+    "chevronMinCell": 14,
+    "targetRange": 0.5,
+    "fan": { "cardW": 52, "maxTurn": 3.2 },
+    "eventHoldMs": 1400,
+    "hazardBurn": { "delayMs": 300, "ms": 1200 }
   }
 }

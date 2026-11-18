@@ -2,6 +2,20 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 18 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- The maze scene (ui.md › Scene: Maze): a whole game around the maze on screen, 1 person against 1 bot. Each hand: deal, grid turn, the turn summary with the bot's grid turn, then the maze. Header, camera, hops, the fan, the play sheet, the joker tray and targets, reach junctions, tap to explain, hazard pauses, event cards, the duel screen and the end card.
+- `fx.json` › maze (engine.md › fx.json): the maze scene's camera, hop, wall, door and fan sizes, the event hold and the hazard burn.
+
+### Fixed
+
+- `mazeEndTurn` now ends a person's turn that waits for a joker, as engine.md › The maze › Turns says; before, it was accepted and did nothing.
+- The golden records are re-recorded: headers only.
+
 ## spec 17 — 2026-11-17
 
 Rules unchanged (r28).

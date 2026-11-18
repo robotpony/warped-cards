@@ -35,6 +35,9 @@ import SwiftUI
         if let dir = value("--film") { Film.run(session, cue: value("--cue") ?? "deal", to: dir, seed: value("--seed").flatMap(UInt64.init) ?? 1); return }
         guard let out = value("--snapshot") else { return }
         session.animate = false
+        // The old reference shots play the grid game; `--maze` plays a game around the maze.
+        session.settings.mazeGame = args.contains("--maze")
+        if args.contains("--maze") { maze(session, to: out, value: value, args: args); return }
         if args.contains("--crib-off") { session.settings.dealer = false }
         // `--strong`: the strong preset hand (4♥ 5♣ 6♦ J♠, starter 5♠), whose 17 wins an opening bonus (r26).
         if args.contains("--strong") { session.settings.hand = "strong" }
@@ -118,6 +121,78 @@ import SwiftUI
         }
         render(session, to: out)
         exit(0)
+    }
+
+    /// `--maze [--seed N] [--hand H] [--acts K] [--until duel|hazard|card|end] [--summary]
+    /// [--select I] [--mode close|flip|bomb|burn|swapper] [--tip CELL] [--reach]`: a game around the
+    /// maze, every choice of yours played by a balanced bot. Plays the grid of each hand before H,
+    /// then K more of your maze actions (or until a duel, a hazard pause, a card or the end shows),
+    /// then selects your Ith play, sets a mode, or explains a cell, and renders.
+    static func maze(_ session: GameSession, to out: String, value: @escaping (String) -> String?, args: [String]) {
+        session.settings.timer = false
+        session.newTurn(seed: value("--seed").flatMap(UInt64.init) ?? 42)
+        let scene = session.mazeScene
+        scene.instant = true
+        let hand = value("--hand").flatMap(Int.init) ?? 1, acts = value("--acts").flatMap(Int.init) ?? 0, until = value("--until")
+        func playGrid() {
+            if let d = session.dealing {
+                for c in Deal.classicKeep(d.dealt.player).thrown { session.togglePick(c) }
+                session.throwToCrib()
+            }
+            session.dismissWarning(); while !session.over { session.botMove(); session.dismissWarning() }
+        }
+        playGrid()
+        if args.contains("--summary") { session.hideToast(); render(session, to: out); exit(0) }
+        session.toMaze()
+        Task { @MainActor in
+            var done = 0
+            @MainActor func stop() -> Bool {
+                switch until {
+                case "duel": scene.duel != nil
+                case "hazard": scene.hazard != nil
+                case "card": scene.card != nil && scene.card?.button == nil
+                case "end": scene.ended != nil
+                default: scene.hand >= hand && done >= acts
+                }
+            }
+            for _ in 0..<5000 {
+                try? await Task.sleep(for: .milliseconds(5))
+                if stop() && scene.waitingOnPlayer || scene.ended != nil { break }
+                if until == "hazard" && scene.hazard != nil { break }
+                guard scene.waitingOnPlayer else { continue }
+                if scene.card?.button != nil { scene.nextHand(); playGrid(); session.toMaze(); continue }
+                if scene.card != nil { scene.dismiss(); continue }
+                if scene.hand >= hand { done += 1 }
+                scene.autoAct()
+            }
+            if let i = value("--select").flatMap(Int.init), i < scene.myPlays.count { scene.select(scene.myPlays[i].id) }
+            if let m = value("--mode") { scene.mode = ["close": .close, "flip": .flip, "bomb": .bomb, "burn": .burn, "swapper": .swapper][m] ?? .none }
+            if let c = value("--tip").flatMap(Int.init) { scene.tip = scene.explain(cell: c, side: nil) }
+            if !args.contains("--toast") { session.hideToast() }
+            // `--frames N --every MS`: let the game play on in real time, a bot in your seat too, and
+            // shoot N frames from an offscreen window, MS apart (out-0.png, out-1.png, …), to check motion.
+            if let n = value("--frames").flatMap(Int.init) {
+                scene.instant = false; scene.autoplay = true; scene.cancel()
+                let size = CGSize(width: 450, height: 900)
+                let host = NSHostingView(rootView: PhoneView(session: session).padding(24).background(Theme.page).environment(\.colorScheme, .light))
+                host.frame = CGRect(origin: .zero, size: size)
+                let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+                w.contentView = host; w.setFrameOrigin(NSPoint(x: -10000, y: -10000)); w.orderFrontRegardless()
+                scene.autoAct()
+                let every = value("--every").flatMap(Int.init) ?? 100
+                for i in 0..<n {
+                    try? await Task.sleep(for: .milliseconds(every))
+                    if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+                        host.cacheDisplay(in: host.bounds, to: rep)
+                        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out.replacingOccurrences(of: ".png", with: "-\(i).png")))
+                    }
+                }
+                exit(0)
+            }
+            try? await Task.sleep(for: .milliseconds(50))
+            render(session, to: out)
+            exit(0)
+        }
     }
 
     /// `--turn N`: the medium bot plays the game's turns before turn N (throwing its best classic

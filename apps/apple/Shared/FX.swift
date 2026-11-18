@@ -66,10 +66,22 @@ struct FX: Decodable {
         let card: MotionSpec
         let patterns: [Pattern]
     }
+    /// The maze scene's camera, hops and drawing sizes (ui.md › Scene: Maze). Sizes are fractions of a cell.
+    struct Maze: Decodable {
+        struct Camera: Decodable { let cellsAcross, fitMargin, easeMs, settleMs: Double }
+        struct Hop: Decodable { let lift, shadow: Double }
+        struct Walls: Decodable { let line, lineMin, gap, gapMin: Double }
+        struct Door: Decodable { let size, sizeMin, turn: Double }
+        struct Fan: Decodable { let cardW, maxTurn: Double }
+        struct Burn: Decodable { let delayMs, ms: Double }
+        let camera: Camera, hop: Hop, walls: Walls, door: Door, fan: Fan, hazardBurn: Burn
+        let chevronMinCell, targetRange, eventHoldMs: Double
+    }
     let version: Int
     let motions: Motions
     let waits: Waits
     let fill: Fill
+    let maze: Maze
 
     /// Loaded once from the app's bundled config folder. The file MUST be there (ui.md › Motion).
     static let shared: FX = {

@@ -576,7 +576,9 @@ public struct Maze: Sendable {
             tokens[s].jokers[kind, default: 0] -= 1
             jokerUsed = true
         case .mazeEndTurn:
+            // A person ends the turn without the joker it could still play.
             guard played else { throw IllegalAction("a turn uses a play first") }
+            return nextTurn(after: s)
         case .duelCard: break
         }
         if duel != nil { return ev }

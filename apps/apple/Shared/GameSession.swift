@@ -37,6 +37,8 @@ struct TurnSettings: Equatable {
     var hints = true      // nudge the player when they seem stuck (Hints.swift)
     var deal = true       // deal 6 and pick 2 for the crib before each turn
     var sharedDeck = true // deck building: changed cards go into the shared deck (rules.json deck.shared)
+    var mazeGame = true   // a game around the maze (maze.md): a bot's grid turn, then the maze, hand after hand
+    var mazeStyle = "balanced"   // the bot's maze style, from bots.json › maze
 }
 
 /// The deal before a turn: your 6, the 2 you've picked for the crib, and the hint, if one showed.
@@ -198,8 +200,22 @@ final class GameSession {
     static let graceSeconds = 25
     private var toastTask: Task<Void, Never>?
 
+    /// The maze phase's scene (MazeScene.swift): what it shows, and its bots.
+    let mazeScene = MazeScene()
+    /// This hand's bots' grid turns (their `botTurn` events), for the summary before the maze.
+    private(set) var botResults: [CribMazeGame.Event] = []
+    /// Each seat's plays for this hand's maze, from `handPlays`.
+    private(set) var handPlays: [Int: [MazePlay]] = [:]
+    /// Whether this game is a game around the maze.
+    var mazeGame: Bool { run?.state.config.mazeGame ?? false }
+    /// The hand's maze phase is waiting to be shown (the grid turn's summary is up).
+    var mazeWaiting: Bool { if case .maze = run?.state.stage { !mazeScene.on } else { false } }
+    /// From the grid turn's summary into the maze.
+    func toMaze() { mazeScene.enter() }
+
     init() {
         defer { meter.moving = { [weak self] in self?.busy ?? false } }
+        mazeScene.session = self
         do {
             guard let folder = Bundle.main.url(forResource: "config", withExtension: nil) else { throw ConfigError(description: "config folder missing from the app") }
             config = try Config.load(from: folder)
@@ -292,7 +308,10 @@ final class GameSession {
         seed = fixed ?? UInt64(seedText) ?? UInt64.random(in: 1...999_999)   // app only: the engine never draws its own randomness
         seedText = ""
         c.rules.deck = .init(shared: settings.sharedDeck, minSize: c.rules.deck?.minSize)
-        let (r, opening) = GameRun<CribMazeGame>.start(.init(c, firstDealer: settings.dealer), seed: seed, players: [.human(0), .bot(1, level: "classic")])
+        let maze = settings.mazeGame && c.maze != nil
+        let (r, opening) = GameRun<CribMazeGame>.start(.init(c, firstDealer: settings.dealer, mazeGame: maze), seed: seed,
+                                                       players: [.human(0), .bot(1, level: maze ? "medium" : "classic")])
+        mazeScene.reset()
         run = r; game = r.state.game; clockBase = .zero; clockSince = clockPaused ? nil : .now; botDice = Dice(seed: seed); savedRecord = nil
         recorder = Edition.isBeta && animate ? Recording.recorder() : nil   // snapshots (animate off) save no records
         recorder?.started(r)
@@ -309,8 +328,10 @@ final class GameSession {
         guard config != nil, let g = run?.state.game else { return }
         game = g; gameAtTurnStart = g
         dealRecord = nil; hintTask?.cancel()
+        mazeScene.reset(); botResults = []; handPlays = [:]
         let strong = settings.hand == "strong"
-        let options = CribMazeGame.HandOptions(deal: settings.deal && !strong, fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil,
+        // A game around the maze always deals: the bot's grid turn plays from its own 4 kept cards.
+        let options = CribMazeGame.HandOptions(deal: (settings.deal || mazeGame) && !strong, fixedHand: strong ? ["4H", "5C", "6D", "JS"] : nil, fixedStarter: strong ? "5S" : nil,
                                                cardBudget: settings.budget, timerSeconds: settings.timer ? nil : 0)
         guard let step = act(.startHand(options)) else { return }
         if case .dealing(let dealt, let botThrown, _) = run?.state.stage {
@@ -420,13 +441,26 @@ final class GameSession {
     }
 
     /// Sends an action to the engine, stamped with the game time, and hands the step to the recorder.
-    private func act(_ action: CribMazeGame.Action, by player: PlayerID? = 0) -> Step<CribMazeGame>? {
+    /// A step that starts the maze (the grid turn's last) leaves its maze events for the maze scene.
+    func act(_ action: CribMazeGame.Action, by player: PlayerID? = 0) -> Step<CribMazeGame>? {
         guard var r = run else { return nil }
         let d = gameTime
         let ms = Int(d.components.seconds) * 1000 + Int(d.components.attoseconds / 1_000_000_000_000_000)
+        let mazeBefore = r.state.maze
         do {
             let step = try r.send(action, by: player, clockMs: ms)
             run = r
+            for e in step.events {
+                switch e {
+                case .botTurn: botResults.append(e)
+                case .handPlays(let seat, let plays, _): handPlays[seat] = plays
+                default: break
+                }
+            }
+            if case .maze = action { game = r.state.game } else if let before = mazeBefore {
+                let ev = step.events.compactMap(\.mazeEvent)
+                if !ev.isEmpty { mazeScene.pending = (before, ev) }
+            }
             recorder?.record(step)
             if let result = r.result { recorder?.ended(result) }
             savedRecord = recorder?.url

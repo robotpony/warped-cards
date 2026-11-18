@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 12, 2026-11-17, spec 17 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 12, 2026-11-17, spec 18 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -1070,11 +1070,24 @@ Every client's cue motions and waits (from spec 3). The engine doesn't read it; 
       { "name": "wave",    "order": "diagonal", "gap": 70, "from": "grow" },
       { "name": "scatter", "order": "random",   "gap": 30, "from": "spin" }
     ]
+  },
+  "maze": {
+    "camera": { "cellsAcross": 7, "fitMargin": 3, "easeMs": 160, "settleMs": 1200 },
+    "hop": { "lift": 0.38, "shadow": 0.24 },
+    "walls": { "line": 0.04, "lineMin": 1.6, "gap": 0.11, "gapMin": 3 },
+    "door": { "size": 0.82, "sizeMin": 24, "turn": 18 },
+    "chevronMinCell": 14,
+    "targetRange": 0.5,
+    "fan": { "cardW": 52, "maxTurn": 3.2 },
+    "eventHoldMs": 1400,
+    "hazardBurn": { "delayMs": 300, "ms": 1200 }
   }
 }
 ```
 
 `fill` (spec 9) is the grid's first deal-in: its card motion, and the patterns one is picked from each turn (ui.md › The grid fills).
+
+`maze` (spec 18) is the maze scene's camera, drawing and holds (ui.md › Scene: Maze). The walk's own pace (a step, the wait before a walk, hazard holds, a bot's think time) is in `maze.json` › timing, since the simulator reads it too.
 
 ## Left-over warning
 

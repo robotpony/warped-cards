@@ -247,6 +247,18 @@ func play(_ id: Int, _ steps: Int, _ suit: String?) -> MazePlay { MazePlay(id: i
         #expect(m.met == [[0, 1]] && m.turn == 1)
     }
 
+    @Test func endTurnPassesAPersonsTurnWithAJokerLeft() throws {
+        var m = maze(human: true)
+        _ = m.startHand(1, dealer: 1, plays: [[play(1, 3, nil), play(2, 3, nil)], [play(3, 5, nil)]], kept: kept, jokers: [["reach": 1], [:]], gridSteps: [])
+        #expect(m.turn == 0)
+        #expect(throws: IllegalAction.self) { try m.apply(.mazeEndTurn, by: 0) }
+        _ = try m.apply(.mazeWalk(play: 1, ways: nil), by: 0)
+        #expect(m.turn == 0 && m.played)   // a reach could still be played: the turn waits
+        let ev = try m.apply(.mazeEndTurn, by: 0)
+        #expect(ev == [.mazeTurn(seat: 1, hand: 1)])
+        #expect(m.turn == 1 && !m.played)
+    }
+
     @Test func aTieReplaysWithTheOtherLead() throws {
         // Equal hands score alike only sometimes; search kept hands for a first game that ties.
         var found = false
