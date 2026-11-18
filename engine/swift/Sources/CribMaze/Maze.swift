@@ -24,9 +24,11 @@ public enum MazeAction: Codable, Sendable, Equatable {
     /// cell (`cell`, a mine), a burn on a cell (a fire), or a reach (no target).
     case mazeJoker(kind: String, target: Int?, cell: Int?, passage: [Int]?)
     case mazeEndTurn
+    /// A person's card in a duel.
+    case duelCard(card: CardRef)
 
     /// Every maze action's name, as records write it.
-    public static let names: Set<String> = ["mazeWalk", "mazeClose", "mazeFlip", "mazeJoker", "mazeEndTurn"]
+    public static let names: Set<String> = ["mazeWalk", "mazeClose", "mazeFlip", "mazeJoker", "mazeEndTurn", "duelCard"]
 }
 
 /// A door a walk met.
@@ -61,12 +63,25 @@ public enum MazeEvent: Codable, Sendable, Equatable {
     /// Plays owed from the last hand came off this hand's.
     case playsOwed(seat: Int, lost: [Int], owed: Int)
     case star(seat: Int, cell: Int, joker: String)
+    /// The maze stirs for a stuck seat: `fade` (the door on its way, as passage), `star` (at cell) or `shift` (passage opened).
+    case stir(seat: Int, opening: String, cell: Int?, passage: [Int]?)
+    /// A duel's game starts: why (`stuck` or `landing`), the two seats, who leads, which game (1, or 2 after a tie), each one's 4 cards.
+    case duelStart(why: String, seats: [Int], lead: Int, game: Int, hands: [[CardRef]])
+    case duelCard(seat: Int, card: CardRef, count: Int, scores: [PegScore])
+    /// A seat can't play and says go.
+    case duelGo(seat: Int)
+    /// Nobody can play: the last to play pegs the go.
+    case duelPoint(seat: Int, kind: String, points: Int, count: Int)
+    /// The duel's end: each game's scores, the winner, whether a coin decided, the play that moved
+    /// to the winner (its id, or none), and for a stuck duel how the winner's way opened (or none).
+    case duelEnd(why: String, seats: [Int], scores: [[Int]], winner: Int, coin: Bool, took: Int?, opened: String?)
     /// The game's winner: `goal` (the first token in) or `cap` (cheapest to the goal after the last hand).
     case mazeEnd(winner: Int, reason: String, costs: [Int])
 
     /// Every maze event's name, as records write it.
     public static let names: Set<String> = ["mazeBuilt", "mazeTurn", "walk", "doorClosed", "switchFlipped", "mazeHandEnd", "mazeEnd",
-                                          "swapped", "doorBombed", "hazardSet", "reachOn", "hazardHit", "playsOwed", "star"]
+                                          "swapped", "doorBombed", "hazardSet", "reachOn", "hazardHit", "playsOwed", "star",
+                                          "stir", "duelStart", "duelCard", "duelGo", "duelPoint", "duelEnd"]
 }
 
 /// A player's token, plays and maze state.
@@ -117,6 +132,21 @@ public struct Maze: Sendable {
     public internal(set) var swaps: [[Int]] = []
     /// This turn's joker is used.
     public internal(set) var jokerUsed = false
+    /// Pairs [a, b], lower first, that met in a landing duel this hand.
+    public internal(set) var met: [[Int]] = []
+    /// A duel being played.
+    public struct Duel: Sendable, Equatable {
+        public let why: String
+        public let seats: [Int]
+        /// The first game's lead, as an index into seats.
+        public let lead: Int
+        public internal(set) var game: Int
+        public internal(set) var peg: PegPlay
+        public internal(set) var scores: [[Int]] = []
+        /// The seat whose walk landed it, for a landing duel; its turn goes on after.
+        public let walker: Int?
+    }
+    public internal(set) var duel: Duel?
     public internal(set) var dice: Dice
 
     public static let letters = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -299,7 +329,7 @@ public struct Maze: Sendable {
             tokens[i].gridSteps += i < gridSteps.count ? gridSteps[i] : 0
         }
         turn = nil
-        swaps = []
+        swaps = []; met = []
         var ev: [MazeEvent] = []
         // Plays owed to hazards come off first, in seat order.
         for i in tokens.indices where tokens[i].owed > 0 {
@@ -308,7 +338,169 @@ public struct Maze: Sendable {
             let lost = burnPlays(i, n)
             ev.append(.playsOwed(seat: i, lost: lost, owed: tokens[i].owed))
         }
+        let stuck = stuckCheck()
+        ev += stuck
+        // A stuck duel starts the hand's first turn when it ends.
+        if stuck.contains(where: { if case .duelStart = $0 { true } else { false } }) { return ev }
         return ev + nextTurn(after: dealer)
+    }
+
+    // MARK: Stuck
+
+    /// maze.md › Stuck: a seat whose cost to the goal hasn't dropped since the last hand started.
+    /// One event a hand at most: two or more stuck, the two furthest duel; one, behind a door
+    /// another seat closed, duels the closer; one, any other way, the maze stirs for it.
+    mutating func stuckCheck() -> [MazeEvent] {
+        let f = costField()
+        var stuck: [Int] = []
+        for i in tokens.indices {
+            if let was = tokens[i].handStartCost, f[tokens[i].pos] >= was { stuck.append(i) }
+        }
+        for i in tokens.indices { tokens[i].handStartCost = f[tokens[i].pos] }
+        guard config.plot.on, !stuck.isEmpty else { return [] }
+        stuck = stuck.enumerated().sorted { a, b in f[tokens[a.element].pos] != f[tokens[b.element].pos] ? f[tokens[a.element].pos] > f[tokens[b.element].pos] : a.offset < b.offset }.map(\.element)
+        if stuck.count >= 2 { return startDuel(stuck[0], stuck[1], why: "stuck", walker: nil) }
+        let p = stuck[0], way = wayAhead(p, field: f)
+        if let k = way.door, let q = board.passages[k]?.closedBy, q != p, q < tokens.count { return startDuel(p, q, why: "stuck", walker: nil) }
+        let opts = openings(p, way: way, field: f)
+        guard !opts.isEmpty else { return [] }
+        let o = dice.pick(opts.map { o in (o, config.plot.openings.entries.first { $0.0 == o }!.1) }, stream: "maze.plot", purpose: "plot")
+        let (cell, passage) = open(p, o, way: way, field: f)
+        return [.stir(seat: p, opening: o, cell: cell, passage: passage)]
+    }
+
+    /// Walls beside a seat whose way round, through passable passages, is 1 to `shiftMaxRound` steps.
+    func shiftable(_ p: Int) -> [Int] {
+        let at = tokens[p].pos, d = board.distances(from: at)
+        return board.neighbours(at).filter { board.key(at, $0).map { board.passages[$0] == nil } ?? false && d[$0] > 0 && d[$0] <= config.plot.shiftMaxRound }
+    }
+
+    /// The openings that can happen for a seat, in `plot.openings` order.
+    func openings(_ p: Int, way: (cells: [Int], keys: [Int], door: Int?), field f: [Int]) -> [String] {
+        config.plot.openings.entries.map(\.0).filter {
+            switch $0 {
+            case "fade": way.door != nil
+            case "star": way.cells.count > config.plot.starMinWay
+            default: !shiftable(p).isEmpty
+            }
+        }
+    }
+
+    /// Applies an opening: the cell a star fell on, or the passage that faded, broke or opened.
+    mutating func open(_ p: Int, _ o: String, way: (cells: [Int], keys: [Int], door: Int?), field f: [Int]) -> (Int?, [Int]?) {
+        func pair(_ k: Int) -> [Int] { let (a, b) = board.cells(ofKey: k); return [a, b] }
+        switch o {
+        case "fade":
+            let k = way.door!
+            var d = board.passages[k]!
+            d.suit = nil; d.strength = d.damage + (d.left + 1) / 2
+            board.passages[k] = d
+            return (nil, pair(k))
+        case "break":
+            let k = way.door!
+            board.passages[k]!.kind = .open; board.passages[k]!.broken = true
+            return (nil, pair(k))
+        case "star":
+            let c = way.cells[min(config.plot.starAhead, way.cells.count - 1)]
+            if !board.stars.contains(c) { board.stars.append(c) }
+            return (c, nil)
+        default:
+            let at = tokens[p].pos
+            let n = shiftable(p).enumerated().min { a, b in f[a.element] != f[b.element] ? f[a.element] < f[b.element] : a.offset < b.offset }!.element
+            let k = board.key(at, n)!
+            board.passages[k] = Passage(.open)
+            board.findPockets()
+            return (nil, pair(k))
+        }
+    }
+
+    // MARK: Duels
+
+    /// Each seat's 4 cards for a duel: its kept hand, or 4 dealt from the rest of the standard deck
+    /// (by card ID, less both hands, shuffled on `maze.duel`, purpose `duel_deal`) when it has none
+    /// or, for the second seat, when it shares a card with the first's. Shuffles only when one deals.
+    mutating func duelHands(_ p: Int, _ q: Int) -> [[Card]] {
+        var a: [Card]? = tokens[p].kept.count == 4 ? tokens[p].kept : nil
+        var b: [Card]? = tokens[q].kept.count == 4 ? tokens[q].kept : nil
+        if let x = a, let y = b, y.contains(where: { c in x.contains { $0.id == c.id } }) { b = nil }
+        if a == nil || b == nil {
+            let held = Set((a ?? []).map(\.id) + (b ?? []).map(\.id))
+            var deck = (0..<52).filter { !held.contains($0) }.map { Card(standard: $0) }
+            dice.shuffle(&deck, stream: "maze.duel", purpose: "duel_deal")
+            if a == nil { a = Array(deck.prefix(4)); deck.removeFirst(4) }
+            if b == nil { b = Array(deck.prefix(4)) }
+        }
+        return [a!, b!]
+    }
+
+    mutating func startDuel(_ p: Int, _ q: Int, why: String, walker: Int?) -> [MazeEvent] {
+        let n = tokens.count
+        func after(_ x: Int) -> Int { (x - dealer - 1 + 2 * n) % n }
+        let lead = after(q) < after(p) ? 1 : 0
+        let hands = duelHands(p, q)
+        duel = Duel(why: why, seats: [p, q], lead: lead, game: 1, peg: PegPlay(hands: hands, lead: lead, scoring: config.duel.peg), walker: walker)
+        return [.duelStart(why: why, seats: [p, q], lead: [p, q][lead], game: 1, hands: hands.map { $0.map(CardRef.init) })] + runDuel()
+    }
+
+    func pegEvents(_ e: [PegEvent], _ seats: [Int]) -> [MazeEvent] {
+        e.compactMap {
+            switch $0 {
+            case .played(let k, let c, let count, let scores): .duelCard(seat: seats[k], card: CardRef(c), count: count, scores: scores)
+            case .go(let k): .duelGo(seat: seats[k])
+            case .goPoint(let k, let pts, let count): .duelPoint(seat: seats[k], kind: "go", points: pts, count: count)
+            }
+        }
+    }
+
+    /// Bots' cards until a person must play, or the duel's game is over; then a tie plays again
+    /// once with the other lead, and a second tie goes to a coin (`maze.duel`, purpose `duel_coin`).
+    mutating func runDuel() -> [MazeEvent] {
+        var ev: [MazeEvent] = []
+        while var d = duel {
+            if !d.peg.over {
+                let k = d.peg.turn
+                if people[d.seats[k]] { return ev }
+                ev += pegEvents(d.peg.play(d.peg.botCard()!) ?? [], d.seats)
+                duel = d
+                continue
+            }
+            let sc = d.peg.scores
+            d.scores.append(sc)
+            if sc[0] == sc[1] && d.game == 1 {
+                let hands = duelHands(d.seats[0], d.seats[1])
+                d.game = 2
+                d.peg = PegPlay(hands: hands, lead: 1 - d.lead, scoring: config.duel.peg)
+                duel = d
+                ev.append(.duelStart(why: d.why, seats: d.seats, lead: d.seats[1 - d.lead], game: 2, hands: hands.map { $0.map(CardRef.init) }))
+                continue
+            }
+            var coin = false, wi: Int
+            if sc[0] != sc[1] { wi = sc[0] > sc[1] ? 0 : 1 } else { coin = true; wi = dice.pick([(0, 50), (1, 50)], stream: "maze.duel", purpose: "duel_coin") }
+            let w = d.seats[wi], l = d.seats[1 - wi]
+            var opened: String?
+            if d.why == "stuck" {
+                let f = costField(), way = wayAhead(w, field: f)
+                if way.door != nil { opened = "break"; _ = open(w, "break", way: way, field: f) }
+                else {
+                    let opts = openings(w, way: way, field: f)
+                    if !opts.isEmpty {
+                        let o = dice.pick(opts.map { o in (o, config.plot.openings.entries.first { $0.0 == o }!.1) }, stream: "maze.duel", purpose: "duel_open")
+                        opened = o; _ = open(w, o, way: way, field: f)
+                    }
+                }
+            }
+            var took: Int?
+            if !tokens[l].plays.isEmpty {
+                let t = tokens[l].plays.removeFirst()
+                took = t.id
+                tokens[w].plays = Plays.sortBiggestFirst(tokens[w].plays + [t])
+            }
+            duel = nil
+            ev.append(.duelEnd(why: d.why, seats: d.seats, scores: d.scores, winner: w, coin: coin, took: took, opened: opened))
+            // After a stuck duel the hand's first turn starts; after a landing duel the walker's turn goes on.
+            if let s = d.walker { if turnOver(s) { ev += nextTurn(after: s) } } else { ev += nextTurn(after: dealer) }
+        }
+        return ev
     }
 
     /// The next seat after this one with a play left takes a turn; with none, the hand is done.
@@ -326,6 +518,13 @@ public struct Maze: Sendable {
     /// The seat whose action this is: only the seat whose turn it is may act.
     mutating func apply(_ action: MazeAction, by seat: Int?) throws -> [MazeEvent] {
         guard winner == nil else { throw IllegalAction("the game is over") }
+        if case .duelCard(let ref) = action {
+            guard var d = duel, !d.peg.over, seat == nil || seat == d.seats[d.peg.turn], let c = d.peg.legal(d.peg.turn).first(where: { $0.id == ref.id }) else { throw IllegalAction("not a card to play in the duel") }
+            let e = pegEvents(d.peg.play(c) ?? [], d.seats)
+            duel = d
+            return e + runDuel()
+        }
+        guard duel == nil else { throw IllegalAction("a duel is being played") }
         guard let s = turn, seat == nil || seat == s else { throw IllegalAction("it isn't that seat's turn") }
         func play(_ id: Int) throws -> MazePlay {
             guard !played else { throw IllegalAction("this turn's play is used") }
@@ -374,7 +573,9 @@ public struct Maze: Sendable {
             jokerUsed = true
         case .mazeEndTurn:
             guard played else { throw IllegalAction("a turn uses a play first") }
+        case .duelCard: break
         }
+        if duel != nil { return ev }
         if winner == nil && turnOver(s) { ev += nextTurn(after: s) }
         return ev
     }
@@ -406,6 +607,12 @@ public struct Maze: Sendable {
             let j = dice.pick(config.jokers.starOdds.entries, stream: "maze.star", purpose: "star")
             tokens[s].jokers[j, default: 0] += 1
             ev.append(.star(seat: s, cell: w.end, joker: j))
+        }
+        // Landing on another token's cell (not the start) starts a duel, once a pair a hand.
+        if config.duel.landing && w.landed && w.end != board.start,
+           let q = tokens.indices.first(where: { $0 != s && tokens[$0].pos == w.end && !(config.duel.oncePerPairPerRound && met.contains([min(s, $0), max(s, $0)])) }) {
+            met.append([min(s, q), max(s, q)])
+            ev += startDuel(s, q, why: "landing", walker: s)
         }
         return ev
     }

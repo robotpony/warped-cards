@@ -2,6 +2,15 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 16 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- Stuck and duels (engine.md › The maze › Stuck, Duels): at each hand's maze start, a seat no closer than at the last hand's start is stuck; two stuck duel, one behind another's closed door duels the closer, one otherwise stirs the maze (fade, star, shift on `maze.plot`). A walk that lands on another token starts a landing duel. Duels are classic two-player pegging with `duel.peg`, a person's cards as `duelCard` actions; ties replay once, then a coin (`maze.duel`). Events `stir`, `duelStart`, `duelCard`, `duelGo`, `duelPoint`, `duelEnd`.
+- The golden records are re-recorded: headers only.
+
 ## spec 15 — 2026-11-17
 
 Rules unchanged (r28).

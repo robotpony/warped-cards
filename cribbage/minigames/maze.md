@@ -184,6 +184,8 @@ The first token to pass over a hazard sets it off, whoever placed it. The plays 
 
 ## Stuck: the maze stirs, or a duel
 
+Built in the engine (Apple 0.22.6), with the duels: `engine.md` › The maze › Stuck, Duels. Against the mock: the stuck check runs from hand 2 (against hand 1's start), as this doc says (the mock first compared at hand 3); and a duel deals from the deck in card ID order, shuffling only when a seat needs cards.
+
 At the start of each round after the first, a player is stuck if their cost to the goal hasn't dropped since the start of the last round. One event a round, at most:
 
 - **Two or more players stuck:** the two furthest from the goal duel.

@@ -1,4 +1,5 @@
 import CardKit
+import CribbageKit
 import Foundation
 import GameKit
 import GameRecord
@@ -184,5 +185,88 @@ func play(_ id: Int, _ steps: Int, _ suit: String?) -> MazePlay { MazePlay(id: i
         #expect(throws: IllegalAction.self) { try m.apply(.mazeJoker(kind: "reach", target: nil, cell: nil, passage: nil), by: 0) }   // one a turn
         _ = try m.apply(.mazeWalk(play: 2, ways: nil), by: 0)
         #expect(m.turn == 1)
+    }
+}
+
+@Suite struct MazeDuelTests {
+    let config = try! loadConfig()
+
+    func seats(_ human: Bool) -> [PlayerSeat] { [human ? .human(0) : .bot(0, level: "medium"), .bot(1, level: "medium")] }
+    func maze(human: Bool = false) -> Maze {
+        let mc = config.maze!
+        return Maze(config: mc, board: Maze.build(mc, seed: 1), seats: seats(human), dice: Dice(seed: 1))
+    }
+    let kept = [["5S", "5H", "JD", "QC"], ["4S", "6H", "7D", "8C"]].map { $0.map { Card.parse($0)! } }
+
+    @Test func twoStuckPlayersDuel() throws {
+        var m = maze()
+        _ = m.startHand(1, dealer: 1, plays: [[play(1, 5, nil)], [play(2, 5, nil)]], kept: kept, jokers: [], gridSteps: [])
+        // Nobody moved: at hand 2 both are stuck, and the two furthest from the goal duel.
+        let ev = m.startHand(2, dealer: 0, plays: [[play(3, 9, nil), play(4, 3, nil)], [play(5, 7, nil)]], kept: kept, jokers: [], gridSteps: [])
+        guard case .duelStart("stuck", let s, let lead, 1, _) = ev.first else { Issue.record("duel: \(ev)"); return }
+        #expect(Set(s) == [0, 1] && lead == 1)   // seat 1 is first after the dealer
+        guard case .duelEnd("stuck", _, let scores, let w, _, let took, let opened) = ev.first(where: { if case .duelEnd = $0 { true } else { false } }) else { Issue.record("end"); return }
+        #expect(scores.count >= 1 && opened != nil && took != nil)
+        #expect(m.tokens[w].plays.contains { $0.id == took })
+        // Seat 1 moves first, unless it lost its only play.
+        let first = m.tokens[1].plays.isEmpty ? 0 : 1
+        #expect(m.duel == nil && m.turn == first)
+        #expect(ev.filter { if case .mazeTurn = $0 { true } else { false } } == [.mazeTurn(seat: first, hand: 2)])
+    }
+
+    @Test func oneStuckPlayerStirsTheMaze() throws {
+        var m = maze()
+        _ = m.startHand(1, dealer: 1, plays: [[play(1, 5, nil)], [play(2, 5, nil)]], kept: kept, jokers: [], gridSteps: [])
+        m.tokens[1].handStartCost = Int.max   // seat 1 got closer
+        m.tokens[1].handStartCost = m.costField()[m.tokens[1].pos] + 1
+        let ev = m.startHand(2, dealer: 0, plays: [[play(3, 9, nil)], [play(5, 7, nil)]], kept: kept, jokers: [], gridSteps: [])
+        guard case .stir(0, let o, _, _) = ev.first else { Issue.record("stir: \(ev)"); return }
+        #expect(["fade", "star", "shift"].contains(o))
+    }
+
+    @Test func landingDuelsAndAPersonsCards() throws {
+        var m = maze(human: true)
+        _ = m.startHand(1, dealer: 1, plays: [[play(1, 9, nil), play(2, 3, nil)], [play(3, 5, nil)]], kept: kept, jokers: [], gridSteps: [])
+        let end = m.preview(seat: 0, play: 1)!.walk.end
+        m.tokens[1].pos = end
+        let ev = try m.apply(.mazeWalk(play: 1, ways: nil), by: 0)
+        guard case .duelStart("landing", [0, 1], let lead, 1, _) = ev.first(where: { if case .duelStart = $0 { true } else { false } }) else { Issue.record("duel: \(ev)"); return }
+        #expect(lead == 0)   // seat 0 is first after dealer 1
+        // The duel waits for the person's card; nothing else is allowed meanwhile.
+        #expect(m.duel != nil)
+        #expect(throws: IllegalAction.self) { try m.apply(.mazeEndTurn, by: 0) }
+        var guardN = 0
+        while let d = m.duel, guardN < 20 {
+            guardN += 1
+            let c = d.peg.legal(d.peg.turn).first!
+            #expect(d.seats[d.peg.turn] == 0)
+            _ = try m.apply(.duelCard(card: CardRef(c)), by: 0)
+        }
+        #expect(m.duel == nil)
+        // The walker's turn goes on: once a pair a hand, and its turn ends (it holds no joker).
+        #expect(m.met == [[0, 1]] && m.turn == 1)
+    }
+
+    @Test func aTieReplaysWithTheOtherLead() throws {
+        // Equal hands score alike only sometimes; search kept hands for a first game that ties.
+        var found = false
+        var d = Dice(seed: 3)
+        for _ in 0..<400 where !found {
+            var deck = (0..<52).map { Card(standard: $0) }
+            d.shuffle(&deck, stream: "t", purpose: "t")
+            let hands = [Array(deck[0..<4]), Array(deck[4..<8])]
+            var p = PegPlay(hands: hands, lead: 0, scoring: config.maze!.duel.peg)
+            while !p.over { _ = p.play(p.botCard()!) }
+            guard p.scores[0] == p.scores[1] else { continue }
+            found = true
+            var m = maze()
+            _ = m.startHand(1, dealer: 1, plays: [[play(1, 5, nil)], [play(2, 5, nil)]], kept: hands, jokers: [], gridSteps: [])
+            let ev = m.startDuel(0, 1, why: "landing", walker: nil)
+            let starts = ev.compactMap { e -> (Int, Int)? in if case .duelStart(_, _, let lead, let g, _) = e { (lead, g) } else { nil } }
+            #expect(starts.count == 2 && starts[0] != starts[1] && starts[1].1 == 2 && starts[0].0 != starts[1].0)
+            guard case .duelEnd(_, _, let scores, _, _, _, nil) = ev.first(where: { if case .duelEnd = $0 { true } else { false } }) else { Issue.record("end"); return }
+            #expect(scores.count == 2 && scores[0][0] == scores[0][1])
+        }
+        #expect(found)
     }
 }

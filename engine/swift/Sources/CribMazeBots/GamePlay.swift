@@ -37,7 +37,7 @@ extension MatchBot {
                     try send(.match(.reachOver(id: id)), by: nil)
                 }
             case .maze:
-                guard let m = s.maze, let seat = m.turn else { return }
+                guard let m = s.maze, let seat = m.duel.map({ $0.seats[$0.peg.turn] }) ?? m.turn else { return }
                 try send(.maze(MazeBot().choose(m)), by: seat)
             case .over: return
             }

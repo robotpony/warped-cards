@@ -28,6 +28,6 @@ let package = Package(
         .testTarget(name: "GameKitTests", dependencies: ["GameKit"]),
         .testTarget(name: "GameRecordTests", dependencies: ["GameRecord", "GameKit"]),
         .testTarget(name: "CribbageKitTests", dependencies: ["CribbageKit"]),
-        .testTarget(name: "CribMazeTests", dependencies: ["CribMaze", "CribMazeBots", "GameRecord"]),
+        .testTarget(name: "CribMazeTests", dependencies: ["CribMaze", "CribMazeBots", "CribbageKit", "GameRecord"]),
     ]
 )

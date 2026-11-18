@@ -58,7 +58,7 @@ Built from `cribbage/minigames/maze.md`, the design handoff from `mocks/maze-boa
 - [x] `@apple` `config/maze.json`, and the maze generator in the engine, with a fixture per seed (maze.md › The board)
 - [x] `@apple` Plays from the round's sets, turns, walking, doors, switches and closing, as engine actions and events (maze.md › Plays, Turns, Walking)
 - [x] `@apple` Power jokers on the maze, fire and mine hazards, stars (maze.md › Power jokers on the maze)
-- [ ] `@apple` Stuck: the stir and duels, stuck and landing, with classic pegging (maze.md › Stuck, Duels)
+- [x] `@apple` Stuck: the stir and duels, stuck and landing, with classic pegging (maze.md › Stuck, Duels)
 - [ ] `@apple` Maze bots and `cribmaze-sim` whole games; check rounds a game and seat balance against maze.md › Stats
 - [ ] `@apple` The beta's maze scene: board, camera, hops, fan, play sheet, tray, duel screen, hazard pause, tap to explain (maze.md › The screen)
 - [ ] `@apple` A round in the beta: deal, scoring grid, then the maze, until a token reaches the goal; then playtest (`playtests/plan.md`)

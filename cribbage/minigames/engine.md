@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 10, 2026-11-17, spec 15 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 11, 2026-11-17, spec 16 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -209,7 +209,7 @@ The maze's state: the board, and for each seat a token (its cell, the cell it ca
 
 1. A hand's maze phase starts with the seat after the dealer and goes round the seats (seat + 1, wrapping). A seat with no plays left is skipped. Each turn starts with `mazeTurn` (seat, hand). When nobody has a play left, `mazeHandEnd` (hand, costs: each seat's cost to the goal) ends it.
 2. **A turn** uses one play, as a walk, a closed door or a flipped switch (Actions below), and at most `turn.jokersPerTurn` (1) power joker, before or after the play. The turn passes on after the play, unless the seat is a person who still holds a usable joker (a swapper, bomb or burn, or a reach with none on) and hasn't used one this turn: then it waits for a joker (which ends it) or `mazeEndTurn`. A bot sends its joker first, then its play.
-   - Before the first turn, plays owed to hazards come off each seat's new plays, in seat order (Hazards): `playsOwed` (seat, lost, owed).
+   - Before the first turn, plays owed to hazards come off each seat's new plays, in seat order (Hazards): `playsOwed` (seat, lost, owed). Then the stuck check runs (Stuck). If it starts a duel, the hand's first turn starts when the duel ends.
 3. The first token into the goal wins at once, mid-walk: `mazeEnd` (winner, reason `goal`, costs).
 4. **The cap.** If no token has reached the goal when hand `game.maxHands`'s maze ends, the seat cheapest to the goal wins; on a tie, the one with more grid steps over the game; then the first of them in turn order from the seat after the last dealer: `mazeEnd` (reason `cap`).
 
@@ -256,6 +256,34 @@ A cell holds at most one hazard, `fire` or `mine`, with the seat that set it. Th
 
 A walk that ends on a star takes it: a pick from `jokers.starOdds` (stream `maze.star`, purpose `star`) joins the seat's power jokers. `star` (seat, cell, joker).
 
+### Stuck
+
+At the start of every hand's maze, after plays owed, each seat's cost to the goal is compared with its cost when the last hand's maze started (hand 1 records it, so hand 2 is the first that can find one stuck). A seat is stuck if its cost hasn't dropped. Then every seat's cost is recorded for next time. With `plot.on`, one event at most:
+
+- **Two or more stuck:** the two furthest from the goal (highest cost; seat order on a tie) duel, the furthest first (Duels, why `stuck`).
+- **One stuck, the first door on its way closed by another seat:** it duels the closer.
+- **One stuck, any other way:** the maze stirs for it. The openings that can happen, in `plot.openings` order: `fade` if its way has a door; `star` if its way is longer than `plot.starMinWay` cells; `shift` if a wall beside it has a way round (breadth first through passable passages) of 1 to `plot.shiftMaxRound` steps. Pick one by their weights (stream `maze.plot`, purpose `plot`); with none, nothing happens. `stir` (seat, opening, cell or none, passage or none).
+
+The openings:
+
+- **Fade:** the first door on the way loses its suit, and its strength becomes its damage plus half its strength left, rounded up.
+- **Star:** a star on cell `plot.starAhead` of the way (0 is the first cell ahead), or its last cell if shorter.
+- **Shift:** of the walls that qualify, in direction order, the one whose far cell costs least (the first on a tie) opens, and the pockets are worked out again.
+- **Break** (a stuck duel's winner only): the first door on the way breaks, open for good.
+
+### Duels
+
+Classic two-player pegging (Classic cribbage › The play) with `duel.peg`'s points, between seats p and q (for a landing, the walker is p).
+
+1. **Lead.** Of the two, the one first in turn order after the dealer leads the first game.
+2. **Cards.** Each plays its 4 kept cards, in the order kept. If p has none, or q has none or shares a card with p's, the standard 52 in card ID order, less both hands' cards, is shuffled (stream `maze.duel`, purpose `duel_deal`) and p's 4 (if needed), then q's, come off the top. Nothing is drawn when both have hands. `duelStart` (why, seats, lead, game, hands).
+3. **Play.** Cards go down in turn as in the play: `duelCard` (seat, card, count, scores), `duelGo` (seat) when a seat can't play, and `duelPoint` (seat, kind `go`, points, count) when nobody can. A person sends `duelCard` when it's their turn and they can play; a bot plays at once: the legal card that scores most now, then one that doesn't leave the count at 5 or 21, then the highest value, the first in hand order on a tie. While a duel is on, `duelCard` is the only maze action allowed.
+4. **Winning.** The higher score wins. A tie plays again once, dealt afresh as in step 2, with the other seat leading (a second `duelStart`, game 2). Tied again, a coin: a pick from p and q weighted 50 each (purpose `duel_coin`).
+5. **What the winner gets.** The loser's biggest play left moves to the winner, kept biggest first (after plays of the same size). A stuck duel also opens the winner's way: the first door on it breaks; with no door, one of the stir's openings (as in Stuck, picked with purpose `duel_open`); with none, nothing. `duelEnd` (why, seats, scores: each game's, winner, coin, took: the play's id or none, opened: `break`, `fade`, `star`, `shift` or none).
+6. **Then.** After a stuck duel, the hand's first turn starts. After a landing duel, the walker's turn goes on as after any play.
+
+**Landing.** After a walk's hazards and star, if `duel.landing` is on, the walk landed (Walking), it didn't end on the start, and another token is on its end cell (the first in seat order), they duel (why `landing`), at most once a pair a hand with `duel.oncePerPairPerRound`.
+
 ### Closing and flipping
 
 - **Close a door** with a play that has a suit. The passage MUST be open (a broken door counts), with no token on either cell and neither cell the goal, and the seat MUST have closed fewer than `close.perRound` doors this hand. It MUST NOT be on the way of a seat that closed a door on this seat's way this hand. It becomes a door of the play's suit, strength max(`close.min`, round(steps × `close.mulPercent` / 100)), damage 0, closed by the seat. Every other seat whose way the passage was on is marked as closed on by this seat, for the hand.
@@ -272,6 +300,7 @@ Each maze action is sent by the seat whose turn it is. Passages are their two ce
 | `mazeFlip` | play, letter (`A` to `H`) | As above, and the switch hasn't flipped this hand |
 | `mazeJoker` | kind, target (a seat, for a swapper), cell (a burn, or a bomb's mine), passage (a bomb's door), each or none | The seat's turn, no joker used this turn, the seat holds one, and the target is allowed (Power jokers) |
 | `mazeEndTurn` | none | The seat's turn, after its play (a person who could still play a joker) |
+| `duelCard` | card | A duel is on, it's this seat's turn in it, and the card keeps the count at `maxCount` or under |
 
 ### Events
 
@@ -290,6 +319,12 @@ Each maze action is sent by the seat whose turn it is. Passages are their two ce
 | `reachOn` | seat |
 | `hazardHit` | seat, kind, cell, landed, lose, lost, owed |
 | `star` | seat, cell, joker |
+| `stir` | seat, opening, cell (or none), passage (or none) |
+| `duelStart` | why, seats, lead, game, hands |
+| `duelCard` | seat, card, count, scores (each `{kind, points}`) |
+| `duelGo` | seat |
+| `duelPoint` | seat, kind, points, count |
+| `duelEnd` | why, seats, scores, winner, coin, took (or none), opened (or none) |
 | `mazeEnd` | winner, reason (`goal` or `cap`), costs |
 
 A play in `handPlays` is `{id, steps, suit, cards, from}`; its id is what the actions name.
@@ -521,7 +556,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (15), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
+| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (16), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`, including a timed key's) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -567,6 +602,8 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 | `maze` | The maze's board, once a game when the game starts: `carve`, `goal`, `walls`, `door_suit`, `variant_suit`, `switch_edge`, `switch_wall`, `junction`, `prize_cells` (The maze › The board). Never started again, and nothing draws on it after the board is built |
 | `maze.burn` | Each hand's maze: per hazard set off, `burn_pass` or `burn_land`, then `burn_play` per play lost; at a hand's start, `burn_play` per play owed |
 | `maze.star` | Each hand's maze: `star` per star taken |
+| `maze.plot` | Each hand's stuck check: `plot` for a stir |
+| `maze.duel` | Each duel: `duel_deal` for a game that deals cards, `duel_coin` for a second tie, `duel_open` for a stuck duel's opening |
 | `bot.<seat>` | A bot's own choices (see Bots). A bot's own grid turn draws its match turn on the game's streams, started again from its seed (The game around the maze) |
 
 ## Clock and timer
@@ -1036,6 +1073,8 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 | Maze: with 2 players, the dealer moved first | The seat after the dealer moves first, as maze.md says |
 | Maze: a token at the start counts as stopped at a door | Not at a door until a walk stops against one |
 | Maze: a swap marks both tokens as stopped at a door | Neither is at a door, as maze.md says |
+| Maze: the stuck check first compares at hand 3 | From hand 2, against hand 1's start, as maze.md says |
+| Maze: a duel's deal shuffles a rank-ordered deck every game | Shuffles the deck in card ID order, and only when a seat needs cards |
 
 ## Open questions
 

@@ -14,7 +14,7 @@ public enum CribMazeGame: GameRules {
     public static let gameID = "crib-maze"
     public static var rulesVersion: String { MatchTurn.rulesVersion }
     /// Keep in step with `specVersion` in cribbage/minigames/spec.json (spec.test.js checks it).
-    public static let specVersion = 15
+    public static let specVersion = 16
 
     /// The config files, plus who deals first. Encoded flat, so a record's config reads like the files.
     public struct Config: Codable, Sendable, Equatable {
@@ -355,7 +355,7 @@ extension CribMazeGame {
         var ev: [Event] = []
         if m.over {
             state.game.ended = true
-        } else if m.turn == nil {
+        } else if m.turn == nil && m.duel == nil {
             if state.game.results.count >= state.game.turns { ev.append(.maze(m.capWinner())); state.game.ended = true }
         } else {
             return []
