@@ -125,3 +125,64 @@ func play(_ id: Int, _ steps: Int, _ suit: String?) -> MazePlay { MazePlay(id: i
         #expect(s.ok, "\(s)")
     }
 }
+
+@Suite struct MazeJokerTests {
+    let config = try! loadConfig()
+
+    func twoSeats(_ plays: [[MazePlay]], human: Bool = false, jokers: [[String: Int]] = []) -> Maze {
+        let mc = config.maze!
+        let seats = [human ? PlayerSeat.human(0) : PlayerSeat.bot(0, level: "medium"), PlayerSeat.bot(1, level: "medium")]
+        var m = Maze(config: mc, board: Maze.build(mc, seed: 1), seats: seats, dice: Dice(seed: 1))
+        _ = m.startHand(1, dealer: 1, plays: plays, kept: [], jokers: jokers, gridSteps: [])
+        return m
+    }
+
+    @Test func aFirePassedAndAMineLandedOn() throws {
+        var m = twoSeats([[play(1, 12, nil), play(2, 3, nil)], [play(3, 5, nil)]])
+        let pv = m.preview(seat: 0, play: 1)!.walk
+        m.hazards = [.init(cell: pv.path[3], kind: "fire", seat: 1), .init(cell: pv.end, kind: "mine", seat: 1)]
+        let ev = try m.apply(.mazeWalk(play: 1, ways: nil), by: 0)
+        let hits = ev.compactMap { e -> (String, Bool, Int, [Int], Int)? in if case .hazardHit(_, let k, _, let l, let n, let lost, let owed) = e { (k, l, n, lost, owed) } else { nil } }
+        #expect(hits.count == 2)
+        #expect(hits[0].0 == "fire" && !hits[0].1 && (1...2).contains(hits[0].2))
+        #expect(hits[0].3 == [2])   // the one play left burns
+        #expect(hits[1].0 == "mine" && hits[1].1 && (6...7).contains(hits[1].2) && hits[1].3.isEmpty && hits[1].4 == hits[1].2)
+        #expect(hits[0].4 == hits[0].2 - 1)
+        #expect(m.hazards.isEmpty && m.tokens[0].plays.isEmpty)
+        // What's owed comes off the next hand's plays as soon as they're dealt.
+        let owed = m.tokens[0].owed
+        let ev2 = m.startHand(2, dealer: 0, plays: [(10..<20).map { play($0, 5, nil) }, [play(30, 5, nil)]], kept: [], jokers: [], gridSteps: [])
+        guard case .playsOwed(0, let lost, 0) = ev2.first else { Issue.record("owed"); return }
+        #expect(lost.count == owed && m.tokens[0].plays.count == 10 - owed)
+    }
+
+    @Test func aStarGivesAJoker() throws {
+        var m = twoSeats([[play(1, 7, nil)], [play(2, 5, nil)]])
+        let end = m.preview(seat: 0, play: 1)!.walk.end
+        m.board.stars = [end]
+        let ev = try m.apply(.mazeWalk(play: 1, ways: nil), by: 0)
+        guard case .star(0, end, let j) = ev.last(where: { if case .star = $0 { true } else { false } }) else { Issue.record("star"); return }
+        #expect(m.tokens[0].jokers[j] == 1 && m.board.stars.isEmpty)
+    }
+
+    @Test func swapsBombsBurnsAndReach() throws {
+        var m = twoSeats([[play(1, 30, nil), play(2, 4, nil)], [play(3, 20, nil), play(4, 6, nil)]], human: true,
+                         jokers: [["swapper": 2, "bomb": 1, "burn": 1, "reach": 1], ["swapper": 1]])
+        _ = try m.apply(.mazeWalk(play: 1, ways: nil), by: 0)
+        // A person with a joker left: the turn waits for one, or End turn.
+        #expect(m.turn == 0)
+        let ev = try m.apply(.mazeJoker(kind: "swapper", target: 1, cell: nil, passage: nil), by: 0)
+        guard case .swapped(0, 1, _) = ev.first else { Issue.record("swap"); return }
+        #expect(m.turn == 1 && m.tokens[1].pos != m.board.start)   // a joker after the play ends the turn
+        #expect(!m.canSwap(1, 0))   // not the same pair back this hand
+        _ = try m.apply(.mazeWalk(play: 3, ways: nil), by: 1)
+        #expect(m.turn == 0)
+        let cells = m.hazardCells(0)
+        #expect(!cells.isEmpty)
+        _ = try m.apply(.mazeJoker(kind: "burn", target: nil, cell: cells[0], passage: nil), by: 0)
+        #expect(m.hazards == [.init(cell: cells[0], kind: "fire", seat: 0)])
+        #expect(throws: IllegalAction.self) { try m.apply(.mazeJoker(kind: "reach", target: nil, cell: nil, passage: nil), by: 0) }   // one a turn
+        _ = try m.apply(.mazeWalk(play: 2, ways: nil), by: 0)
+        #expect(m.turn == 1)
+    }
+}

@@ -20,10 +20,13 @@ public enum MazeAction: Codable, Sendable, Equatable {
     case mazeClose(play: Int, passage: [Int])
     /// Flip a switch (its letter, A to H) with a play.
     case mazeFlip(play: Int, letter: String)
+    /// Use a power joker: a swapper on another seat (`target`), a bomb on a door (`passage`) or a
+    /// cell (`cell`, a mine), a burn on a cell (a fire), or a reach (no target).
+    case mazeJoker(kind: String, target: Int?, cell: Int?, passage: [Int]?)
     case mazeEndTurn
 
     /// Every maze action's name, as records write it.
-    public static let names: Set<String> = ["mazeWalk", "mazeClose", "mazeFlip", "mazeEndTurn"]
+    public static let names: Set<String> = ["mazeWalk", "mazeClose", "mazeFlip", "mazeJoker", "mazeEndTurn"]
 }
 
 /// A door a walk met.
@@ -48,11 +51,22 @@ public enum MazeEvent: Codable, Sendable, Equatable {
     case switchFlipped(seat: Int, play: Int, letter: String)
     /// Nobody has a play left: each seat's cost to the goal.
     case mazeHandEnd(hand: Int, costs: [Int])
+    case swapped(seat: Int, target: Int, cells: [Int])
+    case doorBombed(seat: Int, passage: [Int], opened: Bool, left: Int)
+    /// A hazard placed: `fire` (a burn) or `mine` (a bomb).
+    case hazardSet(seat: Int, kind: String, cell: Int)
+    case reachOn(seat: Int)
+    /// A hazard went off under a seat: the plays it lost, by id, and how many it still owes.
+    case hazardHit(seat: Int, kind: String, cell: Int, landed: Bool, lose: Int, lost: [Int], owed: Int)
+    /// Plays owed from the last hand came off this hand's.
+    case playsOwed(seat: Int, lost: [Int], owed: Int)
+    case star(seat: Int, cell: Int, joker: String)
     /// The game's winner: `goal` (the first token in) or `cap` (cheapest to the goal after the last hand).
     case mazeEnd(winner: Int, reason: String, costs: [Int])
 
     /// Every maze event's name, as records write it.
-    public static let names: Set<String> = ["mazeBuilt", "mazeTurn", "walk", "doorClosed", "switchFlipped", "mazeHandEnd", "mazeEnd"]
+    public static let names: Set<String> = ["mazeBuilt", "mazeTurn", "walk", "doorClosed", "switchFlipped", "mazeHandEnd", "mazeEnd",
+                                          "swapped", "doorBombed", "hazardSet", "reachOn", "hazardHit", "playsOwed", "star"]
 }
 
 /// A player's token, plays and maze state.
@@ -71,6 +85,10 @@ public struct MazeToken: Codable, Sendable, Equatable {
     public var jokers: [String: Int] = [:]
     /// Doors closed this hand.
     public var closed = 0
+    /// A reach is on: its next walk picks its way.
+    public var reach = false
+    /// Plays still owed to hazards, taken from its next hand's.
+    public var owed = 0
     /// Its cost to the goal when the last hand started (the stuck check).
     public var handStartCost: Int?
     /// Steps scored on the grid over the game (the cap's tie-break).
@@ -92,6 +110,13 @@ public struct Maze: Sendable {
     public internal(set) var winner: Int?
     /// Pairs [closer, other] this hand: the closer closed a door on the other's way.
     public internal(set) var blocked: [[Int]] = []
+    /// A hazard on a cell: `fire` or `mine`, and who set it. In the order set.
+    public struct Hazard: Codable, Sendable, Equatable { public let cell: Int, kind: String, seat: Int }
+    public internal(set) var hazards: [Hazard] = []
+    /// Pairs [a, b], lower first, that swapped this hand.
+    public internal(set) var swaps: [[Int]] = []
+    /// This turn's joker is used.
+    public internal(set) var jokerUsed = false
     public internal(set) var dice: Dice
 
     public static let letters = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -274,12 +299,21 @@ public struct Maze: Sendable {
             tokens[i].gridSteps += i < gridSteps.count ? gridSteps[i] : 0
         }
         turn = nil
-        return nextTurn(after: dealer)
+        swaps = []
+        var ev: [MazeEvent] = []
+        // Plays owed to hazards come off first, in seat order.
+        for i in tokens.indices where tokens[i].owed > 0 {
+            let n = tokens[i].owed
+            tokens[i].owed = 0
+            let lost = burnPlays(i, n)
+            ev.append(.playsOwed(seat: i, lost: lost, owed: tokens[i].owed))
+        }
+        return ev + nextTurn(after: dealer)
     }
 
     /// The next seat after this one with a play left takes a turn; with none, the hand is done.
     mutating func nextTurn(after s: Int) -> [MazeEvent] {
-        played = false
+        played = false; jokerUsed = false
         let n = tokens.count
         for k in 1...n {
             let q = (s + k) % n
@@ -307,6 +341,7 @@ public struct Maze: Sendable {
             let f = costField()
             let w = walk(s, steps: p.steps, suit: p.suit, reach: reachOn(s), ways: ways ?? [], field: f, hazardAt: hazardAt)
             ev.append(.walk(seat: s, play: id, steps: p.steps, path: w.path, junctions: w.junctions, doors: w.doors, stopped: w.stopped, key: w.key, end: w.end, won: w.won, reach: reachOn(s)))
+            tokens[s].reach = false
             if w.won {
                 winner = s
                 ev.append(.mazeEnd(winner: s, reason: "goal", costs: tokens.indices.map(cost)))
@@ -331,6 +366,12 @@ public struct Maze: Sendable {
             board.switches[sw].flipped = hand
             flip(sw)
             ev.append(.switchFlipped(seat: s, play: id, letter: letter))
+        case .mazeJoker(let kind, let target, let cell, let passage):
+            guard jokerUsed == false else { throw IllegalAction("one joker a turn") }
+            guard tokens[s].jokers[kind, default: 0] > 0 else { throw IllegalAction("no \(kind) to use") }
+            ev += try useJoker(s, kind, target: target, cell: cell, passage: passage)
+            tokens[s].jokers[kind, default: 0] -= 1
+            jokerUsed = true
         case .mazeEndTurn:
             guard played else { throw IllegalAction("a turn uses a play first") }
         }
@@ -338,14 +379,105 @@ public struct Maze: Sendable {
         return ev
     }
 
-    /// The turn ends after its play, unless a person may still play a joker.
-    func turnOver(_ s: Int) -> Bool { played }
+    /// The turn ends after its play, unless a person may still play a joker: one this turn hasn't
+    /// used, with a swapper, bomb, burn or (with no reach on) reach in hand. `mazeEndTurn` ends it then.
+    func turnOver(_ s: Int) -> Bool { played && (jokerUsed || !people[s] || !canStillJoker(s)) }
 
-    /// What follows a walk that didn't reach the goal: hazards, a star, a landing duel.
-    mutating func afterWalk(_ s: Int, _ w: Walk) -> [MazeEvent] { [] }
+    public func canStillJoker(_ s: Int) -> Bool {
+        !jokerUsed && ["swapper", "bomb", "burn", "reach"].contains { tokens[s].jokers[$0, default: 0] > 0 && !($0 == "reach" && tokens[s].reach) }
+    }
 
-    func reachOn(_ s: Int) -> Bool { false }
-    func hazardAt(_ c: Int) -> Bool { false }
+    /// What follows a walk that didn't reach the goal (maze.md › Walking, 8): hazards go off in the
+    /// order passed, then a star on the end cell gives a joker.
+    mutating func afterWalk(_ s: Int, _ w: Walk) -> [MazeEvent] {
+        var ev: [MazeEvent] = []
+        for c in w.hazards {
+            guard let i = hazards.firstIndex(where: { $0.cell == c }) else { continue }
+            let h = hazards.remove(at: i)
+            let landed = c == w.end
+            let r = h.kind == "mine" ? config.hazards.mine : config.hazards.fire
+            let range = landed ? r.land : r.pass
+            let n = range[0] + dice.below(range[1] - range[0] + 1, stream: "maze.burn", purpose: landed ? "burn_land" : "burn_pass")
+            let lost = burnPlays(s, n)
+            ev.append(.hazardHit(seat: s, kind: h.kind, cell: c, landed: landed, lose: n, lost: lost, owed: tokens[s].owed))
+        }
+        if let i = board.stars.firstIndex(of: w.end) {
+            board.stars.remove(at: i)
+            let j = dice.pick(config.jokers.starOdds.entries, stream: "maze.star", purpose: "star")
+            tokens[s].jokers[j, default: 0] += 1
+            ev.append(.star(seat: s, cell: w.end, joker: j))
+        }
+        return ev
+    }
+
+    /// Takes n plays at random from those left (stream `maze.burn`, purpose `burn_play` each); what
+    /// it can't take is owed. Returns the ids lost.
+    mutating func burnPlays(_ s: Int, _ n: Int) -> [Int] {
+        var lost: [Int] = []
+        while lost.count < n && !tokens[s].plays.isEmpty {
+            let k = dice.below(tokens[s].plays.count, stream: "maze.burn", purpose: "burn_play")
+            lost.append(tokens[s].plays.remove(at: k).id)
+        }
+        tokens[s].owed += n - lost.count
+        return lost
+    }
+
+    public func reachOn(_ s: Int) -> Bool { tokens[s].reach }
+    public func hazardAt(_ c: Int) -> Bool { hazards.contains { $0.cell == c } }
+
+    // MARK: Power jokers
+
+    /// Doors a bomb can reach: either end within `targetRange` steps of the seat through passable
+    /// passages. By passage key, in key order.
+    public func bombDoors(_ s: Int) -> [Int] {
+        let d = board.distances(from: tokens[s].pos)
+        return board.doors.map(\.key).filter { k in let (a, b) = board.cells(ofKey: k); return (0...config.jokers.targetRange).contains(d[a]) || (0...config.jokers.targetRange).contains(d[b]) }
+    }
+
+    /// Cells a burn or a mine can go on: the first `targetRange` cells of each other seat's way, in
+    /// seat order, less the start, the goal, a cell with a token or a hazard, each once.
+    public func hazardCells(_ s: Int, field f: [Int]? = nil) -> [Int] {
+        let f = f ?? costField()
+        var out: [Int] = []
+        for q in tokens.indices where q != s {
+            for c in wayAhead(q, field: f).cells.prefix(config.jokers.targetRange)
+            where c != board.goal && c != board.start && !hazardAt(c) && !tokens.contains(where: { $0.pos == c }) && !out.contains(c) { out.append(c) }
+        }
+        return out
+    }
+
+    public func canSwap(_ s: Int, _ q: Int) -> Bool { s != q && q >= 0 && q < tokens.count && !swaps.contains([min(s, q), max(s, q)]) }
+
+    mutating func useJoker(_ s: Int, _ kind: String, target: Int?, cell: Int?, passage: [Int]?) throws -> [MazeEvent] {
+        switch kind {
+        case "swapper":
+            guard let q = target, canSwap(s, q) else { throw IllegalAction("swap with another seat, not the same pair twice a hand") }
+            swaps.append([min(s, q), max(s, q)])
+            let a = tokens[s].pos
+            tokens[s].pos = tokens[q].pos; tokens[q].pos = a
+            for i in [s, q] { tokens[i].from = nil; tokens[i].atDoor = false }
+            return [.swapped(seat: s, target: q, cells: [tokens[s].pos, tokens[q].pos])]
+        case "bomb" where passage != nil:
+            let cells = passage!
+            guard cells.count == 2, let k = board.key(cells[0], cells[1]), bombDoors(s).contains(k) else { throw IllegalAction("bomb a door within reach") }
+            var d = board.passages[k]!
+            let opened = d.left <= config.jokers.bombPower
+            if opened { d.kind = .open; d.broken = true } else { d.damage += config.jokers.bombPower }
+            board.passages[k] = d
+            return [.doorBombed(seat: s, passage: [min(cells[0], cells[1]), max(cells[0], cells[1])], opened: opened, left: opened ? 0 : d.left)]
+        case "bomb", "burn":
+            guard let c = cell, hazardCells(s).contains(c) else { throw IllegalAction("a hazard goes on another seat's way, near them") }
+            let h = Hazard(cell: c, kind: kind == "bomb" ? "mine" : "fire", seat: s)
+            hazards.append(h)
+            return [.hazardSet(seat: s, kind: h.kind, cell: c)]
+        case "reach":
+            guard !tokens[s].reach else { throw IllegalAction("a reach is already on") }
+            tokens[s].reach = true
+            return [.reachOn(seat: s)]
+        default:
+            throw IllegalAction("\(kind) has no use on the maze")
+        }
+    }
 
     /// The cap (maze.md › Round cap): the cheapest to the goal, then the most grid steps over the
     /// game, then the first in turn order from the seat after the last dealer.

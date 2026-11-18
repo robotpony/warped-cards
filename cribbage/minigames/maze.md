@@ -149,6 +149,8 @@ Bots, the header's % to go, the stuck check, the burn and mine targets and reach
 
 ## Power jokers on the maze
 
+Built in the engine (Apple 0.22.5), with hazards and stars: `engine.md` › The maze › Power jokers, Hazards, Stars. One difference from the mock: after a swap neither token is stopped at a door, as this doc says (the mock marked both).
+
 One set of power jokers for the whole game, shared with the scoring grid (`rules.md` › Special jokers). The maze effects:
 
 | Joker | Target | Effect |

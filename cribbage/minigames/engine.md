@@ -1,6 +1,6 @@
 # Crib RPG: Engine Spec
 
-Status: draft 9, 2026-11-17, spec 14 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
+Status: draft 10, 2026-11-17, spec 15 (event names and Records match the Swift build's records, for porting: see [PORTING.md](../../PORTING.md)). Covers the match turn and the game at match rules r28, and a full game of classic cribbage as the baseline (specced, not built yet). A Crib RPG round's deal, cut and pegging reuse the classic sections; the maze walk and the shop get their own sections as their designs settle. Phase 4 of [PLAN.md](../../PLAN.md).
 
 ## Summary
 
@@ -208,7 +208,8 @@ The board's draws are not reported as rolls: the game builds it from the game's 
 The maze's state: the board, and for each seat a token (its cell, the cell it came in from or none, whether it stopped against a door last walk), its plays left this hand (biggest first), its 4 kept cards, its power jokers (the same as the grid's), and the doors it closed this hand. Tokens start on the start cell, with no cell they came from, not at a door.
 
 1. A hand's maze phase starts with the seat after the dealer and goes round the seats (seat + 1, wrapping). A seat with no plays left is skipped. Each turn starts with `mazeTurn` (seat, hand). When nobody has a play left, `mazeHandEnd` (hand, costs: each seat's cost to the goal) ends it.
-2. **A turn** uses one play, as a walk, a closed door or a flipped switch (Actions below). The turn then passes on.
+2. **A turn** uses one play, as a walk, a closed door or a flipped switch (Actions below), and at most `turn.jokersPerTurn` (1) power joker, before or after the play. The turn passes on after the play, unless the seat is a person who still holds a usable joker (a swapper, bomb or burn, or a reach with none on) and hasn't used one this turn: then it waits for a joker (which ends it) or `mazeEndTurn`. A bot sends its joker first, then its play.
+   - Before the first turn, plays owed to hazards come off each seat's new plays, in seat order (Hazards): `playsOwed` (seat, lost, owed).
 3. The first token into the goal wins at once, mid-walk: `mazeEnd` (winner, reason `goal`, costs).
 4. **The cap.** If no token has reached the goal when hand `game.maxHands`'s maze ends, the seat cheapest to the goal wins; on a tie, the one with more grid steps over the game; then the first of them in turn order from the seat after the last dealer: `mazeEnd` (reason `cap`).
 
@@ -231,7 +232,29 @@ A walk spends every step of its play, one cell a step. At each cell:
 6. **A door.** It takes steps, up to its strength left, without moving: its damage grows by them. If it's still standing, the walk ends. If it breaks, it's open for good (marked broken) and the walk goes on with the steps left.
 7. **Otherwise** the token steps into the next cell: it came from this cell, it isn't at a door, one step is spent. If the cell is the goal, the seat wins and the walk ends. A cell with a hazard is noted, once (Hazards).
 
-The walk then ends where the token is. A **preview** walks a copy of the maze and gives the walk and the cost from its end on the field after it. A walk **lands** when it wasn't stopped and didn't end against a standing door.
+The walk then ends where the token is. Unless it reached the goal, in this order: each hazard noted goes off (Hazards), then a star on the end cell gives a joker (Stars). A **preview** walks a copy of the maze and gives the walk and the cost from its end on the field after it. A walk **lands** when it wasn't stopped and didn't end against a standing door.
+
+### Power jokers
+
+The seat's own power jokers, the same set as the grid's. One a turn, with `mazeJoker` (kind and its target):
+
+| Kind | Target | Effect |
+|---|---|---|
+| `swapper` | target: another seat | The two tokens trade cells; neither has a cell it came from or is at a door. Not the same pair twice in a hand |
+| `bomb` | passage: a door with either cell within `jokers.targetRange` steps of the seat (breadth first over passable passages) | If its strength left is `jokers.bombPower` or less it opens for good (broken); otherwise its damage grows by `bombPower`. `doorBombed` (seat, passage, opened, left) |
+| `bomb` | cell: a hazard cell | A mine there. `hazardSet` (seat, kind `mine`, cell) |
+| `burn` | cell: a hazard cell | A fire there. `hazardSet` (kind `fire`) |
+| `reach` | none | Its next walk picks its way (Walking, 4); used up by that walk. Not while one is on. `reachOn` (seat) |
+
+A key isn't played: a walk uses one by itself at a wrong-suit door (Walking, 5). **Hazard cells** are, for each other seat in seat order, the first `jokers.targetRange` cells of its way, less the start, the goal, cells with a token or a hazard, each once.
+
+### Hazards
+
+A cell holds at most one hazard, `fire` or `mine`, with the seat that set it. The first token to pass over it sets it off, whoever set it, and it's gone. In the order the walk passed them, each one: it's **landed on** if it's the walk's end cell. The plays lost are a draw on stream `maze.burn`: from `hazards.<kind>.land` (purpose `burn_land`) or `.pass` (purpose `burn_pass`), min plus a draw below max − min + 1. Then that many plays are taken, one at a time, each a draw below the plays left (purpose `burn_play`) into the seat's plays in order. What can't be taken is owed, and comes off the seat's next hand's plays first thing. `hazardHit` (seat, kind, cell, landed, lose: the count drawn, lost: the play ids, owed: now owed).
+
+### Stars
+
+A walk that ends on a star takes it: a pick from `jokers.starOdds` (stream `maze.star`, purpose `star`) joins the seat's power jokers. `star` (seat, cell, joker).
 
 ### Closing and flipping
 
@@ -247,6 +270,7 @@ Each maze action is sent by the seat whose turn it is. Passages are their two ce
 | `mazeWalk` | play (its id), ways (or none): `{cell, dir}` junctions a person turned, for a reach | The seat's turn, its play not used yet; the play is one of its own left |
 | `mazeClose` | play, passage | As above, and Closing and flipping allows it |
 | `mazeFlip` | play, letter (`A` to `H`) | As above, and the switch hasn't flipped this hand |
+| `mazeJoker` | kind, target (a seat, for a swapper), cell (a burn, or a bomb's mine), passage (a bomb's door), each or none | The seat's turn, no joker used this turn, the seat holds one, and the target is allowed (Power jokers) |
 | `mazeEndTurn` | none | The seat's turn, after its play (a person who could still play a joker) |
 
 ### Events
@@ -259,6 +283,13 @@ Each maze action is sent by the seat whose turn it is. Passages are their two ce
 | `doorClosed` | seat, play, passage, suit, strength |
 | `switchFlipped` | seat, play, letter |
 | `mazeHandEnd` | hand, costs |
+| `playsOwed` | seat, lost, owed |
+| `swapped` | seat, target, cells (the two tokens' cells after) |
+| `doorBombed` | seat, passage, opened, left |
+| `hazardSet` | seat, kind, cell |
+| `reachOn` | seat |
+| `hazardHit` | seat, kind, cell, landed, lose, lost, owed |
+| `star` | seat, cell, joker |
 | `mazeEnd` | winner, reason (`goal` or `cap`), costs |
 
 A play in `handPlays` is `{id, steps, suit, cards, from}`; its id is what the actions name.
@@ -490,7 +521,7 @@ Every line has a `kind`. Kinds a reader doesn't know MUST be skipped, so newer w
 
 | Kind | Fields | Notes |
 |---|---|---|
-| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (14), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
+| `header` | format (1), game (`crib-maze`), rules (`match-r28`), specVersion (15), app, build, commit, platform, install, started, seed, config, players | First line, once. `specVersion` is the spec version the writer implements (`spec.json`), a whole number; records written before spec 2 leave it out. A replay whose engine names a different spec version or rules version says so, and still checks the steps. `app` to `install` describe the build and are left out when unknown. `seed` is decimal text, since JSON numbers lose precision past 2^53. `config` is the config files as the game ran them, each file's object under its name (`rules`, `jokers`, `bots`, `hints`, `maze`; the simulator's `timing` and the classic game's `classic` aren't part of a Crib RPG game), plus `firstDealer`. `players` is a list of `{seat, kind, level}`: kind `human` or `bot`, level for bots only. A game around the maze writes `mazeGame: true` beside `firstDealer`; other games leave it out |
 | `step` | seq, hand, clockMs, player, action, rolls, events, at | One per action, plus the opening step (seq 1, no action, no player). `hand` is the hand after the step, left out before the first. `player` is left out for the session's own actions (`timeUp`, `reachOver`, including a timed key's) |
 | `note` | after, at, name, data | App behaviour outside the rules (the deal's hint, `deal_hint`). `after` is the seq it follows. Replays skip notes |
 | `end` | at, clockMs, result | When the game finishes. `result` is `{hands, steps}`, hands as in `handEnd` |
@@ -534,6 +565,8 @@ A game's dice can start every stream again from a new seed, as each hand does (T
 | `opening` | Per opening count with a bonus: `bonus` per power joker won (r26) |
 | `prize` | `prize_special` |
 | `maze` | The maze's board, once a game when the game starts: `carve`, `goal`, `walls`, `door_suit`, `variant_suit`, `switch_edge`, `switch_wall`, `junction`, `prize_cells` (The maze › The board). Never started again, and nothing draws on it after the board is built |
+| `maze.burn` | Each hand's maze: per hazard set off, `burn_pass` or `burn_land`, then `burn_play` per play lost; at a hand's start, `burn_play` per play owed |
+| `maze.star` | Each hand's maze: `star` per star taken |
 | `bot.<seat>` | A bot's own choices (see Bots). A bot's own grid turn draws its match turn on the game's streams, started again from its seed (The game around the maze) |
 
 ## Clock and timer
@@ -1002,6 +1035,7 @@ The mock is a design tool, so it cuts corners the engine can't. These are engine
 | Warning state kept in browser storage | A player profile input (see Left-over warning) |
 | Maze: with 2 players, the dealer moved first | The seat after the dealer moves first, as maze.md says |
 | Maze: a token at the start counts as stopped at a door | Not at a door until a walk stops against one |
+| Maze: a swap marks both tokens as stopped at a door | Neither is at a door, as maze.md says |
 
 ## Open questions
 

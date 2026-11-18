@@ -2,6 +2,15 @@
 
 Spec changes, newest first: what a port has to change to stay in step (PORTING.md › Versions). The spec version is `specVersion` in [spec.json](cribbage/minigames/spec.json). Each platform's builds have their own changelog, such as [apps/apple/CHANGELOG.md](apps/apple/CHANGELOG.md).
 
+## spec 15 — 2026-11-17
+
+Rules unchanged (r28).
+
+### Added
+
+- Power jokers on the maze, hazards and stars (engine.md › The maze › Power jokers, Hazards, Stars): a `mazeJoker` action (swapper, bomb on a door or as a mine, burn, reach), one a turn; a person's turn waits after the play while a joker is usable. Fires and mines take plays on stream `maze.burn`, owing the rest to the next hand; stars give a joker on `maze.star`. Events `swapped`, `doorBombed`, `hazardSet`, `reachOn`, `hazardHit`, `playsOwed`, `star`.
+- The golden records are re-recorded: headers only.
+
 ## spec 14 — 2026-11-17
 
 Rules unchanged (r28).
