@@ -428,5 +428,5 @@ Every game ended at the goal; none reached the 15-hand cap.
 2. Is about 46 wrong-suit stops a game too many, with about 22 doors a maze? Playtest first.
 3. Do 14 plays a round drag at 28 to 42 turns? Playtest first.
 4. Does a landing duel need a cost, so players don't chase them?
-5. Games around the maze run a median 6 hands in the engine, against the mock's 8, because grid turns score more as the game goes on (Stats from the engine). Keep it, lengthen the golden path (`board.length`), or scale plays down in later hands? Playtest first.
-6. With grid prizes feeding the maze, a balanced game sets off about 10 hazards. Too many? Fewer power jokers as prizes, or fewer hazard uses?
+5. Games around the maze run a median 6 hands in the engine, against the mock's 8, because grid turns score more as the game goes on (Stats from the engine). Keep it, lengthen the golden path (`board.length`), or scale plays down in later hands? Playtest first. Kept for the playtest (Bruce, 2026-11-17).
+6. With grid prizes feeding the maze, a balanced game sets off about 10 hazards. Too many? Fewer power jokers as prizes, or fewer hazard uses? Kept for the playtest (Bruce, 2026-11-17).
